@@ -1,51 +1,130 @@
-# Node.js & Package Managers
+# ============================================================================
+# AI Hub — .gitignore
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# Secrets & environment
+# ----------------------------------------------------------------------------
+*.env
+.env.*
+!.env.example
+.npmrc
+!.npmrc.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+credentials.json
+secrets.json
+service-account*.json
+
+# ----------------------------------------------------------------------------
+# Node.js & package managers
+# ----------------------------------------------------------------------------
 node_modules/
 .pnpm-store/
 .npm
+.yarn/
 .yarn-integrity
+.pnp.*
+.eslintcache
+.stylelintcache
+*.tgz
 
+# ----------------------------------------------------------------------------
 # Logs
-logs
+# ----------------------------------------------------------------------------
+logs/
 *.log
+*.log.*
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# TypeScript & Build Output
+# ----------------------------------------------------------------------------
+# TypeScript & build output
+# ----------------------------------------------------------------------------
 dist/
 build/
 out/
-lib/
+# lib/   # no se ignora: puede ser código fuente. Descomenta si tu build emite a lib/
 *.tsbuildinfo
 *.js.map
 *.d.ts.map
 
-# Testing & Coverage
+# ----------------------------------------------------------------------------
+# Testing, coverage & caches
+# ----------------------------------------------------------------------------
 coverage/
+.nyc_output/
+.vitest/
+.vite/
 *.lcov
-.nyc_output
 .swc/
+.cache/
+.turbo/
+.parcel-cache/
+.playwright/
+playwright-report/
+test-results/
 
-# Environment & Secrets
-.env
-.env.local
-.env.*.local
-!.env.example
+# ----------------------------------------------------------------------------
+# Python (scripts de Spec Kit)
+# ----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+*.egg-info/
+pip-log.txt
 
-# VS Code
+# ----------------------------------------------------------------------------
+# Herramientas de agentes / Spec Kit / OpenSpec
+# Artefactos regenerables con `specify init` / `openspec init`.
+# Si quieres versionar plantillas, constitución y specs, comenta estas líneas.
+# ----------------------------------------------------------------------------
+.claude/
+.opencode/
+.pi/
+.specify/
+openspec/
+specs/
+
+# ----------------------------------------------------------------------------
+# Otros asistentes de IA
+# ----------------------------------------------------------------------------
+.cursor/
+.aider*
+.continue/
+.windsurf/
+
+# ----------------------------------------------------------------------------
+# VS Code / JetBrains
+# ----------------------------------------------------------------------------
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+.idea/
+.fleet/
 .history/
 
-# JetBrains / WebStorm
-.idea/
-
+# ----------------------------------------------------------------------------
 # macOS
+# ----------------------------------------------------------------------------
 .DS_Store
 .AppleDouble
 .LSOverride
@@ -59,7 +138,9 @@ Icon
 .VolumeIcon.icns
 .com.apple.timemachine.donotpresent
 
+# ----------------------------------------------------------------------------
 # Windows
+# ----------------------------------------------------------------------------
 Thumbs.db
 Thumbs.db:encryptable
 ehthumbs.db
@@ -69,9 +150,22 @@ $RECYCLE.BIN/
 *.lnk
 *.stackdump
 
+# ----------------------------------------------------------------------------
 # Linux
+# ----------------------------------------------------------------------------
 *~
 .fuse_hidden*
 .directory
 .Trash-*
 .nfs*
+
+# ----------------------------------------------------------------------------
+# Temporales y backups
+# ----------------------------------------------------------------------------
+tmp/
+*.tmp
+*.bak
+*.orig
+*.rej
+*.swp
+*.swo
