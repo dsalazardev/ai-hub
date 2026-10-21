@@ -1,0 +1,41 @@
+orchestrator:
+  name: ai-hub-mcp-manifest
+  version: 2
+  description: Minimal MCP manifest — local Playwright MCP; GitLab self-managed se integra por skills (REST API v4 + PAT), sin MCP
+
+required_mcps:
+  - id: playwright
+    type: local
+    description: Local Playwright MCP used for browser automation in the MCP-local environment.
+    client:
+      command: npx
+      args:
+        - "-y"
+        - "@playwright/mcp@0.0.83"
+    config:
+      node_required: true
+      npm_command: npx playwright install-deps
+      notes: "This MCP requires Playwright browsers installed locally or in CI."
+
+integrations:
+  - id: gitlab
+    type: skill
+    description: GitLab self-managed via skills gitlab-auth + gitlab-workflow using REST API v4 and a PAT from environment variables.
+    endpoint: https://gitlab.v3.onnadigital.com/api/v4
+    env:
+      - GITLAB_URL
+      - GITLAB_TOKEN
+    skills:
+      - gitlab-auth
+      - gitlab-workflow
+
+prompts:
+  explore: .ai-hub/prompts/explore-template.md
+  propose: .ai-hub/prompts/propose-template.md
+
+skills:
+  - angular-developer
+  - onna-architecture-bff
+  - planning-with-files
+  - gitlab-auth
+  - gitlab-workflow

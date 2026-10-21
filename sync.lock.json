@@ -1,0 +1,467 @@
+{
+  "version": 1,
+  "sources": {
+    ".ai-hub/agents/explorer-domain.md": "9b04aec8afede6c0240c2fc64cc243c5beb4f4ba6f406e3fa91088bc9107af69",
+    ".ai-hub/agents/implementer-backend.md": "9c9c84c7df1b16444d77750436340ba91dce7e4719176737c3da3e424f5b4dca",
+    ".ai-hub/agents/implementer-frontend.md": "74fa5301215d60de104deab698a2f18de25036864447cbf8d87f1b036d551691",
+    ".ai-hub/agents/reviewer-architecture.md": "fac3cceed03ab8f98f52ddf00d410bebd1af02ab1ee4fdac86259758baeb27c0",
+    ".ai-hub/agents/reviewer-tests.md": "59d1a9e2f5ed6d2a8f4ec3137a3f30cb5cbb5c0cf12258959dfd8fd82a677cc1",
+    ".ai-hub/agents/spec-author.md": "7b0a3e8071755b58632d79f9047e4a0fba0aaf46cbb9333f65abc3d31c61ba28",
+    ".ai-hub/manifest.yaml": "715122826977e2dc0d6caa3f0b95ceb7009066ba0853a19c2bdc0e950da58e55",
+    ".ai-hub/mcp-manifest.yaml": "a9ed00138de3c2d2632ccbb5b87915f9cdfbde6050303a8354fd6479ce5065c6",
+    ".ai-hub/rules/backend.md": "3277c021d3ed6b2269cbb0bf4f1cf06172524a137e8b80e4c64942d5664b5bf4",
+    ".ai-hub/rules/core.md": "b596418160b054e5f05c7eea448708ebc4381d82ffdcf0bd74ae7121dad4f4ce",
+    ".ai-hub/rules/frontend.md": "ea518afd5279b1036a4ba7acafcaa721382c0e77a6814069a5b5143fb802cf9d",
+    ".ai-hub/skills/shared/angular-developer/SKILL.md": "faf49f2c11fb19085ff4cdfc985adc8bf27e888b122e309da6fb00b17b7b1e5b",
+    ".ai-hub/skills/shared/angular-developer/references/angular-animations.md": "0361278cabc4925807c8a93ebce717f1c8d52d553870ddd8634b1075b0395dbc",
+    ".ai-hub/skills/shared/angular-developer/references/angular-aria.md": "258262515f0b9f11df3a291c80e6326432b14d3f67109a6ff1592f4c5761a98d",
+    ".ai-hub/skills/shared/angular-developer/references/cli.md": "39468f1be907a1abff746e79cb9fabd9675956df00c87d9b8bd1517855b9fd7d",
+    ".ai-hub/skills/shared/angular-developer/references/component-harnesses.md": "6b4f4958684308e76b4c57fb4b5f7efdf1cfc64001dd671fe40ae1ceab8e0943",
+    ".ai-hub/skills/shared/angular-developer/references/component-styling.md": "de3351fdb72174361c6eee150940193f20d148afaceab0f22107758a3cb2d787",
+    ".ai-hub/skills/shared/angular-developer/references/components.md": "dbfb520f2dddd017acb617369c45544374440fcb0b178d9648fab7ada0178468",
+    ".ai-hub/skills/shared/angular-developer/references/creating-services.md": "6e4353c2263a31ad3edcefc6c33fcb0e328b9d0421b124ba121feae84972701e",
+    ".ai-hub/skills/shared/angular-developer/references/data-resolvers.md": "0a6eb7ee89b29d1766941ed88881803b32870e705f2e438a7cae1c4e59ed8289",
+    ".ai-hub/skills/shared/angular-developer/references/define-routes.md": "1288b38bad6cc9749e9d0fd35a294771ea2181dd712bfc2887d80e8b40fab7e6",
+    ".ai-hub/skills/shared/angular-developer/references/defining-providers.md": "e654c23a080c642cf7031b5cc5de1101b8c75030c15256f7e3b81b0336953c6d",
+    ".ai-hub/skills/shared/angular-developer/references/di-fundamentals.md": "87a0bd6addde006dde9fbc9bd89db0525ce37308beb4f6ca474ae4372b046109",
+    ".ai-hub/skills/shared/angular-developer/references/e2e-testing.md": "c04a12aa5fb763b9b592aeb3b5dc68a1d6c707ccf94469095c193227d180d1e7",
+    ".ai-hub/skills/shared/angular-developer/references/effects.md": "c06ad02460be7f57d024bb8e263a3390e72059815879bf6bcd0583e510a2b4ad",
+    ".ai-hub/skills/shared/angular-developer/references/hierarchical-injectors.md": "05546d8043b93a2ab8deccdc2bd9c1704350883107701139e790ff8adb0f626a",
+    ".ai-hub/skills/shared/angular-developer/references/host-elements.md": "b898bab74d518feba3c527dbf9694abe6d3ec7bfa44d81b34cff119016984080",
+    ".ai-hub/skills/shared/angular-developer/references/injection-context.md": "4435dfcec91bd9fb68d6c318802cac1b37424d4e76452e6f0f52ed0d2b6536fb",
+    ".ai-hub/skills/shared/angular-developer/references/inputs.md": "229a6e37f7006a6f3426cc2bc42baa67ecbbab77c343d141e44b10c1bb11de09",
+    ".ai-hub/skills/shared/angular-developer/references/linked-signal.md": "4971692a36c4d470b5c8efec1a8106418ac28cdc33601e554ecff9dded95d289",
+    ".ai-hub/skills/shared/angular-developer/references/loading-strategies.md": "fa82c48573532a7f5e3ccf7eaa50dc7a2db1f23a8599638d9c18e023dbd73e2f",
+    ".ai-hub/skills/shared/angular-developer/references/mcp.md": "38a5187f1e2e7eb9b20cd1f12d44f74faadeb8f4c71664e7f06b0c2ee65489cd",
+    ".ai-hub/skills/shared/angular-developer/references/migrations.md": "47983ed2683dc10f692d254cdca9c97fc13dec9ad099b759f5d31886f3cbaa7a",
+    ".ai-hub/skills/shared/angular-developer/references/navigate-to-routes.md": "ea3c3d53b5db47b4f8d8b05124330e72bea92fc908d42c06aa7edb9e652b425e",
+    ".ai-hub/skills/shared/angular-developer/references/outputs.md": "a191f8982d9ac6868023d56c887f362052c4fccc70a89adc8a6bc546f851e5dc",
+    ".ai-hub/skills/shared/angular-developer/references/reactive-forms.md": "e71118562247c94141dfaca74efd246e38226bf26ffedbd7f3337f1866113283",
+    ".ai-hub/skills/shared/angular-developer/references/rendering-strategies.md": "329aa9aa35c85dd2048c899f26025439d3b0244067dbb508e724d291fdad7c97",
+    ".ai-hub/skills/shared/angular-developer/references/resource.md": "c7a9f7f550e4187b853ea847c0666a33bb4227454b4acab8ba2f2ecce5ca8fed",
+    ".ai-hub/skills/shared/angular-developer/references/route-animations.md": "eda1452f85ce05f3f28753cc77cd8c31c7a52515d7ccebbb35de0ec1e3beb374",
+    ".ai-hub/skills/shared/angular-developer/references/route-guards.md": "491a93cb49fbcba04f7e8ffcd0f784fce7319ca3e2fe393c553f3d683a68424c",
+    ".ai-hub/skills/shared/angular-developer/references/router-lifecycle.md": "4abc8cb8dfeb2e9f57dc11c117d5f4a5b756b39dc076910d9ced9da640effc2d",
+    ".ai-hub/skills/shared/angular-developer/references/router-testing.md": "c1bebdf31808659161891783ac32cfe7300e4ba314ba93b1980c6f35a3e871a2",
+    ".ai-hub/skills/shared/angular-developer/references/show-routes-with-outlets.md": "43a2ed62ea2edafa8569bf7045f20928110f8f844d5890bfb6a2f2dde45e754b",
+    ".ai-hub/skills/shared/angular-developer/references/signal-forms.md": "bcd6ed1b975d28768fb450cc231635d9ba38cbbff6b485874a6571355f4ade7c",
+    ".ai-hub/skills/shared/angular-developer/references/signals-overview.md": "da07c58fdea2ab7d82a28faf9f3d117ccb98ccaf3eec06f103b898f557791146",
+    ".ai-hub/skills/shared/angular-developer/references/tailwind-css.md": "bdb952d0dd2d415560a796ecaf843cacff5ac20d8ef961eaaf75656fef9b9263",
+    ".ai-hub/skills/shared/angular-developer/references/template-driven-forms.md": "52e83e576b0c6dc05f854e903c4cfda1222bcd55c50ddee07344d1e53d02c1df",
+    ".ai-hub/skills/shared/angular-developer/references/testing-fundamentals.md": "c19aba15bd188bb6570fb593e0ca06d52ab86b9ef071611ad89aef1fbdd1a45e",
+    ".ai-hub/skills/shared/angular-new-app/SKILL.md": "807120998cc2161b14963300fcb8fd594c71f3a527f67f0172123b458178631e",
+    ".ai-hub/skills/shared/frontend-design/LICENSE.txt": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",
+    ".ai-hub/skills/shared/frontend-design/SKILL.md": "1608ea77fbb6fc30d13a97d12cfa8ebf31358d40f0dd97beed24829d6b3f45dd",
+    ".ai-hub/skills/shared/onna-architecture-angular/SKILL.md": "af26e2b2279756869cfefa45a7a51c89cfebeecb5ee6d106c2d9e989ae53dc8e",
+    ".ai-hub/skills/shared/onna-architecture-bff/SKILL.md": "f7f9452403226fb89a24df1047b0766c7dae7633421f8aea7b43dcd971847e45",
+    ".ai-hub/skills/shared/onna-architecture-common/SKILL.md": "bcad973b5838a50587a0a0a7aa4ba29441cc1fda636ba786a23132e47aba2154",
+    ".ai-hub/skills/shared/onna-design-system/SKILL.md": "91371b6479096f102214f79fe32a56c68369b038f09c2313720428bbbc612dca",
+    ".ai-hub/skills/shared/openspec-apply-change/SKILL.md": "6b4b50f0316f47a5be4a3c463495ac6dfcb938cb7c596c4a515a45a16ac7b7db",
+    ".ai-hub/skills/shared/openspec-archive-change/SKILL.md": "5d214ad332e83a1846cb06b8ac60ba70d68abace8ece333c41c653666f3635a9",
+    ".ai-hub/skills/shared/openspec-explore/SKILL.md": "2d430c96d898060904edd7e1fb32b3933d1c7f3913cba0eacf432e53433a89c3",
+    ".ai-hub/skills/shared/openspec-propose/SKILL.md": "75178fa06feb5e15a797f8838ec96ef3f2ca55f493d15ca8d2ab1da7f235f7b4",
+    ".ai-hub/skills/shared/openspec-sync-specs/SKILL.md": "0f8d143167bb7738fb8e14aaac3a7c4a0490f607f571c224fc38c407b4db94a6",
+    ".ai-hub/skills/shared/openspec-workflow/SKILL.md": "10739d9c3b5b332e4eefbfed535a2f4cf70018c46682d2467ebeb99848dbaa79",
+    ".ai-hub/skills/shared/planning-with-files/SKILL.md": "3c1b673975c26fb1f2c972b84de45c9effd3f6ae84d9901adc8b30fe5ff19675",
+    ".ai-hub/skills/shared/planning-with-files/examples.md": "450355fac69e0fac93453b6c7383c8fb9ba3470662f6c8291080028f73ce00dc",
+    ".ai-hub/skills/shared/planning-with-files/reference.md": "f8b4edf7037a19cc4119f8cdc11dcda511da2d949328786202e0434d6044b830",
+    ".ai-hub/skills/shared/planning-with-files/scripts/attest-plan.ps1": "5a0473ddfea7c5936a8f9be30b94b23af2e37e7454057482dcb57d6b599f506c",
+    ".ai-hub/skills/shared/planning-with-files/scripts/attest-plan.sh": "61d24c3ffee1c51afa001a8608a667056931d2692c515467eb6f5a00850ffb3b",
+    ".ai-hub/skills/shared/planning-with-files/scripts/check-complete.ps1": "f9e5d7bc1e92a466a44fcd7de1bfa3f69174a55396af0a54e739407f75911e13",
+    ".ai-hub/skills/shared/planning-with-files/scripts/check-complete.sh": "9aceee61cc0d9932fb9efccef2b231b61c3122be71224acac90f5930e3dfb1fe",
+    ".ai-hub/skills/shared/planning-with-files/scripts/init-session.ps1": "4c720adf32e7f3548b13c9c754be58531daddbcabd38a9c3b837cf75b2dbb7a2",
+    ".ai-hub/skills/shared/planning-with-files/scripts/init-session.sh": "05f29e372a5cec9d3df939dc04740a3f52ea0921c3e819164bdc980502e69cd8",
+    ".ai-hub/skills/shared/planning-with-files/scripts/resolve-plan-dir.ps1": "96d61686053722e81bfa9fe2e918c546ce5d51dbad54d5388735b39b2c9ca2f1",
+    ".ai-hub/skills/shared/planning-with-files/scripts/resolve-plan-dir.sh": "3c94eba0ad09363b1cbda57641c8543954356ffba439e5b68bff3de34e740218",
+    ".ai-hub/skills/shared/planning-with-files/scripts/session-catchup.py": "95046e4bfec66ddc3a44e85fd87b610557c166ffafb83e89d0d9b6aeab6d6274",
+    ".ai-hub/skills/shared/planning-with-files/scripts/set-active-plan.ps1": "81328fd39fef216a9133eea38cdca4eb25a39defb3084f58c746948ba287333d",
+    ".ai-hub/skills/shared/planning-with-files/scripts/set-active-plan.sh": "72e3e2b3dcd9cb40018ebd86491f54deb84b540f723dd4a0e78ac47931c5db6c",
+    ".ai-hub/skills/shared/planning-with-files/templates/findings.md": "b5e64d73704daefa8492356d2c2c67ffeb78d79d448b316c0a0debc9226ad785",
+    ".ai-hub/skills/shared/planning-with-files/templates/progress.md": "a2366167ed178bc4a3c1d72ec6c5f6ea9e38aed67c6f3dd2c1a8cbdb4cde76b6",
+    ".ai-hub/skills/shared/planning-with-files/templates/task_plan.md": "03ab63b35434c8cf2375000762bb1f360db2e9b3a825810d0aee311bad5f49aa",
+    ".ai-hub/skills/shared/super-dev/SKILL.md": "d1592eaac200e7c0a1b476b726a821a3bcbef80195056b49f0a4326b92e29d8c",
+    ".ai-hub/skills/shared/super-dev/references/products-anatomy.md": "618e0173af31983329395b9a374c5167e37659ecc18c926831effef9090eeb13"
+  },
+  "files": {
+    ".claude/agents/explorer-domain.md": {
+      "sha256": "540fdb9072c929080251ac306b6d9bc92390bfba0a1a39d34c4ec7429d5180cf",
+      "source": ".ai-hub/agents/explorer-domain.md"
+    },
+    ".claude/agents/implementer-backend.md": {
+      "sha256": "0e87bcb9cbed3a69ea129bb4f47ebf9c3c9ee0cdd4d737596059830982d471bf",
+      "source": ".ai-hub/agents/implementer-backend.md"
+    },
+    ".claude/agents/implementer-frontend.md": {
+      "sha256": "630a1f41c1197096bed6ae1b2f1f9d37056ccf9bb44faf8f2be75abb1045cce9",
+      "source": ".ai-hub/agents/implementer-frontend.md"
+    },
+    ".claude/agents/reviewer-architecture.md": {
+      "sha256": "6951d2c0a49a7ed324cc68445c65182b991755516d635f8f83094431b59afa00",
+      "source": ".ai-hub/agents/reviewer-architecture.md"
+    },
+    ".claude/agents/reviewer-tests.md": {
+      "sha256": "336494cf6f86e0d34b83cdeb5fbb8f1b406cb1aa6c24829e7a12629ab1598f43",
+      "source": ".ai-hub/agents/reviewer-tests.md"
+    },
+    ".claude/agents/spec-author.md": {
+      "sha256": "99a0a6cdc611887972718aa2c11896c5276b541bcf2b2bcd29a89bd8351ebacf",
+      "source": ".ai-hub/agents/spec-author.md"
+    },
+    ".claude/rules/backend.md": {
+      "sha256": "d360159f7fe6ffb8f1a8aee9eb91cfaf89249092b2020be7d246b0dfeef45b31",
+      "source": ".ai-hub/rules/backend.md"
+    },
+    ".claude/rules/frontend.md": {
+      "sha256": "45fade8c24847f04078a360814597c62b395bbaecfca771f8272e7710af27242",
+      "source": ".ai-hub/rules/frontend.md"
+    },
+    ".claude/skills/angular-developer/SKILL.md": {
+      "sha256": "3ff6f3901287af1a7f722593e2357c27a6097ed51b331fbcc74f2b24132777ef",
+      "source": ".ai-hub/skills/shared/angular-developer/SKILL.md"
+    },
+    ".claude/skills/angular-developer/references/angular-animations.md": {
+      "sha256": "adf98dd1343f64494c959775e2379476537866d9ae7d65075ddf6c761d1390fc",
+      "source": ".ai-hub/skills/shared/angular-developer/references/angular-animations.md"
+    },
+    ".claude/skills/angular-developer/references/angular-aria.md": {
+      "sha256": "5820b2b9a7acb3ef5e8e1e71ef6969ba4d3945dce64cc7e5c065e5d8a4dac860",
+      "source": ".ai-hub/skills/shared/angular-developer/references/angular-aria.md"
+    },
+    ".claude/skills/angular-developer/references/cli.md": {
+      "sha256": "dce47209fc5bf522335766b2a9ed278dbd48abf0752e9af6128b505bc54adabb",
+      "source": ".ai-hub/skills/shared/angular-developer/references/cli.md"
+    },
+    ".claude/skills/angular-developer/references/component-harnesses.md": {
+      "sha256": "d995bf94b4315eb4c5f285946e30829fa9bfb5c9ef2a16ac0eb71a460b5c334c",
+      "source": ".ai-hub/skills/shared/angular-developer/references/component-harnesses.md"
+    },
+    ".claude/skills/angular-developer/references/component-styling.md": {
+      "sha256": "25516c5a4f3fec6942b2ab6253f61b8c99efb99a000fb7bf728d3dfdc72366c4",
+      "source": ".ai-hub/skills/shared/angular-developer/references/component-styling.md"
+    },
+    ".claude/skills/angular-developer/references/components.md": {
+      "sha256": "9e21132161daa016dacf7e86b2f46df748401388876155f3cc0325450109ef43",
+      "source": ".ai-hub/skills/shared/angular-developer/references/components.md"
+    },
+    ".claude/skills/angular-developer/references/creating-services.md": {
+      "sha256": "54525cce523f34ecfeec25c048b0ecc7e5dcb5f94ac96d40758a352b23fc8221",
+      "source": ".ai-hub/skills/shared/angular-developer/references/creating-services.md"
+    },
+    ".claude/skills/angular-developer/references/data-resolvers.md": {
+      "sha256": "2a4f3f3dc92589f3fb8ddce3e91ab2bb14c997413bb7cef973a7aebd87e0a485",
+      "source": ".ai-hub/skills/shared/angular-developer/references/data-resolvers.md"
+    },
+    ".claude/skills/angular-developer/references/define-routes.md": {
+      "sha256": "d450d0abb082bff8d0cdf04c406b6256e02d4ea81a1c9da7d9378340dab8e576",
+      "source": ".ai-hub/skills/shared/angular-developer/references/define-routes.md"
+    },
+    ".claude/skills/angular-developer/references/defining-providers.md": {
+      "sha256": "cc6e8ba930dce3cbe5367acaa0606c170e516ded835376294e7e9d77db362c7f",
+      "source": ".ai-hub/skills/shared/angular-developer/references/defining-providers.md"
+    },
+    ".claude/skills/angular-developer/references/di-fundamentals.md": {
+      "sha256": "5fe052f9ffadd1c082b7466a2d77698f1bfd3bd1eb1bb04e4d5088c45b60bc56",
+      "source": ".ai-hub/skills/shared/angular-developer/references/di-fundamentals.md"
+    },
+    ".claude/skills/angular-developer/references/e2e-testing.md": {
+      "sha256": "08c2f184825ce2a9aa6c6a66001edf1d2cbbe42a9606edbc42624e18ce69b66f",
+      "source": ".ai-hub/skills/shared/angular-developer/references/e2e-testing.md"
+    },
+    ".claude/skills/angular-developer/references/effects.md": {
+      "sha256": "d7b3653e293deae89aca2075b1383c8e9d7b790bac1c85e115c97774ff09d22c",
+      "source": ".ai-hub/skills/shared/angular-developer/references/effects.md"
+    },
+    ".claude/skills/angular-developer/references/hierarchical-injectors.md": {
+      "sha256": "9c60ede0b84387a268ecaf589adb43b734fccac5f9925badae99e6b271ceab01",
+      "source": ".ai-hub/skills/shared/angular-developer/references/hierarchical-injectors.md"
+    },
+    ".claude/skills/angular-developer/references/host-elements.md": {
+      "sha256": "d67fcce5d5f4e981bc6e497c79629b3a7be93fb2b12c1c7fdb8885b7089f396f",
+      "source": ".ai-hub/skills/shared/angular-developer/references/host-elements.md"
+    },
+    ".claude/skills/angular-developer/references/injection-context.md": {
+      "sha256": "b7b25e548d13069b55d615d756610c466f45f6e895afc2c8453c6a8a18243289",
+      "source": ".ai-hub/skills/shared/angular-developer/references/injection-context.md"
+    },
+    ".claude/skills/angular-developer/references/inputs.md": {
+      "sha256": "43a9594070dcea8b167c8be80eba6c1bd754a1672d68596cac2a23217c1c8e5d",
+      "source": ".ai-hub/skills/shared/angular-developer/references/inputs.md"
+    },
+    ".claude/skills/angular-developer/references/linked-signal.md": {
+      "sha256": "792de2821ea81e9825b91ffcf8b39b20a2d3f5ea9aeaeb6a0aeb7a28a11b2204",
+      "source": ".ai-hub/skills/shared/angular-developer/references/linked-signal.md"
+    },
+    ".claude/skills/angular-developer/references/loading-strategies.md": {
+      "sha256": "fce928bfe91af56fab987c16f7287d9e859526d4e5de85e9a08ba08f5f9b6524",
+      "source": ".ai-hub/skills/shared/angular-developer/references/loading-strategies.md"
+    },
+    ".claude/skills/angular-developer/references/mcp.md": {
+      "sha256": "0a5c27efdc3976e0482b82d2be47fc36b9d9e534c729a15fb2c798e6947c81e3",
+      "source": ".ai-hub/skills/shared/angular-developer/references/mcp.md"
+    },
+    ".claude/skills/angular-developer/references/migrations.md": {
+      "sha256": "b697cc681f48cd077d62fcbfa5d8ec875773dd49171765dd3986434ef57955b2",
+      "source": ".ai-hub/skills/shared/angular-developer/references/migrations.md"
+    },
+    ".claude/skills/angular-developer/references/navigate-to-routes.md": {
+      "sha256": "fd990b5ac66d2542a505e734a5a1060d037149ecee149a6009a9a67c54c3d4a7",
+      "source": ".ai-hub/skills/shared/angular-developer/references/navigate-to-routes.md"
+    },
+    ".claude/skills/angular-developer/references/outputs.md": {
+      "sha256": "870fa38ef9862825ae990821af06e912755f9210faab3e8fce85922613004c42",
+      "source": ".ai-hub/skills/shared/angular-developer/references/outputs.md"
+    },
+    ".claude/skills/angular-developer/references/reactive-forms.md": {
+      "sha256": "2ebea960d2488540e7ca7901399cacfc83d5486accc036e5ff116f3d22646fcb",
+      "source": ".ai-hub/skills/shared/angular-developer/references/reactive-forms.md"
+    },
+    ".claude/skills/angular-developer/references/rendering-strategies.md": {
+      "sha256": "5c257e641deef1ee179294889713e559638ecc26b480b6e8e308533901f2458c",
+      "source": ".ai-hub/skills/shared/angular-developer/references/rendering-strategies.md"
+    },
+    ".claude/skills/angular-developer/references/resource.md": {
+      "sha256": "903001079760898ef2adeaafa3d789a4020f05ecc9c32112e569921a7a139949",
+      "source": ".ai-hub/skills/shared/angular-developer/references/resource.md"
+    },
+    ".claude/skills/angular-developer/references/route-animations.md": {
+      "sha256": "5fd75ffee5ae6cb9fff5d233125636be440cf58eae8e6a3ed5a7f4fc35d01026",
+      "source": ".ai-hub/skills/shared/angular-developer/references/route-animations.md"
+    },
+    ".claude/skills/angular-developer/references/route-guards.md": {
+      "sha256": "d935cdf8c9aab97b58aa892ac2108259e65382b93292e2b932671c90baaf7b07",
+      "source": ".ai-hub/skills/shared/angular-developer/references/route-guards.md"
+    },
+    ".claude/skills/angular-developer/references/router-lifecycle.md": {
+      "sha256": "802c851eeee9a4d12b225d25ee80a7b0bf31c3c7a69af0f37c00ffc3a200b412",
+      "source": ".ai-hub/skills/shared/angular-developer/references/router-lifecycle.md"
+    },
+    ".claude/skills/angular-developer/references/router-testing.md": {
+      "sha256": "28f67e400f1e081e729ee135e09366aad1b1fccf981b35042e4fb10e7f0ff0da",
+      "source": ".ai-hub/skills/shared/angular-developer/references/router-testing.md"
+    },
+    ".claude/skills/angular-developer/references/show-routes-with-outlets.md": {
+      "sha256": "e50d9ce2801e8204ca31ae430d5416b401189a186953d8b13d73500c48552c9a",
+      "source": ".ai-hub/skills/shared/angular-developer/references/show-routes-with-outlets.md"
+    },
+    ".claude/skills/angular-developer/references/signal-forms.md": {
+      "sha256": "df894fb897ac60c61e3c37e350fc9b0f392d4f103aab01f56c9f436506866695",
+      "source": ".ai-hub/skills/shared/angular-developer/references/signal-forms.md"
+    },
+    ".claude/skills/angular-developer/references/signals-overview.md": {
+      "sha256": "0b543090e52f024e930c7cf57188391b12a16e0059128c20fa34fe4df91f0cf0",
+      "source": ".ai-hub/skills/shared/angular-developer/references/signals-overview.md"
+    },
+    ".claude/skills/angular-developer/references/tailwind-css.md": {
+      "sha256": "930a68836f1df7f60d2214666049bc7859dca6c48d704a02db7bd9035893e74b",
+      "source": ".ai-hub/skills/shared/angular-developer/references/tailwind-css.md"
+    },
+    ".claude/skills/angular-developer/references/template-driven-forms.md": {
+      "sha256": "5bccfdf146a5dc5213c0c987eb6a38a34144dac6bf1c7b2ea086f1b7327cf24e",
+      "source": ".ai-hub/skills/shared/angular-developer/references/template-driven-forms.md"
+    },
+    ".claude/skills/angular-developer/references/testing-fundamentals.md": {
+      "sha256": "cf64e4ccf0a5a4db5d417c2f061d235ad013f163506664c83838fdc2ec4381f7",
+      "source": ".ai-hub/skills/shared/angular-developer/references/testing-fundamentals.md"
+    },
+    ".claude/skills/angular-new-app/SKILL.md": {
+      "sha256": "82bd21d233bd0200a28d12491b419a5c9587582ab0560674e9e112f7a1fcbecf",
+      "source": ".ai-hub/skills/shared/angular-new-app/SKILL.md"
+    },
+    ".claude/skills/frontend-design/LICENSE.txt": {
+      "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",
+      "source": ".ai-hub/skills/shared/frontend-design/LICENSE.txt"
+    },
+    ".claude/skills/frontend-design/SKILL.md": {
+      "sha256": "e5efaa14befedb238cce13d82ec5e8238a04d9f81f51b4de2c0ee33eeeced1a7",
+      "source": ".ai-hub/skills/shared/frontend-design/SKILL.md"
+    },
+    ".claude/skills/onna-architecture-angular/SKILL.md": {
+      "sha256": "2fdef7fdc52a65a4cbfa3c292344857916ce1dac2a8ab7b3f4c65089d717fc43",
+      "source": ".ai-hub/skills/shared/onna-architecture-angular/SKILL.md"
+    },
+    ".claude/skills/onna-architecture-bff/SKILL.md": {
+      "sha256": "91e2395661ab1c15321724144f65b67362be6608aa4273ac4d644a8b94e4311d",
+      "source": ".ai-hub/skills/shared/onna-architecture-bff/SKILL.md"
+    },
+    ".claude/skills/onna-architecture-common/SKILL.md": {
+      "sha256": "f75c1cb209de04d15f4ed46589b53fbc3ef6b240a347cb6eeee063c9570d6769",
+      "source": ".ai-hub/skills/shared/onna-architecture-common/SKILL.md"
+    },
+    ".claude/skills/onna-design-system/SKILL.md": {
+      "sha256": "10072f43fc53ac31c5984ebc086d3ef547890e3e93a045a72921d044ada98c64",
+      "source": ".ai-hub/skills/shared/onna-design-system/SKILL.md"
+    },
+    ".claude/skills/openspec-apply-change/SKILL.md": {
+      "sha256": "4ace6fcf26aab58b2acc209d33269b261a08d1aeb2de20f16e9fc5ccac7a16ad",
+      "source": ".ai-hub/skills/shared/openspec-apply-change/SKILL.md"
+    },
+    ".claude/skills/openspec-archive-change/SKILL.md": {
+      "sha256": "0f87eb4a68094d0f502c99bb95a8c81d8d0130bd8cefd424d53f52718877c4a2",
+      "source": ".ai-hub/skills/shared/openspec-archive-change/SKILL.md"
+    },
+    ".claude/skills/openspec-explore/SKILL.md": {
+      "sha256": "5eefdd1f72396821e8c559a80595049fe41a0dbebbca025e21a48bd4fa31ff59",
+      "source": ".ai-hub/skills/shared/openspec-explore/SKILL.md"
+    },
+    ".claude/skills/openspec-propose/SKILL.md": {
+      "sha256": "cc88d8ff62c7fe0070bb4e63bce62f1801da2819bc0a652c9d1da3acd3d4eb5f",
+      "source": ".ai-hub/skills/shared/openspec-propose/SKILL.md"
+    },
+    ".claude/skills/openspec-sync-specs/SKILL.md": {
+      "sha256": "17616388ca0f88c87529bbe7cdf1148f75f89e289d52d81bb41dabab0ed9a6bf",
+      "source": ".ai-hub/skills/shared/openspec-sync-specs/SKILL.md"
+    },
+    ".claude/skills/openspec-workflow/SKILL.md": {
+      "sha256": "bc13425660c8ab1168971101b126316f13277ae336b91568873def8c6fa09915",
+      "source": ".ai-hub/skills/shared/openspec-workflow/SKILL.md"
+    },
+    ".claude/skills/planning-with-files/SKILL.md": {
+      "sha256": "5a63e59381feeb562dc2d9b96ed5d63eae0851f24f48ce9f2d306756af90257c",
+      "source": ".ai-hub/skills/shared/planning-with-files/SKILL.md"
+    },
+    ".claude/skills/planning-with-files/examples.md": {
+      "sha256": "9fdbb8cd2d76e503c3f63721593458426e03bad75b64303f54a85f849f98ea6d",
+      "source": ".ai-hub/skills/shared/planning-with-files/examples.md"
+    },
+    ".claude/skills/planning-with-files/reference.md": {
+      "sha256": "e5afe4f34eaaa3c1b49184a04839492a4646641a77c1414d4128cc8b995a8a99",
+      "source": ".ai-hub/skills/shared/planning-with-files/reference.md"
+    },
+    ".claude/skills/planning-with-files/scripts/attest-plan.ps1": {
+      "sha256": "5a0473ddfea7c5936a8f9be30b94b23af2e37e7454057482dcb57d6b599f506c",
+      "source": ".ai-hub/skills/shared/planning-with-files/scripts/attest-plan.ps1"
+    },
+    ".claude/skills/planning-with-files/scripts/attest-plan.sh": {
+      "sha256": "61d24c3ffee1c51afa001a8608a667056931d2692c515467eb6f5a00850ffb3b",
+      "source": ".ai-hub/skills/shared/planning-with-files/scripts/attest-plan.sh"
+    },
+    ".claude/skills/planning-with-files/scripts/check-complete.ps1": {
+      "sha256": "f9e5d7bc1e92a466a44fcd7de1bfa3f69174a55396af0a54e739407f75911e13",
+      "source": ".ai-hub/skills/shared/planning-with-files/scripts/check-complete.ps1"
+    },
+    ".claude/skills/planning-with-files/scripts/check-complete.sh": {
+      "sha256": "9aceee61cc0d9932fb9efccef2b231b61c3122be71224acac90f5930e3dfb1fe",
+      "source": ".ai-hub/skills/shared/planning-with-files/scripts/check-complete.sh"
+    },
+    ".claude/skills/planning-with-files/scripts/init-session.ps1": {
+      "sha256": "4c720adf32e7f3548b13c9c754be58531daddbcabd38a9c3b837cf75b2dbb7a2",
+      "source": ".ai-hub/skills/shared/planning-with-files/scripts/init-session.ps1"
+    },
+    ".claude/skills/planning-with-files/scripts/init-session.sh": {
+      "sha256": "05f29e372a5cec9d3df939dc04740a3f52ea0921c3e819164bdc980502e69cd8",
+      "source": ".ai-hub/skills/shared/planning-with-files/scripts/init-session.sh"
+    },
+    ".claude/skills/planning-with-files/scripts/resolve-plan-dir.ps1": {
+      "sha256": "96d61686053722e81bfa9fe2e918c546ce5d51dbad54d5388735b39b2c9ca2f1",
+      "source": ".ai-hub/skills/shared/planning-with-files/scripts/resolve-plan-dir.ps1"
+    },
+    ".claude/skills/planning-with-files/scripts/resolve-plan-dir.sh": {
+      "sha256": "3c94eba0ad09363b1cbda57641c8543954356ffba439e5b68bff3de34e740218",
+      "source": ".ai-hub/skills/shared/planning-with-files/scripts/resolve-plan-dir.sh"
+    },
+    ".claude/skills/planning-with-files/scripts/session-catchup.py": {
+      "sha256": "95046e4bfec66ddc3a44e85fd87b610557c166ffafb83e89d0d9b6aeab6d6274",
+      "source": ".ai-hub/skills/shared/planning-with-files/scripts/session-catchup.py"
+    },
+    ".claude/skills/planning-with-files/scripts/set-active-plan.ps1": {
+      "sha256": "81328fd39fef216a9133eea38cdca4eb25a39defb3084f58c746948ba287333d",
+      "source": ".ai-hub/skills/shared/planning-with-files/scripts/set-active-plan.ps1"
+    },
+    ".claude/skills/planning-with-files/scripts/set-active-plan.sh": {
+      "sha256": "72e3e2b3dcd9cb40018ebd86491f54deb84b540f723dd4a0e78ac47931c5db6c",
+      "source": ".ai-hub/skills/shared/planning-with-files/scripts/set-active-plan.sh"
+    },
+    ".claude/skills/planning-with-files/templates/findings.md": {
+      "sha256": "e735f19bdcfdeb117f5c0d3c1a3fb1422334955f190d1aa008da9a5c9e7805c5",
+      "source": ".ai-hub/skills/shared/planning-with-files/templates/findings.md"
+    },
+    ".claude/skills/planning-with-files/templates/progress.md": {
+      "sha256": "43d8f06d20ad3b5287df266cafde7572ddf3d5f95d96a8395d8d768aa814db73",
+      "source": ".ai-hub/skills/shared/planning-with-files/templates/progress.md"
+    },
+    ".claude/skills/planning-with-files/templates/task_plan.md": {
+      "sha256": "605dba60548c309f6b3c7cce3357214a0bb189fe7434e3ff48158013344625ae",
+      "source": ".ai-hub/skills/shared/planning-with-files/templates/task_plan.md"
+    },
+    ".claude/skills/super-dev/SKILL.md": {
+      "sha256": "1a67d46134322e738fc6e5239071890d92fccbed4e54362f863ca0f79b3cf1f9",
+      "source": ".ai-hub/skills/shared/super-dev/SKILL.md"
+    },
+    ".claude/skills/super-dev/references/products-anatomy.md": {
+      "sha256": "c6953272961c1a5996bceb14e4479850759550c9863c78e188a957b9d26e7a4a",
+      "source": ".ai-hub/skills/shared/super-dev/references/products-anatomy.md"
+    },
+    ".cursor/mcp.json": {
+      "sha256": "d031c136768ee18549a1f173d4b43755fa02a9b4d6de9fac93991ea6d8f1fb1b",
+      "source": ".ai-hub/mcp-manifest.yaml"
+    },
+    ".cursor/rules/backend.mdc": {
+      "sha256": "4e73b3e1ba7b513c9a6bf38b41719b28459255affb37307d2101248158a7e81b",
+      "source": ".ai-hub/rules/backend.md"
+    },
+    ".cursor/rules/core.mdc": {
+      "sha256": "e233fc86c80abe1d7971417b348a6df7daa6d0996c0c83b62a099c9659660ad4",
+      "source": ".ai-hub/rules/core.md"
+    },
+    ".cursor/rules/frontend.mdc": {
+      "sha256": "9dee78eeccfdae13a9568de7d5d8e69459494fb1d08fe8dfe8ef7341b4d0018d",
+      "source": ".ai-hub/rules/frontend.md"
+    },
+    ".github/instructions/backend.instructions.md": {
+      "sha256": "290349e75fdd17e7eaecbf5c003df74dd30a27233288aca03048dbf5fa10312c",
+      "source": ".ai-hub/rules/backend.md"
+    },
+    ".github/instructions/core.instructions.md": {
+      "sha256": "0bdb1f8fe7ac8774f6271bb4a3235abe94a25c6affcfd9c25f7a063e5b65d289",
+      "source": ".ai-hub/rules/core.md"
+    },
+    ".github/instructions/frontend.instructions.md": {
+      "sha256": "0e8a6de94ed1ebef8751baf13bf6b10af5851159a36094b45892a621ab875589",
+      "source": ".ai-hub/rules/frontend.md"
+    },
+    ".mcp.json": {
+      "sha256": "d031c136768ee18549a1f173d4b43755fa02a9b4d6de9fac93991ea6d8f1fb1b",
+      "source": ".ai-hub/mcp-manifest.yaml"
+    },
+    ".opencode/agents/explorer-domain.md": {
+      "sha256": "dfd1298964565229f3a3a0474f3249ec53abdc6996cf9462497085595295c7c4",
+      "source": ".ai-hub/agents/explorer-domain.md"
+    },
+    ".opencode/agents/implementer-backend.md": {
+      "sha256": "b2350d9e6e7d4179003aac7d7a8721e1ea6558f524ada7bedb9f2e3ed1eb0f9c",
+      "source": ".ai-hub/agents/implementer-backend.md"
+    },
+    ".opencode/agents/implementer-frontend.md": {
+      "sha256": "bd7bb3453c5122fd2f1c7082794761b815c1d557cc629981da242fe63c8fa799",
+      "source": ".ai-hub/agents/implementer-frontend.md"
+    },
+    ".opencode/agents/reviewer-architecture.md": {
+      "sha256": "3b8ef072f18193cf205ee7d22b0ce026d034f762b8652810de0e499a4017cd21",
+      "source": ".ai-hub/agents/reviewer-architecture.md"
+    },
+    ".opencode/agents/reviewer-tests.md": {
+      "sha256": "3613bfb9bd756f27cbb3fa31a8959351380856562b63629b41ce5098c2ff5fdb",
+      "source": ".ai-hub/agents/reviewer-tests.md"
+    },
+    ".opencode/agents/spec-author.md": {
+      "sha256": "a9a08820b1aed99a237017545477a116d23d412a38c1956f3445281831541bbb",
+      "source": ".ai-hub/agents/spec-author.md"
+    },
+    ".vscode/mcp.json": {
+      "sha256": "a397750087c0c5051d23e2339da95fa94aa293ffe523731ddf220463469fcc9a",
+      "source": ".ai-hub/mcp-manifest.yaml"
+    },
+    "backend/AGENTS.md": {
+      "sha256": "fa5959f8df2cada076fa667bb4cf23c68fefe68040017fdd8c05672a10e03344",
+      "source": ".ai-hub/rules/backend.md"
+    },
+    "frontend/AGENTS.md": {
+      "sha256": "3f81da42d99cc0956834a2e42532614656ce24c86b4958f832979ccb1b4ed835",
+      "source": ".ai-hub/rules/frontend.md"
+    },
+    "opencode.json": {
+      "sha256": "96e91dfe9821f1d6e32b3ce5dd7c5aa58a2008cac963f5141e3a2194a184210c",
+      "source": ".ai-hub/manifest.yaml"
+    }
+  }
+}

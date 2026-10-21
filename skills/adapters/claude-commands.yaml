@@ -1,0 +1,30 @@
+# Claude Code Command Adapter
+# Replaces {{OPSX_PREFIX}} tokens in skills with Claude-specific syntax
+
+opsx_prefix: "/opsx:"
+
+command_map:
+  explore: "{{OPSX_PREFIX}}explore"
+  propose: "{{OPSX_PREFIX}}propose"
+  apply: "{{OPSX_PREFIX}}apply"
+  archive: "{{OPSX_PREFIX}}archive"
+
+aliases:
+  "/opsx:explore": "explore"
+  "/opsx:propose": "propose"
+  "/opsx:apply": "apply"
+  "/opsx:archive": "archive"
+
+# Claude Code uses both Task and Agent tools for subagent launch
+# We prefer Task for universal compatibility
+tool_mapping:
+  subagent_launch: "Task"
+  subagent_type: "general"
+
+# File operations are native
+file_ops:
+  read: "Read"
+  write: "Write"
+  edit: "Edit"
+  glob: "Glob"
+  grep: "Grep"

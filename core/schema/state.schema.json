@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "StateV3",
+  "type": "object",
+  "required": ["version", "active_change", "changes"],
+  "additionalProperties": true,
+  "properties": {
+    "version": {
+      "const": 3
+    },
+    "project": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "string"
+    },
+    "active_change": {
+      "type": ["string", "null"]
+    },
+    "rules": {
+      "type": "object"
+    },
+    "changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "phase"],
+        "properties": {
+          "id": { "type": "number" },
+          "name": { "type": "string" },
+          "phase": { "type": "string" },
+          "title": { "type": "string" },
+          "scope": { "type": "array", "items": { "type": "string" } },
+          "spec_path": { "type": "string" },
+          "created_at": { "type": "string" },
+          "archived_at": { "type": ["string", "null"] },
+          "retry_count": { "type": "number" },
+          "notes": { "type": "string" }
+        }
+      }
+    }
+  }
+}
