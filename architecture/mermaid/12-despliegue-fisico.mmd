@@ -1,0 +1,75 @@
+flowchart TB
+  subgraph EDGE["Borde"]
+    ING["Ingress y TLS"]
+  end
+  subgraph GITLAB["GitLab self-managed"]
+    GL["GitLab"]
+    CI["GitLab CI"]
+  end
+  subgraph HERMES["Hermes"]
+    API["Hermes API y webhooks"]
+    WORKER["Hermes workers"]
+    APPROVAL["Approval y notifications"]
+  end
+  subgraph DATA["Datos"]
+    PG["PostgreSQL"]
+    REDIS["Redis"]
+    S3["MinIO o S3"]
+  end
+  subgraph RUNNERS["Runner pool"]
+    R1["Runner aislado"]
+    CC["Claude Code"]
+    WT["Worktree"]
+    TESTS["Tests y Playwright"]
+  end
+  subgraph PREVIEW["Preview environments"]
+    FE["Frontend"]
+    BFF["BFF"]
+    DOLI["Dolibarr"]
+    SYN["Datos sinteticos"]
+    TTL["TTL y limpieza"]
+  end
+  subgraph ALT["Alternativa pendiente"]
+    DOCKER["Docker"]
+    K8S["Kubernetes"]
+  end
+  GL --> ING
+  ING --> API
+  API --> WORKER
+  WORKER --> REDIS
+  WORKER --> PG
+  WORKER --> S3
+  WORKER -->|jobs| R1
+  R1 --> CC
+  R1 --> WT
+  R1 --> TESTS
+  TESTS -->|resultados| WORKER
+  CI --> FE
+  CI --> BFF
+  CI --> DOLI
+  FE --> SYN
+  BFF --> SYN
+  DOLI --> SYN
+  FE --> TTL
+  BFF --> TTL
+  DOLI --> TTL
+  API --> APPROVAL
+  APPROVAL --> GL
+  R1 -.-> DOCKER
+  R1 -.-> K8S
+  %% Docker y Kubernetes son alternativas; no se despliegan necesariamente a la vez.
+  %% PostgreSQL, Redis y MinIO son componentes propuestos, no verificados en el entorno actual.
+  classDef edge fill:#ffedd5,stroke:#ea580c,color:#000
+  classDef gitlab fill:#ffedd5,stroke:#ea580c,color:#000
+  classDef hermes fill:#dbeafe,stroke:#2563eb,color:#000
+  classDef data fill:#f3e8ff,stroke:#9333ea,color:#000
+  classDef runner fill:#dcfce7,stroke:#16a34a,color:#000
+  classDef preview fill:#fef3c7,stroke:#d97706,color:#000
+  classDef alt fill:#e5e7eb,stroke:#6b7280,color:#000
+  class ING edge
+  class GL,CI gitlab
+  class API,WORKER,APPROVAL hermes
+  class PG,REDIS,S3 data
+  class R1,CC,WT,TESTS runner
+  class FE,BFF,DOLI,SYN,TTL preview
+  class DOCKER,K8S alt

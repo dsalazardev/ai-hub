@@ -1,0 +1,19 @@
+stateDiagram-v2
+    [*] --> DRAFT : MR creado
+    DRAFT --> READY_FOR_REVIEW : implementacion completa
+    READY_FOR_REVIEW --> CHANGES_REQUESTED : review con hallazgos
+    CHANGES_REQUESTED --> READY_FOR_REVIEW : correcciones aplicadas
+    READY_FOR_REVIEW --> APPROVED : revision aprobada
+    APPROVED --> MERGEABLE : checks y branch protection
+    MERGEABLE --> MERGED : merge autorizado
+    MERGED --> DEPLOYED : deploy verificado
+    READY_FOR_REVIEW --> CLOSED : cancelado
+    CHANGES_REQUESTED --> CLOSED : cancelado
+    note right of APPROVED
+      APPROVED no implica MERGEABLE:
+      pueden faltar checks, approvals o protecciones.
+    end note
+    note right of DEPLOYED
+      DEPLOYED es un estado interno de AI Hub.
+      En GitLab el MR ya esta MERGED.
+    end note

@@ -1,0 +1,82 @@
+flowchart LR
+  subgraph SOURCES["Fuentes"]
+    RUNS["Run records"]
+    CI["CI results"]
+    GIT["Git y MR"]
+    TESTS["Tests"]
+    COST["Cost records"]
+    HUMAN["Human interventions"]
+    INC["Incidents"]
+  end
+  subgraph COLLECT["Recoleccion"]
+    OTEL["OpenTelemetry"]
+    LOGS["Logs"]
+    METRICS["Metrics"]
+    TRACES["Traces"]
+  end
+  subgraph STORE["Almacenamiento"]
+    TS["Time series"]
+    AUDIT["Audit store"]
+  end
+  subgraph USE["Uso"]
+    DASH["Dashboards"]
+    ALERTS["Alerts"]
+    LEARN["Learning loop"]
+  end
+  RUNS --> OTEL
+  CI --> OTEL
+  GIT --> OTEL
+  TESTS --> OTEL
+  COST --> METRICS
+  HUMAN --> METRICS
+  INC --> ALERTS
+  OTEL --> LOGS
+  OTEL --> METRICS
+  OTEL --> TRACES
+  LOGS --> AUDIT
+  METRICS --> TS
+  TRACES --> TS
+  TS --> DASH
+  AUDIT --> DASH
+  TS --> ALERTS
+  DASH --> LEARN
+  ALERTS --> LEARN
+  RUNS --- FIELDS["Campos por run: rol, modelo, version de prompt, issue, branch, commit, tokens, coste, duracion, tools, tests, artefactos, resultado y errores"]
+  subgraph KPI["KPIs"]
+    K1["Lead time"]
+    K2["Spec review time"]
+    K3["Preguntas por spec"]
+    K4["Retrabajo"]
+    K5["First-pass CI"]
+    K6["Tiempo de implementacion"]
+    K7["Tiempo de review"]
+    K8["Intervenciones humanas"]
+    K9["Coste por tarea"]
+    K10["Merge sin cambios"]
+    K11["Defectos escapados"]
+    K12["Rollbacks"]
+    K13["Tiempo bloqueado"]
+    K14["Tamano de cola"]
+  end
+  K1 --> DASH
+  K2 --> DASH
+  K3 --> DASH
+  K4 --> DASH
+  K5 --> DASH
+  K6 --> DASH
+  K7 --> DASH
+  K8 --> DASH
+  K9 --> DASH
+  K10 --> DASH
+  K11 --> DASH
+  K12 --> DASH
+  K13 --> DASH
+  K14 --> DASH
+  classDef source fill:#f3e8ff,stroke:#9333ea,color:#000
+  classDef collect fill:#dbeafe,stroke:#2563eb,color:#000
+  classDef store fill:#fef3c7,stroke:#d97706,color:#000
+  classDef use fill:#dcfce7,stroke:#16a34a,color:#000
+  class RUNS,CI,GIT,TESTS,COST,HUMAN,INC,FIELDS source
+  class OTEL,LOGS,METRICS,TRACES collect
+  class TS,AUDIT store
+  class DASH,ALERTS,LEARN,K1,K2,K3,K4,K5,K6,K7,K8,K9,K10,K11,K12,K13,K14 use

@@ -1,0 +1,43 @@
+flowchart TD
+  IDEA([Idea]) --> TRIAGE["Triage"]
+  TRIAGE --> CLARITY{"Alcance y riesgo claros?"}
+  CLARITY -- no --> NEEDS["Needs info"]
+  NEEDS --> ANSWER1["Humano responde"]
+  ANSWER1 --> TRIAGE
+  CLARITY -- si --> SPECREV["Spec review"]
+  SPECREV --> AMB{"Ambiguedades?"}
+  AMB -- si --> QUESTIONS["Preguntas en GitLab"]
+  QUESTIONS --> ANSWER2["Humano responde"]
+  ANSWER2 --> SPECREV
+  AMB -- no --> READY["Spec ready"]
+  READY --> APPROVE{"Aprobacion humana?"}
+  APPROVE -- no --> SPECREV
+  APPROVE -- si --> PLAN["Plan tecnico"]
+  PLAN --> IMPL["Implementar en worktree aislado"]
+  IMPL --> TESTS["Tests y build"]
+  TESTS --> PASS{"Gates verdes?"}
+  PASS -- no --> IMPL
+  PASS -- si --> DRAFT["Draft MR"]
+  DRAFT --> REVIEW["Review independiente"]
+  REVIEW --> REVIEWOK{"Review aprobado?"}
+  REVIEWOK -- no --> CHANGES["Changes requested"]
+  CHANGES --> IMPL
+  REVIEWOK -- si --> VALID["Validacion en preview"]
+  VALID --> VALIDOK{"Validacion humana?"}
+  VALIDOK -- no --> CHANGES
+  VALIDOK -- si --> MERGE["Ready to merge"]
+  MERGE --> MERGED["Merge"]
+  MERGED --> DEPLOY["Deploy staging y produccion"]
+  DEPLOY --> CLOSE["Cierre y aprendizaje"]
+  IMPL -.->|blocked| BLOCKED["Blocked"]
+  BLOCKED --> HUMAN3["Decision humana"]
+  HUMAN3 --> IMPL
+  TRIAGE -.->|cancelada o duplicada| CLOSED["Closed"]
+  classDef human fill:#fff7d6,stroke:#b58900,color:#000
+  classDef step fill:#dbeafe,stroke:#2563eb,color:#000
+  classDef gate fill:#fee2e2,stroke:#dc2626,color:#000
+  classDef done fill:#dcfce7,stroke:#16a34a,color:#000
+  class ANSWER1,ANSWER2,HUMAN3,APPROVE,VALIDOK human
+  class TRIAGE,SPECREV,QUESTIONS,READY,PLAN,IMPL,TESTS,DRAFT,REVIEW,CHANGES,VALID,MERGE step
+  class CLARITY,AMB,REVIEWOK,PASS,BLOCKED gate
+  class MERGED,DEPLOY,CLOSE,CLOSED done

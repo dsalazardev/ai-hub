@@ -1,0 +1,131 @@
+erDiagram
+    PROJECT ||--o{ ISSUE : contains
+    PROJECT ||--o{ POLICY : defines
+    PROJECT ||--o{ DECISION : records
+    ISSUE ||--o{ RUN : triggers
+    ISSUE ||--o{ REQUIREMENT : has
+    ISSUE ||--o{ ARTIFACT : owns
+    ISSUE ||--o{ MERGE_REQUEST : produces
+    ISSUE ||--o{ EVENT : audited_by
+    RUN ||--o{ JOB : executes
+    RUN ||--o{ ARTIFACT : produces
+    RUN ||--o{ GATE : evaluates
+    RUN ||--o{ EVIDENCE : collects
+    RUN ||--o{ COMMIT : points_to
+    RUN ||--o{ METRIC : measures
+    JOB ||--o{ RUN_ATTEMPT : retries
+    REQUIREMENT ||--o{ ARTIFACT : specified_by
+    ARTIFACT ||--o{ EVIDENCE : supports
+    GATE ||--o{ APPROVAL : requires
+    MERGE_REQUEST ||--o{ GATE : checks
+    COMMIT ||--o{ PIPELINE : tested_by
+    PIPELINE ||--o{ EVIDENCE : produces
+    ENVIRONMENT ||--o{ RUN : hosts
+    AGENT_PROFILE ||--o{ RUN : runs_as
+    POLICY ||--o{ APPROVAL : constrains
+    %% RUN_ATTEMPT, REQUIREMENT, EVIDENCE, COMMIT, PIPELINE y MERGE_REQUEST
+    %% son entidades propuestas de modelado; verificar antes de implementar.
+    PROJECT {
+        string id PK
+        string name
+        string repository
+    }
+    ISSUE {
+        string iid PK
+        string title
+        string state
+        string risk
+        string labels
+    }
+    RUN {
+        string id PK
+        string role
+        string status
+        string model
+        int tokens
+        float cost
+        datetime started_at
+        datetime ended_at
+    }
+    JOB {
+        string id PK
+        string status
+        int priority
+        int attempts
+    }
+    RUN_ATTEMPT {
+        string id PK
+        int attempt_no
+        string result
+    }
+    ARTIFACT {
+        string id PK
+        string type
+        string path
+        string hash
+    }
+    GATE {
+        string id PK
+        string type
+        string result
+        string evidence_ref
+    }
+    APPROVAL {
+        string id PK
+        string approver
+        string decision
+        datetime decided_at
+    }
+    DECISION {
+        string id PK
+        string title
+        string status
+    }
+    ENVIRONMENT {
+        string id PK
+        string url
+        datetime expires_at
+    }
+    POLICY {
+        string id PK
+        string scope
+        string version
+    }
+    AGENT_PROFILE {
+        string id PK
+        string role
+        string model
+        string tools
+    }
+    METRIC {
+        string id PK
+        string name
+        float value
+    }
+    EVENT {
+        string id PK
+        string type
+        datetime occurred_at
+    }
+    REQUIREMENT {
+        string id PK
+        string text
+        string acceptance
+    }
+    COMMIT {
+        string sha PK
+        string branch
+    }
+    PIPELINE {
+        string id PK
+        string status
+    }
+    MERGE_REQUEST {
+        string iid PK
+        string state
+    }
+    EVIDENCE {
+        string id PK
+        string type
+        string uri
+    }

@@ -1,0 +1,85 @@
+flowchart TB
+  subgraph CONTROL["1. Control plane: Hermes"]
+    EG["Event Gateway"]
+    SM["State Machine"]
+    PE["Policy Engine"]
+    REG["Role Registry"]
+    PC["Prompt Compiler"]
+    Q["Job Queue"]
+    DEP["Dependencies y locks"]
+    APPR["Approvals"]
+    COST["Budget control"]
+    AUD["Audit"]
+    REP["Reporting"]
+    COORD["Runner Coordinator"]
+    EVID["Evidence Collector"]
+    PUB["GitLab Publisher"]
+  end
+  subgraph EXEC["2. Execution plane"]
+    RUN["Sandbox Runner"]
+    CC["Claude Code roles"]
+    WT["Worktree"]
+    TESTS["Tests y build"]
+    PW["Playwright"]
+    ART["Artifact Collector"]
+  end
+  subgraph KNOW["3. Knowledge plane"]
+    OPENSPEC["OpenSpec"]
+    SKILLS["AI Hub skills y rules"]
+    ADR["ADRs"]
+    TPL["Templates y prompts"]
+  end
+  subgraph INTEG["4. Integration plane"]
+    GLAPI["GitLab API y webhooks"]
+    GIT["Git"]
+    CI["GitLab CI"]
+    PREVIEW["Preview environments"]
+    APP["Frontend + BFF + Dolibarr"]
+  end
+  subgraph GOV["5. Governance plane"]
+    IAM["Identity"]
+    SECRETS["Secrets manager"]
+    POLICY["Policy y branch protection"]
+    AUDIT["Audit store"]
+    METRICS["Metrics y cost"]
+  end
+  EG --> SM --> PE --> Q
+  Q --> COORD --> RUN
+  REG --> PC
+  PC --> RUN
+  RUN --> CC
+  CC --> WT
+  CC --> TESTS
+  CC --> PW
+  RUN --> EVID
+  EVID --> PUB
+  PUB --> GLAPI
+  Q --> DEP
+  Q --> APPR
+  APPR --> GLAPI
+  COST --> Q
+  AUD --> REP
+  OPENSPEC --> PC
+  SKILLS --> PC
+  ADR --> PC
+  TPL --> PC
+  GIT --> WT
+  TESTS --> EVID
+  CI --> PREVIEW
+  PREVIEW --> APP
+  IAM --> RUN
+  SECRETS --> RUN
+  POLICY --> PE
+  AUDIT --> AUD
+  METRICS --> REP
+  RUN -. evidence .-> ART
+  classDef control fill:#dbeafe,stroke:#2563eb,color:#000
+  classDef exec fill:#dcfce7,stroke:#16a34a,color:#000
+  classDef knowledge fill:#f3e8ff,stroke:#9333ea,color:#000
+  classDef integration fill:#ffedd5,stroke:#ea580c,color:#000
+  classDef governance fill:#fee2e2,stroke:#dc2626,color:#000
+  class EG,SM,PE,REG,PC,Q,DEP,APPR,COST,AUD,REP,COORD,EVID,PUB control
+  class RUN,CC,WT,TESTS,PW,ART exec
+  class OPENSPEC,SKILLS,ADR,TPL knowledge
+  class GLAPI,GIT,CI,PREVIEW,APP integration
+  class IAM,SECRETS,POLICY,AUDIT,METRICS governance

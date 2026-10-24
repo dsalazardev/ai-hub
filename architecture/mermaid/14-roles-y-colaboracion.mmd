@@ -1,0 +1,59 @@
+flowchart LR
+  subgraph HUMAN["Decisiones humanas"]
+    PO["Product Owner"]
+    TL["Tech Lead"]
+    QA["QA / Usuario"]
+  end
+  subgraph DEF["Definicion"]
+    TRI["Intake / Triage"]
+    SR["Spec Reviewer"]
+    SA["Spec Author"]
+    AR["Architect"]
+  end
+  subgraph BUILD["Construccion"]
+    FE["Implementer FE"]
+    BE["Implementer BE"]
+    TE["Test Engineer"]
+  end
+  subgraph VERIFY["Verificacion"]
+    CR["Code Reviewer"]
+    SEC["Security Reviewer"]
+    VQA["Visual QA"]
+  end
+  subgraph RELEASE["Entrega"]
+    RM["Release Manager"]
+    HI["Historian"]
+  end
+  PO -->|define alcance| TRI
+  TRI --> SR
+  SR -->|preguntas| PO
+  PO -->|respuestas| SR
+  SR --> SA
+  SA --> AR
+  AR --> TL
+  TL -->|aprueba spec| FE
+  TL -->|aprueba spec| BE
+  FE --> TE
+  BE --> TE
+  TE --> CR
+  CR --> SEC
+  SEC --> VQA
+  VQA --> QA
+  QA -->|valida| RM
+  RM --> TL
+  TL -->|aprueba merge| RM
+  RM --> HI
+  FE -.->|no aprueba su MR| CR
+  CR -.->|no escribe codigo| FE
+  RM -.->|merge solo con aprobacion| TL
+  %% El Spec Reviewer no implementa. El Implementer no aprueba su propio trabajo.
+  classDef human fill:#fff7d6,stroke:#b58900,color:#000
+  classDef def fill:#dbeafe,stroke:#2563eb,color:#000
+  classDef build fill:#dcfce7,stroke:#16a34a,color:#000
+  classDef verify fill:#f3e8ff,stroke:#9333ea,color:#000
+  classDef release fill:#ffedd5,stroke:#ea580c,color:#000
+  class PO,TL,QA human
+  class TRI,SR,SA,AR def
+  class FE,BE,TE build
+  class CR,SEC,VQA verify
+  class RM,HI release

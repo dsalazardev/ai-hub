@@ -1,0 +1,33 @@
+stateDiagram-v2
+    [*] --> NEW
+    NEW --> TRIAGE : issue creada
+    TRIAGE --> NEEDS_INFO : falta informacion
+    NEEDS_INFO --> TRIAGE : respuesta humana
+    TRIAGE --> SPEC_REVIEW : alcance suficiente
+    SPEC_REVIEW --> SPEC_QUESTIONS : ambiguedad detectada
+    SPEC_QUESTIONS --> HUMAN_ANSWER : preguntas publicadas
+    HUMAN_ANSWER --> SPEC_REVIEW : respuesta recibida
+    SPEC_REVIEW --> SPEC_READY : sin bloqueos
+    SPEC_READY --> SPEC_APPROVED : aprobacion humana
+    SPEC_APPROVED --> IN_PROGRESS : job autorizado
+    IN_PROGRESS --> BLOCKED : dependencia o decision pendiente
+    BLOCKED --> IN_PROGRESS : desbloqueada
+    IN_PROGRESS --> REVIEW : MR listo
+    REVIEW --> CHANGES_REQUESTED : hallazgos
+    CHANGES_REQUESTED --> IN_PROGRESS : corregir
+    REVIEW --> VALIDATION : gates verdes
+    VALIDATION --> CHANGES_REQUESTED : rechazo humano
+    VALIDATION --> READY_TO_MERGE : aprobacion
+    READY_TO_MERGE --> MERGED : merge autorizado
+    MERGED --> RELEASED : deploy verificado
+    RELEASED --> CLOSED : cierre
+    TRIAGE --> CLOSED : cancelada o duplicada
+    note right of BLOCKED
+      Reanudacion: decision humana,
+      dependencia resuelta o timeout.
+      La regla exacta queda pendiente.
+    end note
+    note right of CLOSED
+      Reapertura y duplicado:
+      transiciones pendientes de definir.
+    end note

@@ -1,0 +1,31 @@
+flowchart LR
+  IDEA["Idea de producto"] --> ISSUE["Issue"]
+  ISSUE --> REQ["Requisito"]
+  REQ --> SPEC["Artefacto OpenSpec"]
+  SPEC --> TASK["Tarea"]
+  TASK --> COMMIT["Commit"]
+  COMMIT --> PIPE["Pipeline"]
+  PIPE --> EVID["Evidencia"]
+  EVID --> REVIEW["Review"]
+  REVIEW --> APPROVAL["Aprobacion"]
+  APPROVAL --> MERGE["Merge"]
+  MERGE --> DEPLOY["Deploy"]
+  DEPLOY --> CLOSE["Cierre"]
+  CHANGE["Cambio de alcance"] --> REQ
+  CHANGE -.->|invalida aprobacion| APPROVAL
+  SPEC -.->|version| REQ
+  COMMIT -.->|sha| PIPE
+  EVID -.->|demuestra| REQ
+  APPROVAL -.->|objeto aprobado| SPEC
+  %% La invalidacion automatica de aprobaciones por cambio de alcance
+  %% es una propuesta; la regla exacta esta pendiente.
+  classDef product fill:#fff7d6,stroke:#b58900,color:#000
+  classDef artifact fill:#f3e8ff,stroke:#9333ea,color:#000
+  classDef code fill:#dcfce7,stroke:#16a34a,color:#000
+  classDef verify fill:#dbeafe,stroke:#2563eb,color:#000
+  classDef gate fill:#fee2e2,stroke:#dc2626,color:#000
+  class IDEA,ISSUE,CLOSE,CHANGE product
+  class REQ,SPEC,TASK,EVID artifact
+  class COMMIT,PIPE,MERGE,DEPLOY code
+  class REVIEW,APPROVAL verify
+  class APPROVAL gate

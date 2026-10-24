@@ -1,0 +1,23 @@
+flowchart LR
+  IDEA["Idea"] --> INTAKE["Intake y clasificacion de riesgo"]
+  INTAKE --> REVIEW["Spec reviewer"]
+  REVIEW --> AMB{"Ambiguedad o riesgo no cubierto?"}
+  AMB -- si --> Q["Preguntas numeradas en GitLab"]
+  Q --> ANSWER["Humano responde"]
+  ANSWER --> REVIEW
+  AMB -- no --> AUTHOR["Spec author"]
+  AUTHOR --> ART["Proposal, design, tasks y requisitos"]
+  ART --> VALIDATE["Validar requisitos y alcance"]
+  VALIDATE --> APPROVE{"Aprobacion humana?"}
+  APPROVE -- no --> REVIEW
+  APPROVE -- si --> READY["Spec aprobada"]
+  %% El Spec Reviewer no escribe la spec final; solo pregunta y evalua.
+  %% El Spec Author no implementa codigo; solo produce artefactos de definicion.
+  classDef human fill:#fff7d6,stroke:#b58900,color:#000
+  classDef agent fill:#dbeafe,stroke:#2563eb,color:#000
+  classDef gate fill:#fee2e2,stroke:#dc2626,color:#000
+  classDef done fill:#dcfce7,stroke:#16a34a,color:#000
+  class ANSWER,APPROVE human
+  class REVIEW,AUTHOR agent
+  class AMB,VALIDATE gate
+  class READY done

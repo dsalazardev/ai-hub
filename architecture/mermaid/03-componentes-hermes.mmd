@@ -1,0 +1,57 @@
+flowchart TB
+  subgraph ENTRY["Entrada"]
+    WEBHOOK["GitLab webhook"]
+    EV["Event Gateway"]
+    VAL["Signature validation"]
+    DED["Deduplication"]
+  end
+  subgraph CORE["Núcleo de control"]
+    ROUTER["Event router"]
+    SM["State machine"]
+    POLICY["Policy engine"]
+    ROLE["Role registry"]
+    PROMPT["Prompt compiler"]
+    PLAN["Job planner"]
+    Q["Queue y dependencies"]
+    COORD["Runner coordinator"]
+    BUDGET["Budget control"]
+  end
+  subgraph HUMAN["Decisiones humanas"]
+    APPROVALS["Approvals"]
+    NOTIF["Notifications"]
+  end
+  subgraph RESULT["Resultados"]
+    RUN["Runner"]
+    EVID["Evidence collector"]
+    PUB["GitLab publisher"]
+    AUDIT["Audit"]
+    METRICS["Metrics y reporting"]
+  end
+  WEBHOOK --> EV --> VAL --> DED --> ROUTER
+  ROUTER --> SM
+  SM --> POLICY
+  POLICY --> ROLE
+  POLICY --> PLAN
+  ROLE --> PROMPT
+  PLAN --> Q
+  Q --> COORD
+  COORD --> RUN
+  RUN --> EVID
+  EVID --> PUB
+  SM --> APPROVALS
+  APPROVALS --> NOTIF
+  APPROVALS --> PUB
+  SM --> AUDIT
+  AUDIT --> METRICS
+  BUDGET --> Q
+  PUB --> GL["GitLab API"]
+  %% Pendiente: decidir si deduplicación y presupuesto viven en Hermes o en un servicio aparte.
+  %% Pendiente: decidir si el Publisher es parte de Hermes o un worker separado.
+  classDef entry fill:#dbeafe,stroke:#2563eb,color:#000
+  classDef core fill:#e0e7ff,stroke:#4f46e5,color:#000
+  classDef human fill:#fff7d6,stroke:#b58900,color:#000
+  classDef result fill:#dcfce7,stroke:#16a34a,color:#000
+  class WEBHOOK,EV,VAL,DED entry
+  class ROUTER,SM,POLICY,ROLE,PROMPT,PLAN,Q,COORD,BUDGET core
+  class APPROVALS,NOTIF human
+  class RUN,EVID,PUB,AUDIT,METRICS result

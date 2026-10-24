@@ -1,0 +1,37 @@
+flowchart TD
+  SPEC["Spec aprobada"] --> PLAN["Plan y dependencias"]
+  PLAN --> WT["Preparar worktree y entorno"]
+  WT --> IMPL["Implementar"]
+  IMPL --> TESTS["Tests y build"]
+  TESTS --> PASS{"Pasan?"}
+  PASS -- no --> FIX["Corregir"]
+  FIX --> IMPL
+  PASS -- si --> EVID["Recolectar evidencias"]
+  EVID --> MR["Crear o actualizar draft MR"]
+  MR --> REVIEW["Review independiente"]
+  REVIEW --> SEC["Review de seguridad"]
+  SEC --> VISUAL["QA visual"]
+  VISUAL --> GATES{"Gates completos?"}
+  GATES -- no --> FIX
+  GATES -- si --> STAGE["Desplegar staging"]
+  STAGE --> HUMAN{"Validacion humana?"}
+  HUMAN -- no --> FIX
+  HUMAN -- si --> APPROVE{"Merge aprobado?"}
+  APPROVE -- no --> FIX
+  APPROVE -- si --> MERGE["Merge"]
+  MERGE --> DEPLOY["Deploy"]
+  DEPLOY --> SMOKE{"Smoke test?"}
+  SMOKE -- no --> ROLLBACK["Rollback"]
+  ROLLBACK --> INCIDENT["Incidente"]
+  SMOKE -- si --> CLOSE["Cierre"]
+  %% El implementador no aprueba su propio trabajo.
+  %% El reviewer no escribe codigo.
+  %% El release manager no mergea sin aprobacion humana.
+  classDef human fill:#fff7d6,stroke:#b58900,color:#000
+  classDef step fill:#dbeafe,stroke:#2563eb,color:#000
+  classDef gate fill:#fee2e2,stroke:#dc2626,color:#000
+  classDef done fill:#dcfce7,stroke:#16a34a,color:#000
+  class HUMAN,APPROVE human
+  class PLAN,WT,IMPL,TESTS,EVID,MR,REVIEW,SEC,VISUAL,STAGE,FIX step
+  class PASS,GATES,SMOKE gate
+  class MERGE,DEPLOY,CLOSE,ROLLBACK,INCIDENT done

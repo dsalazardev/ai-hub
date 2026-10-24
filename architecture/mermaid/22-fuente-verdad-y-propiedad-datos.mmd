@@ -1,0 +1,35 @@
+flowchart LR
+  subgraph CANON["Datos canonicos"]
+    GL["GitLab: issues, comentarios, labels y MR"]
+    GIT["Git: ramas y commits"]
+    PG["PostgreSQL Hermes: runs, jobs, approvals y policies"]
+    S3["Object store: artefactos y evidencias"]
+  end
+  subgraph DERIVED["Proyecciones y caches"]
+    DASH["Dashboards"]
+    CACHE["Cache de estado"]
+    REPORT["Reportes"]
+  end
+  subgraph PENDING["Sincronizacion pendiente"]
+    RECON["Reconciliacion GitLab - Hermes"]
+    DIVERGE["Divergencia de estado"]
+  end
+  GL -->|webhook y API| PG
+  GIT -->|commit sha| PG
+  PG -->|proyeccion| DASH
+  PG -->|proyeccion| CACHE
+  PG -->|metricas| REPORT
+  S3 -->|links de evidencia| GL
+  GL -.->|puede divergir| DIVERGE
+  PG -.->|puede divergir| DIVERGE
+  DIVERGE --> RECON
+  RECON --> GL
+  RECON --> PG
+  %% GitLab es canonico para issue y MR; PostgreSQL lo es para runs y jobs.
+  %% La regla de reconciliacion no esta definida.
+  classDef canon fill:#dbeafe,stroke:#2563eb,color:#000
+  classDef derived fill:#dcfce7,stroke:#16a34a,color:#000
+  classDef pending fill:#fee2e2,stroke:#dc2626,color:#000
+  class GL,GIT,PG,S3 canon
+  class DASH,CACHE,REPORT derived
+  class RECON,DIVERGE pending

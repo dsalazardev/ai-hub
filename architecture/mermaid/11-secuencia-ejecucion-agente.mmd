@@ -1,0 +1,62 @@
+sequenceDiagram
+    autonumber
+    participant GL as GitLab
+    participant GW as Event Gateway
+    participant SM as State Machine
+    participant PE as Policy Engine
+    participant Q as Job Queue
+    participant R as Runner
+    participant CC as Claude Code
+    participant T as Tests y build
+    participant E as Evidence Collector
+    participant P as GitLab Publisher
+    participant H as Humano
+    GL->>GW: webhook de issue o comentario
+    GW->>GW: validar firma
+    alt firma invalida
+        GW-->>GL: 401 y registro de auditoria
+    else firma valida
+        GW->>GW: deduplicar evento
+        alt evento duplicado
+            GW-->>GL: ignorar y registrar
+        else evento nuevo
+            GW->>SM: evento normalizado
+            SM->>GL: leer issue, labels y contexto
+            SM->>PE: evaluar rol, riesgo y permisos
+            alt politica bloquea
+                PE-->>SM: blocked
+                SM->>GL: comentar causa y etiquetar
+            else politica permite
+                PE-->>SM: job autorizado
+                SM->>Q: crear job
+                Q->>R: asignar runner
+                R->>R: preparar worktree aislado
+                R->>CC: ejecutar rol y prompt
+                CC->>R: diff, logs y artefactos
+                R->>T: ejecutar tests y build
+                alt tests fallan
+                    T-->>R: fallo
+                    R->>E: guardar evidencia de fallo
+                    E-->>SM: run failed
+                    SM->>GL: comentar fallo y estado
+                else tests pasan
+                    T-->>R: verde
+                    R->>E: recolectar evidencia
+                    E->>P: publicar resumen y artefactos
+                    P->>GL: comentario, labels y MR
+                    SM->>GL: actualizar estado
+                end
+            end
+        end
+    end
+    GL-->>H: notificar aprobacion pendiente
+    H->>GL: aprobar o rechazar
+    GL->>GW: webhook de decision
+    GW->>SM: decision humana
+    alt decision rechazada
+        SM->>GL: changes requested
+        SM->>Q: nuevo job de correccion
+    else decision aprobada
+        SM->>GL: ready to merge
+    end
+    Note over R,SM: Timeout y fallos de publicacion se registran como FAILED o BLOCKED. El reintento queda pendiente de definir.

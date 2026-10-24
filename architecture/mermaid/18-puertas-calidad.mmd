@@ -1,0 +1,38 @@
+flowchart TD
+  subgraph PREMR["Antes de abrir MR"]
+    SPEC["Spec gate: OpenSpec valido y sin preguntas abiertas"]
+    PLAN["Plan gate: tareas atomicas, dependencias y test plan"]
+    BUILD["Build: compilacion y typecheck"]
+    TESTS["Tests: unitarios, integracion y property-based"]
+    ARCH["Arquitectura: cero any, capas y contratos"]
+    SEC["Seguridad: secretos, dependencias y permisos"]
+  end
+  subgraph PREMERGE["Antes de merge"]
+    REVIEW["Review independiente sin bloqueantes"]
+    VISUAL["Visual QA: Playwright desktop y mobile"]
+    HUMAN["Aprobacion humana"]
+  end
+  subgraph PREDEPLOY["Antes de produccion"]
+    STAGE["Staging con smoke tests"]
+    ROLLBACK["Rollback plan y feature flag"]
+    PROD["Aprobacion de produccion"]
+  end
+  SPEC --> PLAN --> BUILD --> TESTS --> ARCH --> SEC --> REVIEW
+  REVIEW --> VISUAL --> HUMAN --> STAGE --> ROLLBACK --> PROD
+  TESTS -.->|falla| FIX["Corregir"]
+  ARCH -.->|falla| FIX
+  SEC -.->|falla| FIX
+  REVIEW -.->|hallazgos| FIX
+  VISUAL -.->|regresion| FIX
+  STAGE -.->|smoke falla| ROLLBACK
+  FIX --> BUILD
+  %% No todas las puertas bloquean la misma fase.
+  %% Spec y plan bloquean implementacion; review y visual bloquean merge;
+  %% staging y produccion bloquean despliegue.
+  classDef gate fill:#dbeafe,stroke:#2563eb,color:#000
+  classDef human fill:#fff7d6,stroke:#b58900,color:#000
+  classDef fail fill:#fee2e2,stroke:#dc2626,color:#000
+  classDef deploy fill:#dcfce7,stroke:#16a34a,color:#000
+  class SPEC,PLAN,BUILD,TESTS,ARCH,SEC,REVIEW,VISUAL,STAGE gate
+  class HUMAN,PROD human
+  class FIX,ROLLBACK fail

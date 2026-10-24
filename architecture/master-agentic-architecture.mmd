@@ -1,0 +1,194 @@
+flowchart TB
+  %% AI Hub 3.0 - diagrama maestro de agentes.
+  %% Consolida las 25 vistas en una sola arquitectura.
+  %% Las etiquetas indican el rol y sus limites; los estados exactos viven en 08-10.
+  subgraph F0["0 - ENTRADA Y PRODUCTO"]
+    PROD["Producto / CTO"]
+    TL["Tech Lead"]
+    QA["QA / Usuario"]
+    GLI["GitLab Issue"]
+    PROD -->|define| GLI
+    TL -->|prioriza| GLI
+    PROD -->|aprueba spec| HG1
+    TL -->|aprueba spec| HG1
+    TL -->|aprueba merge| HG3
+    TL -->|aprueba produccion| HG4
+    QA -->|valida preview| HG2
+  end
+
+  subgraph F1["1 - DEFINICION"]
+    TRI["Agente Intake / Triage"]
+    SREV["Agente Spec Reviewer - solo pregunta"]
+    SA["Agente Spec Author - escribe OpenSpec"]
+    ARCH["Agente Architect - diseno y ADR"]
+    SPEC["OpenSpec"]
+    HG1{"Gate humano - spec?"}
+    GLI --> TRI
+    TRI --> SREV
+    SREV -->|preguntas| GLI
+    SREV --> SA
+    SA --> ARCH
+    ARCH --> SPEC
+    SPEC --> HG1
+    HG1 -->|no| SREV
+    HG1 -->|si| EV
+  end
+
+  subgraph F2["2 - CONTROL PLANE - HERMES"]
+    EV["Event Gateway + deduplicacion"]
+    SM["State Machine"]
+    POL["Policy Engine"]
+    Q["Job Queue"]
+    PC["Prompt Compiler"]
+    EVID["Evidence Collector"]
+    PUB["GitLab Publisher"]
+    BUDGET["Budget y max turns"]
+    APPRNOTIF["Approvals + notificaciones"]
+    OBS["Audit y metrics"]
+    ERR["Errores, reintentos y bloqueo"]
+    EV --> SM
+    SM --> POL
+    POL --> PC
+    POL --> Q
+    PC --> RUN
+    Q --> RUN
+    Q --> BUDGET
+    Q --> ERR
+    ERR --> SM
+    SM --> APPRNOTIF
+    APPRNOTIF -.-> HG1
+    SM --> OBS
+    OBS -.-> EVENT
+    RUN --> EVID
+    EVID --> PUB
+    PUB --> GLI
+  end
+
+  subgraph F3["3 - EJECUCION AGENTICA"]
+    RUN["Sandbox Runner"]
+    WT["Worktree aislado"]
+    CLAUDE["Claude Code - motor de ejecucion"]
+    FE["Agente Implementer FE - no aprueba"]
+    BE["Agente Implementer BE - no aprueba"]
+    TE["Agente Test Engineer"]
+    TESTS["Tests, build y lint"]
+    RUN --> WT
+    RUN --> CLAUDE
+    CLAUDE --> FE
+    CLAUDE --> BE
+    CLAUDE --> TE
+    WT --> FE
+    WT --> BE
+    FE --> TE
+    BE --> TE
+    TE --> TESTS
+    TESTS --> EVID
+    RUN --> RUNREC
+    EVID --> ART
+  end
+
+  subgraph F4["4 - VERIFICACION Y GATES"]
+    CR["Agente Code Reviewer - no escribe"]
+    SEC["Agente Security Reviewer"]
+    VQA["Agente Visual QA - Playwright"]
+    HG2{"Gate humano - preview?"}
+    HG3{"Gate humano - merge?"}
+    EVID --> CR
+    CR --> SEC
+    SEC --> VQA
+    VQA --> HG2
+    HG2 -->|no| FE
+    HG2 -->|si| HG3
+    HG3 -->|no| FE
+    HG3 -->|si| RM
+    CR --> GATE
+    HG1 --> APPREC
+    HG2 --> APPREC
+    HG3 --> APPREC
+  end
+
+  subgraph F5["5 - ENTREGA"]
+    RM["Agente Release Manager - no auto-merge"]
+    MR["Merge Request"]
+    CI["GitLab CI"]
+    PREVIEW["Preview environment"]
+    APP["Frontend + BFF + Dolibarr"]
+    HG4{"Gate humano - produccion?"}
+    DEPLOY["Deploy produccion"]
+    CLOSE["Cierre"]
+    HIST["Agente Historian - specs, ADR y metricas"]
+    RM --> MR
+    MR --> CI
+    CI --> PREVIEW
+    PREVIEW --> APP
+    CI --> HG4
+    HG4 -->|no| CLOSE
+    HG4 -->|si| DEPLOY
+    DEPLOY --> APP
+    DEPLOY --> CLOSE
+    CLOSE --> HIST
+  end
+
+  subgraph F6["6 - CONOCIMIENTO, DATOS Y APRENDIZAJE"]
+    OS["OpenSpec y skills"]
+    ADR["ADRs"]
+    RUNREC["Run - rol, modelo y coste"]
+    ART["Artifact - diff, logs y capturas"]
+    GATE["Gate - evidencia"]
+    APPREC["Approval - humano"]
+    METRIC["Metric - lead time, rework y coste"]
+    LEARN["Learning loop"]
+    TRUTH["Fuente de verdad - GitLab, Git y PostgreSQL"]
+    EVENT["Event - auditoria"]
+    TRUTH --> RUNREC
+    APPREC --> GATE
+    GATE --> METRIC
+    RUNREC --> METRIC
+    METRIC --> LEARN
+    LEARN --> OS
+    LEARN --> ADR
+  end
+
+  subgraph F7["7 - GOBIERNO Y SEGURIDAD"]
+    Z_UNTRUST["Zona no confiable - issue, codigo y webhooks"]
+    Z_CONTROL["Zona de control - Hermes y approvals"]
+    Z_SANDBOX["Zona aislada - runner y tools"]
+    Z_PROD["Zona de produccion"]
+    IAM["Identidad y permisos"]
+    AUTONOMY["Autonomia A0-A5 por riesgo R0-R4"]
+    Z_UNTRUST -->|prompt injection| Z_CONTROL
+    Z_CONTROL -->|job| Z_SANDBOX
+    Z_SANDBOX -.->|sin acceso directo| Z_PROD
+    IAM --> Z_SANDBOX
+    IAM --> POL
+    AUTONOMY --> POL
+  end
+
+  subgraph F8["8 - ESTADOS"]
+    ISSUE_STATE["Issue: definicion -> aprobacion -> entrega -> cierre"]
+    RUN_STATE["Run: cola -> ejecucion -> exito / fallo / bloqueo"]
+    MR_STATE["MR: draft -> review -> aprobado -> merge -> deploy"]
+  end
+
+  COVERAGE["25 vistas: 00-24 - detalle en README"]
+
+  classDef human fill:#fff7d6,stroke:#b58900,color:#000
+  classDef def fill:#dbeafe,stroke:#2563eb,color:#000
+  classDef control fill:#e0e7ff,stroke:#4f46e5,color:#000
+  classDef exec fill:#dcfce7,stroke:#16a34a,color:#000
+  classDef verify fill:#f3e8ff,stroke:#9333ea,color:#000
+  classDef delivery fill:#ffedd5,stroke:#ea580c,color:#000
+  classDef data fill:#e5e7eb,stroke:#4b5563,color:#000
+  classDef gate fill:#fee2e2,stroke:#dc2626,color:#000
+  classDef gov fill:#fecaca,stroke:#b91c1c,color:#000
+  classDef state fill:#f3f4f6,stroke:#6b7280,color:#000
+  class PROD,TL,QA human
+  class TRI,SREV,SA,ARCH,SPEC def
+  class EV,SM,POL,Q,PC,EVID,PUB,BUDGET,APPRNOTIF,OBS,ERR control
+  class RUN,WT,CLAUDE,FE,BE,TE,TESTS exec
+  class CR,SEC,VQA verify
+  class RM,MR,CI,PREVIEW,APP,DEPLOY,CLOSE,HIST delivery
+  class OS,ADR,RUNREC,ART,GATE,APPREC,METRIC,LEARN,TRUTH,EVENT,COVERAGE data
+  class HG1,HG2,HG3,HG4 gate
+  class Z_UNTRUST,Z_CONTROL,Z_SANDBOX,Z_PROD,IAM,AUTONOMY gov
+  class ISSUE_STATE,RUN_STATE,MR_STATE state

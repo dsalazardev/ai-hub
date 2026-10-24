@@ -1,0 +1,37 @@
+flowchart LR
+  subgraph CORE["AI Hub"]
+    H["Hermes"]
+    R["Runner"]
+  end
+  subgraph EXT["Integraciones"]
+    GL["GitLab API y webhooks"]
+    GIT["Git"]
+    CI["GitLab CI"]
+    MODEL["Claude Code"]
+    OS["OpenSpec"]
+    TEST["Tests y build"]
+    PW["Playwright"]
+    STORE["S3 o MinIO"]
+    PREV["Preview environments"]
+    APP["Frontend, BFF y Dolibarr"]
+  end
+  H -->|critico| GL
+  GL -->|webhook| H
+  H -->|orquesta| GIT
+  H -->|consulta y dispara| CI
+  R -->|critico| MODEL
+  R -->|lee y escribe| OS
+  R -->|ejecuta| TEST
+  R -->|visual| PW
+  R -->|evidencia| STORE
+  GL -->|git| GIT
+  GL -->|pipelines| CI
+  CI -->|despliega| PREV
+  PREV -->|sirve| APP
+  R -->|worktree| GIT
+  %% Playwright es condicional para cambios visuales.
+  %% Preview es necesario para validacion, no para toda tarea.
+  classDef core fill:#dbeafe,stroke:#2563eb,color:#000
+  classDef ext fill:#ffedd5,stroke:#ea580c,color:#000
+  class H,R core
+  class GL,GIT,CI,MODEL,OS,TEST,PW,STORE,PREV,APP ext

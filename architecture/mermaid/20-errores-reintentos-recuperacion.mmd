@@ -1,0 +1,35 @@
+flowchart TD
+  EVENT["Evento o job"] --> VALID{"Valido?"}
+  VALID -- no --> REJECT["Rechazar y auditar"]
+  VALID -- si --> DEDUP{"Duplicado?"}
+  DEDUP -- si --> IGNORE["Ignorar de forma idempotente"]
+  DEDUP -- no --> RUN["Ejecutar job"]
+  RUN --> FAIL{"Fallo?"}
+  FAIL -- no --> OK["Publicar evidencia"]
+  FAIL -- si --> CLASS{"Clasificar fallo"}
+  CLASS -->|timeout| RETRY["Reintento limitado"]
+  CLASS -->|error tecnico| RETRY
+  CLASS -->|bloqueo| BLOCK["Blocked y decision humana"]
+  CLASS -->|presupuesto agotado| BUDGET["Detener y alertar"]
+  CLASS -->|fallo de publicacion| RETRY
+  CLASS -->|fallo de deploy| ROLLBACK["Rollback y alerta"]
+  RETRY --> ATTEMPTS{"Intentos menores que el maximo?"}
+  ATTEMPTS -- si --> RUN
+  ATTEMPTS -- no --> DEAD["Dead letter y alerta"]
+  BLOCK --> HUMAN["Decision humana"]
+  BUDGET --> HUMAN
+  DEAD --> HUMAN
+  RUN -->|GitLab no disponible| BACKOFF["Backoff"]
+  BACKOFF --> RETRY
+  RUN -->|storage no disponible| QUARANTINE["Cuarentena de evidencia"]
+  QUARANTINE --> HUMAN
+  %% Idempotencia, estado persistente y recuperacion son recomendaciones;
+  %% su implementacion real no esta verificada.
+  classDef ok fill:#dcfce7,stroke:#16a34a,color:#000
+  classDef fail fill:#fee2e2,stroke:#dc2626,color:#000
+  classDef human fill:#fff7d6,stroke:#b58900,color:#000
+  classDef step fill:#dbeafe,stroke:#2563eb,color:#000
+  class OK ok
+  class REJECT,BLOCK,BUDGET,DEAD,ROLLBACK,QUARANTINE fail
+  class HUMAN human
+  class EVENT,RUN,RETRY,BACKOFF,CLASS,ATTEMPTS,VALID,DEDUP,IGNORE step

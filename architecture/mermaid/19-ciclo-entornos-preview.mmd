@@ -1,0 +1,22 @@
+stateDiagram-v2
+    [*] --> REQUESTED : MR o validacion solicita preview
+    REQUESTED --> PROVISIONING : aprovisionar recursos
+    PROVISIONING --> READY : frontend, BFF y Dolibarr disponibles
+    PROVISIONING --> FAILED : error de aprovisionamiento
+    READY --> VALIDATING : QA funcional y visual
+    VALIDATING --> READY : cambios solicitados
+    VALIDATING --> EXPIRING : validacion aprobada
+    READY --> EXPIRING : TTL alcanzado
+    EXPIRING --> CLEANING : iniciar limpieza
+    FAILED --> CLEANING : liberar recursos parciales
+    CLEANING --> DESTROYED : recursos eliminados
+    DESTROYED --> [*]
+    note right of READY
+      Datos sinteticos.
+      Sin credenciales productivas.
+      Aislamiento respecto de staging y produccion.
+    end note
+    note right of EXPIRING
+      TTL, reutilizacion y politica de limpieza:
+      pendientes de decision.
+    end note

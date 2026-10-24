@@ -1,0 +1,75 @@
+flowchart LR
+  subgraph ROLES["Roles"]
+    SR["Spec Reviewer"]
+    SA["Spec Author"]
+    IMP["Implementer"]
+    REV["Reviewer"]
+    SEC["Security Reviewer"]
+    RM["Release Manager"]
+    HUMAN["Humano aprobador"]
+  end
+  subgraph OPS["Operaciones"]
+    READ["Leer issue"]
+    COMMENT["Comentar issue"]
+    SPEC["Escribir OpenSpec"]
+    CODE["Leer codigo"]
+    WT["Escribir worktree"]
+    TEST["Ejecutar tests"]
+    MR["Crear MR"]
+    APPROVE["Aprobar"]
+    MERGE["Merge"]
+    DEPLOY["Deploy"]
+    SECRET["Acceso a secretos"]
+    EVID["Publicar evidencia"]
+  end
+  SR -->|allow| READ
+  SR -->|allow| COMMENT
+  SR -->|allow| CODE
+  SA -->|allow| READ
+  SA -->|allow| COMMENT
+  SA -->|allow| SPEC
+  IMP -->|allow| READ
+  IMP -->|allow| CODE
+  IMP -->|allow| WT
+  IMP -->|allow| TEST
+  IMP -->|allow| EVID
+  IMP -->|cond| SECRET
+  REV -->|allow| READ
+  REV -->|allow| COMMENT
+  REV -->|allow| CODE
+  REV -->|allow| TEST
+  REV -->|allow| EVID
+  SEC -->|allow| READ
+  SEC -->|allow| CODE
+  SEC -->|allow| TEST
+  RM -->|allow| READ
+  RM -->|allow| COMMENT
+  RM -->|allow| MR
+  RM -->|cond| MERGE
+  RM -->|cond| DEPLOY
+  RM -->|cond| SECRET
+  HUMAN -->|allow| APPROVE
+  HUMAN -->|allow| MERGE
+  HUMAN -->|allow| DEPLOY
+  SR -.->|deny| WT
+  SR -.->|deny| SPEC
+  SA -.->|deny| WT
+  SA -.->|deny| MERGE
+  IMP -.->|deny| APPROVE
+  IMP -.->|deny| MERGE
+  REV -.->|deny| WT
+  REV -.->|deny| MERGE
+  SEC -.->|deny| WT
+  RM -.->|deny| WT
+  NOTE["Permisos reales: GitLab, sistema operativo, runner y secrets manager. Ocultar una tool no es un control suficiente."]
+  subgraph LEGEND["Leyenda"]
+    L1["allow: permitido"]
+    L2["cond: condicionado"]
+    L3["deny: denegado"]
+  end
+  classDef role fill:#dbeafe,stroke:#2563eb,color:#000
+  classDef op fill:#f3e8ff,stroke:#9333ea,color:#000
+  classDef note fill:#fff7d6,stroke:#b58900,color:#000
+  class SR,SA,IMP,REV,SEC,RM,HUMAN role
+  class READ,COMMENT,SPEC,CODE,WT,TEST,MR,APPROVE,MERGE,DEPLOY,SECRET,EVID op
+  class NOTE note

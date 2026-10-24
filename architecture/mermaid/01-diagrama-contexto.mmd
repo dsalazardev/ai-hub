@@ -1,0 +1,42 @@
+flowchart LR
+  subgraph HUMANS["Actores humanos"]
+    PROD["Producto / CTO"]
+    LEAD["Tech Lead"]
+    QA["QA / Usuario"]
+  end
+  subgraph SYSTEM["AI Hub 3.0"]
+    HERMES["Hermes control plane"]
+    RUNNER["Runner + Claude Code"]
+    KNOW["OpenSpec + AI Hub"]
+  end
+  subgraph EXTERNAL["Sistemas externos"]
+    GL["GitLab self-managed"]
+    CI["GitLab CI"]
+    MODEL["Proveedor de modelos"]
+    APP["Frontend + BFF + Dolibarr"]
+    PREV["Preview environments"]
+    NOTIF["Canal de notificaciones"]
+  end
+  PROD -->|define y aprueba| GL
+  LEAD -->|revisa y aprueba| GL
+  QA -->|valida| PREV
+  GL -->|webhooks y API| HERMES
+  HERMES -->|comenta, etiqueta y abre MR| GL
+  HERMES -->|lanza jobs| RUNNER
+  RUNNER -->|usa| MODEL
+  RUNNER -->|lee| KNOW
+  RUNNER -->|build y tests| CI
+  CI -->|despliega| PREV
+  PREV -->|sirve| APP
+  HERMES -->|notifica| NOTIF
+  NOTIF -->|aprobaciones| PROD
+  NOTIF -->|aprobaciones| LEAD
+  classDef human fill:#fff7d6,stroke:#b58900,color:#000
+  classDef system fill:#dbeafe,stroke:#2563eb,color:#000
+  classDef exec fill:#dcfce7,stroke:#16a34a,color:#000
+  classDef external fill:#ffedd5,stroke:#ea580c,color:#000
+  class PROD,LEAD,QA human
+  class HERMES system
+  class RUNNER exec
+  class KNOW system
+  class GL,CI,MODEL,APP,PREV,NOTIF external

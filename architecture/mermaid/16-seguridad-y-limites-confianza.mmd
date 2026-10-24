@@ -1,0 +1,90 @@
+flowchart TB
+  subgraph UNTRUSTED["Zona no confiable"]
+    ISSUE["Issues y comentarios"]
+    CODE["Codigo y dependencias"]
+    WEBHOOK["Webhooks externos"]
+  end
+  subgraph CONTROL["Zona de control"]
+    HERMES["Hermes"]
+    POLICY["Policy engine"]
+    APPROVAL["Aprobacion humana"]
+  end
+  subgraph SANDBOX["Zona de ejecucion aislada"]
+    RUNNER["Runner efimero"]
+    AGENT["Agente"]
+    TOOLS["Tools allowlist"]
+    WORKTREE["Worktree"]
+  end
+  subgraph SECRETS["Zona de secretos"]
+    VAULT["Secrets manager"]
+    TOKEN["Token efimero por job"]
+  end
+  subgraph PROD["Zona de produccion"]
+    BRANCH["Branch protection"]
+    CI["CI protegido"]
+    DEPLOY["Deploy"]
+  end
+  ISSUE -->|prompt injection| AGENT
+  CODE -->|codigo o dependencia maliciosa| AGENT
+  WEBHOOK -->|evento falso| HERMES
+  HERMES --> POLICY
+  POLICY -->|permisos minimos| RUNNER
+  RUNNER --> AGENT
+  AGENT --> TOOLS
+  AGENT --> WORKTREE
+  VAULT -->|solo el job| RUNNER
+  TOKEN --> RUNNER
+  AGENT -.->|sin acceso directo| BRANCH
+  AGENT -.->|sin acceso directo| DEPLOY
+  AGENT -->|diff y evidencia| APPROVAL
+  APPROVAL -->|merge autorizado| BRANCH
+  BRANCH --> CI
+  CI --> DEPLOY
+  subgraph THREATS["Amenazas"]
+    T1["Prompt injection"]
+    T2["Robo de secretos"]
+    T3["Modificacion de CI"]
+    T4["Autoaprobacion"]
+    T5["Merge no autorizado"]
+    T6["Dependencia maliciosa"]
+    T7["Comando destructivo"]
+    T8["Exfiltracion"]
+    T9["Perdida de artefactos"]
+    T10["Consumo descontrolado"]
+  end
+  subgraph CONTROLS["Controles"]
+    C1["Contenido no confiable y allowlist"]
+    C2["Secret manager y tokens efimeros"]
+    C3["Archivos protegidos y revision separada"]
+    C4["Identidades y roles separados"]
+    C5["Branch protection y approvals"]
+    C6["SCA, lockfile y revision"]
+    C7["Allowlist, sandbox y sin Docker socket"]
+    C8["Egress allowlist y datos sinteticos"]
+    C9["Object store, backups y auditoria"]
+    C10["Budget, max turns y cuotas"]
+  end
+  T1 --> C1
+  T2 --> C2
+  T3 --> C3
+  T4 --> C4
+  T5 --> C5
+  T6 --> C6
+  T7 --> C7
+  T8 --> C8
+  T9 --> C9
+  T10 --> C10
+  classDef untrusted fill:#fee2e2,stroke:#dc2626,color:#000
+  classDef control fill:#dbeafe,stroke:#2563eb,color:#000
+  classDef sandbox fill:#dcfce7,stroke:#16a34a,color:#000
+  classDef secrets fill:#fef3c7,stroke:#d97706,color:#000
+  classDef prod fill:#ffedd5,stroke:#ea580c,color:#000
+  classDef threat fill:#fecaca,stroke:#b91c1c,color:#000
+  classDef mitigation fill:#e5e7eb,stroke:#4b5563,color:#000
+  class ISSUE,CODE,WEBHOOK untrusted
+  class HERMES,POLICY,APPROVAL control
+  class RUNNER,AGENT,TOOLS,WORKTREE sandbox
+  class VAULT,TOKEN secrets
+  class BRANCH,CI,DEPLOY prod
+  class T1,T2,T3,T4,T5,T6,T7,T8,T9,T10 threat
+  class C1,C2,C3,C4,C5,C6,C7,C8,C9,C10 mitigation

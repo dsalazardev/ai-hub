@@ -1,0 +1,23 @@
+stateDiagram-v2
+    [*] --> QUEUED : job creado
+    QUEUED --> RUNNING : runner asignado
+    RUNNING --> SUCCEEDED : evidencia publicada
+    RUNNING --> FAILED : error tecnico
+    RUNNING --> TIMED_OUT : limite de tiempo
+    RUNNING --> CANCELLED : cancelacion
+    RUNNING --> BLOCKED : falta decision o dependencia
+    BLOCKED --> QUEUED : desbloqueado
+    FAILED --> QUEUED : reintento permitido
+    TIMED_OUT --> QUEUED : reintento permitido
+    QUEUED --> CANCELLED : cancelacion en cola
+    note right of QUEUED
+      Job: unidad de trabajo.
+      Run: ejecucion concreta.
+      Attempt: intento dentro de un run.
+      Reintentos limitados: propuesta pendiente.
+    end note
+    note right of BLOCKED
+      Bloqueo operativo distinto de fallo tecnico.
+      Cada intento conserva logs y evidencias.
+      Un fallo no cambia por si solo el estado de la issue.
+    end note

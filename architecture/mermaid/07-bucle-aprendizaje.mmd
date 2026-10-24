@@ -1,0 +1,25 @@
+flowchart LR
+  RUNS["Registros de runs"] --> METRICS["Metrics store"]
+  CI["Resultados de CI"] --> METRICS
+  INC["Incidentes"] --> METRICS
+  DEF["Defectos"] --> METRICS
+  REWORK["Retrabajo"] --> METRICS
+  COST["Costes"] --> METRICS
+  HUMAN["Intervenciones humanas"] --> METRICS
+  QA["Feedback de QA"] --> METRICS
+  METRICS --> ANALYSIS["Analisis de patrones"]
+  ADR["ADRs y decisiones"] --> ANALYSIS
+  ANALYSIS --> PROPOSALS["Propuestas de prompts, skills, reglas y plantillas"]
+  PROPOSALS --> APPROVAL{"Aprobacion humana del cambio?"}
+  APPROVAL -- no --> BACKLOG["Backlog de mejoras"]
+  APPROVAL -- si --> UPDATE["Actualizar knowledge plane"]
+  UPDATE --> RUNS
+  PROPOSALS -.->|nunca auto-cambia controles criticos| APPROVAL
+  classDef data fill:#f3e8ff,stroke:#9333ea,color:#000
+  classDef human fill:#fff7d6,stroke:#b58900,color:#000
+  classDef gate fill:#fee2e2,stroke:#dc2626,color:#000
+  classDef done fill:#dcfce7,stroke:#16a34a,color:#000
+  class RUNS,CI,INC,DEF,REWORK,COST,HUMAN,QA,METRICS,ANALYSIS,ADR data
+  class APPROVAL human
+  class PROPOSALS gate
+  class UPDATE,BACKLOG done
