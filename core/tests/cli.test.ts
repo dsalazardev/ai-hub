@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { PACKAGE_NAME } from '../src/package-info.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -232,7 +233,7 @@ describe('sync, drift and doctor', () => {
     await fs.mkdir(path.join(root, 'core', 'src'), { recursive: true });
     await fs.writeFile(
       path.join(root, 'core', 'package.json'),
-      JSON.stringify({ name: '@onna/ai-hub-cli' }),
+      JSON.stringify({ name: PACKAGE_NAME }),
     );
     await fs.writeFile(path.join(root, 'core', 'src', 'paths.ts'), 'export {};\n');
 
@@ -401,7 +402,7 @@ describe('memory, context and trunk', () => {
     await fs.writeFile(
       path.join(coreDir, 'package.json'),
       JSON.stringify({
-        name: '@onna/ai-hub-cli',
+        name: PACKAGE_NAME,
         files: ['dist', 'schema', 'manifest.json', 'engine', 'presets', 'agents', 'skills'],
       }),
     );

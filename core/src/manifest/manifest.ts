@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import { PACKAGE_NAME } from '../package-info.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Ajv } from 'ajv';
@@ -231,7 +232,7 @@ export function buildInventory(manifest: ProjectManifest, engine: EngineManifest
   const rules = [...manifest.rules.publish].sort();
   return {
     version: 2,
-    generatedBy: '@onna/ai-hub-cli',
+    generatedBy: PACKAGE_NAME,
     project: manifest.project,
     preset: { id: manifest.preset.id, version: manifest.preset.version },
     engine: { roles: engine.roles.length, commands: engine.commands.length, labels: engine.labels.length },

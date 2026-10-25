@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { isEngineCheckout } from '../source-checkout.js';
 
 const LEGACY_SOURCE_DIRS = ['core/presets', 'core/skills', 'core/agents'];
 const LEGACY_TARGET_DIRS = [
@@ -43,16 +44,6 @@ async function walk(dir: string, relative: string, findings: string[]): Promise<
         break;
       }
     }
-  }
-}
-
-async function isEngineCheckout(root: string): Promise<boolean> {
-  try {
-    await fs.access(path.join(root, 'core', 'package.json'));
-    await fs.access(path.join(root, 'core', 'src', 'paths.ts'));
-    return true;
-  } catch {
-    return false;
   }
 }
 

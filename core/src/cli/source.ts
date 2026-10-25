@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { PACKAGE_NAME } from '../package-info.js';
 
 export interface SourceCheckout {
   isSource: boolean;
@@ -22,7 +23,7 @@ export async function sourceCheckout(root: string): Promise<SourceCheckout> {
         () => true,
         () => false,
       );
-    return { isSource: pkg.name === '@onna/ai-hub-cli' && !hasRc, files };
+    return { isSource: pkg.name === PACKAGE_NAME && !hasRc, files };
   } catch {
     return { isSource: false, files: [] };
   }

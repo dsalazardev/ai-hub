@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { isEngineCheckout } from '../source-checkout.js';
 import type { SyncConfig } from './config.js';
 import { loadSyncConfig, resolveSourcePath } from './config.js';
 import { normalize, renderAll, type RenderedFile, type RenderedFiles } from './render.js';
@@ -42,16 +43,6 @@ export class SyncSourceCheckoutError extends Error {
         'Usa sync --force sólo si quieres dogfooding deliberado.',
     );
     this.name = 'SyncSourceCheckoutError';
-  }
-}
-
-async function isEngineCheckout(root: string): Promise<boolean> {
-  try {
-    await fs.access(path.join(root, 'core', 'package.json'));
-    await fs.access(path.join(root, 'core', 'src', 'paths.ts'));
-    return true;
-  } catch {
-    return false;
   }
 }
 

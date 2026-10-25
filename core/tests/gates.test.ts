@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { PACKAGE_NAME } from '../src/package-info.js';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -56,7 +57,7 @@ describe('legacy artifact gate', () => {
   it('in an engine checkout scans the catalog and ignores workshop destinations', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-legacy-engine-'));
     try {
-      await write(root, 'core/package.json', JSON.stringify({ name: '@onna/ai-hub-cli' }));
+      await write(root, 'core/package.json', JSON.stringify({ name: PACKAGE_NAME }));
       await write(root, 'core/src/paths.ts', 'export {};\n');
       await write(root, 'core/skills/shared/foo/SKILL.md', 'run /opsx apply\n');
       await write(root, '.claude/commands/opsx-explore.md', '# command\n');

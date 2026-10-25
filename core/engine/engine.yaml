@@ -1,5 +1,5 @@
 # AI Hub Engine — invariants shared by every project.
-# This file ships with @onna/ai-hub-cli and is never edited by a target project.
+# This file ships with @dsalazardev/ai-hub-cli and is never edited by a target project.
 version: 2
 
 roles:

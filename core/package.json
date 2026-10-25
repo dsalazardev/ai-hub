@@ -1,9 +1,27 @@
 {
-  "name": "@onna/ai-hub-cli",
-  "version": "1.0.0",
+  "name": "@dsalazardev/ai-hub-cli",
+  "version": "0.1.0",
   "author": "Daner Alejandro Salazar Colorado",
+  "license": "MIT",
   "type": "module",
-  "description": "AI Hub CLI — harness bootstrap, sync, diagnostics and guardrails for the Autonomous Software Factory.",
+  "description": "AI Hub CLI — arnés agéntico instalable: bootstrap de .ai-hub/, preset por detección, sync multi-target, doctor y guardias.",
+  "keywords": [
+    "ai",
+    "agents",
+    "harness",
+    "software-factory",
+    "spec-kit",
+    "cli",
+    "scaffolding"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dsalazardev/ai-hub.git"
+  },
+  "homepage": "https://github.com/dsalazardev/ai-hub#readme",
+  "bugs": {
+    "url": "https://github.com/dsalazardev/ai-hub/issues"
+  },
   "bin": {
     "ai-hub": "dist/bin/ai-hub.js"
   },
@@ -14,14 +32,18 @@
     "engine",
     "presets",
     "agents",
-    "skills"
+    "skills",
+    "LICENSE",
+    "NOTICE.md",
+    "README.md"
   ],
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "manifest:build": "node dist/manifest/cli.js",
-    "manifest:check": "node dist/manifest/cli.js --check"
+    "manifest:check": "node dist/manifest/cli.js --check",
+    "prepublishOnly": "npm run build && npm run manifest:build && npm test"
   },
   "dependencies": {
     "ajv": "^8.17.1",
@@ -36,6 +58,6 @@
     "node": ">=22"
   },
   "publishConfig": {
-    "access": "restricted"
+    "access": "public"
   }
 }

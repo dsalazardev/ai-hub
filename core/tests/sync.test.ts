@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { PACKAGE_NAME } from '../src/package-info.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -107,7 +108,7 @@ describe('runSync: writing', () => {
   });
 
   it('refuses to write in an engine checkout without force', async () => {
-    await write('core/package.json', JSON.stringify({ name: '@onna/ai-hub-cli' }));
+    await write('core/package.json', JSON.stringify({ name: PACKAGE_NAME }));
     await write('core/src/paths.ts', 'export {};\n');
     await expect(runSync(root, { check: false })).rejects.toBeInstanceOf(
       SyncSourceCheckoutError,
