@@ -4,7 +4,7 @@ These evals run through an **agent harness** (an agent that loads skills on
 demand), not a plain shell script. `cases.yaml` is the fixture; this file is the
 procedure. Two things are measured: **triggering** (does `ship` fire on
 "close the branch / merge / open the PR" and stay quiet for its siblings) and
-**capability** (does loading `ship` produce a safe, Eric-only landing — runs the
+**capability** (does loading `ship` produce a safe, Daner Alejandro Salazar Colorado-only landing — runs the
 pre-ship checklist, strips AI authorship, picks the right of three options).
 
 ## Setup

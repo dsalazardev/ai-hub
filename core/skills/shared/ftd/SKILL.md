@@ -4,7 +4,7 @@ description: "Use for ordinary authorised change — the default lane once the d
 tags: [ftd, lane, default, feature-document, evidence]
 recommends: [worktrees, debug, verify]
 profiles: [minimal, core, full]
-origin: risco
+origin: ai-hub
 ---
 
 # FTD — Fast-Track Development
@@ -49,8 +49,8 @@ status: in-progress
 ```
 
 The frontmatter says whose work it is, so «¿qué ha hecho cada uno?» has an answer. You never close
-it by hand: when the branch lands on the default branch, rsc's post-merge hook sets `status: done`
-and replaces Next with where and when it merged (on a closed default branch, via `rsc/knowledge`).
+it by hand: when the branch lands on the default branch, ai-hub's post-merge hook sets `status: done`
+and replaces Next with where and when it merged (on a closed default branch, via `ai-hub/knowledge`).
 
 No decision journal, no phase records, no approvals. If a decision was meaningful, one line of
 rationale goes next to the task it belongs to.
@@ -62,7 +62,7 @@ the chain: a result asserted without evidence is treated as not done.
 
 ## Isolation
 
-Where the work runs follows the project's decision (asked at install: «main» or «ramas y PR»; rsc
+Where the work runs follows the project's decision (asked at install: «main» or «ramas y PR»; ai-hub
 says which on every turn) — never a branch opened on your own:
 
 - **Default branch open** (research, content, scripts, simple projects) → work straight on it. Do not
@@ -71,10 +71,10 @@ says which on every turn) — never a branch opened on your own:
   deployment or several people) → before EACH change that writes code, ask in one line: «¿Lo hago en
   esta rama (`<current>`), en una nueva, o desbloqueo `<default branch>`?». Already on another branch
   is no exception: an unrelated change does not go into it without asking. A new branch is named by
-  intent and closes with a pull request. Unlocking is `rsc main unlock`; never without that answer.
+  intent and closes with a pull request. Unlocking is `ai-hub main unlock`; never without that answer.
 - **Docs, wiki or config only** → no question, no branch.
 - **Another session working in this same folder** → a worktree in `.worktrees/<branch>/`, never a
-  branch switch under the other session. Not a question: rsc tells you when that is the case.
+  branch switch under the other session. Not a question: ai-hub tells you when that is the case.
 
 A worktree only when another session is there: alone, setting one up costs more than it protects.
 

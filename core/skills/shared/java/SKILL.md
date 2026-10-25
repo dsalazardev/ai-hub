@@ -3,7 +3,7 @@ name: java
 description: "Use when writing, reviewing or refactoring modern Java (21+, 25 LTS) — records and sealed interfaces as algebraic data types, exhaustive pattern-matching switch over instanceof ladders, virtual-thread concurrency, structured concurrency and ScopedValue replacing ThreadLocal, Stream and Optional pipelines, compact-constructor validation, parametrized JDBC, and the Maven/Gradle build surface. NOT Spring framework wiring (that is `spring-boot`)."
 tags: [java, jvm, records, virtual-threads, sealed-types]
 recommends: [spring-boot, secure-coding, deployment]
-origin: risco
+origin: ai-hub
 ---
 
 # Modern Java (21+)

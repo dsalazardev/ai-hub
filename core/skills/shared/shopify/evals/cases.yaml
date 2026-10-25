@@ -21,7 +21,7 @@ should_not_trigger:
   - prompt: "Integrate Stripe Checkout and subscription billing into our SaaS app."
     route_to: stripe
     why: "Non-Shopify payment system; Shopify Payments/checkout is in-platform only."
-  - prompt: "Build the React/RSC frontend and routing for our headless storefront."
+  - prompt: "Build the React/React Server Components frontend and routing for our headless storefront."
     route_to: nextjs
     why: "The rendering/routing layer is Next.js; Shopify is only the data seam there."
   - prompt: "Set up a no-code drag-and-drop online store, no developers involved."

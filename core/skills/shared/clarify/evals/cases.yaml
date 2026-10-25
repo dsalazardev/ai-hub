@@ -1,7 +1,7 @@
 skill: clarify
 
 # Prompts that MUST load the `clarify` skill. Clarify is the fourth phase of the
-# rsc SDD chain: a spec already exists and needs DE-RISKING before planning —
+# ai-hub Spec-Kit chain: a spec already exists and needs DE-RISKING before planning —
 # surface ambiguities, edge cases, unstated assumptions, ask the high-leverage
 # questions, bake the answers back into the spec. It creates no new artifact; it
 # sharpens the existing spec in place. It is NOT spec authoring (specify) and NOT
@@ -22,7 +22,7 @@ should_trigger:
   - prompt: "Before we design the architecture, what questions about this feature do I actually need answered first?"
     why: "Surfacing the high-leverage open questions to answer BEFORE design/plan is clarify's ranking-and-asking step; the user even separates it from the architecture."
 
-  - prompt: "Go through 02-DOCS/wiki/sdd/specs/checkout.md and flag every ambiguous term and missing acceptance criterion."
+  - prompt: "Go through specs/checkout/spec.md and flag every ambiguous term and missing acceptance criterion."
     why: "Operating directly on a spec under the canonical SDD specs path, hunting ambiguous terms and missing acceptance criteria — taxonomy categories owned here."
 
   - prompt: "We wrote what the feature should do but never decided what happens on the error paths or empty states — sort that out in the spec."
@@ -59,13 +59,13 @@ should_not_trigger:
 # Clarifications log. An ungrounded pass typically free-associates a few
 # questions and never edits the spec or records the reasoning.
 capability:
-  - scenario: "We have a spec at 02-DOCS/wiki/sdd/specs/profile.md whose only line about photos is 'Users can upload a profile photo.' De-risk it before we plan."
+  - scenario: "We have a spec at specs/profile/spec.md whose only line about photos is 'Users can upload a profile photo.' De-risk it before we plan."
     must_include:
-      - "Reads the spec, the constitution (02-DOCS/wiki/sdd/constitution.md), and the harness profile first — citing anything the constitution already fixes (e.g. storage) as resolved rather than re-asking it."
+      - "Reads the spec, the constitution (.specify/memory/constitution.md), and the harness profile first — citing anything the constitution already fixes (e.g. storage) as resolved rather than re-asking it."
       - "Scans against the ambiguity taxonomy and surfaces concrete gaps: accepted formats, max file size / dimensions, empty/no-photo state, upload-failure recovery, old-file deletion on replace, who-can-edit (actor/permission), and security validation of the file type."
       - "Ranks the gaps by leverage — asks only the build-changing ones (formats+size, security validation, old-file deletion) and proposes safe defaults for the cosmetic ones instead of burning a question on each."
       - "Frames questions as decisions with a recommendation (e.g. 'soft vs hard delete — recommend X because…'), one ranked batch, anchored to the spec line, rather than open-ended essay prompts or one-at-a-time drips."
-      - "Asks only the build-changing questions and lists the rest as assumed-defaults (assumed unless you object), with no verbosity level; phrases them in the register from technical_level in user-profile.md."
+      - "Asks only the build-changing questions and lists the rest as assumed-defaults (assumed unless you object), with no verbosity level; phrases them in the register from the register in user-profile.md."
       - "Bakes the resolved answers BACK into the spec: tightens the photo section into bounded behavior, adds observable acceptance criteria, and bounds dropped items under '## Out of scope'."
       - "Appends a dated '## Clarifications' log of Q → decision → why so the reasoning survives, and does a final re-read to confirm no new gap was opened."
       - "Stays in its lane: decides WHAT, never proposes the technical HOW (no architecture/library choices) and ends by pointing to plan as the next phase."

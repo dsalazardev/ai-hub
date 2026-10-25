@@ -3,7 +3,7 @@ name: cpp
 description: "Use when writing, reviewing, modernizing, building, or debugging C++ - RAII and resource lifetime, smart-pointer ownership, move semantics and the Rule of Zero/Five, target-based CMake with FetchContent, and killing undefined behavior with ASan/UBSan/TSan plus clang-tidy. NOT borrow-checker / Result-Option / cargo memory safety (that is rust)."
 tags: [cpp, c++, modern-cpp, raii, cmake]
 recommends: [rust, secure-coding, deployment]
-origin: risco
+origin: ai-hub
 ---
 
 # Modern C++

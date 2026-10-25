@@ -3,7 +3,7 @@ name: skill-scout
 description: "Use when a specialized skill probably exists but is not loaded, when a task feels harder than it should because generic reasoning is doing a domain skill's job, when the work just delivered was a repeatable procedure worth turning into a skill or an agent, or when auditing coverage for holes. Resolves against what already exists — installed skills, catalog skills and agent files — then names the gap and emits the install command. NOT routing among skills you already have (that is `suggest`), NOT writing the artifact when none exists (that is `author-skill` for skills, `building-agents` for agents)."
 tags: [skill-discovery, capability-gap, meta, recommendations, coverage-audit]
 recommends: [suggest, author-skill, context-budget, continuous-learning, knowledge-ops]
-origin: risco
+origin: ai-hub
 ---
 
 # skill-scout — find the skill you don't have
@@ -26,7 +26,7 @@ Why this matters: skills load by **progressive disclosure**. At session start Cl
 | Clear match, exists at user scope but not in this project (or vice versa) | INSTALLED-elsewhere | Emit the scope-fix (copy to the missing scope) + why. |
 | 2–3 plausible candidates, none dominant | AMBIGUOUS | Name the top 2 with a one-line distinction; ask which fits. Do not guess. |
 | Present skill already covers this task | NO GAP | Say so and hand to `../suggest/SKILL.md` (routing among present skills) — that is its job, not yours. |
-| An installed **agent** already does this work | AGENT-COVERS | Name it, use it (delegate), propose nothing. Agents are listed by `npx @ericrisco/rsc capabilities`; they are invisible to the catalog, so a scan that skips them proposes duplicates. |
+| An installed **agent** already does this work | AGENT-COVERS | Name it, use it (delegate), propose nothing. Agents are listed by `npx ai-hub capabilities`; they are invisible to the catalog, so a scan that skips them proposes duplicates. |
 | Catalog match present but its description is too vague to ever fire | WEAK-DESCRIPTION | Treat as a gap; route to `../author-skill/SKILL.md` to fix the frontmatter. |
 | No catalog id fits at all | NONEXISTENT | Route to `../author-skill/SKILL.md`. Do not fabricate an id. |
 
@@ -41,16 +41,16 @@ Everything above is preventive: you scan *before* generic reasoning does a speci
 Then, in this order and never skipping ahead:
 
 1. **Deliver first.** This never delays, conditions or replaces the work asked for. Raising it beforehand turns a simple request into a conversation about harness architecture.
-2. **Enumerate what exists** — `npx @ericrisco/rsc capabilities` lists installed skills (with their scope), **agent files** and the catalog ids in one pass. Read it; do not recall it. Add `--full` for catalog descriptions, or use `catalog --available` when you need to match by meaning — the default stays cheap on purpose. If the command cannot run, **propose nothing** and say the check did not happen: never propose building on a check that did not occur.
+2. **Enumerate what exists** — `npx ai-hub capabilities` lists installed skills (with their scope), **agent files** and the catalog ids in one pass. Read it; do not recall it. Add `--full` for catalog descriptions, or use `catalog --available` when you need to match by meaning — the default stays cheap on purpose. If the command cannot run, **propose nothing** and say the check did not happen: never propose building on a check that did not occur.
 3. **Something covers it** → use it (install with the usual one-word confirm if it is catalog-only), and **propose nothing**. Proposing to build what already exists is the worst outcome available here — it costs attention and it spends the credibility of every later suggestion.
 4. **Nothing covers it** → one sentence at the end of the work: the procedure you saw, and whether it fits as a skill or an agent. Then stop; the user decides. Their "no" ends it for this procedure for the rest of the session.
-5. **Record it either way** — `npx @ericrisco/rsc capabilities gap-log --procedure "<what YOU observed doing>" --verdict <covered-installed|covered-catalog|covered-agent|proposed-accepted|proposed-declined>`.
+5. **Record it either way** — `npx ai-hub capabilities gap-log --procedure "<what YOU observed doing>" --verdict <covered-installed|covered-catalog|covered-agent|proposed-accepted|proposed-declined>`.
 
 **One sentence, always.** In the `orient` voice: one line ("this looked like a procedure — worth a skill?") plus why it qualified. Explain the skill-vs-agent difference only if the user asks; for a `non-technical` reader (`technical_level` in `02-DOCS/wiki/harness/user-profile.md`), use an analogy. Brevity never removes the observation.
 
 **The privacy boundary is yours to hold**, not the command's — it validates shape and nothing else, and it cannot tell your description from a paraphrase of the request. `--procedure` carries *your* account of the work you did. Never the user's words. The test: if the line could be reconstructed from what they typed, it does not belong in the log.
 
-**Which log:** this one (`.rsc/automation-gaps.md`, verdicts `covered-*`/`proposed-*`) is for the after-the-work automation gap. The coverage-audit log below (`skill-gaps.jsonl`, verdicts `MISSING`/`NONEXISTENT`) is for a deliberate catalog audit. One event, one log — never both.
+**Which log:** this one (`.ai-hub/automation-gaps.md`, verdicts `covered-*`/`proposed-*`) is for the after-the-work automation gap. The coverage-audit log below (`skill-gaps.jsonl`, verdicts `MISSING`/`NONEXISTENT`) is for a deliberate catalog audit. One event, one log — never both.
 
 **Silence is a correct and common outcome.** A one-off, an exploration, a one-liner, or work that failed is not a procedure — a procedure is extracted from something that worked. There is no switch to turn this off, which is exactly why the bar is high: propose on everything and the feature becomes noise a user cannot escape.
 

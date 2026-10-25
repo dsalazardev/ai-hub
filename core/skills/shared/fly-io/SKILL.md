@@ -3,7 +3,7 @@ name: fly-io
 description: "Use when deploying or operating an app on Fly.io — writing fly.toml, placing Machines in regions near users, attaching Volumes, managing secrets, or picking a scaling lever (autostop/autostart, scale count, fly-replay). NOT choosing which host to deploy on (that is `deployment`), NOT a git-push PaaS with no regions model (that is `railway`)."
 tags: [fly-io, deployment, machines, regions, scaling]
 recommends: [docker, scaling, postgresdb, railway, domains-dns]
-origin: risco
+origin: ai-hub
 ---
 
 # Deploy on Fly.io

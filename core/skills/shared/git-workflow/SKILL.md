@@ -3,7 +3,7 @@ name: git-workflow
 description: "Use when naming or scoping a branch, writing or fixing a commit message, picking the gitmoji for a commit, untangling history (rebase versus merge versus squash), or cutting a versioned release — the portable git-convention layer for any repo. Covers gitmoji + Conventional Commits, SemVer tags, branch hygiene, force-push safety and gh pr/release mechanics. NOT the land-it decision and pre-ship checklist (that is `ship`), NOT an isolated checkout before coding (that is `worktrees`), NOT CI/CD release automation (that is `deployment`)."
 tags: [git, version-control, conventional-commits, gitmoji, semver, pull-request]
 recommends: [ship, worktrees, deployment, github-actions]
-origin: risco
+origin: ai-hub
 ---
 
 # git-workflow — the grammar and hygiene of version control
@@ -38,7 +38,7 @@ spaces or `/` inside the slug. Optionally suffix the issue number.
 
 ```text
 Bad   my-stuff            (kind unknown, intent unknown)
-Bad   eric-branch-2       (names the author and a counter, not the work)
+Bad   your-name-branch-2  (names the author and a counter, not the work)
 Good  feat/oauth-pkce-flow
 Good  fix/expired-refresh-token-401
 Good  chore/bump-node-22
@@ -114,9 +114,9 @@ at position 0 and rejects the emoji prefix. Either widen its `headerPattern` —
 `references/gitmoji.md` — or move the emoji behind the header (`feat(api): ✨ add cursor paging`),
 which every parser accepts. Both forms satisfy this convention; dropping the gitmoji does not.
 
-**Authorship is always Eric.** Never add a `Co-Authored-By: Claude` trailer, never a
+**Authorship is always Daner Alejandro Salazar Colorado.** Never add a `Co-Authored-By: Claude` trailer, never a
 "Generated with" footer, never any line crediting an AI tool — in a commit *or* a PR body. The work
-is Eric's; the agent is a tool, like the compiler.
+is Daner Alejandro Salazar Colorado's; the agent is a tool, like the compiler.
 
 ## History hygiene — rebase, merge, or squash?
 
@@ -201,7 +201,7 @@ enough to hand over. Setting up the isolated checkout *before* you start coding 
 | `BREAKING CHANGE` lowercase                            | tooling won't detect it → wrong (too-low) bump            | uppercase `BREAKING CHANGE:` in the footer            |
 | PR with no description                                | reviewer reverse-engineers intent from the diff           | `--fill` plus a why, link the issue                   |
 | Tagging a release with no notes                       | users can't tell what changed                             | `gh release create --generate-notes`                  |
-| `Co-Authored-By: Claude` / "Generated with" footer    | forges authorship onto a tool                             | author is always Eric; no AI attribution              |
+| `Co-Authored-By: Claude` / "Generated with" footer    | forges authorship onto a tool                             | author is always Daner Alejandro Salazar Colorado; no AI attribution              |
 
 ## Checklist — before a PR or a release
 

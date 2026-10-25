@@ -1,6 +1,6 @@
 # Eval harness — `unreal` skill
 
-These cases are run by the rsc skill-eval harness (a Claude agent with the full catalog loaded)
+These cases are run by the ai-hub skill-eval harness (a Claude agent with the full catalog loaded)
 or read manually. **Triggering**: the `unreal` description must fire on real UE5 Blueprint/C++
 requests — including symptom-only ones (a garbage-collected UObject) — while staying quiet on
 near-misses that belong to `godot`, `unity`, `cpp`, `game-design`, or `gamedev-shipping`, routing

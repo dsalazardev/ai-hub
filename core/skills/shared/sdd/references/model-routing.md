@@ -150,7 +150,7 @@ contract; the concrete names are yours to edit.
 
 ## The `developer` subagent (the installed implementation worker)
 
-rsc installs a **`developer`** subagent into every assistant that supports file-based agents
+ai-hub installs a **`developer`** subagent into every assistant that supports file-based agents
 (Claude Code `.claude/agents/`, Cursor, OpenCode, Gemini, Copilot, Junie, Kiro, Codex) when the
 harness is installed. It is the concrete embodiment of "run the fan-out on a smaller model":
 
@@ -158,7 +158,7 @@ harness is installed. It is the concrete embodiment of "run the fan-out on a sma
   mid model elsewhere (Gemini Flash, GPT-mini). It is **never** `light`/Haiku — that tier is too
   weak to build with. The floor for implementation is balanced.
 - The tier is chosen at **onboarding** (`init`, Step 4): balanced (default) or heavy. It is stored
-  in `.rsc/developer.json` and the installer writes the per-target agent file with the resolved
+  in `.ai-hub/developer.json` and the installer writes the per-target agent file with the resolved
   model on every (re)install/sync. If onboarding never asks, the install-time default is balanced.
 - `implement` and `parallel` **dispatch implementation/fan-out work to this agent**, so the
   session model orchestrates while the cheaper-but-capable model does the bulk of the typing.

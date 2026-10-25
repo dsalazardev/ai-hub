@@ -1,15 +1,15 @@
 ---
 name: review
-description: "Use when a green diff needs adversarial judgment in the rsc SDD chain, between verify and ship — give a review keyed to the spec/plan/constitution in 02-DOCS/wiki/sdd/, or receive one and verify each comment before agreeing. NOT running lint/type/tests (that is `verify`), NOT the spec-less standalone pass (that is `code-review`), NOT merging (that is `ship`)."
+description: "Use when a green diff needs adversarial judgment in the ai-hub Spec-Kit chain, between verify and ship — give a review keyed to the spec/plan/constitution in 02-DOCS/wiki/sdd/, or receive one and verify each comment before agreeing. NOT running lint/type/tests (that is `verify`), NOT the spec-less standalone pass (that is `code-review`), NOT merging (that is `ship`)."
 tags: [sdd, review, code-review]
 recommends: [ship]
 profiles: [core, full]
-origin: risco
+origin: ai-hub
 ---
 
 # Review — adversarial code review, both directions
 
-Review is the **penultimate gate** of the rsc SDD chain: `constitution → specify → clarify → plan → tasks → analyze → implement → verify → **review** → ship`. By the time a diff reaches review, the `verify` phase has already proven that lint, types, tests and the stack `verify.sh` are green. Review answers a different question: **is the green diff actually correct, well-scoped, and faithful to the spec — or did it pass for the wrong reasons?**
+Review is the **penultimate gate** of the ai-hub Spec-Kit chain: `constitution → specify → clarify → plan → tasks → analyze → implement → verify → **review** → ship`. By the time a diff reaches review, the `verify` phase has already proven that lint, types, tests and the stack `verify.sh` are green. Review answers a different question: **is the green diff actually correct, well-scoped, and faithful to the spec — or did it pass for the wrong reasons?**
 
 This skill owns **two roles that share one discipline**:
 
@@ -37,7 +37,7 @@ A review's value is its signal-to-noise. Every finding you report costs the auth
 - **Common false positives to skip:** patterns guarded two functions up; "unsafe" calls on values that are provably constant/internal; missing checks the framework already enforces; style the linter owns; defects behind a flag that's off everywhere (note as `nit`, not blocker); test-only or generated code held to prod standards.
 - **No severity inflation.** A `should-fix` dressed as a `blocker` burns the same trust as a missed bug. Rank by actual blast radius and reachability — if everything is a blocker, nothing is.
 
-This skill is the discipline; the **`rsc-review` bundle is it executed** — `/code-review [pr]` fans a diff out to the per-language reviewer fleet and aggregates one ranked verdict, `/security-scan` merges automated scanners with the `security-reviewer` agent into an exploitability-ranked report. Both enforce the same evidence bar and confidence filtering described here.
+This skill is the discipline; the **`ai-hub-review` bundle is it executed** — `/code-review [pr]` fans a diff out to the per-language reviewer fleet and aggregates one ranked verdict, `/security-scan` merges automated scanners with the `security-reviewer` agent into an exploitability-ranked report. Both enforce the same evidence bar and confidence filtering described here.
 
 ---
 
@@ -104,7 +104,7 @@ End every review you give with one of three, and nothing mushy in between:
 
 ### The sello — when this project opted in
 
-If the sello is on — `.rsc/sello-config.json` in the project, or `~/.rsc/sello-config.json` for
+If the sello is on — `.ai-hub/sello-config.json` in the project, or `~/.ai-hub/sello-config.json` for
 every project (`sello on --global`; the project switch always wins) — the review's verdict is
 **sealed to the exact bytes reviewed**, and the ship gate refuses commit/push/PR on anything else.
 
@@ -116,15 +116,15 @@ without actually running the lenses produces a valid sello and a worthless one.
 Every state transition is deterministic CLI, never tokens:
 
 ```text
-1. npx @ericrisco/rsc sello freeze      → hashes the candidate, prints risk tier + lens count
+1. npx ai-hub sello freeze      → hashes the candidate, prints risk tier + lens count
 2. Run the lenses (below), filter findings, decide
-3a. approved → npx @ericrisco/rsc sello approve --lenses correctness,security,tests
-3b. blocked  → npx @ericrisco/rsc sello block --reason "<the blocking finding>"
+3a. approved → npx ai-hub sello approve --lenses correctness,security,tests
+3b. blocked  → npx ai-hub sello block --reason "<the blocking finding>"
 ```
 
 `approve` refuses to seal with fewer lenses than the tier requires — pass them all, or accept the
 gap deliberately with `--accept-partial-lenses` (it is recorded). Every approval also appends to
-`.rsc/sello-log.jsonl`, so what shipped under which verdict survives the next freeze.
+`.ai-hub/sello-log.jsonl`, so what shipped under which verdict survives the next freeze.
 
 **Lenses by risk tier** — tier 0 never reaches you (the gate passes docs/copy silently);
 tier 1 → run the single most relevant pass from the table above yourself; tier 2 → dispatch
@@ -170,7 +170,7 @@ report one defect three ways, and a lens hunting for something can overstate wha
 steps, in this order:
 
 1. **Group (deterministic).** Each lens ends its report with a ` ```json findings ` block. Save the
-   three reports and run `npx @ericrisco/rsc review consolidate <reports…>`. It merges findings on
+   three reports and run `npx ai-hub review consolidate <reports…>`. It merges findings on
    the same file within 3 lines, or quoting the same evidence; keeps the highest severity and every
    lens that saw it; and downgrades a blocker or should-fix with no `file:line` or failure scenario to
    a question. Several lenses on one finding is a reason to look first, never a reason to raise its
@@ -189,14 +189,14 @@ before it blocks.
 find something is not evidence:
 
 1. **Causal** — introduced by *this* change. Pre-existing defects → note with
-   `--note "<finding>"` (they land in `.rsc/sello-findings.md`, surfaced by `doctor`) and
+   `--note "<finding>"` (they land in `.ai-hub/sello-findings.md`, surfaced by `doctor`) and
    suggest an issue; they never block this delivery.
 2. **Severity** — only `blocker` blocks. `should-fix`/`nit` → `--note`.
 3. **Evidence** — `finding-verifier` returned **CONFIRMED** with its proof. REFUTED is dropped (with
    its reason in the report); UNPROVEN is a `[question]`, and questions don't block.
 
 **Fixing a blocker is budgeted, one attempt.** Before touching anything: estimate the fix and
-declare it — `npx @ericrisco/rsc sello budget --lines <N>`. After the fix:
+declare it — `npx ai-hub sello budget --lines <N>`. After the fix:
 `sello budget-check` (over budget → justify with `--justify "…"` or shrink; an unexplained
 overrun is how over-engineering enters disguised as a fix). Then `sello freeze` + re-review
 **only the divergence**, and approve. Still broken after one attempt → stop, hand it to the human.
@@ -311,4 +311,4 @@ interpreting prose (contract: `../sdd/SKILL.md`):
 
 ## Next in the chain
 
-When the diff carries an **APPROVE** / **APPROVE WITH NITS** verdict and every blocker is resolved, hand off to **ship** — close the branch via PR / merge / cleanup, with **git authorship as Eric, never Claude**. If the review came back **CHANGES REQUESTED**, the loop goes back to **implement** (fix), then **verify** (re-prove green), then back here for re-review. Don't ship a diff that hasn't earned its verdict.
+When the diff carries an **APPROVE** / **APPROVE WITH NITS** verdict and every blocker is resolved, hand off to **ship** — close the branch via PR / merge / cleanup, with **git authorship as Daner Alejandro Salazar Colorado, never Claude**. If the review came back **CHANGES REQUESTED**, the loop goes back to **implement** (fix), then **verify** (re-prove green), then back here for re-review. Don't ship a diff that hasn't earned its verdict.

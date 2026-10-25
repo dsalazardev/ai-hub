@@ -19,7 +19,7 @@ should_trigger:
 should_not_trigger:
   - prompt: "Set up React Server Components with server actions in my Next.js app."
     route_to: "nextjs"
-    why: "Different framework, reactivity model, and data-loading contract; runes and RSC must not be crossed."
+    why: "Different framework, reactivity model, and data-loading contract; runes and React Server Components must not be crossed."
   - prompt: "Write a generic TypeScript mapped type and conditional type for a deep-partial utility, no framework involved."
     route_to: "typescript"
     why: "Pure TypeScript typing with no Svelte or Kit dimension."

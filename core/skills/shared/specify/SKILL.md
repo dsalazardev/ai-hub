@@ -4,12 +4,12 @@ description: "Use when a feature, change, or product idea is still fuzzy and mus
 tags: [sdd, spec, requirements]
 recommends: [clarify, plan]
 profiles: [core, full]
-origin: risco
+origin: ai-hub
 ---
 
 # Specify — intent becomes a spec
 
-This is the **specify** phase of the rsc-sdd chain: `constitution` → **`specify`** → `clarify` → `plan` → `tasks` → `analyze` → `implement` → `verify` → `review` → `ship`. Its single job is to turn a fuzzy intent into a written specification that states **WHAT** the change is and **WHY** it matters — and nothing about **HOW** it gets built.
+This is the **specify** phase of the ai-hub Spec-Kit chain: `constitution` → **`specify`** → `clarify` → `plan` → `tasks` → `analyze` → `implement` → `verify` → `review` → `ship`. Its single job is to turn a fuzzy intent into a written specification that states **WHAT** the change is and **WHY** it matters — and nothing about **HOW** it gets built.
 
 A spec is a contract about behaviour and outcomes, readable by a non-technical stakeholder and precise enough that a `plan` can be derived from it. The output is one file: `02-DOCS/wiki/sdd/specs/<slug>.md`, indexed in `02-DOCS/wiki/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer).
 
@@ -341,7 +341,7 @@ repeated here as prohibitions: naming a behaviour makes it more available, not l
 ## Project grounding (02-DOCS + CLAUDE.md)
 
 - Read `02-DOCS/wiki/sdd/config.yaml` if present. If it is missing and the change is non-trivial, recommend `sdd-init` before proceeding; if the user asks to continue, record the missing config as a risk.
-- Read `02-DOCS/wiki/sdd/constitution.md` first — its principles are inherited constraints, not things to re-decide. If it's missing, note that the project has no constitution yet and suggest the `constitution` phase before continuing (you can still draft a spec, but flag the absence). If its frontmatter says `status: draft` (written by `rsc onboard`, unratified), route to `constitution` first and come back: a draft has no principles to inherit.
+- Read `02-DOCS/wiki/sdd/constitution.md` first — its principles are inherited constraints, not things to re-decide. If it's missing, note that the project has no constitution yet and suggest the `constitution` phase before continuing (you can still draft a spec, but flag the absence). If its frontmatter says `status: draft` (written by `ai-hub onboard`, unratified), route to `constitution` first and come back: a draft has no principles to inherit.
 - **No constitution yet?** Still write the spec, but inherit nothing — lean harder on the wiki and the user's answers, and record every constraint you would have inherited as a *point to clarify* instead of assuming it.
 - Write the spec to `02-DOCS/wiki/sdd/specs/<slug>.md`. Create the directory if absent.
 - Add a row in `02-DOCS/wiki/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer) linking the new spec under the `sdd/specs` topic (additive only — never delete existing rows). Create the index if absent.

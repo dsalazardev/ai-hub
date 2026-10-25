@@ -1,6 +1,6 @@
 # Eval harness — `gamedev-shaders` skill
 
-These cases are run by the rsc skill-eval harness (a Claude agent with the full catalog loaded),
+These cases are run by the ai-hub skill-eval harness (a Claude agent with the full catalog loaded),
 or read manually. They assert two things: **triggering** — the description fires on shader /
 material / VFX / post-process / "how do I make X effect" prompts (including Spanish and
 symptom-only phrasings like "slow on mobile") and stays quiet on near-misses, routing each to the

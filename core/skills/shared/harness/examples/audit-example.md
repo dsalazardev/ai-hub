@@ -8,7 +8,7 @@ bootstrap).
 ## Input project
 
 ```
-/tmp/risco-harness-test/
+/tmp/ai-hub-harness-test/
 ├── backend/
 │   ├── pyproject.toml          ← deps: fastapi, stripe, mailjet-rest
 │   ├── .env.example            ← STRIPE_SECRET_KEY, MAILJET_*
@@ -31,7 +31,7 @@ bootstrap).
 ```
 # Audit — harness — 2026-05-31
 
-Workspace: /tmp/risco-harness-test
+Workspace: /tmp/ai-hub-harness-test
 
 ## 1. Stack detected
 - Backend: FastAPI (Python) — backend/ — pyproject.toml (fastapi, stripe, mailjet-rest)

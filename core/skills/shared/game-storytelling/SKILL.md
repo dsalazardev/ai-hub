@@ -4,7 +4,7 @@ description: "Use when a game's story is the work: premise and pillars, branchin
 tags: [game, narrative, story, dialogue, quest, branching, worldbuilding]
 recommends: [game-design, level-design]
 profiles: [full]
-origin: risco
+origin: ai-hub
 ---
 
 # Game Storytelling — Narrative Design (engine-agnostic)

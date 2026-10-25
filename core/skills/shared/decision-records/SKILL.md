@@ -3,7 +3,7 @@ name: decision-records
 description: "Use when a hard-to-reverse choice (database, framework, vendor, auth model) must be frozen as an immutable numbered ADR — the context that forced it, the options weighed, the decision, consequences both ways — or superseded without erasing history. NOT a meeting recap (that is meeting-notes), NOT standing project principles (that is constitution)."
 tags: [decision-records, adr, architecture-decisions, rationale, decision-log, madr, knowledge-ops]
 recommends: [meeting-notes, constitution, sop-builder, knowledge-ops, codebase-onboarding, plan, specify]
-origin: risco
+origin: ai-hub
 ---
 
 # Decision Records — Freeze the Why Before It Evaporates

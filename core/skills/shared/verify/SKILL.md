@@ -1,15 +1,15 @@
 ---
 name: verify
-description: "Use when implementation is finished and about to be called done or merged — the rsc-sdd evidence gate: runs the stack's scripts/verify.sh (lint, type, test, audit), walks every task done-check and acceptance criterion, records a dated verdict. NOT judging the diff by eye (that is `review`, spec-less `code-review`), NOT diagnosis (that is `debug`)."
+description: "Use when implementation is finished and about to be called done or merged — the ai-hub Spec-Kit evidence gate: runs the stack's scripts/verify.sh (lint, type, test, audit), walks every task done-check and acceptance criterion, records a dated verdict. NOT judging the diff by eye (that is `review`, spec-less `code-review`), NOT diagnosis (that is `debug`)."
 tags: [sdd, verify, test]
 recommends: [review]
 profiles: [core, full]
-origin: risco
+origin: ai-hub
 ---
 
 # verify — the evidence gate before "done"
 
-`verify` is the post-implementation **gate** in the rsc-sdd chain. Implementation just finished; nobody is allowed to call it *done*, *fixed*, *working*, or *ready to merge* until the evidence exists and has been read. This skill produces that evidence: it runs the project's real quality gate, walks every task's done-check and every acceptance criterion from the spec, and records the result. Pass or fail, the verdict is grounded in command output you actually saw — never in a hunch.
+`verify` is the post-implementation **gate** in the ai-hub Spec-Kit chain. Implementation just finished; nobody is allowed to call it *done*, *fixed*, *working*, or *ready to merge* until the evidence exists and has been read. This skill produces that evidence: it runs the project's real quality gate, walks every task's done-check and every acceptance criterion from the spec, and records the result. Pass or fail, the verdict is grounded in command output you actually saw — never in a hunch.
 
 The one rule everything else serves: **a claim of done is a claim about evidence. No evidence, no claim.** A green feeling is not green output.
 

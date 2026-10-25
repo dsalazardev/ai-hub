@@ -2,14 +2,14 @@ skill: connect-tool
 
 # Cases for connect-tool: the user names ONE tool to connect to the agent. The skill researches the
 # vendor's real docs, picks the least dangerous route (MCP, API, integration, export, read-only copy
-# of the database, RPA last), builds 01-TOOLS/<TOOL>/ with a test that proves it (and proves writes
-# fail when read-only), guides the user and records it in 02-DOCS. It is NOT the typed API client
+# of the database, RPA last), builds docs/tools/<TOOL>/ with a test that proves it (and proves writes
+# fail when read-only), guides the user and records it in docs/. It is NOT the typed API client
 # (api-connector-builder), NOT the whole-workspace scan (harness), NOT whether to automate a process
 # (automation-strategy), NOT chaining services (automation-flows).
 
 should_trigger:
   - prompt: "Quiero que el agente lea las facturas de Holded para hacerme un resumen de cobros cada lunes."
-    why: "A named cloud tool and a read goal. The route (official API with read scopes, or an MCP if the vendor has one) must come from Holded's current docs, then a 01-TOOLS/HOLDED/ folder with a read test."
+    why: "A named cloud tool and a read goal. The route (official API with read scopes, or an MCP if the vendor has one) must come from Holded's current docs, then a docs/tools/HOLDED/ folder with a read test."
 
   - prompt: "Tenemos Sage 50 instalado en el ordenador de la oficina. ¿Puede el agente leer los clientes?"
     why: "Desktop software with no public API: the legacy pattern, find where the data lives, read a nightly copy with a SELECT-only login, never the live database, and ask the distributor first."
@@ -31,7 +31,7 @@ should_not_trigger:
     route_to: "api-connector-builder"
     why: "The route is already decided; what remains is building a robust typed client, which is that skill's job."
 
-  - prompt: "Set up 01-TOOLS and 02-DOCS for this whole repo and detect every provider we use."
+  - prompt: "Set up docs/tools and docs/ for this whole repo and detect every provider we use."
     route_to: "harness"
     why: "A whole-workspace scan and layout, not one named tool."
 
@@ -54,5 +54,5 @@ capability:
       - "Researches the vendor's current documentation and cites sources with dates, or says plainly that nothing reliable was found"
       - "Chooses a read-only route and never proposes writing into the program's database; if writing comes up, it goes through the official import format"
       - "Proposes reading a nightly copy with a SELECT-only user, reached privately, never the live database exposed to the internet"
-      - "Builds 01-TOOLS/<TOOL>/ from the template with a test_connection that proves reading works AND that a write is refused, telling a permission error apart from any other failure"
-      - "Explains the chosen route in plain words and records the connection in 02-DOCS"
+      - "Builds docs/tools/<TOOL>/ from the template with a test_connection that proves reading works AND that a write is refused, telling a permission error apart from any other failure"
+      - "Explains the chosen route in plain words and records the connection in docs/"

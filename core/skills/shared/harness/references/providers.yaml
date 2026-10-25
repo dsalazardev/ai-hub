@@ -1,12 +1,12 @@
 # Provider catalog for harness.
 #
 # Each entry defines how to DETECT a provider in a workspace and what to SHIP
-# inside 01-TOOLS/<ID>/ when it is detected. Adding a new provider = add a new
+# inside docs/tools/<ID>/ when it is detected. Adding a new provider = add a new
 # entry here. The SKILL.md never needs to change.
 #
 # Schema:
-#   id:                   uppercase folder name under 01-TOOLS/
-#   category:             grouping for 01-TOOLS/README.md
+#   id:                   uppercase folder name under docs/tools/
+#   category:             grouping for docs/tools/README.md
 #   detectors:
 #     imports:            list of grep patterns for SDK imports (any match)
 #     env_vars:           list of env var names to grep
@@ -3440,7 +3440,7 @@ providers:
         CODE=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$ZAPIER_MCP_URL" \
           -H "Authorization: Bearer $ZAPIER_MCP_API_KEY" -H "Content-Type: application/json" \
           -H "Accept: application/json, text/event-stream" \
-          -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"rsc","version":"1"}}}')
+          -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ai-hub","version":"1"}}}')
         case "$CODE" in 2*) echo "OK — Zapier MCP endpoint reachable (HTTP $CODE).";; *) echo "FAIL — HTTP $CODE" >&2; exit 1;; esac
       README.md: |
         # ZAPIER
@@ -3520,7 +3520,7 @@ providers:
         Dashboard: https://wandb.ai/authorize (copy your API key).
         `WANDB_API_KEY` — secret. Verify with `wandb login --verify` if the GraphQL check is flaky.
 
-# Categories used to group tools in 01-TOOLS/README.md.
+# Categories used to group tools in docs/tools/README.md.
 categories:
   infra: "Infra & deploy"
   datos: "Databases & BaaS"

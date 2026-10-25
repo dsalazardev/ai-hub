@@ -3,7 +3,7 @@ name: technical-writing
 description: "Use when writing or fixing user-facing technical docs — a README, a getting-started tutorial, a how-to guide, or API/CLI/config reference — especially when a page tries to teach, explain and enumerate at once, a tutorial branches, a reference is padded with opinions, a README reads like a sales pitch, samples are stale, or weasel words have crept in. NOT an SEO blog article (that is `article-writing`), NOT the content calendar or pipeline (that is `content-engine`)."
 tags: [documentation, technical-writing, diataxis, readme, docs-as-code, developer-docs]
 recommends: [article-writing, content-engine, course-storytelling, translation-l10n, brand-voice, accessibility]
-origin: risco
+origin: ai-hub
 ---
 
 # Technical writing

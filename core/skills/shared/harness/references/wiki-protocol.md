@@ -181,7 +181,7 @@ exist. Create only what is missing; never overwrite existing files:
 - `02-DOCS/wiki/gaps.md` — heading `# Knowledge Gaps`, empty body
 - `02-DOCS/wiki/scores.json` — `{}` (populated by the first Maintenance Pass)
 - `02-DOCS/wiki/.ingested.json` — `{}` (the Auto-Ingest Sweep's seen-ledger)
-- `02-DOCS/.rscignore` — the scan boundary for the Auto-Ingest Sweep, from
+- `02-DOCS/.ai-hubignore` — the scan boundary for the Auto-Ingest Sweep, from
   `ingest-ignore-defaults.md` (tracked, not gitignored)
 - `02-DOCS/wiki/reports/` directory (with `.gitkeep`) — will hold Deep Improve reports
 - `02-DOCS/audits/` directory (with `.gitkeep`) — holds per-run audit reports
@@ -400,7 +400,7 @@ generalizes the SDD session-summary convention to *any* work.
 
 - **Hook — `PreCompact` / `SessionEnd`** (Claude Code): fires right before context
   is lost or the session ends. The hook only *reminds*; the agent writes the
-  worklog (Karpathy: the LLM writes). Wired by `targets/` → `.rsc/worklog-checkpoint.mjs`
+  worklog (Karpathy: the LLM writes). Wired by `targets/` → `.ai-hub/worklog-checkpoint.mjs`
   (run via `node`, so it works on Windows too).
 - **Explicit milestone**: after a commit or a shipped feature, capture a worklog.
 - **Daily curation automation**: distills any pending worklog raw on a timer (see
@@ -483,7 +483,7 @@ the original stays exactly where it was.
 ### Steps
 
 1. **inbox/** — run the Inbox Sweep on `inbox/` (unchanged).
-2. **Scan** — walk the workspace minus `.rscignore` (and minus detected app source
+2. **Scan** — walk the workspace minus `.ai-hubignore` (and minus detected app source
    dirs). Consider only document-like files. A file is **un-ingested** when its
    `path` is absent from `wiki/.ingested.json` OR its content hash differs.
 3. **Classify** each candidate and apply the Clean-as-you-go rule:
@@ -522,13 +522,13 @@ Un-ingested = path absent OR hash changed. `inbox/` files still move to
 ### Auto-Ingest safety rails
 
 - **Ledger-idempotent.** Never reprocess a source whose path+hash is recorded.
-- **Scoped by `.rscignore`.** Never scan code, build output, `01-TOOLS/`, the
+- **Scoped by `.ai-hubignore`.** Never scan code, build output, `01-TOOLS/`, the
   wiki's own `raw/`+`wiki/`, or non-document files (see `ingest-ignore-defaults.md`).
 - **Clean-as-you-go.** Loose root-level files and `inbox/` contents are **moved**
   into `raw/` after a verified ingest (the repo stays clean); files nested in a
   user-maintained folder are **copied** and consolidation is proposed with consent.
   A move never precedes the original being safely written to `raw/`: use
-  `npx @ericrisco/rsc ingest <file>`, which verifies the copy by hash before removing the original.
+  `npx ai-hub ingest <file>`, which verifies the copy by hash before removing the original.
 - **Never delete.** The original is relocated into `raw/`, never destroyed.
   Removing an emptied/redundant folder is quoted-consent only.
 - **Ambiguity is proposed, not grabbed.**
@@ -839,7 +839,7 @@ These apply to all Layers:
   1. Every non-reserved `.md` file has valid YAML frontmatter with a non-empty
      `type`. (Reserved files `index.md` and `log.md` are exempt — see below.)
   2. The frontmatter standard surface is `type` (required) + `title, description,
-     resource, tags, timestamp` (recommended, OKF-named). rsc adds custom fields
+     resource, tags, timestamp` (recommended, OKF-named). ai-hub adds custom fields
      (`aliases, topic, status, sources, score`) — OKF allows any extra key.
   3. The knowledge graph is built from **standard markdown links** — NEVER
      wikilinks (`[[...]]`). An OKF consumer follows markdown links; it cannot

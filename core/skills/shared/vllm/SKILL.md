@@ -3,7 +3,7 @@ name: vllm
 description: "Use when self-hosting an open-weight LLM for high-throughput concurrent serving with vLLM — running an OpenAI-compatible endpoint, splitting a model across GPUs with tensor or pipeline parallelism, loading quantized weights, serving one or many LoRA adapters, and debugging KV-cache OOM from memory-utilisation and context-length flags. NOT renting or provisioning the GPU box (that is `runpod` or `modal`), NOT single-user laptop inference (that is `ollama`), NOT a hosted inference API you do not operate (that is `together-fireworks` or `huggingface`)."
 tags: [vllm, llm-serving, inference-server, tensor-parallel, quantization]
 recommends: [open-weights, finetuning, runpod, modal, ollama]
-origin: risco
+origin: ai-hub
 ---
 
 # vLLM — high-throughput serving of open-weight models

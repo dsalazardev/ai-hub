@@ -1,17 +1,17 @@
 ---
 name: analyze
-description: "Use when constitution, spec, plan and tasks all exist and you want them cross-read against each other before any code is written — the rsc-sdd pre-implementation gate. Reports coverage gaps, contradictions, duplication, ambiguity and scope drift; edits nothing. NOT the task breakdown (that is `tasks`), NOT the coding (that is `implement`), NOT the post-code test gate (that is `verify`), NOT resolving ambiguity (that is `clarify`)."
+description: "Use when constitution, spec, plan and tasks all exist and you want them cross-read against each other before any code is written — the ai-hub Spec-Kit pre-implementation gate. Reports coverage gaps, contradictions, duplication, ambiguity and scope drift; edits nothing. NOT the task breakdown (that is `tasks`), NOT the coding (that is `implement`), NOT the post-code test gate (that is `verify`), NOT resolving ambiguity (that is `clarify`)."
 tags: [sdd, analyze, consistency]
 recommends: [implement]
 profiles: [core, full]
-origin: risco
+origin: ai-hub
 ---
 
 # Analyze — the pre-implementation consistency gate
 
 You have a **constitution**, a **spec**, a **plan** and a **task list**. Four artifacts written at four different moments, by a mind that drifted a little each time. `analyze` reads all four *against each other* and surfaces where they disagree. It is the cheapest place in the whole chain to catch a problem — a contradiction found here costs a sentence; the same contradiction found mid-implement costs a rewrite.
 
-Sixth phase of the rsc-sdd chain (`constitution → specify → clarify → plan → tasks → analyze → implement`); the method itself lives in `../sdd/SKILL.md`. It is a **gate, not a worker**: it produces a report and stops. The user reads the findings and decides what to fix, and which phase to send each fix back to.
+Sixth phase of the ai-hub Spec-Kit chain (`constitution → specify → clarify → plan → tasks → analyze → implement`); the method itself lives in `../sdd/SKILL.md`. It is a **gate, not a worker**: it produces a report and stops. The user reads the findings and decides what to fix, and which phase to send each fix back to.
 
 **Report only. Resolve nothing.** Never edit the constitution, spec, plan or tasks; never open a code file to "just fix it"; never silently reconcile a contradiction by picking a side. This one is absolute because a gate that quietly fixes things stops being a gate: the user never learns the spec was wrong, the plan built on the old assumption stays stale, and the "consistency check" has manufactured a new inconsistency. Name the conflict, show both sides with locations, propose where it should be resolved, hand the decision back.
 
@@ -23,7 +23,7 @@ The report is the same for every reader: a finding table (severity, the two arti
 
 ## Inputs — locate the four artifacts
 
-Read all four before analyzing. The rsc-sdd artifacts live under `02-DOCS/wiki/sdd/`, indexed from `02-DOCS/wiki/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer to it):
+Read all four before analyzing. The ai-hub Spec-Kit artifacts live under `02-DOCS/wiki/sdd/`, indexed from `02-DOCS/wiki/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer to it):
 
 | Artifact | Canonical location | Role in the check |
 | --- | --- | --- |

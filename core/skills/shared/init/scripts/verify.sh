@@ -4,11 +4,11 @@
 #
 # WHAT IT DOES (read-only; never edits or creates a file)
 #   Static checks that Phase 1 (PROFILE) actually landed in the workspace:
-#     1. 02-DOCS/wiki/harness/user-profile.md exists and carries a technical_level
+#     1. docs/user-profile.md exists and carries technical_level
 #        line — the one dial (technical, or with analogies). The accompaniment dial
 #        is retired: an old profile that still carries it is not flagged.
-#     2. 02-DOCS/wiki/harness/decisions.md exists (append-only decisions log).
-#     3. Root CLAUDE.md exists and its "## Knowledge map" section links the profile.
+#     2. .planning/history.md exists (append-only decisions log).
+#     3. Root AGENTS.md exists and its "## Knowledge map" section links the profile.
 #   Everything is detect-or-skip: a missing workspace piece is a WARNING, never a
 #   failure — `init` may simply not have run yet. The script never fails the build;
 #   it only reports. (No --strict mode: this is a presence check, not a CI gate.)
@@ -58,9 +58,9 @@ if [ ! -e "$ROOT" ]; then
   printf '%sPath not found: %s%s\n' "$RED" "$ROOT" "$NC"; exit 2
 fi
 
-PROFILE="$ROOT/02-DOCS/wiki/harness/user-profile.md"
-DECISIONS="$ROOT/02-DOCS/wiki/harness/decisions.md"
-CLAUDE_MD="$ROOT/CLAUDE.md"
+PROFILE="$ROOT/docs/user-profile.md"
+DECISIONS="$ROOT/.planning/history.md"
+CLAUDE_MD="$ROOT/AGENTS.md"
 
 # has <file> <pattern>: true if a non-empty file contains a case-insensitive match.
 has() {
@@ -72,7 +72,7 @@ printf 'Checking init PROFILE artifacts under: %s\n\n' "$ROOT"
 
 # --- 1. user profile --------------------------------------------------------
 if [ ! -s "$PROFILE" ]; then
-  warn "no user profile at 02-DOCS/wiki/harness/user-profile.md — run init's PROFILE phase first"
+  warn "no user profile at docs/user-profile.md — run init's PROFILE phase first"
 else
   ok "user profile present: $PROFILE"
   if has "$PROFILE" 'technical_level'; then
@@ -84,25 +84,25 @@ fi
 
 # --- 2. decisions log -------------------------------------------------------
 if [ ! -s "$DECISIONS" ]; then
-  warn "no decisions log at 02-DOCS/wiki/harness/decisions.md — significant decisions should be appended here"
+  warn "no decisions log at .planning/history.md — significant decisions should be appended here"
 else
   ok "decisions log present: $DECISIONS"
 fi
 
-# --- 3. CLAUDE.md Knowledge map link ----------------------------------------
+# --- 3. AGENTS.md Knowledge map link ----------------------------------------
 if [ ! -s "$CLAUDE_MD" ]; then
-  warn "no root CLAUDE.md — init should create it with a '## Knowledge map' section"
+  warn "no root AGENTS.md — init should create it with a '## Knowledge map' section"
 else
-  ok "root CLAUDE.md present"
+  ok "root AGENTS.md present"
   if has "$CLAUDE_MD" '## *Knowledge map'; then
-    ok "CLAUDE.md has a '## Knowledge map' section"
+    ok "AGENTS.md has a '## Knowledge map' section"
     if has "$CLAUDE_MD" 'user-profile.md'; then
       ok "Knowledge map links the user profile"
     else
-      warn "Knowledge map does not link 02-DOCS/wiki/harness/user-profile.md"
+      warn "Knowledge map does not link docs/user-profile.md"
     fi
   else
-    warn "CLAUDE.md has no '## Knowledge map' section linking the profile"
+    warn "AGENTS.md has no '## Knowledge map' section linking the profile"
   fi
 fi
 

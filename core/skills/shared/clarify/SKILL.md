@@ -1,17 +1,17 @@
 ---
 name: clarify
-description: "Use when a spec exists and must be de-risked before planning — hunt its ambiguities, unstated assumptions and edge cases, ask the few build-changing questions, bake the answers back into the spec. The rsc SDD gate between `specify` (writes the spec) and `plan` (designs the build). NOT the cross-artifact consistency check (that is `analyze`)."
+description: "Use when a spec exists and must be de-risked before planning — hunt its ambiguities, unstated assumptions and edge cases, ask the few build-changing questions, bake the answers back into the spec. The ai-hub Spec-Kit gate between `specify` (writes the spec) and `plan` (designs the build). NOT the cross-artifact consistency check (that is `analyze`)."
 tags: [sdd, clarify, questions]
 recommends: [plan]
 profiles: [core, full]
-origin: risco
+origin: ai-hub
 ---
 
 # Clarify — the de-risking gate before planning
 
 A spec written in one sitting always lies a little. It states what the author *thought of*, and stays silent on everything they didn't — the edge cases, the unstated defaults, the words that mean two things. Those silences don't disappear; they get discovered later, mid-implementation, where they cost ten times as much to fix. **Clarify is the gate that drags those silences into the open while they are still cheap.**
 
-This is the fourth phase of the rsc SDD chain (`constitution` → `specify` → **`clarify`** → `plan` → `tasks` → `analyze` → `implement` → `verify` → `review` → `ship`); the method itself lives in `../sdd/SKILL.md`. `specify` turned a fuzzy intent into a spec; clarify interrogates that spec, asks the user the questions that actually change the build, and writes the answers back so the spec becomes safe to plan from. It produces **no new artifact** — it sharpens the existing one in place. The line is **specify creates, clarify de-risks, plan designs**: if you find yourself proposing how to *build* it, you have left clarify.
+This is the fourth phase of the ai-hub Spec-Kit chain (`constitution` → `specify` → **`clarify`** → `plan` → `tasks` → `analyze` → `implement` → `verify` → `review` → `ship`); the method itself lives in `../sdd/SKILL.md`. `specify` turned a fuzzy intent into a spec; clarify interrogates that spec, asks the user the questions that actually change the build, and writes the answers back so the spec becomes safe to plan from. It produces **no new artifact** — it sharpens the existing one in place. The line is **specify creates, clarify de-risks, plan designs**: if you find yourself proposing how to *build* it, you have left clarify.
 
 **Model tier: `balanced`** — this phase ranks and asks the few high-leverage questions, it does not design architecture. Resolve and apply it per `../sdd/references/model-routing.md`; routing is off unless `models.enabled: true` in `02-DOCS/wiki/sdd/config.yaml`.
 

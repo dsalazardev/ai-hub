@@ -15,10 +15,10 @@ should_trigger:
     why: "Registry refresh plus runtime config is exactly this skill."
 
 should_not_trigger:
-  - prompt: "Inicia mi empresa/harness general y monta 01-TOOLS y 02-DOCS."
+  - prompt: "Inicia mi empresa/harness general y monta docs/tools y docs/."
     route_to: "init"
     why: "First-contact/general workspace bootstrap belongs to init, which then hands off to harness."
-  - prompt: "Audit this workspace and scaffold provider tools under 01-TOOLS."
+  - prompt: "Audit this workspace and scaffold provider tools under docs/tools."
     route_to: "harness"
     why: "Operational scaffolding and provider tools are harness work, not SDD technical calibration."
   - prompt: "Write the feature spec for CSV export."
@@ -35,9 +35,9 @@ capability:
   - scenario: "A repo has package.json with pnpm, test/lint/typecheck/build scripts, Vitest and Playwright, plus no existing SDD config. The user asks to calibrate before SDD."
     must_include:
       - "Detects stack, package manager, scripts, test runners and monorepo signals from repo files."
-      - "Writes 02-DOCS/wiki/sdd/config.yaml, not an openspec/ folder."
+      - "Writes .specify/config.yaml, not an openspec/ folder."
       - "Sets testing.strict_tdd true because a runner exists and records apply/verify commands."
       - "Asks or defaults execution_mode, artifact_store, review budget and delivery strategy."
-      - "Runs or instructs npx @ericrisco/rsc registry refresh and records .rsc/skill-registry.json as registry_path."
+      - "Reads manifest.yaml and ai-hub list; records skills.publish as the declared catalog."
       - "Distinguishes itself from init and harness."
       - "Ends with the standard result envelope including skill_resolution and evidence."

@@ -6,7 +6,7 @@ description: {One-sentence summary, for previews + search.}
 resource: {URL or path to the underlying source/asset — omit the line if none}
 tags: []
 timestamp: {YYYY-MM-DDTHH:MM:SSZ}
-# rsc custom fields (OKF allows any; conformant consumers preserve unknown keys)
+# ai-hub custom fields (OKF allows any; conformant consumers preserve unknown keys)
 aliases: [{old-slug}]
 topic: {topic}
 status: draft
@@ -47,7 +47,7 @@ OKF standard surface:
 - resource     URI/path to the underlying asset this concept documents (omit if none).
 - tags         cross-cutting qualities ONLY — never the main category (that is `topic`).
 - timestamp    ISO 8601 datetime of the last meaningful edit (e.g. 2026-06-28T14:30:00Z).
-rsc custom fields (allowed by OKF; never required for conformance):
+ai-hub custom fields (allowed by OKF; never required for conformance):
 - aliases  keep the old kebab slug here so pre-migration links still resolve.
 - topic    the wiki/<topic>/ folder, one level. Inferred from content, never hardcoded.
 - status   draft | stable | stale  (lifecycle; filterable in a Base).

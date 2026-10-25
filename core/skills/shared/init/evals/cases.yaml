@@ -1,8 +1,8 @@
 skill: init
 
-# Cases for the rsc-skills "init" front door / bootstrapper.
+# Cases for the ai-hub "init" front door / bootstrapper.
 # init profiles the user (one question: technical terms or analogies), discovers what
-# they want to BUILD or GOVERN (code OR a non-code harness), recommends rsc
+# they want to BUILD or GOVERN (code OR a non-code harness), recommends catalog
 # skills, and hands off to the harness skill. It is NOT the scaffolder and NOT
 # a specific stack skill.
 
@@ -11,7 +11,7 @@ should_trigger:
     why: "Canonical greenfield entry with explicit uncertainty ('no sé por dónde empezar') — init's job is to ask the register, discover, and recommend before anything is built."
 
   - prompt: "I have an existing repo and I want to set up the harness on it. Where do I start?"
-    why: "Brownfield bootstrapping: pointing the rsc harness at an existing project is exactly init's front-door role (detect greenfield vs brownfield, profile, recommend skills)."
+    why: "Brownfield bootstrapping: pointing the harness at an existing project is exactly init's front-door role (detect greenfield vs brownfield, profile, recommend skills)."
 
   - prompt: "Acabo de instalar esto. ¿Qué hago primero?"
     why: "First-contact phrasing without naming any tool — init is the literal first thing you run; it should claim 'what do I do first' onboarding moments."
@@ -23,19 +23,19 @@ should_trigger:
     why: "Non-code harness (company/ops) bootstrap — init is domain-agnostic and explicitly governs non-code harnesses the same way; this is a deliberately non-obvious trigger."
 
   - prompt: "Set me up. I want to build a personal knowledge base / wiki with this."
-    why: "'Set me up' + a non-code knowledge-base goal: init profiles and recommends (likely harness, possibly marketing) then hands off to harness — it owns the setup conversation, not a specific stack skill."
+    why: "'Set me up' + a non-code knowledge-base goal: init profiles and recommends (likely harness, possibly technical-writing) then hands off to harness — it owns the setup conversation, not a specific stack skill."
 
   - prompt: "Bootstrap a workspace for a research program I'm planning."
     why: "Explicit 'bootstrap a workspace' for a non-code (research) domain — init's discover+recommend+handoff flow, including the iron rule that 'project' is not assumed to mean code."
 
 should_not_trigger:
-  - prompt: "Create a CLAUDE.md file documenting the architecture of this existing codebase."
+  - prompt: "Create a AGENTS.md file documenting the architecture of this existing codebase."
     route_to: "none"
-    why: "This is the built-in /init (CLAUDE.md generator), not the rsc-skills front door. init only writes the user-profile + a Knowledge-map link, and it does NOT scaffold or document the codebase — that is harness/other tooling. No rsc sibling owns generic architecture docs, so route to none."
+    why: "This is the built-in /init (AGENTS.md generator), not the front door of ai-hub. init only writes the user-profile + a Knowledge-map link, and it does NOT scaffold or document the codebase — that is harness/other tooling. No catalog sibling owns generic architecture docs, so route to none."
 
-  - prompt: "Run the scaffolding now — create the 01-TOOLS and 02-DOCS folders and wire up the structure."
+  - prompt: "Run the scaffolding now — create the workspace docs and tooling folders and wire up the structure."
     route_to: "harness"
-    why: "init explicitly hands off scaffolding to the harness skill. The moment the user asks to actually BUILD 01-TOOLS/02-DOCS, it is harness's job, not init's (init writes only the profile + link)."
+    why: "init explicitly hands off scaffolding to the harness skill. The moment the user asks to actually build the workspace docs, it is harness's job, not init's (init writes only the profile + link)."
 
   - prompt: "Set up a FastAPI backend with a Postgres database for my new service."
     why: "User already knows the stack and wants a specific backend built — this is the fastapi/backend stack skill, not the profiling front door. init recommends skills; it does not implement stacks."
@@ -56,19 +56,19 @@ should_not_trigger:
 capability:
   - scenario: "A non-technical founder says: 'I want to build an app to connect dog owners but I don't know where to start.' Show how init opens the engagement."
     must_include:
-      - "Asks ONE first-contact question FIRST, before any discovery or recommendation ('¿Te hablo en lenguaje técnico o con analogías?'), and records technical_level as technical or non-technical"
+      - "Asks ONE first-contact question FIRST, before any discovery or recommendation ('¿Te hablo en lenguaje técnico o con analogías?'), and records the register as technical or non-technical"
       - "Asks no second calibration question (no accompaniment/verbosity level); given a silent or unclear answer, records non-technical and speaks with plain words and analogies"
-      - "Persists the profile to 02-DOCS/wiki/harness/user-profile.md and an append-only 02-DOCS/wiki/harness/decisions.md, and links both from a ## Knowledge map section in root CLAUDE.md (creating CLAUDE.md if absent, additive only)"
+      - "Persists the profile to docs/user-profile.md and an append-only .planning/history.md, and links both from a ## Knowledge map section in root AGENTS.md (creating AGENTS.md if absent, additive only)"
       - "Detects greenfield vs brownfield rather than assuming, and runs DISCOVER (goals, audience, constraints, surfaces) before recommending"
-      - "Recommends specific rsc skills matched to discovery (at minimum harness; nextjs/flutter + design if app surfaces justify it) and PRINTS the exact install commands (npx @ericrisco/rsc add <skill> ...)"
-      - "Does NOT install anything itself and does NOT scaffold 01-TOOLS/02-DOCS — it hands off to the harness skill as the final step"
+      - "Recommends specific catalog skills matched to discovery (at minimum harness; nextjs/flutter + design if app surfaces justify it) and PRINTS the exact install commands (ai-hub add skill <id>, one id per command)"
+      - "Does NOT install anything itself and does NOT scaffold the workspace docs — it hands off to the harness skill as the final step"
       - "Does not recommend speculative skills (e.g. building-agents) unless discovery justified them"
 
   - scenario: "A user with an existing multi-package repo says: 'Point the harness at my project and get me started.' Show the brownfield front-door flow."
     must_include:
       - "Still asks the one register question first — profile before anything, even on brownfield"
-      - "Detects brownfield via manifests (package.json / pyproject.toml / pubspec.yaml / go.mod / Cargo.toml), source files, legacy XX-* folders, or existing 01-TOOLS/02-DOCS, with a read-only scan that ignores node_modules/.venv/.next/.git/dist/build"
+      - "Detects brownfield via manifests (package.json / pyproject.toml / pubspec.yaml / go.mod / Cargo.toml), source files, legacy XX-* folders, or existing docs/tools, with a read-only scan that ignores node_modules/.venv/.next/.git/dist/build"
       - "Summarizes the detected stack and current state and CONFIRMS with the user instead of assuming"
-      - "Writes profile + decisions log under 02-DOCS/wiki/harness/ and adds the Knowledge-map link to CLAUDE.md without deleting existing content"
+      - "Writes docs/user-profile.md and .planning/history.md and adds the Knowledge-map link to AGENTS.md without deleting existing content"
       - "Recommends skills matched to the detected stack and prints the exact install commands, recommending only what was justified"
-      - "Hands off to the harness skill for the actual 01-TOOLS/02-DOCS scaffolding/migration rather than doing it inside init"
+      - "Hands off to the harness skill for the actual workspace scaffolding/migration rather than doing it inside init"

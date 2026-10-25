@@ -1,9 +1,9 @@
-# rsc conventions — wiring a skill into the catalog
+# ai-hub conventions — wiring a skill into the catalog
 
 A skill is not done when `SKILL.md` reads well. It is done when it is *in the
 catalog* — frontmatter valid, indexed in the manifest, discoverable by the
-`npx @ericrisco/rsc` recommender, and reachable where the agent will find it. This reference
-is the rsc plumbing.
+`npx ai-hub` recommender, and reachable where the agent will find it. This reference
+is the ai-hub plumbing.
 
 ## The layout (single source of truth)
 
@@ -22,7 +22,7 @@ scripts/eval-lint.sh            ← gates evals/cases.yaml minimums
 ```
 
 Rule: **`skills/<id>/` is the only place you edit.** There are no generated skill
-copies in the repo any more — the `rsc-universal` CLI copies skills into the
+copies in the repo any more — the `ai-hub` CLI copies skills into the
 target IDE at install time. `manifest.json` is generated; editing it by hand is a
 defect because the next `npm run manifest` overwrites it.
 
@@ -50,13 +50,13 @@ profiles: [core, full]           # optional: named-profile membership
 ## Invocation
 
 There are no bundles and no `/<bundle>:<id>` namespacing. Most targets install a
-skill under their own rsc folder (e.g. `.codex/rsc/<id>/`), reached from that
+skill under their own ai-hub folder (e.g. `.codex/ai-hub/<id>/`), reached from that
 assistant's instructions file. **Claude is the exception:** Claude Code only
-discovers project skills one level under `.claude/skills/`, so rsc skills install
-**flat** at `.claude/skills/<id>/SKILL.md` (a nested `.claude/skills/rsc/<id>/`
+discovers project skills one level under `.claude/skills/`, so ai-hub skills install
+**flat** at `.claude/skills/<id>/SKILL.md` (a nested `.claude/skills/ai-hub/<id>/`
 is never discovered). A skill is invoked by its `name`. The `suggest` detector is
 always installed (the floor) and proposes installing any skill a task needs via
-`npx @ericrisco/rsc add <id>`.
+`npx ai-hub add <id>`.
 
 ## Wiring steps for a new skill
 
@@ -92,4 +92,4 @@ A `scripts/verify.sh` belongs in a skill that emits something a script can *chec
 
 ## The originality rule (hard)
 
-The rsc catalog is its own ecosystem, not a re-skin. When mining ideas from other skill libraries, take the *idea* and re-express it in the rsc voice. Never reproduce another ecosystem's signature artifacts or phrasing: no borrowed urgency blocks ("1% chance…"), no copied rationalization-table wording, no `*-reviewer-prompt.md` file convention, no verbatim flowchart text. Git authorship on rsc commits is Eric, never the assistant. If a draft reads like it came from somewhere else, rewrite it.
+The ai-hub catalog is its own ecosystem, not a re-skin. When mining ideas from other skill libraries, take the *idea* and re-express it in the ai-hub voice. Never reproduce another ecosystem's signature artifacts or phrasing: no borrowed urgency blocks ("1% chance…"), no copied rationalization-table wording, no `*-reviewer-prompt.md` file convention, no verbatim flowchart text. Git authorship on ai-hub commits is Daner Alejandro Salazar Colorado, never the assistant. If a draft reads like it came from somewhere else, rewrite it.

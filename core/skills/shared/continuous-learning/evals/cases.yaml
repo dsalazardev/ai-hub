@@ -29,11 +29,11 @@ should_not_trigger:
 capability:
   - scenario: "A user says: 'You've now twice deleted my .env when scaffolding a tool. I'm tired of catching it. Make sure this never happens again.' Show how continuous-learning captures it."
     must_include:
-      - "Reads technical_level from 02-DOCS/wiki/harness/user-profile.md and narrates briefly in that register (technical terms or analogies)."
+      - "Reads the register from AGENTS.md and narrates briefly in that register (technical terms or analogies)."
       - "States the root cause blamelessly as a system gap (a missing guardrail), not 'I was careless'."
       - "Applies the 2+-recurrences rule: this is the 2nd time, so a structural fix is required — not another apology or note."
-      - "Routes to the right durable home via the table: a root CLAUDE.md rule and/or a verify.sh check on the scaffolding skill, naming the exact path."
+      - "Routes to the right durable home via the table: a root AGENTS.md rule and/or a verify.sh check on the scaffolding skill, naming the exact path."
       - "Delegates the actual SKILL.md / eval / verify.sh edit to author-skill where skill craft is required, rather than hand-editing it."
       - "Writes the lesson in the situation-tagged entry format (situation, we believed, actually, durable home, fires next time)."
       - "Proves it fires next time by pointing to the concrete surface (rule / should_not_trigger eval / verify.sh check) that catches the regression, and notes this skill emits no artifact of its own — the check lives there."
-      - "Keeps prose original in rsc voice; no copied signature artifacts."
+      - "Keeps prose original in the voice of ai-hub; no copied signature artifacts."

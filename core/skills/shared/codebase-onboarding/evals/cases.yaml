@@ -36,7 +36,7 @@ should_not_trigger:
     route_to: "analyze"
     why: "Depth audit of a specific change, not breadth orientation of an unfamiliar repo."
 
-  - prompt: "Set up 01-TOOLS and 02-DOCS and generate the root CLAUDE.md for this workspace."
+  - prompt: "Set up docs/tools and docs/ and generate the root AGENTS.md for this workspace."
     route_to: "harness"
     why: "Operational tooling/wiki scaffolding, not understanding — onboarding produces a map, not a tooling layer."
 
@@ -48,7 +48,7 @@ should_not_trigger:
     route_to: "debug"
     why: "Chasing a specific failure through the system; onboarding builds the map you debug with, it does not root-cause."
 
-  - prompt: "Create the initial CLAUDE.md memory file for this repo."
+  - prompt: "Create the initial AGENTS.md memory file for this repo."
     route_to: "init"
     why: "Narrow single-file agent memory; onboarding is the broader recon that feeds init, not the file write itself."
 

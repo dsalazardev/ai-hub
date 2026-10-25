@@ -200,7 +200,7 @@ describe("POST /api/projects", () => {
 });
 ```
 
-## RSC caveat
+## React Server Components caveat
 
 **Async Server Components are NOT reliably renderable in jsdom.** Do not snapshot or `render()` an
 `async function Page()`. Instead: unit-test the data functions it calls (e.g. `getProject`), unit-test
@@ -268,7 +268,7 @@ test("home page has no critical a11y violations", async ({ page }) => {
 | Hooks                       | ≥ 85%  | Vitest + RTL     |
 | Presentational components   | ≥ 80%  | Vitest + RTL     |
 | Container / stateful comps  | ≥ 70%  | Vitest + RTL     |
-| Pages (RSC) & full flows    | e2e    | Playwright       |
+| Pages (React Server Components) & full flows    | e2e    | Playwright       |
 
 ```bash
 vitest run                 # unit + integration, once
@@ -282,7 +282,7 @@ playwright test            # e2e (builds + starts the app via webServer)
 - Asserting render counts or internal state — brittle; assert what the user sees.
 - Mocking React itself — mock the network (MSW) and the DB/`auth` modules instead.
 - Ignoring `act(...)` warnings — they signal an unawaited update; fix with `findBy`/`waitFor`.
-- Snapshotting an RSC page — async Server Components are not jsdom-renderable; use Playwright.
+- Snapshotting an React Server Components page — async Server Components are not jsdom-renderable; use Playwright.
 
 ## See Also
 

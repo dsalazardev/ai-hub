@@ -10,7 +10,7 @@ A single, short, normative file at the repository root gives every agent one ent
 
 - Add `/AGENTS.md` at the repository root as the single source of truth for agent operation.
 - Make reading it mandatory before any task, command or file edit, with an explicit precedence order against the other documents.
-- Document the reference sources an agent must consult: `rsc-harness` (packaging, manifest hashing, CLI, worktree isolation, guards), `REPO-BETTATECH` (architecture and integration patterns), the Lucid master diagram and `architecture/` views 00–24.
+- Document the reference sources an agent must consult: `ai-hub` (packaging, manifest hashing, CLI, worktree isolation, guards), `REPO-BETTATECH` (architecture and integration patterns), the Lucid master diagram and `architecture/` views 00–24.
 - Describe the target system: `hermes-control` (HMAC webhooks, dedupe, state machine, policy A0–A5, PostgreSQL `SKIP LOCKED` queue, runner coordinator, evidence publisher), `hermes-agent` (Telegram/Slack/Discord/WhatsApp, push with SHA-256, pull commands) and the seven GitLab labels.
 - Declare **Spec Kit** as the active methodology and OpenSpec as legacy reference only, and enumerate the 17 commands across the three lanes with their artifacts and verdicts.
 - Add an 8-role agent matrix with explicit write boundaries, mapping the role names used by the product to the canonical agent files that exist today.
@@ -31,5 +31,5 @@ None.
 
 - New tracked file: `AGENTS.md` (root). No source code, tests, schemas or dependencies change.
 - Affects every agent session, the orchestrator startup protocol, and the review checklist; complements `README.md`, `manifest.yaml`, `rules/core.md` and `orchestrator/PROMPT.md` without replacing them.
-- References machine-specific paths (`rsc-harness`, `REPO-BETTATECH`), a Lucid URL and `architecture/`; the document must degrade gracefully when a reference is unavailable.
+- References machine-specific paths (`ai-hub`, `REPO-BETTATECH`), a Lucid URL and `architecture/`; the document must degrade gracefully when a reference is unavailable.
 - Documents a `resolveAiHubDir()` contract. Implementing that helper is explicitly out of scope for this change and must be planned separately.

@@ -4,7 +4,7 @@ description: "Use when writing or refactoring plain Ruby outside Rails — scrip
 tags: [ruby, gems, bundler, metaprogramming, rspec, minitest, enumerable]
 recommends: [rails, testing-web, secure-coding]
 profiles: []
-origin: risco
+origin: ai-hub
 ---
 
 # Idiomatic Ruby, the language

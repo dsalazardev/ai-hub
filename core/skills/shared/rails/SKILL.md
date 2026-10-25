@@ -4,7 +4,7 @@ description: "Use when building or maintaining a Ruby on Rails app — models, c
 tags: [rails, activerecord, hotwire, turbo, stimulus, solid-queue, minitest]
 recommends: [ruby, postgresdb, testing-web, deployment, db-migrations]
 profiles: []
-origin: risco
+origin: ai-hub
 ---
 
 # Build Rails the omakase way

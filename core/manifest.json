@@ -376,10 +376,10 @@
   ],
   "rules": [
     "core",
-    "rsc/skill-behavior-rubric",
-    "rsc/skill-harden-rubric",
-    "rsc/skill-migration-brief",
-    "rsc/skill-rubric"
+    "skill-quality/skill-behavior-rubric",
+    "skill-quality/skill-harden-rubric",
+    "skill-quality/skill-migration-brief",
+    "skill-quality/skill-rubric"
   ],
   "counts": {
     "roles": 8,

@@ -3,7 +3,7 @@ name: cost-tracking
 description: "Use when metering and capping AI or cloud app spend — tokens read from the response `usage` object, priced off a dated rate table, ledgered per user/tenant/feature, with alerts and a hard cap before the bill. NOT cash runway (that is `finance-ops`), NOT cost-per-unit margin (that is `unit-economics`), NOT booking the spend (that is `bookkeeping`)."
 tags: ["cost-tracking", "token-accounting", "llm-spend", "budgets", "alerts", "prompt-caching", "billing-guardrails", "finops"]
 recommends: ["finance-ops", "unit-economics", "analytics", "stripe", "aws-essentials", "gcp-essentials"]
-origin: risco
+origin: ai-hub
 ---
 
 # Cost tracking

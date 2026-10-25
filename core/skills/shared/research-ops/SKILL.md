@@ -3,7 +3,7 @@ name: research-ops
 description: "Use when someone hands you an open question whose answer must survive scrutiny — a tech choice, a regulation, a what-is-actually-true-about-X — with every non-obvious claim dated and sourced, source disagreements surfaced rather than averaged away, and a cited memo as the deliverable. Also for refreshing a stale research memo. NOT sizing a market with TAM/SAM/SOM (that is `market-research`), NOT a standing cadence watch on named rivals (that is `competitor-watch`)."
 tags: [research-ops, deep-research, source-credibility, citations, verification, synthesis, knowledge-meta]
 recommends: [market-research, competitor-watch, data-scraper, knowledge-ops, decision-records, structured-extraction, technical-writing]
-origin: risco
+origin: ai-hub
 ---
 
 # Research-ops — the deep-research operating procedure

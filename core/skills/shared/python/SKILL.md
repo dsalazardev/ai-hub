@@ -3,7 +3,7 @@ name: python
 description: "Use when the task is Python itself, in any framework or none: PEP 695 generics, mypy --strict typing, dataclass/Protocol/TypedDict/Enum choices, asyncio.TaskGroup, stdlib idioms, src/ layout + pyproject.toml with uv, ruff+mypy+pytest gate. NOT a FastAPI/ASGI service (that is fastapi), NOT a deep pytest suite (that is testing-py)."
 tags: [python, typing, async, packaging, uv]
 recommends: [fastapi, secure-coding, deployment]
-origin: risco
+origin: ai-hub
 ---
 
 # Modern Python at the language level

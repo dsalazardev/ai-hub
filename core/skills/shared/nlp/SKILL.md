@@ -3,7 +3,7 @@ name: nlp
 description: "Use when choosing how to tokenize text or which transformer type fits an NLP task, when a tokenizer over-fragments non-English text or inflates token cost, when picking a language metric, or when classification, NER or summarization output looks wrong and it is unclear whether the tokenizer, the architecture or the metric is at fault. Covers subword tokenizers, encoder versus decoder versus encoder-decoder choice, sentence embeddings, and the metric families. NOT retrieval or vector search (that is `embeddings-search`), NOT the RAG loop (that is `rag`), NOT prompt wording (that is `prompt-engineering`), NOT training the network (that is `finetuning`)."
 tags: [nlp, tokenization, bpe, wordpiece, ner, text-classification, bleu, rouge, perplexity, transformers]
 recommends: [deep-learning, embeddings-search, rag, training-data]
-origin: risco
+origin: ai-hub
 ---
 
 # nlp — tokenize the text, pick the model type, pick the metric

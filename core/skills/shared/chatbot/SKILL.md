@@ -3,7 +3,7 @@ name: chatbot
 description: "Use when a support or sales bot on a live website must behave: persona/system prompt, grounding so it cannot invent prices or policy, jailbreak and injection defense, the human handoff, launch metrics and kill switch. NOT the agent loop or RAG index under it (that is `building-agents`), NOT a human answering one ticket (that is `customer-support`)."
 tags: [chatbot, support-bot, sales-bot, handoff, guardrails, grounding, conversational-ai]
 recommends: [building-agents, rag, customer-support, agent-safety, prompt-engineering, brand-voice]
-origin: risco
+origin: ai-hub
 ---
 
 # Ship the bot that lives on the website

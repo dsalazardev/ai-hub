@@ -7,7 +7,7 @@
 
 ## 2. Section 1 — Sources of truth
 
-- [x] 2.1 Write the four-row reference table (rsc-harness, REPO-BETTATECH, Lucid URL, `architecture/` 00–24) with the intended use of each; verify all four names and the Lucid URL are present.
+- [x] 2.1 Write the four-row reference table (ai-hub, REPO-BETTATECH, Lucid URL, `architecture/` 00–24) with the intended use of each; verify all four names and the Lucid URL are present.
 - [x] 2.2 Add the unavailability rule: if a local path does not exist, stop using that source, state the limitation and fall back to `architecture/master-agentic-architecture.mmd`; verify the sentence exists and no source is presented as guaranteed.
 - [x] 2.3 Add the rule that reference material informs patterns but does not override this document or `rules/core.md`; verify the precedence sentence is present.
 

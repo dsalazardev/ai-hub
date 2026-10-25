@@ -44,4 +44,4 @@ capability:
       - "Requires each currency to have a distinct sink, and tunables to be data-driven rather than hard-coded"
       - "Names the target MDA aesthetic instead of 'more fun', and frames unlocks as new verbs/choices not just +N%"
       - "Recommends prototyping the fix and playtesting for behavior (retention, time-per-tier), not just opinion"
-      - "Defers engine implementation to godot/unity/unreal and records the design in 02-DOCS/wiki/design/ only if a harness exists"
+      - "Defers engine implementation to godot/unity/unreal and records the design in docs/design/ only if a harness exists"

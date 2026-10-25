@@ -19,7 +19,7 @@ should_trigger:
 should_not_trigger:
   - prompt: "Add a server action and revalidate the cache in my app/ route"
     route_to: nextjs
-    why: "Server actions / App Router / RSC — server-rendered React, not a Vite SPA."
+    why: "Server actions / App Router / React Server Components — server-rendered React, not a Vite SPA."
   - prompt: "Build the profile screen in my Expo app"
     route_to: react-native
     why: "Native mobile rendering, not the DOM."

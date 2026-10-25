@@ -3,7 +3,7 @@ name: coolify
 description: "Use when self-hosting apps and databases with Coolify on a VPS you own — install, first-admin lockdown, Git-to-deploy (Nixpacks/Dockerfile/compose), managed Postgres/Redis, scheduled S3 backups, domains + auto-SSL. NOT a PaaS someone else runs (that is `railway`), NOT sizing/hardening the box (that is `hetzner`), NOT authoring Dockerfiles (that is `docker`)."
 tags: [coolify, self-hosting, paas, vps, docker, deployment, devops]
 recommends: [hetzner, digitalocean, docker, postgresdb, backups, domains-dns, github-actions]
-origin: risco
+origin: ai-hub
 ---
 
 # Coolify — own-the-box PaaS on your VPS

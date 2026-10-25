@@ -4,7 +4,7 @@ description: "Use when using Redis or any Redis-protocol store (Valkey, ElastiCa
 tags: [redis, valkey, cache, rate-limiting, distributed-locks, queues, bullmq, streams, lua, data-infra]
 recommends: [postgresdb, vector-db, clickhouse-analytics, scaling, nodejs, fly-io]
 profiles: []
-origin: risco
+origin: ai-hub
 ---
 
 # Redis — cache, lock, rate limiter, queue done correctly

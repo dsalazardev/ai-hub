@@ -1,17 +1,17 @@
 # Ignore defaults — what the Auto-Ingest Sweep must never scan
 
 The Auto-Ingest Sweep discovers un-ingested documents across the whole workspace.
-`02-DOCS/.rscignore` scopes that scan so it never grabs code, build output, tooling,
+`02-DOCS/.ai-hubignore` scopes that scan so it never grabs code, build output, tooling,
 the wiki's own internals, or non-document files. This is the single guardrail that
 keeps "automatic, workspace-wide" from turning into "tragar lo que no toca".
 
-`02-DOCS/.rscignore` is **tracked** (not gitignored): the team shares the same scan
+`02-DOCS/.ai-hubignore` is **tracked** (not gitignored): the team shares the same scan
 boundary. Users append their own patterns freely.
 
-## Default `02-DOCS/.rscignore`
+## Default `02-DOCS/.ai-hubignore`
 
 ```gitignore
-# 02-DOCS/.rscignore — paths the Auto-Ingest Sweep must NEVER scan as a knowledge source.
+# 02-DOCS/.ai-hubignore — paths the Auto-Ingest Sweep must NEVER scan as a knowledge source.
 # Tracked (the team shares it). Append your own patterns below.
 node_modules/
 .git/

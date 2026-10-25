@@ -1,6 +1,7 @@
 {
   "name": "ai-hub-workspace",
   "private": true,
+  "author": "Daner Alejandro Salazar Colorado",
   "type": "module",
   "scripts": {
     "build": "npm run ai:build",

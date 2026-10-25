@@ -3,7 +3,7 @@ name: dynamodb
 description: "Use when modeling or operating a DynamoDB table: deriving partition/sort keys from access patterns, single-table vs table-per-entity, adding a GSI/LSI, on-demand vs provisioned capacity, or diagnosing hot-partition throttling. NOT relational schema/SQL/EXPLAIN (that is `postgresdb`), NOT aggregation-pipeline document modeling (that is `mongodb`)."
 tags: [dynamodb, nosql, single-table-design, aws, data-modeling]
 recommends: [postgresdb, mongodb, redis, vector-db, aws-essentials, deployment, secure-coding]
-origin: risco
+origin: ai-hub
 ---
 
 # DynamoDB — access-pattern-first modeling and capacity

@@ -3,7 +3,7 @@ name: translation-l10n
 description: "Use when adding a second or Nth language to a web or app product — i18n plumbing (string extraction, ICU messages, locale routing), fixing broken plurals or date formats, and making a UI survive other languages through right-to-left layout and text expansion. NOT defining the brand's tone in one language (that is `brand-voice`)."
 tags: [i18n, l10n, internationalization, localization, translation, rtl, icu-messageformat]
 recommends: [brand-voice, nextjs, seo-geo, accessibility, content-engine]
-origin: risco
+origin: ai-hub
 ---
 
 # Translation & localization
@@ -20,7 +20,7 @@ Sequence matters: do i18n first. Teams that skip it end up retrofitting string e
 | If the task is really about… | Go to |
 | --- | --- |
 | Inventing the brand's tone/word bank in one language | `../brand-voice/SKILL.md` |
-| App Router structure, RSC, data fetching (non-locale) | `../nextjs/SKILL.md` |
+| App Router structure, React Server Components, data fetching (non-locale) | `../nextjs/SKILL.md` |
 | hreflang strategy, per-country keyword research, geo ranking | `../seo-geo/SKILL.md` |
 | Authoring net-new source copy (landing, article) | `../content-engine/SKILL.md` |
 | General a11y semantics beyond `lang`/`dir`/bidi | `../accessibility/SKILL.md` |
@@ -56,7 +56,7 @@ This skill emits the `lang`/`dir`/alternate plumbing and only touches routing wh
 
 | Stack / need | Use | Why |
 | --- | --- | --- |
-| Next.js App Router | `next-intl` | Request-scoped `i18n/request.ts` + `defineRouting()`, RSC-native, `localePrefix` strategies |
+| Next.js App Router | `next-intl` | Request-scoped `i18n/request.ts` + `defineRouting()`, React Server Components-native, `localePrefix` strategies |
 | Cross-stack / existing i18next ecosystem | `next-i18next` / `i18next` | Shared catalogs across React Native, backend, plugins |
 | Tiny app, few strings, no plural complexity | `Intl` only | No dependency; you still get correct formatting |
 

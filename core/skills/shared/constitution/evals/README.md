@@ -20,7 +20,7 @@ skills loaded) plus a human spot-check.
 Goal: the skill fires when it should and never on a near-miss.
 
 1. Configure an agent with the **full catalog of skill descriptions** available
-   for routing (constitution + its rsc-sdd phase siblings once they exist, plus
+   for routing (constitution + its ai-hub Spec-Kit phase siblings once they exist, plus
    harness, init, fastapi, nextjs, go, postgresdb, flutter, design, secure-coding,
    deployment, marketing, presentations, course-storytelling, building-agents) so
    routing competes realistically.
@@ -63,6 +63,6 @@ even if it reads tidy.
   the constitution or silently resolves a contradiction between them.
 - Re-run after any edit to `SKILL.md` or `references/constitution-template.md` —
   wording changes shift both triggering and rubric coverage.
-- Several `route_to` targets are rsc-sdd phase siblings (`specify`, `plan`,
+- Several `route_to` targets are ai-hub Spec-Kit phase siblings (`specify`, `plan`,
   `analyze`, `sdd`) that ship alongside this skill; the near-misses here route
   only to skills already present in the repo so the eval is runnable today.

@@ -3,7 +3,7 @@ name: flutter
 description: "Use when building, structuring, testing or optimizing a Flutter app — feature-first layering, Riverpod 3 or Bloc, typed go_router, freezed models, a dio data layer, Material 3, jank hunting, widget/golden tests. Targets Flutter 3.44 / Dart 3.12. NOT React Native (that is `react-native`), NOT Compose Multiplatform (that is `compose-multiplatform`)."
 tags: [flutter, dart, mobile, app, ios, android]
 recommends: [design, deployment]
-origin: risco
+origin: ai-hub
 ---
 
 # Flutter & Dart app architecture

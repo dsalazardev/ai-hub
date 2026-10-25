@@ -1,6 +1,6 @@
 # Eval harness — `author-skill`
 
-Evaluates the `author-skill` meta skill (the rsc-core tool that authors/edits other skills)
+Evaluates the `author-skill` meta skill (the ai-hub tool that authors/edits other skills)
 on two axes: **triggering** (does it fire on the right prompts and stay quiet on near-misses)
 and **capability** (does loading it measurably improve the skill the agent produces). Cases
 live in `cases.yaml`. These run via an **agent harness**, not a deterministic script — a human
@@ -17,7 +17,7 @@ or a driver agent feeds prompts to Claude Code and judges the result against the
 
 ## A. Triggering eval
 
-1. Load **only** `author-skill` into the agent (no other rsc skills available, so routing is honest).
+1. Load **only** `author-skill` into the agent (no other ai-hub skills available, so routing is honest).
 2. For each `should_trigger` prompt: open a fresh session, paste the prompt verbatim, and record
    whether `author-skill` activates (the agent should lead with scope/description work, not jump
    into building a product feature). Run **3–5 trials** per prompt.
@@ -46,14 +46,14 @@ What a WITH-skill answer should show that a baseline misses:
 
 - **Description first**, to the recipe: third-person `Use when…` lead, only the capabilities that
   discriminate it from its nearest sibling, a `NOT … (sibling)` boundary, valid single-line quoted
-  YAML aiming ≤ 350 chars (1024 hard limit), `origin: risco`.
+  YAML aiming ≤ 350 chars (1024 hard limit), `origin: ai-hub`.
 - **Progressive disclosure** — the smallest body that still routes (400 lines is a ceiling, not a
   target) pointing into `references/`, not an encyclopedia and not an orphaned references folder.
 - **evals authored** to the minimums, with `route_to` siblings that actually exist.
 - **No `verify.sh` on a process skill** — rigor comes from the capability eval.
-- **rsc wiring** named: `tags` + `recommends` frontmatter, `npm run manifest` regenerated,
+- **ai-hub wiring** named: `tags` + `recommends` frontmatter, `npm run manifest` regenerated,
   `npm run validate` / `manifest:check` passing, `eval-lint.sh` passing.
-- **Original rsc voice** — no copied artifacts/phrasing from other skill ecosystems.
+- **Original ai-hub voice** — no copied artifacts/phrasing from other skill ecosystems.
 
 ## Judging notes (honest caveats)
 

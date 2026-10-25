@@ -3,7 +3,7 @@ name: building-agents
 description: "Use when building or restructuring an LLM agent — provider adapter, tool calling, structured output, RAG, agent loop, eval gate, cost routing, tracing, MCP server — model-agnostic across OpenAI/Anthropic/Gemini/OSS so a model swap is a config change. NOT vector-store SQL alone (that is `postgresdb`) or service deployment (that is `deployment`)."
 tags: [agents, llm, mcp, rag, evals, ai]
 recommends: [secure-coding, deployment]
-origin: risco
+origin: ai-hub
 ---
 
 # Building production LLM agents (model-agnostic)

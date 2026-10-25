@@ -3,7 +3,7 @@ name: elixir
 description: "Use when writing or refactoring Elixir/OTP on the BEAM — GenServers, supervision trees and restart strategies, pattern matching, mix projects and releases — or when processes misbehave (restart loops, mailbox growth, call timeouts). NOT a Phoenix web app, LiveView, Ecto or channels (that is `phoenix`)."
 tags: [elixir, otp, genserver, supervision, beam, mix, concurrency, functional]
 recommends: [phoenix, postgresdb, docker]
-origin: risco
+origin: ai-hub
 ---
 
 # Elixir

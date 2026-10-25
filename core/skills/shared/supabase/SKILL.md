@@ -3,7 +3,7 @@ name: supabase
 description: "Use when building on Supabase as a backend over managed Postgres — wiring the supabase-js or SSR client, writing or debugging Row Level Security, cookie-based Auth, Storage buckets, Realtime, and Edge Functions, including local versus server JWT verification and the service-role key. NOT raw Postgres tuning (that is `postgresdb`)."
 tags: [supabase, postgres, rls, auth, edge-functions, realtime, storage, baas]
 recommends: [postgresdb, nextjs, db-migrations, secure-coding, drizzle-orm]
-origin: risco
+origin: ai-hub
 ---
 
 # Supabase — Postgres with RLS as the auth layer
@@ -103,7 +103,7 @@ if (!user) redirect("/login");
 Middleware token refresh is mandatory; full app-router code (browser client, server client,
 `middleware.ts`, server-action sign-in/out, OAuth/PKCE callback, and the `auth-helpers`→`@supabase/ssr`
 migration checklist) lives in [references/auth-ssr.md](references/auth-ssr.md). For the framework's own
-RSC/caching/server-action mechanics see [../nextjs/SKILL.md](../nextjs/SKILL.md) — this skill only covers
+React Server Components/caching/server-action mechanics see [../nextjs/SKILL.md](../nextjs/SKILL.md) — this skill only covers
 the Supabase wiring inside it.
 
 ---

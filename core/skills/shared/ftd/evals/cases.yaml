@@ -1,7 +1,7 @@
 skill: ftd
 
 # Cases for FTD — Fast-Track Development, the lane ordinary authorised change takes.
-# FTD keeps ONE feature document per feature in 02-DOCS (intent, scope, checklist,
+# FTD keeps ONE feature document per feature in docs/ (intent, scope, checklist,
 # evidence, next step), checks tasks off only against observed proof, and branches when
 # the work writes code. It is NOT the ten-phase chain (sdd), NOT the classification
 # itself (the decisor lives in the always-on suggest body), and NOT a request for
@@ -45,10 +45,10 @@ should_not_trigger:
     why: "Reading a finished diff for defects is a review, not a change. Nothing here authorises writing, so no feature document is created."
 
 capability:
-  - scenario: "A developer whose profile says technical_level: technical says: 'Añade exportación a CSV usando los filtros del informe que ya existen.' Show how the lane runs from the first word to delivery."
+  - scenario: "A developer whose profile says the register: technical says: 'Añade exportación a CSV usando los filtros del informe que ya existen.' Show how the lane runs from the first word to delivery."
     must_include:
       - "Names the lane out loud in one line before acting, as the decisor requires — this is FTD, not a question and not the chain"
-      - "Creates one feature document at 02-DOCS/wiki/ftd/<slug>.md BEFORE the first change, and says which document it created and how many tasks it holds"
+      - "Creates one feature document at docs/ftd/<slug>.md BEFORE the first change, and says which document it created and how many tasks it holds"
       - "Writes the document into the workspace wiki, never into the code repository, so whoever clones the repo gets code and not somebody's notes in progress"
       - "Keeps the document to intent, scope, checklist, evidence and next step — no spec, no plan, no tasks artifact, no decision journal"
       - "States for each checklist item what would prove it done, before doing it"

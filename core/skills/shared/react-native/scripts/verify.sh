@@ -5,7 +5,7 @@
 # Usage:
 #   ./scripts/verify.sh [TARGET_PATH]    # defaults to the skill dir (this script's parent's parent)
 #
-# Greps SKILL.md + references/ for currency and rsc-hygiene violations and prints each hit
+# Greps SKILL.md + references/ for currency and brand-hygiene violations and prints each hit
 # with a fix hint. Read-only: never edits a file. On a clean tree — or a target with no
 # SKILL.md at all — it prints an ok line and exits 0 (no false failure). Exits 1 only when a
 # violation is present, so it doubles as a non-blocking lint signal.
@@ -68,7 +68,7 @@ bare="$(grep -nE '^```[[:space:]]*$' "$SKILL" 2>/dev/null || true)"
 if [ -n "$bare" ]; then
   # A bare ``` is a violation only if it is an opener. Heuristic: flag any bare fence that
   # is immediately followed (within the file) by indented/code-looking content is hard in
-  # sh; simplest correct rule for rsc skills: openers must be tagged, closers are bare. So a
+  # sh; simplest correct rule for catalog skills: openers must be tagged, closers are bare. So a
   # bare fence is fine as a CLOSER. We detect unbalanced/untagged openers by checking that
   # the number of tagged openers + bare closers is consistent. Practical check: ensure no
   # two consecutive bare fences (which would mean an untagged opener+closer pair).

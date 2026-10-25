@@ -1,6 +1,6 @@
 skill: verify
 
-# Prompts that MUST load the `verify` skill. `verify` is the rsc-sdd
+# Prompts that MUST load the `verify` skill. `verify` is the ai-hub Spec-Kit
 # post-implementation GATE: run the relevant stack scripts/verify.sh
 # (lint/type/test/audit), walk every task done-check and every spec acceptance
 # criterion, and produce an evidence-backed PASS/FAIL verdict before anyone
@@ -29,7 +29,7 @@ should_trigger:
     why: "A pre-ship gate that ties stack checks to acceptance criteria with recorded evidence is precisely verify, the phase that precedes review and ship."
 
   - prompt: "Coverage and the audit need to be green for this PR — can you check and record the result?"
-    why: "Running coverage/dependency-audit through the stack gate and writing a verification record under 02-DOCS/wiki/sdd/ is verify's RUN+RECORD behavior."
+    why: "Running coverage/dependency-audit through the stack gate and writing a verification record under .specify/ is verify's RUN+RECORD behavior."
 
 # NEAR-MISS prompts that must NOT load `verify`. Each routes to a sibling that
 # actually exists in this repo. The recurring trap: anything that WRITES or
@@ -88,13 +88,13 @@ capability:
         - "The retry loop can spin forever" was raised in review; the implementer replied
           "not a real problem".
     must_include:
-      - "Reads technical_level from 02-DOCS/wiki/harness/user-profile.md and picks the register (verdict unchanged by it); reports short, with one line of why per failing check."
+      - "Reads the register from AGENTS.md and picks the register (verdict unchanged by it); reports short, with one line of why per failing check."
       - "LOCATES the three acceptance criteria and the three task done-checks from the material given, and maps each to what the implementer actually reports."
       - "Refuses to accept the implementer's summary as the gate: says the checks must be re-run and the output read, rather than trusting a reported '2 passed'."
       - "Treats the mypy SKIP as UNVERIFIED rather than a pass, and does not let 'everything else was green' stand in for the skipped layer."
       - "WALKS all three done-checks and all three acceptance criteria, and catches that AC2/T2 (duplicate POST is a no-op) has NO test at all — the two named tests cover AC1 and AC3 only — marking it UNVERIFIED rather than passing it."
       - "Does NOT fix a failing test inline; if a check fails it records it and hands off to debug, and refuses to fix-then-claim."
-      - "RECORDS a dated verification file under 02-DOCS/wiki/sdd/verifications/ and indexes it in the root CLAUDE.md Knowledge map."
+      - "RECORDS a dated verification file under .specify/verifications/ and indexes it in the root AGENTS.md Knowledge map."
       - "Returns a VERDICT that is PASS only if EVERY item has passing evidence; a single unverified acceptance criterion makes the whole verdict FAIL — and refuses to call it 'done' otherwise."
       - "On PASS, points to the review phase; on FAIL, routes failing checks to debug and missing coverage back to implement."
       - "Treats a coverage GAP (the layer ran with no threshold configured, so it could not have failed) as an unverified criterion that fails the verdict — not as a pass — and records it as SUSTITUIDA: a report in place of a gate, unable to detect coverage regressing."

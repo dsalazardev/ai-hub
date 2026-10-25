@@ -3,7 +3,7 @@ name: vercel
 description: "Use when operating an already-chosen Vercel project from the CLI or its config file — preview versus production deploys, debugging builds, pushing and pulling env vars across environments, custom domains, function runtime, duration and regions, crons, rewrites and headers, and deployment protection. NOT host choice, Docker or CI (that is `deployment`), NOT Next.js app code or next.config (that is `nextjs`), NOT DNS records or registrar transfers (that is `domains-dns`)."
 tags: [vercel, deploy, serverless, edge, env-vars]
 recommends: [deployment, nextjs, domains-dns]
-origin: risco
+origin: ai-hub
 ---
 
 # Vercel, operated
@@ -43,7 +43,7 @@ vercel dev          ───────────▶ local emulation of func
 
 - "Vercel vs Hetzner vs Coolify, Dockerfile, GitHub Actions CI" → `../deployment/SKILL.md`. That skill
   owns the host *choice* and containers; this one operates the chosen Vercel project.
-- Next.js application code, App Router, RSC, `next.config.js`, ISR logic → `../nextjs/SKILL.md`.
+- Next.js application code, App Router, React Server Components, `next.config.js`, ISR logic → `../nextjs/SKILL.md`.
   This skill only touches the Vercel-side knobs (function config, env, ISR-as-a-function).
 - Raw DNS records, registrar transfers, nameserver theory → `../domains-dns/SKILL.md`. Here we cover
   only the `vercel domains` / `vercel dns` CLI surface for attaching a domain to a project.

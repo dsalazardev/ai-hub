@@ -1,6 +1,6 @@
 # Eval harness — `gamedev-physics` skill
 
-These cases are read by the rsc skill-eval harness (a Claude agent with the full catalog loaded), or
+These cases are read by the ai-hub skill-eval harness (a Claude agent with the full catalog loaded), or
 by hand. They check two things. **Triggering:** the description fires on real physics symptoms —
 tunneling, jitter, layer/mask filtering, forces-vs-impulses, character controllers — and stays quiet
 on near-misses, routing shader shimmer to `gamedev-shaders`, navmesh/pathfinding to

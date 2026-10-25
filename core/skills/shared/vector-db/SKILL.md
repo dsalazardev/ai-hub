@@ -3,7 +3,7 @@ name: vector-db
 description: "Use when operating a vector store as a data layer — choosing or migrating between Pinecone, Qdrant, Weaviate and pgvector; designing a collection or index (distance metric, dimensions, HNSW parameters, named vectors); filtering on metadata; hybrid dense-plus-sparse search; and quantization to cut RAM and cost. Covers garbage results, silently ignored filters, low recall, slow queries, and filtered queries returning fewer than k rows. NOT producing, chunking or judging embeddings (that is `embeddings-search`)."
 tags: [vector-database, pinecone, qdrant, weaviate, pgvector, hnsw, hybrid-search, metadata-filter, quantization]
 recommends: [embeddings-search, rag, postgresdb, redis, supabase]
-origin: risco
+origin: ai-hub
 ---
 
 # vector-db — operate the store, not the embeddings

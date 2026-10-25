@@ -3,7 +3,7 @@ name: security-scan
 description: "Use when automated scanners drive a security sweep of a repo or app — SAST, dependency/lockfile CVEs, secrets in the tree or git history, IaC misconfig — and the raw output has to become one deduped, exploitability-ranked report CI can gate on. NOT threat-modeling, OWASP design reasoning, or hand-authoring the fix (that is `secure-coding`)."
 tags: [security, sast, sca, secrets, scanning, owasp]
 recommends: [secure-coding, github-actions, verify]
-origin: risco
+origin: ai-hub
 ---
 
 # Security scan — orchestrate scanners, triage the noise, emit a gate

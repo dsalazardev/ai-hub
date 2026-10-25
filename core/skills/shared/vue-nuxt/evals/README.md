@@ -7,5 +7,5 @@ named sibling (e.g. `nextjs`, `astro`, `cloudflare`, `e2e-testing`, `fastapi`) r
 The single `capability` case is a manual check: have the agent answer the scenario with the skill
 loaded, then verify every line in `must_include` is satisfied by the worked answer (Nuxt-4
 detection first, `$fetch`→`useAsyncData`/`useFetch` with a shared key, module-`ref`→`useState`/Pinia
-with the per-request-leak explanation, payload-size notes, and no RSC mental models). Pair this with
+with the per-request-leak explanation, payload-size notes, and no React Server Components mental models). Pair this with
 `scripts/verify.sh` run against a real Vue/Nuxt repo to confirm the emitted code typechecks/builds.

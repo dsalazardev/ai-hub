@@ -3,7 +3,7 @@ name: csharp-dotnet
 description: "Use when writing, reviewing, testing, or shipping C# / .NET code — ASP.NET Core APIs (minimal APIs vs controllers), EF Core data access, async correctness, solution layout in .cs/.csproj/.sln. NOT a Java/Spring backend (that is spring-boot), NOT a Node/TypeScript backend (that is nestjs), NOT framework-neutral REST naming (that is api-design)."
 tags: [csharp, dotnet, aspnetcore, efcore, async]
 recommends: [postgresdb, secure-coding, deployment]
-origin: risco
+origin: ai-hub
 ---
 
 # Modern C# and .NET services

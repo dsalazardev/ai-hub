@@ -3,7 +3,7 @@ name: typescript
 description: "Use when writing or fixing TypeScript type code (.ts/.tsx/.d.ts), modeling data with generics/unions/branded types, diagnosing narrowing failures, or configuring tsconfig and the build toolchain. NOT runtime code, fs/streams/http (that is `nodejs`); NOT component/route typing (that is `react`/`nextjs`); NOT ORM type-gen (that is `drizzle-orm`)."
 tags: [typescript, types, generics, tsconfig, type-safety]
 recommends: [nodejs, secure-coding, drizzle-orm]
-origin: risco
+origin: ai-hub
 ---
 
 # Idiomatic TypeScript types

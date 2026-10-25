@@ -3,7 +3,7 @@ name: knowledge-ops
 description: "Use when an already-running 02-DOCS/ wiki needs gardening judgment — what is worth capturing (default: nothing), where a loose note belongs, whether to split a bloated article or merge near-duplicates, how to link orphans back in, and what retires to _archive (never delete). NOT building or sweeping the wiki engine itself (that is `harness`)."
 tags: [knowledge-ops, wiki, 02-docs, knowledge-base, curation, cross-linking, pruning, knowledge-meta]
 recommends: [harness, decision-records, meeting-notes, sop-builder, research-ops, codebase-onboarding]
-origin: risco
+origin: ai-hub
 ---
 
 # Knowledge Ops — Garden the 02-DOCS Wiki

@@ -84,7 +84,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
   drift: { summary: 'Informa deriva de hash sin escribir', handler: cmdDrift },
   list: { summary: 'Lista preset, targets, comandos, skills y agentes', handler: cmdList },
   doctor: { summary: 'Diagnostica motor, preset, manifiesto, drift y hooks', handler: cmdDoctor },
-  check: { summary: 'Alias de doctor + drift', handler: cmdCheck },
+  check: { summary: 'Alias de doctor', handler: cmdCheck },
   backups: { summary: 'Lista los snapshots disponibles', handler: cmdBackups },
   restore: { summary: 'Restaura un snapshot', handler: cmdRestore },
   uninstall: { summary: 'Elimina una skill o agente añadido', handler: cmdUninstall },

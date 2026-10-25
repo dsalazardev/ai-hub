@@ -4,7 +4,7 @@ description: "Use when implementation or review depends on current version-speci
 tags: [official-docs, primary-sources, version-detection, implementation, verification]
 recommends: [research-ops, decision-records, debug, technical-writing]
 profiles: [core, full]
-origin: risco
+origin: ai-hub
 ---
 
 # source-grounded-development — make current facts part of the change

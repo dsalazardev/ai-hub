@@ -4,12 +4,12 @@ description: "Use when something is broken — a failing or flaky test, crash, w
 tags: [debug, bug, troubleshoot]
 recommends: []
 profiles: [core, full]
-origin: risco
+origin: ai-hub
 ---
 
 # debug — find the cause before you touch the fix
 
-`debug` is the on-demand diagnosis discipline of the rsc-sdd chain. Something is broken — a test
+`debug` is the on-demand diagnosis discipline of the ai-hub Spec-Kit chain. Something is broken — a test
 went red, a crash landed, a result is wrong, a regression appeared — and the strongest pull in the
 room is to change code until the symptom disappears. That pull is the enemy. A symptom that vanishes
 under a guessed edit usually moved; it rarely died. This skill replaces guess-and-patch with a
@@ -112,7 +112,7 @@ that gate, not this skill, is what licenses the word "done".
 | --- | --- | --- |
 | FastAPI / async Python | `../fastapi/references/testing.md` | `pytest -x --lf`, `pdb`/`breakpoint()`, async task/race traps, transactional-rollback fixtures to kill state bleed |
 | Go services | `../go/references/testing.md` | `go test -race`, `-run`/`-count=1` to force a flake, `delve`, `pprof`, `errors.Is/As` unwrapping |
-| Next.js / React | `../nextjs/references/testing.md` | Vitest `--no-isolate`/`.only`, Playwright trace viewer, RSC vs client boundary errors, hydration mismatches |
+| Next.js / React | `../nextjs/references/testing.md` | Vitest `--no-isolate`/`.only`, Playwright trace viewer, React Server Components vs client boundary errors, hydration mismatches |
 | Flutter / Dart | `../flutter/references/testing.md` | `flutter test --plain-name`, widget pump/settle timing, DevTools, golden diffs |
 | Postgres / data layer | `../postgresdb/SKILL.md` | `EXPLAIN ANALYZE`, isolation-level/locking races, constraint violations, migration-order bugs |
 | Security-shaped failure | `../secure-coding/SKILL.md` | auth/authz edge cases, injection, secret/leak paths surfacing as "weird" failures |

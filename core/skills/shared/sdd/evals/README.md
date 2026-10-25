@@ -1,6 +1,6 @@
 # Eval harness — `sdd`
 
-Evaluates the `sdd` dispatcher (the rsc-sdd front door) on two axes: **triggering**
+Evaluates the `sdd` dispatcher (the ai-hub Spec-Kit front door) on two axes: **triggering**
 (does it fire when a feature should run the spec-driven flow, and stay quiet when a
 single phase or a different skill owns the request) and **capability** (does loading it
 measurably improve how the agent opens and routes the work). Cases live in `cases.yaml`.
@@ -19,7 +19,7 @@ feeds prompts to Claude Code and judges the result against the rubrics.
 
 ## A. Triggering eval
 
-1. Load **only** `sdd` into the agent (no other rsc skills available, so routing is honest).
+1. Load **only** `sdd` into the agent (no other ai-hub skills available, so routing is honest).
 2. For each `should_trigger` prompt: open a fresh session, paste the prompt verbatim, and
    record whether `sdd` activates — a pass means it names the method, places the request on
    the phase map, and routes to a phase (it should NOT start writing the spec or coding

@@ -1,4 +1,4 @@
-# skill-rubric — the objective test every rsc skill must pass before shipping
+# skill-rubric — the objective test every ai-hub skill must pass before shipping
 
 This is **the test, written before any skill is built.** A reviewer scores a finished skill
 0–10 on seven weighted dimensions, then the deterministic gates run (pass/fail, not gradeable).
@@ -13,17 +13,17 @@ dishonest 9.
 |---|---|---|---|
 | 1 | **Triggering & description** | 0.15 | Third-person, `Use when …` lead, an explicit `NOT … (that is <sibling>)` boundary, and nothing else it can do without. Judged on **discriminative power, not coverage**: could a reader pick this skill over its nearest sibling from the description alone? Aim ≤350 chars; ≤1024 is the hard limit. Parses as single-line quoted YAML. |
 | 2 | **Scope & boundary** | 0.10 | One job. Body never drifts into a sibling's territory; it delegates by name. Near-miss prompts route to the correct existing sibling. |
-| 3 | **Body craft & progressive disclosure** | 0.15 | **The smallest body that routes correctly** — ≤400 lines is a ceiling, not a target, and there is no minimum: a skill that does its job in 60 lines scores higher than the same skill padded to 200. Every `references/` file is pointed to inline from this body (an unlinked reference is never loaded, so it is dead weight). rsc voice, every fence language-tagged, a checklist/decision table only where the flow branches, an anti-patterns table present. |
+| 3 | **Body craft & progressive disclosure** | 0.15 | **The smallest body that routes correctly** — ≤400 lines is a ceiling, not a target, and there is no minimum: a skill that does its job in 60 lines scores higher than the same skill padded to 200. Every `references/` file is pointed to inline from this body (an unlinked reference is never loaded, so it is dead weight). ai-hub voice, every fence language-tagged, a checklist/decision table only where the flow branches, an anti-patterns table present. |
 | 4 | **Correctness, grounding & freshness** | **0.25** | Every load-bearing claim is accurate and **current (2025–2026)**: real library/API versions, no hallucinated flags/endpoints. The spec cites **authoritative sources with dates**; nothing rests on stale or invented facts. This is the heaviest dimension by design. |
 | 5 | **Actionability** | 0.15 | Concrete and runnable: real numbers, paths, commands, decision rules — not adjectives. A practitioner could act from it without leaving the skill. |
 | 6 | **Evals quality** | 0.10 | ≥5 `should_trigger` (incl. non-obvious), ≥4 `should_not_trigger` each with a `route_to` that resolves — a **real** catalog id, `none`, or `external:<name>` (enforced by `eval-lint`), ≥1 `capability` with a meaningful `must_include` rubric. The cases are genuine, not filler. |
-| 7 | **Originality & safety** | 0.10 | rsc voice, not a clone of any external catalog (no borrowed urgency blocks / rationalization tables / `*-reviewer-prompt.md` conventions / verbatim flowcharts). `verify.sh` present iff there is a checkable artifact. No destructive or unsafe advice presented without guardrails. |
+| 7 | **Originality & safety** | 0.10 | ai-hub voice, not a clone of any external catalog (no borrowed urgency blocks / rationalization tables / `*-reviewer-prompt.md` conventions / verbatim flowcharts). `verify.sh` present iff there is a checkable artifact. No destructive or unsafe advice presented without guardrails. |
 
 **Weighted score** = Σ(subscore × weight), rounded to 1 decimal. **Ship gate: ≥ 8.5.**
 
 ## Deterministic gates (pass/fail — not part of the 0–10, but block shipping)
 
-1. `name` matches the directory id; `origin: risco` present.
+1. `name` matches the directory id; `origin: ai-hub` present.
 2. Frontmatter validates against `schema/frontmatter.schema.json` (`node scripts/build-manifest.js --validate`).
 3. Every `recommends` id is a **real** skill in the catalog (no dangling refs — `--validate` enforces).
 4. `scripts/eval-lint.sh` reports PASS for the skill (≥5/≥4/≥1 and the keys are lists).

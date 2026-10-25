@@ -3,7 +3,7 @@ name: continuous-learning
 description: "Use when a mistake, correction, or surprise taught the workspace something that must stick — a retro or postmortem, the same agent error corrected twice, a resolved bug's root cause, scattered notes-to-self — and route that lesson to the durable surface that fires next time. NOT a forward choice with alternatives (that is `decision-records`)."
 tags: [learning, retro, postmortem, feedback-loop, knowledge, meta]
 recommends: [decision-records, author-skill, debug, harness, knowledge-ops]
-origin: risco
+origin: ai-hub
 ---
 
 # Continuous learning — the feedback loop of the harness

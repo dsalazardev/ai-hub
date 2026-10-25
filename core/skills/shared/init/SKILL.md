@@ -1,13 +1,13 @@
 ---
 name: init
-description: "Use when starting from nothing or pointing rsc at an existing project — the front door. First asks one question — technical terms or analogies (analogies by default) — then discovers what the user wants to build or govern (any stack, or a non-code harness: company/ops, research, knowledge, content), writes the profile to 02-DOCS, and installs the skills discovery justified. NOT the scaffolder (that is `harness`), NOT a stack skill."
+description: "Use when starting from nothing or pointing ai-hub at an existing project — the front door. First asks one question — technical terms or analogies (analogies by default) — then discovers what the user wants to build or govern (any stack, or a non-code harness: company/ops, research, knowledge, content), writes the profile to 02-DOCS, and installs the skills discovery justified. NOT the scaffolder (that is `harness`), NOT a stack skill."
 tags: [init, bootstrap, start, new, setup]
 recommends: [harness]
 profiles: [minimal, core, full]
-origin: risco
+origin: ai-hub
 ---
 
-# init — the rsc-skills Front Door
+# init — the ai-hub Front Door
 
 *The very first thing you run. It meets the user where they are — assuming non-technical until told
 otherwise — figures out what they actually want, installs the right skills, and hands off to
@@ -52,7 +52,7 @@ value only picks its register. Full rules and file formats → `references/accom
 Greenfield? Create just `02-DOCS/wiki/harness/` to hold those two files. That plus the link is
 everything `init` writes.
 
-**Step 3 — Propose the developer model.** rsc installs a `developer` subagent (the implementation
+**Step 3 — Propose the developer model.** ai-hub installs a `developer` subagent (the implementation
 worker) for every assistant supporting file-based agents. It runs at the **balanced** tier by
 default — Sonnet on Anthropic tools, the provider's mid model elsewhere — and never the cheapest
 `light` model, which is too weak to build with. Offer once, in one line:
@@ -60,11 +60,11 @@ default — Sonnet on Anthropic tools, the provider's mid model elsewhere — an
 > *"La implementación la hará un sub-agente `developer`. ¿Qué modelo? **balanced / Sonnet** (rápido y
 > económico — recomendado) o **heavy / Opus** (máxima calidad, más caro)."*
 
-Record to `.rsc/developer.json` and re-run install/sync so the agent files adopt it. Skipped →
+Record to `.ai-hub/developer.json` and re-run install/sync so the agent files adopt it. Skipped →
 `balanced`, which install also writes by default.
 
 **Opt-out.** A fresh session auto-starts `init` while `user-profile.md` is absent. If the user does
-not want a harness in this repo, write an empty `.rsc/.no-harness` — that silences the auto-start
+not want a harness in this repo, write an empty `.ai-hub/.no-harness` — that silences the auto-start
 permanently, even before a profile exists. Completing first contact silences it too. Commit the
 marker so the decision is shared by the team.
 
@@ -116,7 +116,7 @@ Record to `02-DOCS/wiki/harness/` as you go. Questionnaires for both cases →
 ### Phase 3 — INSTALL
 
 Map what you learned to skills. **You have a terminal — install them yourself** after a one-word
-confirm: `npx @ericrisco/rsc add <ids>`. Only if you genuinely cannot run a shell, hand the exact
+confirm: `npx ai-hub add <ids>`. Only if you genuinely cannot run a shell, hand the exact
 command over for another tab. Never install without the confirm; it changes their environment.
 
 | Need | Skills |
@@ -141,28 +141,28 @@ Five checks once the skills are in. The SessionStart hook nudges each of these t
 means the user starts clean.
 
 1. **Version control.** No `.git/` → offer `git init`; the SDD chain and the ship guard assume it.
-   Declined → write `.rsc/.no-git` so neither you nor the hook asks again, and log the decision.
+   Declined → write `.ai-hub/.no-git` so neither you nor the hook asks again, and log the decision.
 2. **Context7 (live library docs).** For software, offer to wire it once:
    `claude mcp add --transport http context7 https://mcp.context7.com/mcp`. It gives version-correct
-   docs instead of guessing from memory. Declined → `.rsc/.no-context7`.
-3. **Skill audit.** Run `npx @ericrisco/rsc audit`. It inventories what is installed here and on the
+   docs instead of guessing from memory. Declined → `.ai-hub/.no-context7`.
+3. **Skill audit.** Run `npx ai-hub audit`. It inventories what is installed here and on the
    machine and flags overlap or skills with no footprint, so the project starts with the right set
    rather than a pile. Summarize it in their register.
 4. **Tell them about the danger guard.** A `technical_level` of `non-technical` or `mixed` (and the
    state before any profile exists) turns on a `PreToolUse` guard that blocks irreversible commands —
    `rm -rf`, `git push --force`, `git reset --hard`, `DROP`/`TRUNCATE`, `DELETE`/`UPDATE` with no
    `WHERE`, `dd` to a device, `curl | bash` — and asks for a safer alternative. A fully `technical`
-   user is never guarded. It turns off only if the user explicitly asks: `.rsc/.no-danger-guard`.
+   user is never guarded. It turns off only if the user explicitly asks: `.ai-hub/.no-danger-guard`.
    Mention it when you record `non-technical`, so a later block is not a surprise.
 5. **Automatic updates.** Ask once, yes by default:
-   > *"Cuando salga una versión nueva de rsc, ¿la instalo sola? Las que cambian mucho (major) te las
+   > *"Cuando salga una versión nueva de ai-hub, ¿la instalo sola? Las que cambian mucho (major) te las
    > preguntaré siempre. (sí/no)"*
 
-   > *"When a new rsc version comes out, should I install it on my own? Big ones (major) I will
+   > *"When a new ai-hub version comes out, should I install it on my own? Big ones (major) I will
    > always ask about. (yes/no)"*
 
-   Yes, or no clear answer → do nothing; it is on. No → create `.rsc/.no-auto-update`: every
-   release then asks. It is a project switch, recorded in `.rsc.json` on the next sync.
+   Yes, or no clear answer → do nothing; it is on. No → create `.ai-hub/.no-auto-update`: every
+   release then asks. It is a project switch, recorded in `.ai-hubrc.json` on the next sync.
 
 ### Phase 5 — HANDOFF
 
@@ -181,8 +181,8 @@ line, then do it:
 hand-roll directories here.
 
 **And if it does not happen, say so.** If `harness` cannot run, or stops half-way, **do not tell the
-user rsc is ready**: name what is missing and what will create it. The installer holds the same rule
-— it prints `RSC_ONBOARDING_INCOMPLETE` instead of `RSC_ONBOARDING_READY` when the harness floor is
+user ai-hub is ready**: name what is missing and what will create it. The installer holds the same rule
+— it prints `AI_HUB_ONBOARDING_INCOMPLETE` instead of `AI_HUB_ONBOARDING_READY` when the harness floor is
 absent — and an agent that contradicts its own installer is worse than either alone. Claiming a
 harness that is not there is the one failure the user cannot diagnose, because everything looks
 installed and nothing behaves as if it were.

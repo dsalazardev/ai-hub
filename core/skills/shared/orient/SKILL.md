@@ -4,7 +4,7 @@ description: "Always-on. How the harness talks to the person: STE-style short se
 tags: [orient, voice, ste, explain, diagram, eli5, show-me, compass, always-on]
 recommends: []
 profiles: [minimal, core, full]
-origin: risco
+origin: ai-hub
 ---
 
 # orient — talk so the person understands, then show them where they are

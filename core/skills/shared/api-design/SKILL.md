@@ -3,7 +3,7 @@ name: api-design
 description: "Use when settling the contract of an API you expose, before implementation: resources/URLs, REST vs GraphQL, versioning, one RFC 9457 error envelope, pagination, idempotency — emitted as OpenAPI 3.1. NOT implementing the endpoints (that is `fastapi`/`nestjs`/`go`/`nodejs`), NOT auth hardening (that is `secure-coding`), NOT consuming a third-party API (that is `api-connector-builder`)."
 tags: [api-design, rest, graphql, openapi, versioning, pagination, http, rfc9457, contract-design]
 recommends: [fastapi, nestjs, go, nodejs, secure-coding, webhooks, api-connector-builder, code-review]
-origin: risco
+origin: ai-hub
 ---
 
 # API design

@@ -3,7 +3,7 @@ name: laravel
 description: "Use when building or extending a Laravel 11/12 app — Eloquent models, migrations and relationships, routing with controllers and Form Requests, queues and background jobs, framework-native security (validation, mass-assignment, policies, signed URLs, rate limiting), and Pest/PHPUnit feature tests. NOT pure PHP language or toolchain work (that is `php`)."
 tags: [laravel, php, eloquent, queues, pest, artisan]
 recommends: [php, mysql, redis, api-design, secure-coding, testing-web]
-origin: risco
+origin: ai-hub
 ---
 
 # Laravel (11/12 era)

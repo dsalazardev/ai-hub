@@ -3,6 +3,7 @@
 > **Fuente única de verdad operativa del repositorio.**
 > Todo agente debe leerlo completo antes de ejecutar comandos, editar archivos o abrir una sesión.
 > Identificadores, comandos y rutas en inglés; explicaciones en español.
+> **Autor de la plataforma:** Daner Alejandro Salazar Colorado.
 
 ---
 
@@ -38,7 +39,8 @@ El motor no contiene nombres de lenguajes, frameworks, empresas ni módulos. Esa
 |---|---|
 | `ai-hub init` / `install` | Detectar el repo, elegir preset, imprimir plan y materializar `.ai-hub/` |
 | `ai-hub sync` / `drift` | Proyectar reglas, agentes y skills a Claude, OpenCode, Pi, Cursor y Copilot |
-| `ai-hub doctor` / `check` | Validar motor, preset, manifiesto, targets, hooks y deriva |
+| `ai-hub doctor` | Validar motor, preset, manifiesto, targets, hooks y deriva |
+| `ai-hub check` | Alias de `doctor`; no ejecuta `drift` |
 | `harness/guards` | `runPreflight` puro: danger, trunk, branch y ship |
 | `harness/worktree` | Reaper conservador de worktrees |
 | `harness/memory` | `.planning/state.json` y ledger JSONL |

@@ -1,7 +1,7 @@
 skill: knowledge-ops
 
 should_trigger:
-  - prompt: "Mi wiki de 02-DOCS está hecha un desastre, hay un montón de artículos a medias — decide qué merece quedarse."
+  - prompt: "Mi wiki de docs/ está hecha un desastre, hay un montón de artículos a medias — decide qué merece quedarse."
     why: "Spanish capture/prune judgment over an existing wiki — exactly the gardener's first job (say no, keep what earns it)."
   - prompt: "This wiki article is 600 lines and covers three different things — split it into separate pages."
     why: "Structure/split: ≥2 theses, Overview can't be one paragraph. Core knowledge-ops operation."
@@ -15,7 +15,7 @@ should_trigger:
     why: "Prune/conflict arbitration — flag for human, never auto-resolve; clearly the judgment layer."
 
 should_not_trigger:
-  - prompt: "Build my 02-DOCS wiki and run an inbox sweep over the files I dropped in inbox/."
+  - prompt: "Build my docs/ wiki and run an inbox sweep over the files I dropped in inbox/."
     route_to: harness
     why: "Bootstrapping the engine and running the sweep is the machinery, owned by harness — not gardening an existing wiki."
   - prompt: "Turn this meeting transcript into a recap with action items and owners."
@@ -29,11 +29,11 @@ should_not_trigger:
     why: "Procedure authoring, not gardening a knowledge wiki."
   - prompt: "Walk me through this unfamiliar codebase so I understand how it's structured."
     route_to: codebase-onboarding
-    why: "First-pass codebase exploration, not maintaining a 02-DOCS wiki."
+    why: "First-pass codebase exploration, not maintaining a docs/ wiki."
 
 capability:
   - scenario: >
-      Point the skill at a deliberately messy sample 02-DOCS/wiki/ containing: a
+      Point the skill at a deliberately messy sample docs/ containing: a
       600-line article that mixes two unrelated theses; two near-duplicate pages
       on the same subject; three articles scores.json marks as orphans
       (orphan_penalty 5); one stale archived answer; one unresolved conflict

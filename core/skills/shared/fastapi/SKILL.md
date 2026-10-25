@@ -3,7 +3,7 @@ name: fastapi
 description: "Use when building, reviewing, testing, securing or shipping a FastAPI / async Python service — routers, Pydantic v2 schemas, dependency injection, async SQLAlchemy 2.0, OAuth2/JWT, ASGITransport tests, production wiring. NOT language-level Python or packaging (that is `python`), NOT engine-level SQL (that is `postgresdb`), NOT framework-agnostic REST contracts (that is `api-design`)."
 tags: [python, api, async, backend, rest]
 recommends: [postgresdb, secure-coding, deployment]
-origin: risco
+origin: ai-hub
 ---
 
 # FastAPI & modern Python services

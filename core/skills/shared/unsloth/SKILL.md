@@ -3,7 +3,7 @@ name: unsloth
 description: "Use when fine-tuning an open-weight LLM fast on ONE GPU with low VRAM — Unsloth's fast model loaders with 4-bit QLoRA and the trl trainer, response-only loss masking so the prompt is not trained on, GRPO reasoning fine-tunes, and export to merged 16-bit, GGUF or the Hub. NOT whether, why or which method to fine-tune (that is `finetuning`), NOT running the exported GGUF locally (that is `ollama`), NOT serving-engine flags and throughput (that is `vllm`), NOT building the JSONL dataset (that is `training-data`)."
 tags: [unsloth, qlora, lora, single-gpu, gguf, fine-tuning]
 recommends: [finetuning, training-data, open-weights, ollama, huggingface]
-origin: risco
+origin: ai-hub
 ---
 
 # Unsloth — fast, low-VRAM fine-tuning on one GPU

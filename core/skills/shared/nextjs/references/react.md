@@ -1,6 +1,6 @@
 # React 19 discipline for the Next.js App Router
 
-React 19 (App Router on Next.js 15; React 19.2 on Next.js 16) inside RSC. This file is the deep
+React 19 (App Router on Next.js 15; React 19.2 on Next.js 16) inside React Server Components. This file is the deep
 dive behind the "React 19 in the App Router" section of `SKILL.md`. Every rule below is written
 for an agent editing real components: directive, with `// Good` / `// Bad` contrasts.
 
@@ -96,7 +96,7 @@ export function Comments({ commentsPromise }: { commentsPromise: Promise<{ id: s
 
 ## State location decision tree
 
-Most pages need neither Context nor a global store — server-derived data belongs in an RSC.
+Most pages need neither Context nor a global store — server-derived data belongs in an React Server Components.
 
 ```text
 Where does this state live?
@@ -105,7 +105,7 @@ Where does this state live?
 ├── Distant + low-frequency change        → Context (theme / auth / locale)
 │   (theme, current user, i18n)
 ├── High-frequency + shared widely        → external store (Zustand / Jotai)
-└── Derived from the server / persisted   → RSC fetch (server) or TanStack Query (client)
+└── Derived from the server / persisted   → React Server Components fetch (server) or TanStack Query (client)
 ```
 
 ## Forms with React 19
@@ -358,7 +358,7 @@ export const CursorCtx = createContext<{ x: number; y: number }>({ x: 0, y: 0 })
   const full = `${first} ${last}`;
   ```
 
-- **`useEffect` + `fetch` for app data** → fetch in a Server Component (RSC) or use TanStack Query.
+- **`useEffect` + `fetch` for app data** → fetch in a Server Component (React Server Components) or use TanStack Query.
 
   ```tsx
   // Bad: client waterfall, no SSR

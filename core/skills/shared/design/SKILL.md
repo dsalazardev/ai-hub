@@ -4,7 +4,7 @@ description: "Use when designing, redesigning, restyling or reviewing a web page
 tags: [design, ui, ux, landing, dashboard, frontend, taste]
 recommends: [landing-copy, ui-engineering, accessibility, brand-identity, nextjs]
 profiles: [minimal, core, full]
-origin: risco
+origin: ai-hub
 ---
 
 # design

@@ -1,7 +1,7 @@
 skill: orient
 
 # How the harness talks to the person: STE-style short sentences, every answer stands alone,
-# register (technical or with analogies) from technical_level, a ladder (text → diagram → HTML →
+# register (technical or with analogies) from the register, a ladder (text → diagram → HTML →
 # video on request) when the person does not follow, and the brújula at the end of a turn.
 # It defers "install a missing skill?" to suggest and text for others to unslop.
 
@@ -22,7 +22,7 @@ should_trigger:
     why: "Zero background — a from-zero explanation with everyday analogies (the old eli5 job, now step 3 of the ladder)."
 
   - prompt: "Háblame más técnico, que esto ya lo controlo."
-    why: "A spoken register change — orient sets technical_level to technical, confirms in one line, applies it."
+    why: "A spoken register change — orient sets the register to technical, confirms in one line, applies it."
 
   - prompt: "¿En qué punto del proyecto vamos?"
     why: "A 'where am I?' question — orient renders the state in sentences that stand alone."
@@ -45,7 +45,7 @@ should_not_trigger:
     why: "Root-cause work owned by debug; orient only closes the turn."
 
 capability:
-  - scenario: "The user just ran `npx @ericrisco/rsc add postgresdb` and says 'ya está, ¿y ahora qué?'. The profile shows technical_level non-technical. Show how orient closes the turn."
+  - scenario: "The user just ran `ai-hub add skill postgresdb` and says 'ya está, ¿y ahora qué?'. The profile records `technical_level: non-technical`. Show how orient closes the turn."
     must_include:
       - "Short sentences, one idea each; no paragraph walls"
       - "Every line understandable without earlier messages (names the database, does not say 'eso' or 'lo de antes')"
@@ -53,14 +53,14 @@ capability:
       - "Closes with 📍 and ➡️, the next step ending in a question"
       - "Does NOT re-prompt to install a skill (defers that to suggest)"
 
-  - scenario: "Orient explained a caching bug in text. The user replies: '¿qué? no entiendo'. The profile shows technical_level technical. Show the next answer."
+  - scenario: "Orient explained a caching bug in text. The user replies: '¿qué? no entiendo'. The profile shows the register technical. Show the next answer."
     must_include:
       - "Climbs exactly one step: a single small diagram (pseudocode, call tree or flow), not an HTML page or a video"
       - "Uses real names from the code, not placeholders"
       - "Keeps the technical register (no 101s)"
       - "At most two lines of prose beside the diagram"
 
-  - scenario: "The profile carries `technical_level: mixed` and an old `accompaniment_level: L0`. The user asks what a migration is. Show how orient answers."
+  - scenario: "The profile carries `the register: mixed` and an old `accompaniment_level: L0`. The user asks what a migration is. Show how orient answers."
     must_include:
       - "Ignores accompaniment_level (retired)"
       - "Uses the analogies register (mixed → analogies)"

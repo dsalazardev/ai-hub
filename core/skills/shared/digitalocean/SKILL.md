@@ -3,7 +3,7 @@ name: digitalocean
 description: "Use when deploying or operating a workload on DigitalOcean — Droplet vs App Platform vs Functions, doctl, app spec YAML, Managed Postgres/MySQL/Valkey on the VPC, S3-compatible Spaces + CDN. NOT host-agnostic CI/CD or rollback strategy (that is `deployment`), NOT a bare Hetzner VPS (that is `hetzner`), NOT another managed PaaS (that is `railway`)."
 tags: [digitalocean, doctl, app-platform, droplets, spaces, deployment, paas, vps]
 recommends: [deployment, postgresdb, docker, domains-dns, monitoring, scaling, hetzner]
-origin: risco
+origin: ai-hub
 ---
 
 # DigitalOcean — Droplet vs App Platform, doctl, Managed DBs, Spaces

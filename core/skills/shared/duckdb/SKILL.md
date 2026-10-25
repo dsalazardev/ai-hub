@@ -3,7 +3,7 @@ name: duckdb
 description: "Use when analytical SQL must run in-process with no server: Parquet/CSV/JSON/Arrow queried in place, OLAP embedded in an app or notebook, a slow pandas groupby on multi-GB data, or S3/lakehouse data read without downloading. NOT a multi-user analytics server (that is clickhouse-analytics), NOT an app's transactional CRUD store (that is postgresdb)."
 tags: [duckdb, olap, analytics, parquet, embedded-database, sql, columnar]
 recommends: [clickhouse-analytics, postgresdb, sql, sqlite-turso, data-cleaning, business-intelligence]
-origin: risco
+origin: ai-hub
 ---
 
 # DuckDB — embedded columnar OLAP, no server

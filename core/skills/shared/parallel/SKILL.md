@@ -4,7 +4,7 @@ description: "Use when two or more pieces of work are genuinely independent — 
 tags: [parallel, subagents, fanout]
 recommends: []
 profiles: [core, full]
-origin: risco
+origin: ai-hub
 ---
 
 # parallel — fan out independent work, then reconcile
@@ -61,7 +61,7 @@ SUBAGENT BRIEF (one per unit)
 - Goal         — what to build, in its own words, no "see the other task"
 - Done-check   — the verifiable condition that means this unit is finished (from the tasks phase)
 - Constraints  — the constitution rules + stack skill it must honor (e.g. ../fastapi/SKILL.md testing)
-- Selected skills — ids + paths resolved from .rsc/skill-registry.json
+- Selected skills — ids + paths resolved from .ai-hub/skill-registry.json
 - Compact rules — 4-5 actionable rules digested from those skills for THIS unit
 - Skill fallback — what to do if a referenced skill is unavailable
 - Interface    — any contract it must conform to, FROZEN before dispatch (see the rule below)
@@ -75,7 +75,7 @@ Each subagent still owns its own discipline inside its scope — TDD via `implem
 
 **Per-unit model tier (when routing is enabled).** `parallel` has *no fixed tier* — this is the most concrete place per-phase model routing pays off. When `models.enabled: true` in `02-DOCS/wiki/sdd/config.yaml`, give each unit the tier of the *kind of work it does*, not one tier for the whole fan-out: an implement-type unit → `balanced`, a scan/research/boilerplate unit → `light`, a unit doing genuine design or root-cause reasoning → `heavy`. Resolve the tier to a concrete model via `models.tiers` and **dispatch that subagent on that model** (e.g. Claude Code's `model` field on the Task/subagent) — real routing, independent of the session model. If routing is off or no profile exists, dispatch on the session model and say nothing. Full protocol: `../sdd/references/model-routing.md`.
 
-**Set the model on every dispatch — an omitted model silently inherits the session's, usually the most expensive one, and that is how a fan-out's cost quietly explodes.** rsc installs a `developer` subagent pinned to the **balanced** tier (Sonnet by default; the user's onboarding choice in `.rsc/developer.json`, never `light`). For implement-type units, **dispatch to the `developer` agent** (e.g. Claude Code `subagent_type: developer`) — that's the deliberate cost cap the user asked for. Only escalate a genuinely heavy unit (real design / root-cause) to a heavy model, and only when routing is enabled; otherwise balanced is the floor and the ceiling. If you dispatch a raw subagent instead, name its tier explicitly.
+**Set the model on every dispatch — an omitted model silently inherits the session's, usually the most expensive one, and that is how a fan-out's cost quietly explodes.** ai-hub installs a `developer` subagent pinned to the **balanced** tier (Sonnet by default; the user's onboarding choice in `.ai-hub/developer.json`, never `light`). For implement-type units, **dispatch to the `developer` agent** (e.g. Claude Code `subagent_type: developer`) — that's the deliberate cost cap the user asked for. Only escalate a genuinely heavy unit (real design / root-cause) to a heavy model, and only when routing is enabled; otherwise balanced is the floor and the ceiling. If you dispatch a raw subagent instead, name its tier explicitly.
 
 ### The unit report contract (statuses & escalation)
 

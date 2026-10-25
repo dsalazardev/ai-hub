@@ -64,4 +64,4 @@ When the diff is too big to hold in one pass:
 
 ## Read-only default
 
-The review itself touches nothing. Posting (`--comment`) and editing (`--fix`) are explicit opt-ins. With `--fix`, branch first if you are on the default branch, apply only the agreed findings, and commit/push only when the user asks. Git authorship is Eric — no Claude co-author or generated footer on any commit or PR body.
+The review itself touches nothing. Posting (`--comment`) and editing (`--fix`) are explicit opt-ins. With `--fix`, branch first if you are on the default branch, apply only the agreed findings, and commit/push only when the user asks. Git authorship is Daner Alejandro Salazar Colorado — no Claude co-author or generated footer on any commit or PR body.

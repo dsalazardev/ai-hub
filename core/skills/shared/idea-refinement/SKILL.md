@@ -4,7 +4,7 @@ description: "Use when a rough product, service, workflow or feature idea needs 
 tags: [ideation, idea-refinement, product-discovery, assumptions, decision-brief]
 recommends: [specify, market-research, competitor-watch, ab-testing]
 profiles: [core, full]
-origin: risco
+origin: ai-hub
 ---
 
 # idea-refinement — make the idea earn its direction

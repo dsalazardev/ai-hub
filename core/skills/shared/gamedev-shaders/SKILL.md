@@ -4,7 +4,7 @@ description: "Use when authoring or debugging a shader, material, VFX, or full-s
 tags: [shaders, vfx, materials, post-processing, shadergraph]
 recommends: [godot, unity, unreal, gamedev-shipping]
 profiles: [full]
-origin: risco
+origin: ai-hub
 ---
 
 # Shaders & VFX (game engines)

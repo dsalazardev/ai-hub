@@ -4,7 +4,7 @@ description: "Use when modeling MongoDB documents (embed versus reference, the 1
 tags: [mongodb, nosql, database, aggregation, indexing]
 recommends: [secure-coding, harness]
 profiles: []
-origin: risco
+origin: ai-hub
 ---
 
 # MongoDB — modeling, indexing, aggregation, transactions, ops

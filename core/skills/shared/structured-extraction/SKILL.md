@@ -4,7 +4,7 @@ description: "Use when text must become a typed, schema-conformant object you ca
 tags: [structured-outputs, json-schema, pydantic, extraction, validation, llm]
 recommends: [document-processing, prompt-engineering, llm-pipeline, agent-eval, rag, data-cleaning]
 profiles: []
-origin: risco
+origin: ai-hub
 ---
 
 # Structured extraction — text in, a typed object you can trust out

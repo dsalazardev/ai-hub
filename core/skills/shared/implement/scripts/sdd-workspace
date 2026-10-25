@@ -5,19 +5,19 @@
 # Usage: sdd-workspace [DIR_OVERRIDE]
 #   $1  optional explicit dir override; if provided, use that dir instead of auto-detecting.
 #
-# Auto-detection: if a 02-DOCS dir exists at repo root, use 02-DOCS/wiki/sdd/.scratch/
-# Otherwise fall back to ${TMPDIR:-/tmp}/rsc-sdd-<pid>.
+# Auto-detection: if a docs/ dir exists at repo root, use .specify/.scratch/
+# Otherwise fall back to ${TMPDIR:-/tmp}/ai-hub-spec-kit-<pid>.
 
 set -e
 
 if [ -n "$1" ]; then
   SCRATCH="$1"
 else
-  # Walk up from cwd to find repo root (where 02-DOCS lives), or just use cwd.
+  # Walk up from cwd to find repo root (where docs/ lives), or just use cwd.
   _find_repo_root() {
     _dir="$PWD"
     while [ "$_dir" != "/" ]; do
-      if [ -d "$_dir/02-DOCS" ]; then
+      if [ -d "$_dir/docs/" ]; then
         printf '%s' "$_dir"
         return 0
       fi
@@ -29,11 +29,11 @@ else
 
   _ROOT="$(_find_repo_root)"
 
-  if [ -n "$_ROOT" ] && [ -d "$_ROOT/02-DOCS" ]; then
-    SCRATCH="$_ROOT/02-DOCS/wiki/sdd/.scratch"
+  if [ -n "$_ROOT" ] && [ -d "$_ROOT/docs/" ]; then
+    SCRATCH="$_ROOT/.specify/.scratch"
   else
     # Use a fixed stable name under TMPDIR so repeated calls return the same path.
-    SCRATCH="${TMPDIR:-/tmp}/rsc-sdd-scratch"
+    SCRATCH="${TMPDIR:-/tmp}/ai-hub-spec-kit-scratch"
   fi
 fi
 

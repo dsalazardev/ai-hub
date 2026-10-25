@@ -18,7 +18,7 @@ manuals. Its rules are measurable. Apply them about 80%: in the user's language,
 | Instruction first, then the reason | — | "Haz backup. Si no, pierdes los datos." |
 | One word, one meaning | — | Do not call the same thing "skill", "módulo" and "plugin" |
 | Noun stacks | ≤ 3 words | "fichero de perfil", not "fichero de configuración de perfil de usuario" |
-| Warnings | the order first, the risk next | "No borres `.rsc/`. Los hooks dejan de funcionar." |
+| Warnings | the order first, the risk next | "No borres `.ai-hub/`. Los hooks dejan de funcionar." |
 | Lists | vertical, for anything with steps or more than 3 items | — |
 
 Not STE: soften it when a rule would cost meaning. Precision beats the limit.

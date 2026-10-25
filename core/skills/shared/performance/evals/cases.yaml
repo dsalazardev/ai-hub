@@ -12,7 +12,7 @@ should_trigger:
   - prompt: "We import all of lodash just to use debounce — is that why the bundle is huge?"
     why: "Non-obvious tree-shaking / whole-library trap; a named anti-pattern in the body."
   - prompt: "A 'use client' at the top of our route is shipping the whole server tree to the browser — how do we cut First Load JS?"
-    why: "Non-obvious RSC boundary discipline; performance owns the measure-cut loop, framework idioms defer to nextjs."
+    why: "Non-obvious React Server Components boundary discipline; performance owns the measure-cut loop, framework idioms defer to nextjs."
   - prompt: "La pàgina carrega molt lenta i no passa els Core Web Vitals, per on començo?"
     why: "Catalan — slow load failing CWV, the heart of the skill (measure field p75 first)."
   - prompt: "El bundle pesa demasiado, hay que analizarlo antes de tocar nada."

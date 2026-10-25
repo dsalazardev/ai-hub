@@ -42,4 +42,4 @@ capability:
       - "Gate policy is block-on-regression vs a committed baseline with a bootstrap CI, not an absolute threshold"
       - "Runner emits eval-report.json and exits non-zero to block the merge"
       - "Names at least one concrete framework (DeepEval, Inspect AI, or promptfoo) and fits it to the case"
-      - "Records the eval policy in 02-DOCS/wiki/stack/evals.md if a harness exists — recorded, not gated"
+      - "Records the eval policy in docs/stack/evals.md if a harness exists — recorded, not gated"

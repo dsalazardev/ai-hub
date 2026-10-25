@@ -3,7 +3,7 @@ name: rust
 description: "Use when writing, reviewing, testing, or shipping Rust — ownership and the borrow checker (move/borrow/clone, Arc/RefCell, lifetimes), errors with Result/`?`/thiserror/anyhow, async on tokio, axum 0.8 services, cargo test, and sqlx + cargo-audit hardening. NOT the same service in Go (that is `go`), NOT a desktop webview shell (that is `tauri`)."
 tags: [rust, tokio, axum, async, backend, service]
 recommends: [go, postgresdb, secure-coding, deployment]
-origin: risco
+origin: ai-hub
 ---
 
 # Idiomatic Rust services

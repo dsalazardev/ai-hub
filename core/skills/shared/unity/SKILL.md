@@ -4,7 +4,7 @@ description: "Use when writing, reviewing or structuring Unity game code in C# f
 tags: [unity, csharp, game-dev, monobehaviour, input-system]
 recommends: [gamedev-multiplayer, gamedev-physics, gamedev-shaders, gamedev-pathing, gamedev-shipping, godot, unreal]
 profiles: [full]
-origin: risco
+origin: ai-hub
 ---
 
 # Unity + C# (Unity 6 LTS)

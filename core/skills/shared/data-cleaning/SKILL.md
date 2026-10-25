@@ -4,7 +4,7 @@ description: "Use when a raw table is too dirty to trust — nulls, sentinels, d
 tags: [data-cleaning, data-quality, pandas, pandera, validation, deduplication, reproducibility, polars]
 recommends: [duckdb, spreadsheet-ops, structured-extraction, data-scraper, analytics, business-intelligence, forecasting, python]
 profiles: []
-origin: risco
+origin: ai-hub
 ---
 
 # Data cleaning — make dirty data trustworthy, and make the cleaning auditable

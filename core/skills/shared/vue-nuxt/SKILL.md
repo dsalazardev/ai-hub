@@ -1,9 +1,9 @@
 ---
 name: vue-nuxt
-description: "Use when building or reviewing a Vue 3 + Nuxt 4 app — `<script setup>` reactivity, SSR/SSG/hybrid `routeRules`, the `app/`+`server/` layout, SSR-safe fetching (`useFetch`/`useAsyncData`) and state (`useState`/Pinia), Nitro routes, hydration mismatches, Nuxt 3→4 migration. NOT React/RSC (that is nextjs), NOT a static islands site (that is astro)."
+description: "Use when building or reviewing a Vue 3 + Nuxt 4 app — `<script setup>` reactivity, SSR/SSG/hybrid `routeRules`, the `app/`+`server/` layout, SSR-safe fetching (`useFetch`/`useAsyncData`) and state (`useState`/Pinia), Nitro routes, hydration mismatches, Nuxt 3→4 migration. NOT React/React Server Components (that is nextjs), NOT a static islands site (that is astro)."
 tags: [vue, nuxt, frontend, web, ssr]
 recommends: [design, deployment, secure-coding]
-origin: risco
+origin: ai-hub
 ---
 
 # Vue 3 + Nuxt 4 — Composition API, SSR, SSR-safe data & state
@@ -12,7 +12,7 @@ Build and review Vue 3 (`<script setup>` + Composition API) on the Nuxt 4 meta-f
 SSR/SSG/hybrid rendering, the `app/` + `server/` layout, SSR-safe fetching and state, Nitro
 server routes, and the reactivity discipline that keeps hydration correct. Nuxt's render model
 is **whole-component render-then-hydrate** — there is no React-style "server component" boundary,
-so never import RSC mental models here.
+so never import React Server Components mental models here.
 
 Not this skill: React / Next App Router / server actions → [`nextjs`](../nextjs/SKILL.md) or
 [`react`](../react/SKILL.md). Content-first site mixing frameworks/islands →
@@ -290,7 +290,7 @@ preset here, then hand platform specifics to [`deployment`](../deployment/SKILL.
 | `await $fetch()` for page data in `setup` | runs on server AND client → double API hit, mismatch | `useAsyncData(key, () => $fetch(...))` / `useFetch` |
 | Module-level `ref`/`reactive` for shared state | one instance per server process → leaks across requests | `useState(key, init)` or a Pinia store |
 | `window`/`localStorage`/`document` in `setup` body | undefined on server → hydration mismatch | `onMounted`, `import.meta.client`, or `<ClientOnly>` |
-| Treating Nuxt like Next RSC ("use server", server components) | Vue has no RSC boundary; whole component renders + hydrates | model it as SSR + client hydration |
+| Treating Nuxt like Next React Server Components ("use server", server components) | Vue has no React Server Components boundary; whole component renders + hydrates | model it as SSR + client hydration |
 | Destructuring a `reactive()` object | detaches the value from the proxy → loses reactivity | `toRefs()`, or read `state.x`, or prefer `ref` |
 | Secret in `runtimeConfig.public` / `NUXT_PUBLIC_*` | shipped into the client bundle | top-level `runtimeConfig`, server-only |
 | `useFetch`/`useState` in a plain-Vue (non-Nuxt) app | those auto-imports don't exist there | client `fetch` in `onMounted` + Pinia/`provide` |

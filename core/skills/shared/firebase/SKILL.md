@@ -3,7 +3,7 @@ name: firebase
 description: "Use when building on Firebase — Firestore data modeling, Security Rules, Auth and custom claims, Cloud Functions, Storage, modular Web/Admin SDK imports — including symptoms like a database open to the internet, a query rejected by rules, or a doc stuck at ~1 write/sec. NOT managed-Postgres BaaS with SQL and RLS (that is supabase)."
 tags: [firebase, firestore, security-rules, cloud-functions, auth]
 recommends: [secure-coding, gcp-essentials, nextjs]
-origin: risco
+origin: ai-hub
 ---
 
 # Firebase — Firestore, Rules, Auth, Functions, Storage

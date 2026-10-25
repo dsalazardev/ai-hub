@@ -3,7 +3,7 @@ name: compose-multiplatform
 description: "Use when building one shared Compose UI in Kotlin across Android, iOS, and desktop — commonMain @Composables, expect/actual, source-set placement, native interop, multiplatform ViewModel/navigation/Koin. NOT a single-platform native build (that is kotlin-android / swift-ios), and NOT Dart/Flutter cross-platform UI (that is flutter)."
 tags: [kotlin, kmp, compose-multiplatform, cross-platform, shared-ui, expect-actual, ios, android]
 recommends: [kotlin-android, swift-ios, flutter, tauri]
-origin: risco
+origin: ai-hub
 ---
 
 # Compose Multiplatform

@@ -4,7 +4,7 @@ description: "Use when a page or interaction is slow for one user and the fix st
 tags: [performance, core-web-vitals, lcp, inp, cls, bundle-size, profiling, react, web-vitals]
 recommends: [scaling, postgresdb, redis, nextjs, react, observability, monitoring]
 profiles: []
-origin: risco
+origin: ai-hub
 ---
 
 # Performance: make one thing fast
@@ -184,7 +184,7 @@ const RichEditor = dynamic(() => import("@org/rich-editor"), { ssr: false });
 - **The 16 ms rule:** one frame at 60 fps is ~16 ms. If a manual memo saves less than that, skip it — you can't see it and you're paying for the cache.
 - The compiler **cannot** fix a new object/array/function reference created in render and passed as a prop — that's a fresh identity every time. Hoist it or derive it stably; that's the real fix, not wrapping the consumer in `memo`.
 
-**RSC boundary discipline.** React Server Components ship zero JS for non-interactive trees; teams report 50–70% First-Load-JS cuts from full RSC adoption. The `'use client'` directive is a *boundary*: everything imported below it becomes client code. So push interactivity into the smallest leaf component and keep data fetching and layout on the server.
+**React Server Components boundary discipline.** React Server Components ship zero JS for non-interactive trees; teams report 50–70% First-Load-JS cuts from full React Server Components adoption. The `'use client'` directive is a *boundary*: everything imported below it becomes client code. So push interactivity into the smallest leaf component and keep data fetching and layout on the server.
 
 ```tsx
 // Bad: 'use client' at the top of the route — the whole tree ships to the browser

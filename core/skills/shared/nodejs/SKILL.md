@@ -3,7 +3,7 @@ name: nodejs
 description: "Use when building or operating a plain Node.js / Express 5 backend service: project layout, async correctness, central error middleware, fail-fast config, graceful shutdown on SIGTERM. NOT DI modules/providers/guards (that is `nestjs`), NOT the type system or tsconfig (that is `typescript`), NOT REST contract design (that is `api-design`)."
 tags: [nodejs, express, backend, async, error-handling]
 recommends: [nestjs, typescript, api-design, error-handling, postgresdb]
-origin: risco
+origin: ai-hub
 ---
 
 # Node.js backend services

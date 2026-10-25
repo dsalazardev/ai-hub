@@ -32,13 +32,13 @@ should_not_trigger:
     why: "The red→green→refactor TDD loop lives inside implement; parallel runs several such loops at once but never replaces the discipline within a single unit."
 
 capability:
-  - scenario: "User asks: 'I have four tasks left on the plan: (a) add the users repository, (b) add the invoices repository, (c) add a field to the orders migration, (d) add another field to the same orders migration. They feel independent — fan them out across subagents and merge when done.' (FastAPI stack noted in the plan; technical_level: technical in the profile.)"
+  - scenario: "User asks: 'I have four tasks left on the plan: (a) add the users repository, (b) add the invoices repository, (c) add a field to the orders migration, (d) add another field to the same orders migration. They feel independent — fan them out across subagents and merge when done.' (FastAPI stack noted in the plan; the register: technical in the profile.)"
     must_include:
       - "Runs the independence test pairwise and correctly identifies that (c) and (d) touch the SAME orders migration/file, so they are NOT independent and must be one serial unit — not two parallel units"
       - "Partitions into a valid plan: (a) and (b) as disjoint parallel units, (c)+(d) collapsed into a single serial unit, with the partition written down before dispatch"
       - "Writes one self-contained brief per parallel unit (scope/files owned, goal, done-check, the FastAPI testing constraint, report-back) that does not say 'see the other unit'"
       - "Freezes any shared contract/type/schema in the serial spine BEFORE dispatching, rather than letting subagents coordinate it live"
       - "Each unit keeps its own red→green→refactor (delegated to implement + the FastAPI testing reference); parallel does not relax the TDD discipline inside a unit"
-      - "Gathers ALL units, checks each against its done-check before merge, then reconciles: merges, resolves conflicts by hand, folds decision logs into 02-DOCS/wiki/sdd/decisions.md"
+      - "Gathers ALL units, checks each against its done-check before merge, then reconciles: merges, resolves conflicts by hand, folds decision logs into .planning/history.md"
       - "Runs the COMBINED suite across the merged result and refuses to call it done on green-in-isolation; if the seam is red, routes to debug rather than guessing"
       - "Reports briefly in technical terms (the partition, frozen contracts, and each reconcile conflict with its fix, one line each) and hands the green result back to implement → verify"

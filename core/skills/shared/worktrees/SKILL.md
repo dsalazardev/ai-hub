@@ -4,7 +4,7 @@ description: "Use when work is about to become commits and needs isolation first
 tags: [git, worktree, isolation]
 recommends: []
 profiles: [core, full]
-origin: risco
+origin: ai-hub
 ---
 
 # worktrees — isolate the work before you touch it
@@ -44,7 +44,7 @@ Both isolate history. A worktree also isolates the *filesystem*. Pick by what's 
 | You'll run two streams of work at once (see the parallel pattern) | **worktree** | Each stream gets its own directory; no stash-juggling, no checkout thrash. |
 | The current tree is dirty and the user wants both the WIP and the new work | **worktree** | Stash-and-switch risks losing the WIP; a worktree sidesteps the stash entirely. |
 | You're an agent that may keep the main session running elsewhere | **worktree** | Filesystem isolation is the whole point — the parent session keeps its files. |
-| **Another session is working in this same folder** (rsc says so on each message) | **worktree — mandatory** | Switching branches would change its files under it; rsc's branch guard denies the switch. Tell the person that `.worktrees/<branch>/` is where the project now runs. Off for the project: `npx @ericrisco/rsc isolation off`. |
+| **Another session is working in this same folder** (ai-hub says so on each message) | **worktree — mandatory** | Switching branches would change its files under it; ai-hub's branch guard denies the switch. Tell the person that `.worktrees/<branch>/` is where the project now runs. Off for the project: `npx ai-hub isolation off`. |
 
 When in doubt, prefer a **worktree**: it is the strictly stronger isolation and the cost is one
 extra directory. The rest of this skill assumes a worktree; the branch path is the degenerate case
@@ -56,7 +56,7 @@ Run this in order. Each check prevents a class of "lost work" you can't easily u
 
 1. **Read the register** — `technical_level` in `02-DOCS/wiki/harness/user-profile.md` picks
    technical terms or plain words with analogies (see "Talking about it" below). No profile yet, or
-   no `02-DOCS/` at all (a worktree can be created in any git repo with no rsc harness present) →
+   no `02-DOCS/` at all (a worktree can be created in any git repo with no ai-hub harness present) →
    use analogies: explain what a worktree is in one plain sentence before making one, and proceed.
 2. **Confirm you're in a git repo.** `git rev-parse --is-inside-work-tree`. If not, there's nothing
    to isolate with git — tell the user; don't fabricate a worktree.
@@ -127,7 +127,7 @@ git switch -c feat/<slug> origin/<default-branch>
 
 ```bash
 # when the work has landed — the cleanup is the default, and it is a command, not a judgement call
-npx @ericrisco/rsc worktrees reap
+npx ai-hub worktrees reap
 ```
 
 Either way, the contract is identical: **after this step, the cwd is an isolated branch off a clean
@@ -141,15 +141,15 @@ reading the situation, because "is this safe to delete?" is a deterministic ques
 answer costs a directory that cannot be brought back. Ask the command:
 
 ```bash
-npx @ericrisco/rsc worktrees        # every landed worktree, with a verdict and a reason
-npx @ericrisco/rsc worktrees reap   # retire the ones that are safe with nothing to lose
-npx @ericrisco/rsc worktrees reap <path>   # retire one the user has just confirmed
+npx ai-hub worktrees        # every landed worktree, with a verdict and a reason
+npx ai-hub worktrees reap   # retire the ones that are safe with nothing to lose
+npx ai-hub worktrees reap <path>   # retire one the user has just confirmed
 ```
 
 Three things have to hold before a worktree is retired without asking, and each fails towards
 **keeping** it:
 
-- **rsc created it** — location *and* branch shape both match. Only one matches → it might be the
+- **ai-hub created it** — location *and* branch shape both match. Only one matches → it might be the
   user's, so it is asked about, never removed silently. Neither → foreign; not touched, not offered.
 - **The branch adds nothing the trunk does not have** — asked about *content*, so a squash-merged
   pull request counts as landed. Its branch is kept even so: git will not delete it safely, and while
@@ -163,7 +163,7 @@ Anything else is reported with the reason and the way out. A refusal you cannot 
 **The native tool owns its own lifecycle.** If you isolated via a native `EnterWorktree`-style tool,
 exit through that tool's `remove`/`keep`; the reaper is for worktrees git alone knows about.
 
-**When the command is unavailable** (no rsc in this project), the manual equivalent is: confirm it is
+**When the command is unavailable** (no ai-hub in this project), the manual equivalent is: confirm it is
 a linked worktree (`git rev-parse --git-dir` ≠ `--git-common-dir`), rule out a submodule
 (`git rev-parse --show-superproject-working-tree` must be empty), `cd` to the main working tree, then
 `git worktree remove` and `git worktree prune`. Never `-D` a branch to make the cleanup succeed.
@@ -200,5 +200,5 @@ list test-first, one commit per task, on this branch. Neighbours: `../tasks/SKIL
 before you get here; `../parallel/SKILL.md` decides *what may run concurrently* inside these
 workspaces — it leans on this skill (each independent stream gets its own worktree, so the streams
 never fight over files) but the partition-then-gather call is its own; `../ship/SKILL.md` closes the
-branch afterwards — merge, PR, or discard, with Eric-only git authorship. This skill only *opens* the
+branch afterwards — merge, PR, or discard, with Daner Alejandro Salazar Colorado-only git authorship. This skill only *opens* the
 isolation, and it touches git state only: no runtime code, nothing under `02-DOCS`.

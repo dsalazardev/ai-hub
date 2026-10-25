@@ -52,7 +52,7 @@ A living document — updated whenever the user reveals new goals, context, cons
 ```markdown
 # User Profile
 
-> Source of truth for how every rsc skill talks to this user. Updated continuously.
+> Source of truth for how every ai-hub skill talks to this user. Updated continuously.
 
 ## Register
 - technical_level: non-technical            <!-- technical | non-technical (mixed: legacy, reads as non-technical) -->

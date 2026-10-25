@@ -4,7 +4,7 @@ description: "Use when governing a workspace's control plane, code or not — th
 tags: [harness, company, ops, docs, wiki, connect, tools, knowledge]
 recommends: [init, connect-tool]
 profiles: [minimal, core, full]
-origin: risco
+origin: ai-hub
 ---
 
 # Harness — the workspace control plane
@@ -18,7 +18,7 @@ The **harness** is the control plane of a workspace. A workspace need not be cod
 
   Two on-ramps feed it. **Ingest**: the user drops any file in any format into `inbox/`, and the
   Auto-Ingest Sweep extracts, classifies, cross-links and compiles it — then goes for a walk,
-  discovering un-ingested documents anywhere in the workspace, bounded by `.rscignore` (baseline:
+  discovering un-ingested documents anywhere in the workspace, bounded by `.ai-hubignore` (baseline:
   `references/ingest-ignore-defaults.md`) and de-duplicated through the `wiki/.ingested.json`
   ledger. **Worklog**: every meaningful session of
   work is itself a raw source in `raw/worklog/`, captured on `PreCompact`/`SessionEnd`, at a commit
@@ -28,7 +28,7 @@ The **harness** is the control plane of a workspace. A workspace need not be cod
   inside a folder the user maintains is copied, and consolidating that folder needs explicit consent.
 
   **When the person hands you a file** ("cómete este fichero", "guárdalo en la documentación",
-  "ingest this"): run `npx @ericrisco/rsc ingest <file> --topic <topic>`. It moves the file into
+  "ingest this"): run `npx ai-hub ingest <file> --topic <topic>`. It moves the file into
   `02-DOCS/raw/<topic>/` only after the copy is verified, and records it in `wiki/.ingested.json`.
   Never move or rename that raw copy afterwards: the ledger points at it. Then compile from the raw copy
   into `wiki/` (update before create, cross-links, `index.md`, `log.md`) and say in one line where it
@@ -70,7 +70,7 @@ Two files carry the state, both indexed from the root `CLAUDE.md` Knowledge map 
 `user-profile.md` for the living portrait of the user, and `decisions.md` as an append-only log —
 date, requirements gathered, options presented, choice, why. Log every significant decision you take.
 
-`.rsc/.no-harness` is the user's explicit "no harness in this repo". Treat it as canonical: never
+`.ai-hub/.no-harness` is the user's explicit "no harness in this repo". Treat it as canonical: never
 overwrite it, never delete it, never auto-start onboarding past it.
 
 For long SDD work, write the recovery note `02-DOCS/wiki/sdd/sessions/<date>-<slug>.md` before
@@ -253,12 +253,12 @@ Print a final report:
 
 ## Equip — install the skills this workspace needs
 
-Once the structure stands, make sure the workspace has the rsc skills its stack and goals call for — detection here, not just at `init`:
+Once the structure stands, make sure the workspace has the ai-hub skills its stack and goals call for — detection here, not just at `init`:
 
-1. **Detect → propose.** From the detected stacks/providers and the user's goals in `02-DOCS/wiki/harness/`, build a shortlist. Ask the CLI if unsure: `npx @ericrisco/rsc consult "<stack + goal>"`. (Map e.g. detected Stripe→`stripe`, Postgres→`postgresdb`, Next→`nextjs`+`design`, a company/ops focus→`finance-ops`/`invoicing`/`gdpr-privacy`…)
+1. **Detect → propose.** From the detected stacks/providers and the user's goals in `02-DOCS/wiki/harness/`, build a shortlist. Ask the CLI if unsure: `npx ai-hub consult "<stack + goal>"`. (Map e.g. detected Stripe→`stripe`, Postgres→`postgresdb`, Next→`nextjs`+`design`, a company/ops focus→`finance-ops`/`invoicing`/`gdpr-privacy`…)
 2. **Confirm, then install yourself.** Show the shortlist with a one-line *why* each (in their register), get a one-word confirm, and run it via Bash — installing writes to their environment, so always confirm first:
    ```bash
-   npx @ericrisco/rsc add <skill> [<skill> ...]
+   npx ai-hub add <skill> [<skill> ...]
    ```
    Can't run a shell? Print the exact command for another terminal tab.
 3. **Flag the new session.** New skills load at session start — tell the user to open a **new tab/session** (or reload Cursor/Codex/Gemini) in this folder for them to activate. Log the installed set in `02-DOCS/wiki/harness/decisions.md`.
@@ -286,7 +286,7 @@ freely). Root `CLAUDE.md`'s `## Knowledge map` is a **short pointer** — only t
 
 From then on, **new index entries go to `02-DOCS/wiki/index.md`**, not `CLAUDE.md`. This is additive
 and reversible; it honors the "never delete user content" rule (you relocate it, with a pointer).
-Opt out of the size nudge with `.rsc/.no-claudemd-check`.
+Opt out of the size nudge with `.ai-hub/.no-claudemd-check`.
 
 ## Invariants
 

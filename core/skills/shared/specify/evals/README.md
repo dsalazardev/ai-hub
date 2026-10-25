@@ -8,7 +8,7 @@ canonical file path, and honest open points. Cases live in `cases.yaml`.
 
 There is no shell runner. `specify` is a process skill judged on safety rails
 and judgement, so grading is done by an **agent harness** (a Claude Code agent
-with the rsc skill catalog loaded) plus a human spot-check.
+with the ai-hub skill catalog loaded) plus a human spot-check.
 
 ## What's in `cases.yaml`
 
@@ -23,7 +23,7 @@ with the rsc skill catalog loaded) plus a human spot-check.
 Goal: the skill fires when an intent needs a spec, and never on the HOW, the
 ambiguity sweep, or project-wide principles.
 
-1. Configure an agent with the **full rsc skill catalog** available for routing
+1. Configure an agent with the **full ai-hub skill catalog** available for routing
    (the SDD phases — constitution, specify, clarify, plan, tasks, analyze,
    implement, verify, review, ship — plus the stack/process skills: fastapi,
    nextjs, go, postgresdb, flutter, design, marketing, presentations,

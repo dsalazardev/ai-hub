@@ -39,11 +39,11 @@ should_not_trigger:
 capability:
   - scenario: "User says: 'We have a clarified spec for an order-reservation feature (reserve stock for a cart for 15 minutes, then auto-release; must be idempotent per cart; calls an external payments provider). Write the implementation plan.' The agent has read the spec and constitution."
     must_include:
-      - "Writes the artifact to 02-DOCS/wiki/sdd/plans/<slug>.md using the seven-section structure (context, architecture, interfaces, data model/flow, testing strategy, sequencing, risks)"
+      - "Writes the artifact to specs/<slug>/plan.md using the seven-section structure (context, architecture, interfaces, data model/flow, testing strategy, sequencing, risks)"
       - "Architecture section names components with single responsibilities and marks the payments provider as EXTERNAL; states one top architectural decision with a reason tied to a constraint"
       - "Interfaces section gives a language-neutral contract for reserve (inputs → outputs incl. error modes) and explicitly states the idempotent-on-cartId invariant and the 15-minute auto-release"
       - "Data model + flow names entities at the model level (not DDL) and calls out the consistency/transactional boundary; defers concrete schema/indexes/migration to the postgresdb stack skill rather than writing SQL"
       - "Testing strategy maps each acceptance criterion to a test level (unit/contract/integration/e2e), states what each asserts and what it mocks (e.g. the payments provider), and defers the test runner/tooling to the stack skill"
       - "Risks section is ranked with trigger + impact + mitigation per risk (e.g. payments timeout, double-reservation race); does NOT claim zero risk"
       - "Stays stack-neutral above the seam — no framework route decorators, ORM session code, or test-runner flags in the plan"
-      - "Ends by pointing to the tasks phase and notes indexing the plan in the root CLAUDE.md Knowledge map"
+      - "Ends by pointing to the tasks phase and notes indexing the plan in the root AGENTS.md Knowledge map"

@@ -3,7 +3,7 @@ name: react
 description: "Use when building or reviewing a client-side React SPA bundled by Vite (React 19.2): components, where state lives, hooks, server data fetching, client routing, re-render and effect bugs. NOT App Router / server components / SSR (that is `nextjs`); NOT native screens (that is `react-native`)."
 tags: [react, vite, spa, frontend, hooks, tanstack-query]
 recommends: [typescript, design, testing-web]
-origin: risco
+origin: ai-hub
 ---
 
 # React + Vite SPA — Components, State, Data Fetching (React 19.2, 2026)
@@ -14,18 +14,18 @@ toasts, OTP inputs, charts, virtualization, drag and drop, state, styling, themi
 or screen, and its motion layer, is `../design/SKILL.md`'s.
 
 
-> Build or review a fast, typed, correctly-architected **client-side** React single-page app bundled by Vite. No server runtime, no RSC tree, no framework router. Server-rendered React (App Router, server actions, SSR/SSG) is not this skill — that is `../nextjs/SKILL.md`.
+> Build or review a fast, typed, correctly-architected **client-side** React single-page app bundled by Vite. No server runtime, no React Server Components tree, no framework router. Server-rendered React (App Router, server actions, SSR/SSG) is not this skill — that is `../nextjs/SKILL.md`.
 
 **SDD gate — before writing feature code.** If this skill fired on a **new, non-trivial feature or behaviour change** and there is **no approved spec + plan** under `02-DOCS/wiki/sdd/`, stop and hand off to `../specify/SKILL.md`: it runs brainstorm → spec → plan → tasks, then routes back here once the plan is approved. Build directly only for a genuinely one-line / low-risk change. Method: `../sdd/SKILL.md`.
 
 ## First: confirm it's a Vite SPA, not a framework
 
-Read `package.json` before giving any advice — it stops you applying SSR/RSC patterns to a client SPA.
+Read `package.json` before giving any advice — it stops you applying SSR/React Server Components patterns to a client SPA.
 
 | Signal in package.json                | Read it as            | Where                  |
 | ------------------------------------- | --------------------- | ---------------------- |
 | `vite` + `react`, no `next`           | Vite SPA              | here                   |
-| `next`                                | metaframework / RSC   | `../nextjs/SKILL.md`   |
+| `next`                                | metaframework / React Server Components   | `../nextjs/SKILL.md`   |
 | `@react-router/dev`                   | RR framework mode/SSR (Remix successor) | `../nextjs/SKILL.md`-shape |
 | `react-router` only                   | RR library mode       | here (Routing)         |
 | `expo` / `react-native`               | native                | `../react-native/SKILL.md` |

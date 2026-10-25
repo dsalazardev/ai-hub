@@ -1,6 +1,6 @@
 # Eval harness — `cpp` skill
 
-These cases are run by the rsc skill-eval harness (a Claude agent with the full skill catalog
+These cases are run by the ai-hub skill-eval harness (a Claude agent with the full skill catalog
 loaded), or read manually. They measure two things: **triggering** — that the `cpp` skill's
 description fires on each `should_trigger` prompt and stays quiet on the `should_not_trigger`
 near-misses, routing each of those to the named real sibling (`rust`, `secure-coding`,

@@ -4,7 +4,7 @@ description: "Use when the user names a specific tool to connect to the agent (a
 tags: [connect, integration, erp, legacy, desktop, database, read-only, mcp, api, export, least-privilege, onboarding]
 recommends: [harness, api-connector-builder, automation-strategy, automation-flows]
 profiles: [minimal, core, full]
-origin: risco
+origin: ai-hub
 ---
 
 # Connect a tool: research it, pick the safe route, prove it works
@@ -13,7 +13,7 @@ The user said *"connect my Holded"*, *"can the agent read our Sage?"*, *"hook up
 skill turns that sentence into a working, documented connection in `01-TOOLS/<TOOL>/`, for **any**
 tool: the ones with a modern API, and the program installed on an office PC fifteen years ago.
 
-rsc ships no ready-made connections. Every project builds only the ones its user asks for, so the
+ai-hub ships no ready-made connections. Every project builds only the ones its user asks for, so the
 method matters more than any list of vendors: **find the truth, take the least dangerous route,
 prove it, leave it written down.**
 
@@ -87,7 +87,7 @@ because a read-only promise nobody tested is not one:
 ```bash
 # PostgreSQL: a write must fail with a PERMISSION error. Any other error (wrong host, bad password)
 # proves nothing, so it fails the test too instead of passing as "refused".
-out=$(psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "BEGIN; CREATE TABLE rsc_write_probe(i int); ROLLBACK;" 2>&1) \
+out=$(psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "BEGIN; CREATE TABLE probe_write(i int); ROLLBACK;" 2>&1) \
   && { echo "FAIL — this user can write" >&2; exit 1; }
 grep -qiE "permission denied|read-only transaction" <<<"$out" \
   && echo "OK — writes refused" || { echo "FAIL — unexpected error: $out" >&2; exit 1; }
@@ -96,7 +96,7 @@ grep -qiE "permission denied|read-only transaction" <<<"$out" \
 ```bash
 # SQL Server: insert into one of the views you exposed; only error 229 (permission denied) passes.
 out=$(sqlcmd -S "$MSSQL_HOST" -U "$MSSQL_USER" -P "$MSSQL_PASSWORD" -d "$MSSQL_DB" -b \
-  -Q "BEGIN TRAN; INSERT INTO rsc_views.customers DEFAULT VALUES; ROLLBACK;" 2>&1) \
+  -Q "BEGIN TRAN; INSERT INTO probe_views.customers DEFAULT VALUES; ROLLBACK;" 2>&1) \
   && { echo "FAIL — this user can write" >&2; exit 1; }
 grep -q "Msg 229" <<<"$out" && echo "OK — writes refused" || { echo "FAIL — unexpected error: $out" >&2; exit 1; }
 ```
@@ -120,7 +120,7 @@ Most small-business software was never meant to be connected. The safe pattern:
    ```sql
    CREATE LOGIN ia_reader WITH PASSWORD = '<from .env>';
    CREATE USER ia_reader FOR LOGIN ia_reader;
-   GRANT SELECT ON SCHEMA::rsc_views TO ia_reader;
+   GRANT SELECT ON SCHEMA::probe_views TO ia_reader;
    ALTER ROLE db_denydatawriter ADD MEMBER ia_reader;
    ```
 

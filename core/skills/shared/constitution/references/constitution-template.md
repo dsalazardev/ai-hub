@@ -8,7 +8,7 @@ Render this into `02-DOCS/wiki/sdd/constitution.md`. Keep it to 1-2 screens. Eve
 ---
 type: constitution
 title: <Project> — Constitution
-description: The non-negotiable principles every rsc-sdd phase obeys.
+description: The non-negotiable principles every ai-hub Spec-Kit phase obeys.
 tags: [sdd, constitution]
 timestamp: YYYY-MM-DDTHH:MM:SSZ
 topic: sdd
@@ -18,7 +18,7 @@ version: v1.0.0
 # <Project> — Constitution
 
 > Version: v1.0.0 · Ratified: YYYY-MM-DD · Last amended: YYYY-MM-DD
-> The non-negotiable principles every rsc-sdd phase obeys. Stack mechanics live in
+> The non-negotiable principles every ai-hub Spec-Kit phase obeys. Stack mechanics live in
 > `02-DOCS/wiki/stack/*`; this file ratifies the principle and links the detail.
 
 ## 1. Stack canon

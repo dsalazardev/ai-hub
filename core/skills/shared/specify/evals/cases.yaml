@@ -1,19 +1,19 @@
 skill: specify
 
 # Prompts that MUST load `specify`. The skill turns a fuzzy intent into a written
-# WHAT/WHY spec at 02-DOCS/wiki/sdd/specs/<slug>.md — problem, goals/non-goals,
+# WHAT/WHY spec at specs/<slug>/spec.md — problem, goals/non-goals,
 # users, observable behaviour, testable acceptance criteria, points to clarify —
 # with zero implementation detail. It is NOT the technical plan (plan), NOT the
 # ambiguity sweep (clarify), NOT project-wide principles (constitution).
 should_trigger:
   - prompt: "Write a spec for a bulk CSV import feature in our admin panel."
-    why: "Direct request to produce a specification for a feature — the skill's core job: WHAT/WHY at 02-DOCS/wiki/sdd/specs/<slug>.md."
+    why: "Direct request to produce a specification for a feature — the skill's core job: WHAT/WHY at specs/<slug>/spec.md."
 
   - prompt: "I want to add magic-link login but I haven't really thought it through yet — can you help me nail down what it should actually do?"
     why: "A fuzzy intent that needs to become a spec (behaviour + acceptance criteria) before any planning; 'what it should do' is WHAT, not HOW."
 
   - prompt: "Especifica la feature de notificaciones por email antes de que nos pongamos a construir nada."
-    why: "Spanish 'especifica … antes de construir' is the exact specify trigger — capture the spec before implementation, in the rsc bilingual register."
+    why: "Spanish 'especifica … antes de construir' is the exact specify trigger — capture the spec before implementation, in the Spanish/English bilingual register."
 
   - prompt: "Before we build it, capture the requirements for letting users export their data."
     why: "Requirements capture for a feature, explicitly pre-build — the specify phase, even though the user never says the word 'spec'."
@@ -61,13 +61,13 @@ should_not_trigger:
 # question at a time, writes to the canonical path, and names open points; an
 # ungrounded answer typically leaks implementation and dumps questions at once.
 capability:
-  - scenario: "A user says: 'I want to add magic-link (passwordless) login.' There is a constitution at 02-DOCS/wiki/sdd/constitution.md but no spec yet. Produce the spec."
+  - scenario: "A user says: 'I want to add magic-link (passwordless) login.' There is a constitution at .specify/memory/constitution.md but no spec yet. Produce the spec."
     must_include:
-      - "Reads technical_level from 02-DOCS/wiki/harness/user-profile.md and the constitution first, inferring everything it can before asking, then asks only contract-changing gaps — the whole FRONTIER in one numbered round, each with its recommendation, and nothing whose answer depends on another question open in that same round."
+      - "Reads the register from AGENTS.md and the constitution first, inferring everything it can before asking, then asks only contract-changing gaps — the whole FRONTIER in one numbered round, each with its recommendation, and nothing whose answer depends on another question open in that same round."
       - "Stays strictly WHAT/WHY: no framework, token format, database table, endpoint shape, email provider, library, or file path appears in the spec — implementation-laden answers are flagged as points to clarify instead of guessed."
       - "Produces the spec sections: Problem & why, Cost of not building it, The cheapest alternative, Goals, Non-goals / out of scope, Users & context, Behaviour (main + edge + error paths), Acceptance criteria, Points to clarify — and neither of the two doubt sections is left as a formality: 'Cost of not building it' names a concrete consequence, and 'The cheapest alternative' names something that would solve most of it without building this, plus why that is not enough."
       - "Writes testable acceptance criteria in Given/When/Then form that verify could later check (e.g. expired-link refusal, unknown-email revealing nothing)."
-      - "Writes the file to 02-DOCS/wiki/sdd/specs/<slug>.md (kebab-case slug), indexes it in the root CLAUDE.md Knowledge map under sdd/specs, and logs the spec creation to the canonical SDD decisions log at 02-DOCS/wiki/sdd/decisions.md."
+      - "Writes the file to specs/<slug>/spec.md (kebab-case slug), indexes it in the root AGENTS.md Knowledge map under sdd/specs, and logs the spec creation to the canonical SDD decisions log at .planning/history.md."
       - "Lists honest Points to clarify as the handoff rather than inventing values, and TYPES each one (pregunta abierta / suposición tomada / decisión diferida / área no formulable) so clarify knows whether to ask it, validate it, or leave it alone; a suposición carries its basis."
       - "Ends by pointing to the clarify phase as the next step in the SDD chain."
 

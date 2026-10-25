@@ -3,7 +3,7 @@ name: wordpress
 description: "Use when building or hardening WordPress sites or WooCommerce stores and treating WordPress as the product rather than just writing PHP — block themes with theme.json, plugins with block.json and proper hooks, wp-config security hardening, performance (object cache, asset loading, autoloaded options), and WP-CLI operations. NOT a Laravel app (that is `laravel`)."
 tags: [wordpress, woocommerce, block-themes, wp-cli, php, security-hardening, performance]
 recommends: [php, secure-coding, performance, mysql, shopify]
-origin: risco
+origin: ai-hub
 ---
 
 # WordPress

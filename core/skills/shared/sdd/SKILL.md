@@ -4,12 +4,12 @@ description: "Use when you want a disciplined, spec-driven path from a feature i
 tags: [sdd, spec, workflow, plan]
 recommends: [sdd-init, constitution, specify]
 profiles: [core, full]
-origin: risco
+origin: ai-hub
 ---
 
-# sdd — the rsc Spec-Driven Development dispatcher
+# sdd — the ai-hub Spec-Driven Development dispatcher
 
-*The front door for building software the rsc way: intent in, shipped-and-verified software out, with the spec, plan and decisions recorded into the project's living knowledge model as you go.*
+*The front door for building software the ai-hub way: intent in, shipped-and-verified software out, with the spec, plan and decisions recorded into the project's living knowledge model as you go.*
 
 `sdd` is the **engineering counterpart of the `harness`**. The harness runs the chaos → knowledge loop (inbox → `02-DOCS` wiki). `sdd` runs the **intent → shipped software** loop, and it writes the artifacts of that loop — constitution, specs, plans, decisions — into the same `02-DOCS/wiki/sdd/` so the project's knowledge grows with every feature instead of leaking into chat history.
 
@@ -23,7 +23,7 @@ If you only remember one rule: **the artifact is the contract.** Code is checked
 
 ## Step zero: calibrate the SDD runtime
 
-Before the first non-trivial feature in a repo, run `../sdd-init/SKILL.md`. It detects the stack, package manager, test runners, scripts, monorepo signals and review budget, refreshes `.rsc/skill-registry.json`, and writes:
+Before the first non-trivial feature in a repo, run `../sdd-init/SKILL.md`. It detects the stack, package manager, test runners, scripts, monorepo signals and review budget, refreshes `.ai-hub/skill-registry.json`, and writes:
 
 ```text
 02-DOCS/wiki/sdd/config.yaml
@@ -48,7 +48,7 @@ constitution ─(once per project)─┐
 
 | Phase | Owns | Writes | Tier | Sibling skill |
 | --- | --- | --- | --- | --- |
-| **sdd-init** | Technical runtime calibration: stack, tests, commands, registry, budgets | `02-DOCS/wiki/sdd/config.yaml`, `.rsc/skill-registry.*` | light | `../sdd-init/SKILL.md` |
+| **sdd-init** | Technical runtime calibration: stack, tests, commands, registry, budgets | `02-DOCS/wiki/sdd/config.yaml`, `.ai-hub/skill-registry.*` | light | `../sdd-init/SKILL.md` |
 | **proposal** | Optional pre-execution briefing for ambiguous/architectural/risky work | `02-DOCS/wiki/sdd/proposals/<slug>.md` | — | handled by `../specify/SKILL.md` when needed |
 | **constitution** | Project non-negotiables: stack canon, quality bars, conventions | `02-DOCS/wiki/sdd/constitution.md` | heavy | `../constitution/SKILL.md` |
 | **specify** | Turn a fuzzy intent into a spec — what & why, no how | `02-DOCS/wiki/sdd/specs/<slug>.md` | balanced | `../specify/SKILL.md` |
@@ -59,7 +59,7 @@ constitution ─(once per project)─┐
 | **implement** | Execute tasks with checkpoints; TDD discipline embedded | logs to `02-DOCS/wiki/sdd/decisions.md` | balanced | `../implement/SKILL.md` |
 | **verify** | Post-build gate: run the stack's checks + done-checks + acceptance | evidence | balanced | `../verify/SKILL.md` |
 | **review** | Adversarial code review — give and receive with rigor | review notes | heavy | `../review/SKILL.md` |
-| **ship** | Close the branch: PR / merge / cleanup. **Git authorship = Eric** | the merge/PR and archive bundle | light | `../ship/SKILL.md` |
+| **ship** | Close the branch: PR / merge / cleanup. **Git authorship = Daner Alejandro Salazar Colorado** | the merge/PR and archive bundle | light | `../ship/SKILL.md` |
 | **debug** | Root-cause diagnosis: reproduce → isolate → fix → verify | a diagnosis | heavy | `../debug/SKILL.md` |
 | **worktrees** | Isolate feature work in a branch/worktree before executing a plan | an isolated workspace | light | `../worktrees/SKILL.md` |
 | **parallel** | Fan out independent tasks across subagents, gather results | merged results | per-unit | `../parallel/SKILL.md` |
@@ -77,7 +77,7 @@ When a request lands, do not start typing code. Place it on the map first, then 
 > **The new-feature gate (hard).** The moment the user is thinking about a new feature or change — "add…", "build…", "it should also…", "quiero añadir…" — it goes to `specify` first, *even if a stack skill (nextjs/fastapi/flutter/react…) also fired and could just build it*. **No feature code is written — by any skill — until a spec AND a plan exist and the user has approved them.** A stack skill about to build an unspec'd, non-trivial feature must stop and route here. The only exception is a genuinely one-line, low-risk change; name it and skip.
 
 1. **No `02-DOCS/wiki/sdd/config.yaml` and this is non-trivial?** → `sdd-init`.
-2. **No constitution yet AND this project will grow — or its frontmatter says `status: draft` (the one `rsc onboard` writes)?** → `constitution` once, then come back to the chain.
+2. **No constitution yet AND this project will grow — or its frontmatter says `status: draft` (the one `ai-hub onboard` writes)?** → `constitution` once, then come back to the chain.
 3. **Ambiguous / architectural / risky change before spec?** → optional proposal artifact via `specify`.
 4. **A new idea, fuzzy, no spec on disk?** → `specify`.
 5. **A spec exists but feels risky / has open questions?** → `clarify`.
@@ -121,7 +121,7 @@ Run the fan-out on the `developer` subagent as usual, and narrate in the `orient
 
 ## Read the register first
 
-Before dispatching, read `technical_level` in `02-DOCS/wiki/harness/user-profile.md` — exactly as every rsc skill does. It picks the register (technical terms, or plain words with analogies); it never changes whether the gates exist. Speak in the `orient` voice:
+Before dispatching, read `technical_level` in `02-DOCS/wiki/harness/user-profile.md` — exactly as every ai-hub skill does. It picks the register (technical terms, or plain words with analogies); it never changes whether the gates exist. Speak in the `orient` voice:
 
 - **At each phase:** name the phase, give one line of *why this phase now*, do it, show the artifact.
 - **At gates** (clarify / analyze / decisions): ask only the questions that actually change the outcome, each with its trade-off and a recommendation.
@@ -183,8 +183,8 @@ Index these in `02-DOCS/wiki/index.md` (the Knowledge map; root `CLAUDE.md` keep
 The registry is the cheap index:
 
 ```text
-.rsc/skill-registry.json
-.rsc/skill-registry.md
+.ai-hub/skill-registry.json
+.ai-hub/skill-registry.md
 ```
 
 Use it to choose the few relevant skill paths for the current phase/stack. Do not load the whole catalog. Before dispatching subagents, digest selected skills into 4-5 compact rules and include them in the brief. Each phase reports `skill_resolution`: which skills were used, which were missing, fallback behavior, and the compact rules handed to subagents.
@@ -236,7 +236,7 @@ Include current phase, active artifacts, last verdict, completed tasks, next ste
 | "I'll load every skill into the subagent." | That contaminates context. Use registry -> selected paths -> compact rules. |
 | "The phase wrote a nice summary, so no envelope needed." | The envelope is the phase contract. Add it. |
 | "Run constitution again for this feature." | Constitution is once per project. If it exists, read it as guardrails and move on. |
-| "Ship now, I'll add Co-Authored-By: Claude." | `ship` enforces Eric-only authorship. No Claude co-author, no generated-with footer. |
+| "Ship now, I'll add Co-Authored-By: Claude." | `ship` enforces Daner Alejandro Salazar Colorado-only authorship. No Claude co-author, no generated-with footer. |
 | "Invoke the `release` phase." | There is no such phase. Never invent a sibling — the chain is the chain. |
 | "Routing sounds useful, I'll switch to the heavy model on my own." | Routing is opt-in (`models.enabled:false`). Don't switch models unless the user turned it on. |
 | "I'll tell them I switched to Opus." (on an assistant with no per-subagent model) | Announce the recommended tier; never claim a switch the tool can't make. Honesty over magic. |

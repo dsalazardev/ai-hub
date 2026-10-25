@@ -3,7 +3,7 @@ name: neon
 description: "Use when you have picked Neon (serverless Postgres) and need to connect correctly from a serverless or edge runtime, wire database branching into dev, preview and CI, or stop being burned by scale-to-zero cold starts and pooler limits — including choosing HTTP versus WebSocket connections and pooled versus direct endpoints for migrations. NOT generic Postgres schema, index, EXPLAIN, RLS or migration-engine work (that is `postgresdb`)."
 tags: [neon, postgres, serverless, database, branching, edge]
 recommends: [postgresdb, drizzle-orm, prisma-orm, vercel]
-origin: risco
+origin: ai-hub
 ---
 
 # Neon — serverless Postgres as a platform
@@ -48,7 +48,7 @@ Keyed by runtime and what the query needs. Pick the lightest transport that sati
 
 | You need | Use | Why |
 | --- | --- | --- |
-| One independent read/write per request (edge, Lambda, RSC) | HTTP `neon()` | Single fetch round-trip (~3 round trips vs ~8 for TCP setup); no connection to manage or leak. |
+| One independent read/write per request (edge, Lambda, React Server Components) | HTTP `neon()` | Single fetch round-trip (~3 round trips vs ~8 for TCP setup); no connection to manage or leak. |
 | Several queries that must be atomic, no logic between them | `sql.transaction([q1, q2])` over HTTP | One round-trip, real transaction, still no socket lifecycle. |
 | Interactive transaction — read a row, branch in app code, then write | WebSocket `Pool` (open+close in handler) | HTTP can't hold `BEGIN` open; WebSocket keeps the session alive within the request. |
 | Full `pg`-API compatibility (cursors, LISTEN/NOTIFY, COPY) | WebSocket `Client`/`Pool` | HTTP is one-shot; node-postgres semantics need the socket. |

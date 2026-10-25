@@ -3,7 +3,7 @@ name: deployment
 description: "Use when taking an app from source to live: choosing the deploy target from requirements (Hetzner+Coolify vs Vercel vs a third), then wiring container → CI → registry → host with build secrets, healthchecks and rollback. NOT one platform's mechanics (that is `coolify`, `vercel`, `railway`, `render`), NOT the Dockerfile alone (that is `docker`)."
 tags: [deploy, docker, ci, github-actions, coolify]
 recommends: [secure-coding]
-origin: risco
+origin: ai-hub
 ---
 
 # Ship it — Docker, GitHub Actions, and a deploy target (Coolify · Vercel · Hetzner)

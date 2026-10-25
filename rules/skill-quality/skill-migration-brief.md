@@ -86,7 +86,7 @@ Your worktree has **no `node_modules`**, so:
 Commit only `skills/<id>/`. Subject `refactor(<id>): <what you actually did>`. The body says what you
 removed **and why**, and — just as important — what you deliberately **kept** and why.
 
-**Authorship is Eric, never Claude.** No `Co-Authored-By` for any AI, no "Generated with Claude Code"
+**Authorship belongs to Daner Alejandro Salazar Colorado; never attribute a commit to an AI.** No `Co-Authored-By` for any AI, no "Generated with Claude Code"
 footer, nothing attributing the work to a tool — in the commit *or* the PR body. This is the hard
 rule the `ship` skill enforces (`skills/ship/SKILL.md`), and it applies to this migration like
 everything else in the repo. Verify before pushing:
@@ -137,7 +137,7 @@ bookkeeping that something else can quietly change.
 
 A skill's `description` is in context for everyone who installs it, so migrate by blast radius:
 
-1. `minimal` profile — in every rsc install.
+1. `minimal` profile — in every ai-hub install.
 2. `core` profile — the default install (the SDD chain plus the control plane).
 3. High-install stack skills — `nextjs`, `react`, `fastapi`, `postgresdb`, `design`, `typescript`,
    `python`, `go`, `flutter`, `secure-coding`, `deployment`.

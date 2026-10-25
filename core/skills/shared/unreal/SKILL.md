@@ -4,7 +4,7 @@ description: "Use when building, scripting or debugging a game in Unreal Engine 
 tags: [unreal, ue5, blueprint, unreal-engine, gamedev]
 recommends: [cpp, gamedev-shipping, gamedev-multiplayer, game-design, gamedev-physics, godot, unity]
 profiles: [full]
-origin: risco
+origin: ai-hub
 ---
 
 # Unreal Engine 5 (Blueprint + C++)

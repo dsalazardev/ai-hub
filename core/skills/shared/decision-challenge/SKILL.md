@@ -4,7 +4,7 @@ description: "Use when a high-impact plan, migration or architecture claim needs
 tags: [adversarial-review, decision-quality, assumptions, risk, preflight]
 recommends: [analyze, review, code-review, decision-records, security-scan]
 profiles: [core, full]
-origin: risco
+origin: ai-hub
 ---
 
 # decision-challenge — doubt with a stopping rule

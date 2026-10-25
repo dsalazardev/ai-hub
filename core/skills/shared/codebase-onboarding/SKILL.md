@@ -3,7 +3,7 @@ name: codebase-onboarding
 description: "Use when you land in an unfamiliar or inherited codebase and must get productive fast: a breadth-first map of entry points, request flow, module ownership, hidden side effects (cron, webhooks, workers) and churn hotspots, committed as CODEBASE-MAP.md. NOT a deep audit of one module (that is `analyze`) or chasing one failure (that is `debug`)."
 tags: [onboarding, codebase, code-mapping, legacy-code, architecture, reverse-engineering, hotspots]
 recommends: [analyze, debug, decision-records, harness, init, knowledge-ops]
-origin: risco
+origin: ai-hub
 ---
 
 # Codebase onboarding — get oriented fast, leave a map

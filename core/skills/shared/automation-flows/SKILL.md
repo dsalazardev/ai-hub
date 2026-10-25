@@ -4,7 +4,7 @@ description: "Use when building or fixing a no-code automation on n8n, Make, or 
 tags: [automation, n8n, make, zapier, no-code, workflows, error-handling, integrations]
 recommends: [automation-strategy, n8n, make, zapier, power-automate, webhooks, api-connector-builder, error-handling, stripe, notion-connector, google-workspace, whatsapp-telegram]
 profiles: []
-origin: risco
+origin: ai-hub
 ---
 
 # Automation flows — glue many SaaS apps on a visual platform, with an error path that actually fires

@@ -3,7 +3,7 @@ name: db-migrations
 description: "Use when a schema change must ship without downtime — NOT NULL, rename, type change, or backfilling millions of live rows — for the expand-contract sequence and the lock/batching discipline that keeps each step from freezing prod. NOT lock internals or EXPLAIN (that is `postgresdb`), NOT drizzle-kit mechanics (that is `drizzle-orm`), NOT PITR (that is `backups`)."
 tags: [migrations, zero-downtime, expand-contract, schema, backfill, ddl]
 recommends: [postgresdb, drizzle-orm, backups, sql, planetscale]
-origin: risco
+origin: ai-hub
 ---
 
 # Database migrations without downtime

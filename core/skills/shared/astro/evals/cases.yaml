@@ -15,7 +15,7 @@ should_trigger:
 should_not_trigger:
   - prompt: "Implement a Next.js server action with App Router."
     route_to: "nextjs"
-    why: "Next.js RSC/App Router is not Astro."
+    why: "Next.js App Router / React Server Components is not Astro."
   - prompt: "Write conversion copy for this landing page."
     route_to: "landing-copy"
     why: "Copywriting belongs to landing-copy; Astro may implement it later."

@@ -1,6 +1,6 @@
 # Eval harness — `worktrees` skill
 
-These evals are run by an **agent harness** (an LLM agent with the rsc-sdd + stack skill catalog
+These evals are run by an **agent harness** (an LLM agent with the ai-hub Spec-Kit + stack skill catalog
 available), not a byte-exact shell script. `cases.yaml` is the fixture; this file is the procedure.
 Grading is judgment-based — a human or a judge-agent scores against the rubrics.
 
@@ -17,7 +17,7 @@ silent on the neighbouring steps (the coding loop, the task breakdown, the branc
 debug protocol, the workspace bootstrap).
 
 1. Load **only** the `worktrees` skill description into the agent, plus the bare names of the sibling
-   skills for routing: the rsc-sdd phases (constitution, specify, clarify, plan, tasks, analyze,
+   skills for routing: the ai-hub Spec-Kit phases (constitution, specify, clarify, plan, tasks, analyze,
    implement, verify, review, ship, debug, parallel) and the stack/other skills (fastapi, nextjs,
    go, postgresdb, flutter, design, marketing, presentations, course-storytelling, building-agents,
    secure-coding, deployment, harness, init). Do **not** load any skill bodies.

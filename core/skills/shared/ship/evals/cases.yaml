@@ -14,7 +14,7 @@ should_trigger:
   - prompt: "Squash my wip commits into one good commit and push it so I can merge into main."
     why: "Commit-history hygiene + landing to trunk. Squashing noisy wip commits and merging is ship's commit-message discipline and option 1 (direct merge)."
   - prompt: "The PR body got auto-generated with a 'Generated with Claude Code' footer — strip that and make sure the author is me before this lands."
-    why: "Authorship-violation cleanup: stripping the generated-with footer and confirming Eric is the author, immediately before landing. Core ship safety behavior."
+    why: "Authorship-violation cleanup: stripping the generated-with footer and confirming the human contributor is the author, immediately before landing. Core ship safety behavior."
 
 should_not_trigger:
   - prompt: "Run lint, type-check and the whole test suite on my branch and tell me if it's green before I do anything else."
@@ -38,7 +38,7 @@ capability:
     must_include:
       - "Runs the pre-ship safety checklist: confirms the review verdict is APPROVE, the tree is clean, the branch is rebased on main, and scans the diff for secrets — before presenting any option."
       - "Detects the AI authorship trailer/footer and treats it as a BLOCKER: strips the Co-Authored-By Claude trailer and the 'Generated with Claude Code' footer (amends the commit) before anything is pushed."
-      - "Confirms git author is Eric (checks git config user.email) and never passes --author for an agent identity."
+      - "Confirms git author is the human contributor (checks git config user.email) and never passes --author for an agent identity."
       - "Presents exactly THREE landing options (direct merge / pull request / park-or-discard) and recommends the PR option BECAUSE main is protected / the repo has a PR culture (.github + prior PRs)."
-      - "Writes a spec-linked commit message and PR body (What/Why/How/Verification referencing 02-DOCS/wiki/sdd/specs/<slug>.md) that contains NO AI attribution — no Co-Authored-By, no generated-with footer."
-      - "Logs the landing decision to 02-DOCS/wiki/sdd/decisions.md and keeps the sdd/ Knowledge-map rows honest; verifies authorship clean (the git log grep) before claiming the branch is shipped."
+      - "Writes a spec-linked commit message and PR body (What/Why/How/Verification referencing specs/<slug>/spec.md) that contains NO AI attribution — no Co-Authored-By, no generated-with footer."
+      - "Logs the landing decision to .planning/history.md and keeps the sdd/ Knowledge-map rows honest; verifies authorship clean (the git log grep) before claiming the branch is shipped."

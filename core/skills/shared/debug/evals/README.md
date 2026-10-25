@@ -1,6 +1,6 @@
 # Eval harness — `debug` skill
 
-`debug` is the on-demand rsc-sdd **diagnosis discipline**: reproduce → isolate →
+`debug` is the on-demand ai-hub Spec-Kit **diagnosis discipline**: reproduce → isolate →
 hypothesize → fix → verify, refusing any fix before one root cause is reproduced
 and confirmed. These evals check two things: that it **triggers** when there's a
 real, unexplained failure to diagnose (and stays quiet on near-misses that
@@ -33,7 +33,7 @@ Goal: the skill fires when there's a real, unexplained failure to diagnose, and
 never on a near-miss that belongs to another phase.
 
 1. Configure an agent with the **full catalog of skill descriptions** available
-   for routing (debug + the rsc-sdd phases it chains with — implement, verify,
+   for routing (debug + the ai-hub Spec-Kit phases it chains with — implement, verify,
    review, clarify, analyze, ship — plus the stack/process skills: fastapi, go,
    nextjs, flutter, postgresdb, secure-coding, deployment, harness, init) so
    routing competes realistically.

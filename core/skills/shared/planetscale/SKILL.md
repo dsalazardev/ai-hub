@@ -3,7 +3,7 @@ name: planetscale
 description: "Use when operating PlanetScale (Vitess serverless MySQL) — branches and the `pscale` CLI, schema changes through deploy requests (Online DDL cutover, ~30-min revert window), tables without foreign keys, or the edge HTTP driver. NOT MySQL engine work like EXPLAIN or index choice (that is `mysql`), NOT generic migration theory (that is `db-migrations`)."
 tags: [planetscale, vitess, mysql, deploy-requests, serverless-db]
 recommends: [mysql, db-migrations, prisma-orm, drizzle-orm, github-actions, postgresdb]
-origin: risco
+origin: ai-hub
 ---
 
 # PlanetScale — Vitess serverless MySQL: branches, deploy requests, no FKs

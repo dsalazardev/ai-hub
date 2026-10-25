@@ -4,7 +4,7 @@ description: "Use when designing a game level's space — blockout/greybox layou
 tags: [level-design, blockout, pacing, encounter, playtest]
 recommends: [game-design, godot, unity, unreal]
 profiles: [full]
-origin: risco
+origin: ai-hub
 ---
 
 # Level design — space that plays before it's pretty

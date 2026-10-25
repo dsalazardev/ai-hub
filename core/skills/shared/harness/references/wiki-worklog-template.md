@@ -12,7 +12,7 @@ manufacture a worklog "to look busy."
 ```yaml
 ---
 # OKF v0.1: `type` is the only required field. The rest is the standard surface
-# (title/description/timestamp) plus rsc custom fields (topic/status/sources).
+# (title/description/timestamp) plus ai-hub custom fields (topic/status/sources).
 type: worklog
 title: {What we did, one line}
 description: {One-sentence summary of the session.}

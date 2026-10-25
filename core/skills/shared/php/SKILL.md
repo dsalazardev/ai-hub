@@ -3,7 +3,7 @@ name: php
 description: "Use when writing, reviewing or modernizing PHP (8.3-8.5) outside Laravel — strict types, union and intersection types, readonly classes, backed enums, property hooks and asymmetric visibility, the pipe operator and clone-with, Composer with PSR-4, PER-CS style, PSR interop, and the quality toolchain (PHPStan, Pint, Rector, PHPUnit/Pest). NOT Eloquent, Blade or Artisan (that is `laravel`)."
 tags: [php, php8, composer, psr, enums, types, static-analysis]
 recommends: [laravel, secure-coding, mysql]
-origin: risco
+origin: ai-hub
 ---
 
 # Modern PHP (8.x)

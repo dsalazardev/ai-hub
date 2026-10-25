@@ -4,7 +4,7 @@ description: "Use when an approved, clarified spec must become a technical bluep
 tags: [sdd, plan, design]
 recommends: [tasks]
 profiles: [core, full]
-origin: risco
+origin: ai-hub
 ---
 
 # Plan — the technical blueprint between spec and tasks

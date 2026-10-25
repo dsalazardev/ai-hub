@@ -4,7 +4,7 @@ should_trigger:
   - prompt: "My page component does `const { id } = params` and TypeScript is yelling at me that params is a Promise. What gives?"
     why: "Classic v15+ App Router migration bug (params/searchParams are Promises) — squarely the skill's params-await territory, even though the user never says 'Next.js'."
   - prompt: "I'm getting 'You're importing a component that needs useState. It only works in a Client Component but none of its parents are marked with use client.' How do I fix this?"
-    why: "RSC server/client boundary error from the App Router; the skill owns the 'use client' boundary laws and composition-via-children fix."
+    why: "React Server Components server/client boundary error from the App Router; the skill owns the 'use client' boundary laws and composition-via-children fix."
   - prompt: "Add a server action to rename a project and wire up the form with optimistic UI and validation."
     why: "Server Actions + useActionState/useOptimistic + zod — core skill scope, including the 'auth inside every action' rule."
   - prompt: "We just upgraded and now there's a proxy.ts at the repo root instead of middleware.ts. Is that a mistake? Should I rename it back?"
@@ -19,7 +19,7 @@ should_trigger:
 should_not_trigger:
   - prompt: "I'm building a React SPA with Vite and react-router. How do I set up nested routes and a data loader?"
     route_to: "none"
-    why: "Pure client-side React SPA (Vite/react-router), no Next.js App Router or RSC dimension — the skill explicitly excludes Vite/CRA SPAs and defers to a generic React skill."
+    why: "Pure client-side React SPA (Vite/react-router), no Next.js App Router or React Server Components dimension — the skill explicitly excludes Vite/CRA SPAs and defers to a generic React skill."
   - prompt: "Write a FastAPI endpoint with a Pydantic model that validates the request body and returns 422 on bad input."
     route_to: "fastapi"
     why: "Non-Next backend in Python; belongs to the fastapi sibling, which the skill names as the redirect target."

@@ -1,6 +1,6 @@
 # Eval harness — `analyze` skill
 
-`analyze` is the rsc-sdd **pre-implementation consistency gate**. These evals
+`analyze` is the ai-hub Spec-Kit **pre-implementation consistency gate**. These evals
 check two things: that the skill **triggers** on the right prompts (a
 cross-check of the planning artifacts before coding) and stays quiet on
 near-misses (anything that resolves, builds, runs, or debugs code), and that it
@@ -28,7 +28,7 @@ and never on a near-miss.
    for routing (analyze + harness, init, the stack skills fastapi/nextjs/go/
    flutter/postgresdb, secure-coding, deployment, design, marketing,
    presentations, course-storytelling, building-agents) so routing competes
-   realistically. When the other rsc-sdd phase skills (clarify, plan, tasks,
+   realistically. When the other ai-hub Spec-Kit phase skills (clarify, plan, tasks,
    implement, verify, review, debug) are added to the repo, include them too —
    they are the closest competitors and the sharpest test of the boundary.
 2. For each `should_trigger` prompt: feed it cold, record whether `analyze` is

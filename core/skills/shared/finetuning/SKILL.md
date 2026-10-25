@@ -3,7 +3,7 @@ name: finetuning
 description: "Use when adapting an open-weight model to a target form or behavior — tone, output format, reasoning pattern — via LoRA/QLoRA or full fine-tuning with TRL SFTTrainer, then preference optimization (DPO/ORPO/KTO/GRPO), and for fine-tune vs prompt vs RAG. NOT adding facts to a model (that is rag); NOT the single-GPU Unsloth backend or GGUF export (that is unsloth)."
 tags: [finetuning, lora, qlora, sft, dpo, grpo, peft, trl, preference-optimization]
 recommends: [training-data, unsloth, open-weights, huggingface, vllm, rag]
-origin: risco
+origin: ai-hub
 ---
 
 # finetuning — teach an open model a form or behavior, not a fact

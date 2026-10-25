@@ -18,7 +18,7 @@ should_not_trigger:
     why: "React hooks are not Angular."
   - prompt: "Implement a Next.js server component."
     route_to: "nextjs"
-    why: "Next.js App Router/RSC is a separate stack."
+    why: "Next.js App Router/React Server Components is a separate stack."
   - prompt: "Explain TypeScript conditional types."
     route_to: "typescript"
     why: "Pure TypeScript without Angular belongs to TypeScript."

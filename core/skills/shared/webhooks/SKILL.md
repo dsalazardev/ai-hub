@@ -4,7 +4,7 @@ description: "Use when building the receiving end of a webhook — a provider-ag
 tags: [webhooks, inbound-webhooks, hmac-verification, idempotency, signature-verification, queue, connectors]
 recommends: [stripe, email-connector, api-connector-builder, automation-flows, redis, secure-coding]
 profiles: []
-origin: risco
+origin: ai-hub
 ---
 
 # Webhooks — the inbound front door that survives retries and forgeries

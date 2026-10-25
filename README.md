@@ -3,6 +3,8 @@
 > Un motor agnóstico, presets por stack y Spec Kit como única metodología.
 > `ai-hub` instala un arnés verificado en cualquier repositorio, sin contener el dominio de ninguno.
 
+**Autor:** Daner Alejandro Salazar Colorado.
+
 ---
 
 ## Inicio rápido
@@ -60,7 +62,7 @@ Un preset puede extender otro (`angular-express` → `generic-ts` → `base`). L
 | `sync` | Proyecta las fuentes a los destinos; `--check` informa deriva |
 | `drift` | Informa deriva de hash sin escribir |
 | `doctor` | Valida motor, preset, manifiesto, targets, hooks y deriva |
-| `check` | Alias de `doctor` + `drift` para CI |
+| `check` | Alias solo de `doctor` para CI |
 | `backups` | Lista snapshots |
 | `restore` | Restaura un snapshot |
 | `uninstall` | Elimina una skill o agente añadido |

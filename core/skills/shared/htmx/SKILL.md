@@ -3,7 +3,7 @@ name: htmx
 description: "Use when adding interactivity to a server-rendered app (FastAPI/Jinja, Django, Rails, Laravel, Go templates, Express) without adopting a JS framework — hx-get/post/put/delete with hx-target, hx-swap and hx-trigger, returning HTML fragments instead of JSON, out-of-band swaps, active search, infinite scroll, inline edit and polling. NOT a client-state SPA with routing and a store (that is `react` or `nextjs`)."
 tags: [htmx, hypermedia, frontend, server-rendered, html]
 recommends: [fastapi, django, secure-coding, accessibility]
-origin: risco
+origin: ai-hub
 ---
 
 # htmx: hypermedia-driven UIs

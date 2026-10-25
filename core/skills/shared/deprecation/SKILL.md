@@ -4,7 +4,7 @@ description: "Use when retiring a public API, feature, integration, service or l
 tags: [deprecation, migration, compatibility, consumer-migration, removal]
 recommends: [api-design, db-migrations, deployment, git-workflow, monitoring]
 profiles: [core, full]
-origin: risco
+origin: ai-hub
 ---
 
 # deprecation — removal is a consumer migration

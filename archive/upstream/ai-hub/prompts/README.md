@@ -1,6 +1,6 @@
-# rsc-harness prompt assets
+# ai-hub prompt assets
 
-Copied from `rsc-harness` as reference assets. They are not projected by `ai-hub sync`.
+Copied from `ai-hub` as reference assets. They are not projected by `ai-hub sync`.
 
 | File | Source | Purpose |
 |---|---|---|
@@ -14,4 +14,4 @@ Copied from `rsc-harness` as reference assets. They are not projected by `ai-hub
 | `constitution-draft.js` | `scripts/lib/constitution-draft.js` | Constitution prompt/drafting helper |
 | `onboarding.js` | `scripts/lib/onboarding.js` | Onboarding questions and plan prompts |
 
-The rubric prompts live in `rules/rsc/`.
+The rubric prompts live in `rules/skill-quality/`.

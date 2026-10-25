@@ -3,7 +3,7 @@ name: astro
 description: "Use when building a content-driven or marketing site with Astro 6: static-first pages, islands and partial hydration, content collections, server islands, per-route on-demand rendering, deploy adapters, and Astro 5→6 migration. NOT app-router React with server actions and heavy client interactivity (that is `nextjs`)."
 tags: [astro, ssg, islands, content-collections, partial-hydration, marketing-site, frameworks]
 recommends: [landing-copy, seo-geo, vercel, cloudflare, netlify]
-origin: risco
+origin: ai-hub
 ---
 
 # Astro 6 — static-first sites, islands, content collections

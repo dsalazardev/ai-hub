@@ -35,9 +35,9 @@ should_not_trigger:
   - prompt: "Audit our auth handler for injection and secret-leak vulnerabilities — it's a normal REST endpoint, not an agent."
     route_to: "secure-coding"
     why: "A security-only review of a non-agent endpoint is secure-coding, not LLM agent architecture."
-  - prompt: "Bootstrap the 01-TOOLS and 02-DOCS workspace layout for this repo and generate the root CLAUDE.md."
+  - prompt: "Bootstrap the docs/tools and docs/ workspace layout for this repo and generate the root AGENTS.md."
     route_to: "harness"
-    why: "Workspace scaffolding (the 01-TOOLS/02-DOCS layout) is explicitly delegated to harness."
+    why: "Workspace scaffolding (the docs/tools/docs/ layout) is explicitly delegated to harness."
 
 capability:
   - scenario: "Our codebase calls `OpenAI().chat.completions.create(model='gpt-5.5', ...)` directly in three handlers. We need to support switching to Anthropic Claude or Gemini via config, with strict JSON output for a sentiment classifier and one side-effecting `create_invoice` tool. Lay out the architecture and the key code."

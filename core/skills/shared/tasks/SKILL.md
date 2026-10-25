@@ -4,7 +4,7 @@ description: "Use when an approved plan needs slicing into an ordered task list 
 tags: [sdd, tasks, breakdown]
 recommends: [analyze, implement]
 profiles: [core, full]
-origin: risco
+origin: ai-hub
 ---
 
 # Tasks — turn an approved plan into a verifiable work list

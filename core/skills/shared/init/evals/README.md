@@ -1,6 +1,6 @@
 # Eval harness — `init`
 
-Evaluates the `init` skill (the rsc-skills front door / bootstrapper) on two axes:
+Evaluates the `init` skill (the ai-hub front door / bootstrapper) on two axes:
 **triggering** (does it fire on the right prompts and stay quiet on near-misses) and
 **capability** (does loading it measurably improve the agent's answer). Cases live in
 `cases.yaml`. These run via an **agent harness**, not a pure shell script — a human or a
@@ -15,7 +15,7 @@ driver agent feeds prompts to Claude Code and judges the result against the rubr
 
 ## A. Triggering eval
 
-1. Load **only** `init` into the agent (no other rsc skills available, so routing is honest).
+1. Load **only** `init` into the agent (no other ai-hub skills available, so routing is honest).
 2. For each `should_trigger` prompt: open a fresh session, paste the prompt verbatim, and
    record whether `init` activates (the agent should lead with the register question /
    profiling, not jump into building). Run **3–5 trials** per prompt.
@@ -45,5 +45,5 @@ the skill — or these rubrics — needs work.
   analogies?") **first**, writing **only** the profile + decisions log + CLAUDE.md Knowledge-map
   link, and **handing off** scaffolding to `the harness skill` (never doing it itself).
 - Watch the key confusable: the built-in `/init` (CLAUDE.md architecture doc generator) is a
-  different thing — the rsc `init` does discovery/profiling/recommendation, not codebase docs.
+  different thing — the ai-hub `init` does discovery/profiling/recommendation, not codebase docs.
 - Run after any edit to `SKILL.md` or its `description`, since both axes are sensitive to wording.

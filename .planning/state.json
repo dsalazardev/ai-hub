@@ -2,14 +2,14 @@
   "version": 1,
   "project": "ai-hub",
   "preset": "generic-ts",
-  "activeChange": null,
-  "lane": null,
-  "phase": "done",
+  "activeChange": "sanitize-ai-hub-residuals",
+  "lane": "assessment",
+  "phase": "verification",
   "tasks": {
-    "total": 58,
-    "done": 58
+    "total": 53,
+    "done": 52
   },
   "branch": null,
   "worktree": null,
-  "updatedAt": "2026-10-25T02:34:30.150Z"
+  "updatedAt": "2026-10-25T16:22:12.678Z"
 }

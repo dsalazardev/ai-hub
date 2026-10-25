@@ -4,7 +4,7 @@ description: "Use when designing or repairing what makes a game fun — verbs an
 tags: [game-design, mechanics, core-loop, balancing, progression, playtesting, scope, fun]
 recommends: [level-design, game-storytelling, godot, unity, unreal]
 profiles: [full]
-origin: risco
+origin: ai-hub
 ---
 
 # Design games that are fun on purpose

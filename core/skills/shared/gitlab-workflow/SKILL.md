@@ -6,6 +6,7 @@ compatibility: Requires gitlab-auth (GITLAB_URL/GITLAB_TOKEN in environment) and
 metadata:
   author: Doligestion AI Hub
   version: "1.0"
+origin: ai-hub
 ---
 
 # GitLab Workflow — operación diaria contra la API v4

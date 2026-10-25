@@ -3,7 +3,7 @@ name: react-native
 description: "Use when writing the JS/TS inside a React Native or Expo app — screens, Expo Router navigation, lists, Reanimated gestures, platform forks, offline state, native modules — or killing jank and render storms. NOT eas build/submit/OTA/config-plugin (that is `expo`), NOT a Dart app (that is `flutter`), NOT web React/DOM (that is `react` or `nextjs`)."
 tags: [react-native, expo, mobile, ios, android, navigation, performance]
 recommends: [expo, react, flutter, design, debug, performance]
-origin: risco
+origin: ai-hub
 ---
 
 # React Native (app code)

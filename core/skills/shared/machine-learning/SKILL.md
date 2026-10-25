@@ -3,7 +3,7 @@ name: machine-learning
 description: "Use when predicting a column from rows of tabular features with classic models — scikit-learn pipelines, RandomForest, XGBoost/LightGBM, leak-free cross-validation, metrics for imbalanced classes, or a model that aced CV then collapsed in production. NOT PyTorch neural nets (that is `deep-learning`), NOT cleaning the dirty table first (that is `data-cleaning`), NOT forecasting a dated series (that is `forecasting`), NOT text/token modeling (that is `nlp`)."
 tags: [machine-learning, scikit-learn, sklearn, xgboost, lightgbm, tabular, gbdt, cross-validation, data-leakage, classification, regression, pipeline]
 recommends: [deep-learning, data-cleaning, python, training-data]
-origin: risco
+origin: ai-hub
 ---
 
 # Machine learning — classic/tabular models, done without lying to yourself

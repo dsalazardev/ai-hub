@@ -3,7 +3,7 @@ name: agent-eval
 description: "Use when measuring whether an LLM or agent system actually got better and gating merges on it: golden sets, fixing an inflated LLM-as-judge, scoring RAG (faithfulness, contextual recall) or agent trajectories (tool correctness, completion), or picking an eval framework. NOT building the agent loop, tools or RAG plumbing (that is `building-agents`)."
 tags: [evals, llm, agents, llm-as-judge, regression-gate, ai]
 recommends: [building-agents, prompt-engineering, observability]
-origin: risco
+origin: ai-hub
 ---
 
 # Measure agent quality you can defend and gate on

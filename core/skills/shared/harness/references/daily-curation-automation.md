@@ -15,7 +15,7 @@ cron via the `schedule` skill pointed at this prompt.
 Run once per day, at a quiet hour, to keep the second brain alive:
 
 - run the **Auto-Ingest Sweep**: process `inbox/`, then scan the workspace (minus
-  `.rscignore`) for un-ingested documents, ingest the clearly-documentary folders,
+  `.ai-hubignore`) for un-ingested documents, ingest the clearly-documentary folders,
   record them in `wiki/.ingested.json`, and propose the ambiguous ones
 - process pending `raw/worklog/` material into `wiki/`
 - strengthen weak / low-score pages; fill one open gap
@@ -29,7 +29,7 @@ Daily, at a quiet hour when the user is unlikely to be editing the vault.
 
 ## Scope (paths)
 
-The **workspace root** (for Auto-Ingest discovery, bounded by `.rscignore`),
+The **workspace root** (for Auto-Ingest discovery, bounded by `.ai-hubignore`),
 `raw/worklog/`, `inbox/`, `raw/`, `wiki/`, `wiki/.ingested.json`, `wiki/harness/`.
 
 ## Prompt
@@ -38,7 +38,7 @@ The **workspace root** (for Auto-Ingest discovery, bounded by `.rscignore`),
 Run the daily curation pass for this 02-DOCS second brain.
 
 Use the harness wiki-protocol.md as the contract. First run the Auto-Ingest Sweep:
-process inbox/, then scan the workspace (minus .rscignore) for un-ingested documents,
+process inbox/, then scan the workspace (minus .ai-hubignore) for un-ingested documents,
 applying Clean-as-you-go (move loose root-level + inbox files into raw/ after a
 verified ingest; copy files nested in user-maintained folders and propose
 consolidation), record them in wiki/.ingested.json, and list ambiguous folders as

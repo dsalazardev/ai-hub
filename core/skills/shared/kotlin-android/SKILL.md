@@ -3,7 +3,7 @@ name: kotlin-android
 description: "Use when building or fixing a native Android app in Kotlin and Jetpack Compose on the UDF layered architecture — ViewModel/StateFlow, Hilt, Room, Retrofit, coroutines, type-safe Navigation, and the Gradle/AGP surface. NOT shared Android and iOS UI from one Kotlin codebase (that is `compose-multiplatform`)."
 tags: [kotlin, android, jetpack-compose, hilt, room, coroutines, mvvm, clean-architecture]
 recommends: [compose-multiplatform, spring-boot, java, testing-web, github-actions]
-origin: risco
+origin: ai-hub
 ---
 
 # Native Android with Kotlin & Compose

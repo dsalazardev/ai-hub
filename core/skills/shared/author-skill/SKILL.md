@@ -1,14 +1,14 @@
 ---
 name: author-skill
-description: "Use when authoring a NEW rsc skill or editing an existing one — scoping it to one job, writing the description that decides whether it ever loads, splitting the body into references/, writing its evals, auditing it against the rubric. NOT building a product feature (that is `specify`) and NOT designing an agent loop (that is `building-agents`)."
+description: "Use when authoring a NEW ai-hub skill or editing an existing one — scoping it to one job, writing the description that decides whether it ever loads, splitting the body into references/, writing its evals, auditing it against the rubric. NOT building a product feature (that is `specify`) and NOT designing an agent loop (that is `building-agents`)."
 tags: [skill, authoring, meta]
 recommends: []
-origin: risco
+origin: ai-hub
 ---
 
 # author-skill — write skills that trigger and teach
 
-This is the **meta skill**: it authors and edits the other skills in the rsc catalog. A skill is two things bolted together — a **description that fires at the right moment**, and a **body that makes the agent better once it fires**. Most skills fail on the first. Treat them as two separate engineering problems with two separate quality bars.
+This is the **meta skill**: it authors and edits the other skills in the ai-hub catalog. A skill is two things bolted together — a **description that fires at the right moment**, and a **body that makes the agent better once it fires**. Most skills fail on the first. Treat them as two separate engineering problems with two separate quality bars.
 
 Where the SDD chain (`specify` → `plan` → … → `ship`) builds *product*, `author-skill` builds *the tools that build product*. Use it whenever a skill is born or edited.
 
@@ -42,7 +42,7 @@ Rules, all enforced:
 2. **Discriminative, not exhaustive.** Lead with a `Use when …` clause naming the *situation*, then only the capabilities that separate this skill from its neighbours. Do **not** append a `Triggers: '…', '…'` phrase list: the model matches on meaning, so a keyword bank in three languages buys nothing and is charged on every turn. The test is *discrimination, not coverage* — could a reader pick this skill over its nearest sibling from this line alone?
 3. **Draw the boundary.** End with a `NOT <x> (that is <sibling>)` clause, naming a sibling that actually exists under `skills/`. Negative space prevents hijacking as much as positive matching causes firing.
 4. **Aim ≤ 350 characters; 1024 is the schema-enforced hard limit.** One physical line, wrapped in double quotes, internal quotes escaped or avoided. If it does not parse, the skill does not load.
-5. **`origin: risco`** on its own line. This marks it as ours.
+5. **`origin: ai-hub`** on its own line. This marks it as ours.
 
 ```yaml
 # Good — situation, the few capabilities that discriminate, a real boundary
@@ -96,20 +96,20 @@ Run in order. Each step gates the next.
 1. **Name & scope.** One skill, one job. Pick a short kebab-case `<id>` that is the job, not the domain. If you can not say the job in one sentence, the scope is wrong — split it. Check no sibling already owns this; if one half-owns it, decide *edit the sibling* vs *new skill* before writing.
 2. **Draft the description.** Per the rules above. This first, because writing it forces the scope clear. → `references/description-recipe.md`.
 3. **Outline the body.** Method, rules, decision points. Mark what becomes a reference.
-4. **Write the body** in the rsc voice (see below). Tag every code/example fence with a language. Add a checklist or decision table *only where the flow actually branches* — not as decoration. Add a short anti-patterns table.
+4. **Write the body** in the ai-hub voice (see below). Tag every code/example fence with a language. Add a checklist or decision table *only where the flow actually branches* — not as decoration. Add a short anti-patterns table.
 5. **Extract references** for anything long or branch-specific, and link each one inline.
 6. **Write the evals** — `cases.yaml` then `README.md`. → `references/eval-authoring.md`.
-7. **Wire it into the rsc plumbing** (`tags`, `recommends`, `npm run manifest`, and indexing any artifact in `02-DOCS/wiki/index.md` — the Knowledge map; root `CLAUDE.md` keeps only a short pointer). → `references/rsc-conventions.md`.
+7. **Wire it into the ai-hub plumbing** (`tags`, `recommends`, `npm run manifest`, and indexing any artifact in `02-DOCS/wiki/index.md` — the Knowledge map; root `CLAUDE.md` keeps only a short pointer). → `references/skill-conventions.md`.
 8. **Self-audit against the rubric** (below). Fix every miss or justify it.
 
-## The rsc voice
+## The ai-hub voice
 
 Match the catalog, do not invent a new register:
 
 - Direct, second-person-to-the-agent instruction ("Read the profile first", "Cut any section with no job").
 - A rule gets stated where it applies, with a one-line *why* that makes it obviously absolute — not a lecture, and not a shouted NON-NEGOTIABLE.
 - Concrete over abstract: a number, a path, a Bad→Good pair beats an adjective.
-- Original prose. Mine ideas from anywhere; the words are Eric's. Do **not** reproduce another ecosystem's signature artifacts or phrasing — no borrowed "1% chance" urgency blocks, no copied rationalization wording, no `*-reviewer-prompt.md` files, no verbatim flowcharts. The rsc identity is its own.
+- Original prose. Mine ideas from anywhere; the words are the author's (Daner Alejandro Salazar Colorado). Do **not** reproduce another ecosystem's signature artifacts or phrasing — no borrowed "1% chance" urgency blocks, no copied rationalization wording, no `*-reviewer-prompt.md` files, no verbatim flowcharts. The ai-hub identity is its own.
 - Cross-reference siblings by name or `../<sibling>/SKILL.md`, only ones that actually exist.
 
 ## Match the form to the failure
@@ -136,7 +136,7 @@ output, rewrite it as the shape to hit.
 
 A skill ships only when every box is checked or a miss is consciously justified.
 
-- [ ] **Frontmatter parses** as YAML; `name` matches the directory `<id>`; `origin: risco` present.
+- [ ] **Frontmatter parses** as YAML; `name` matches the directory `<id>`; `origin: ai-hub` present.
 - [ ] **Description** third-person, `Use when…` lead, an explicit `NOT … (that is sibling)` boundary naming a real sibling, ≤ 350 chars target / ≤ 1024 hard limit — judged on discrimination against the nearest sibling, not coverage.
 - [ ] **One job.** The body never drifts into a second skill's territory; it delegates instead.
 - [ ] **Body ≤ 400 lines** — a ceiling, not a target, with no floor. Long/branch-specific material lives in `references/`.
@@ -152,7 +152,7 @@ A skill ships only when every box is checked or a miss is consciously justified.
 - [ ] **Sibling links resolve** — every `../x/SKILL.md` points to a skill that exists.
 - [ ] **Wired** — `tags` + `recommends` set, `npm run manifest` re-run, and `npm run validate` / `npm run manifest:check` pass (manifest current, no dangling recommends).
 
-Full rubric rationale and the rsc plumbing steps → `references/rsc-conventions.md`.
+Full rubric rationale and the ai-hub plumbing steps → `references/skill-conventions.md`.
 
 ### Two ship gates: document AND behavior
 
@@ -187,7 +187,7 @@ only when **both** are green:
 | Evals skipped: "I'll just test it by hand once" | Unverifiable = does not ship. Write `cases.yaml`, near-misses with `route_to` included. |
 | `verify.sh` added to a process skill for rigor | A process skill has no artifact to grep. Its rigor is the capability eval. |
 | `../foo/SKILL.md` linked to something not in this repo | A dead link is a defect. Verify the directory exists under `skills/`. |
-| Another catalog mirrored wholesale ("it's basically superpowers' writing-skills") | Mine the idea, write it in the rsc voice. Copied artifacts or phrasing are a defect. |
+| Another catalog mirrored wholesale ("it's basically superpowers' writing-skills") | Mine the idea, write it in the ai-hub voice. Copied artifacts or phrasing are a defect. |
 
 ## Project grounding (02-DOCS + CLAUDE.md)
 

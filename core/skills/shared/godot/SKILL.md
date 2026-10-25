@@ -4,7 +4,7 @@ description: "Use when writing, reviewing, or debugging Godot 4.x games in GDScr
 tags: [godot, gdscript, game-dev, csharp, godot4]
 recommends: [gamedev-shaders, gamedev-multiplayer, gamedev-physics, gamedev-pathing, gamedev-shipping, game-design, cpp]
 profiles: [full]
-origin: risco
+origin: ai-hub
 ---
 
 # Godot 4.x (GDScript + C#)

@@ -18,7 +18,7 @@ should_not_trigger:
     why: "React hook/re-render model is not Solid."
   - prompt: "Implement a Next.js server action."
     route_to: "nextjs"
-    why: "Next.js App Router/RSC belongs to nextjs."
+    why: "Next.js App Router/React Server Components belongs to nextjs."
   - prompt: "Migrate this Svelte 4 component to Svelte 5 runes."
     route_to: "svelte"
     why: "Svelte runes are a different compiler/reactivity model."

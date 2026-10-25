@@ -3,7 +3,7 @@ name: spring-boot
 description: "Use when building, reviewing, testing, securing or configuring a Spring Boot 4 / Framework 7 backend — controllers, services, Spring Data JPA, application.yml, SecurityFilterChain, slice tests. NOT plain modern-Java language work like records or virtual threads (that is `java`); NOT engine-level SQL schema/index/EXPLAIN (that is `postgresdb`)."
 tags: [java, spring, jpa, security, backend]
 recommends: [java, postgresdb, secure-coding, deployment]
-origin: risco
+origin: ai-hub
 ---
 
 # Spring Boot backends (Boot 4 / Framework 7)

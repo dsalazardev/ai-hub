@@ -3,7 +3,7 @@ name: railway
 description: "Use when deploying an app to Railway — pushing a repo or running railway up, provisioning a managed database, wiring env and reference variables across services, attaching a volume, or fixing a deploy that builds but will not serve. NOT Render (that is `render`), NOT Fly machines (that is `fly-io`), NOT a self-hosted PaaS on your own box (that is `coolify`)."
 tags: [railway, paas, deploy, services, env-vars, volumes, databases, private-networking, railway-json]
 recommends: [render, fly-io, coolify, postgresdb, db-migrations, domains-dns, deployment, docker]
-origin: risco
+origin: ai-hub
 ---
 
 # Railway — ship a repo to a managed PaaS

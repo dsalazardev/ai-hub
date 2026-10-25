@@ -10,7 +10,7 @@ should_trigger:
   - prompt: "is this dependency bump safe to merge?"
     why: Non-obvious — a diff with almost no code still needs supply-chain/transitive review; this is the giving pass on a bump.
   - prompt: "a contractor pushed a branch, tear it apart"
-    why: Inbound external change where you have only the diff + stated intent, no rsc-SDD artifacts to key off.
+    why: Inbound external change where you have only the diff + stated intent, no ai-hub Spec-Kit artifacts to key off.
   - prompt: "/code-review --comment 1432"
     why: Running the executable discipline by hand, in comment-posting mode.
   - prompt: "give me a high-signal review of this change, no nitpicks"

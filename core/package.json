@@ -1,6 +1,7 @@
 {
   "name": "@onna/ai-hub-cli",
   "version": "1.0.0",
+  "author": "Daner Alejandro Salazar Colorado",
   "type": "module",
   "description": "AI Hub CLI — harness bootstrap, sync, diagnostics and guardrails for the Autonomous Software Factory.",
   "bin": {

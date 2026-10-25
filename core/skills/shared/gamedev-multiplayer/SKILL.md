@@ -4,7 +4,7 @@ description: "Use when adding multiplayer or netcode to a game — client-server
 tags: [multiplayer, netcode, replication, networking, prediction, authority]
 recommends: [godot, unity, unreal, gamedev-physics]
 profiles: [full]
-origin: risco
+origin: ai-hub
 ---
 
 # Game multiplayer & netcode

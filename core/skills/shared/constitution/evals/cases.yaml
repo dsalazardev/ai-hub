@@ -1,9 +1,9 @@
 skill: constitution
 
-# Prompts that MUST load the `constitution` skill. It is the FIRST rsc-sdd phase:
+# Prompts that MUST load the `constitution` skill. It is the FIRST ai-hub Spec-Kit phase:
 # capture a project's non-negotiable principles (stack canon, quality bars,
-# conventions, branching/security/a11y floors) into 02-DOCS/wiki/sdd/constitution.md,
-# reconciling with 02-DOCS/wiki/stack/*. It NAMES bars and links enforcers; it does
+# conventions, branching/security/a11y floors) into .specify/memory/constitution.md,
+# reconciling with docs/stack/*. It NAMES bars and links enforcers; it does
 # not describe a feature (specify) or design an implementation (plan).
 should_trigger:
   - prompt: "Let's set the non-negotiable principles for this project before we start building features."
@@ -35,7 +35,7 @@ should_trigger:
 # like 'project setup' or 'standards' but is actually a feature, a stack mechanic,
 # the wiki scaffolding, or a security implementation.
 should_not_trigger:
-  - prompt: "Set up 01-TOOLS and 02-DOCS for this workspace and generate the root CLAUDE.md."
+  - prompt: "Set up docs/tools and docs/ for this workspace and generate the root AGENTS.md."
     route_to: "harness"
     why: "Scaffolding the tooling + wiki layers and the Knowledge map is the harness's job; the constitution only writes one article INTO that wiki and links one row."
 
@@ -61,12 +61,12 @@ should_not_trigger:
 # the file, and ratifies with the user — an ungrounded answer writes a vague,
 # unversioned wall of aspirations.
 capability:
-  - scenario: "Stand up the constitution for a new project that has a Next.js frontend and a FastAPI backend. The harness already wrote 02-DOCS/wiki/stack/nextjs.md and fastapi.md with some conventions. There is a user-profile with technical_level: technical."
+  - scenario: "Stand up the constitution for a new project that has a Next.js frontend and a FastAPI backend. The harness already wrote docs/stack/nextjs.md and fastapi.md with some conventions. There is a user-profile with the register: technical."
     must_include:
-      - "Reads 02-DOCS/wiki/harness/user-profile.md and speaks in technical terms, briefly (one line of why per principle, few questions) rather than a long interview."
+      - "Reads AGENTS.md and speaks in technical terms, briefly (one line of why per principle, few questions) rather than a long interview."
       - "Runs the reconciliation pass: reads the existing wiki/stack/nextjs.md and fastapi.md, lifts only project-wide non-negotiables, and LINKS those articles instead of pasting their config; surfaces any contradiction for the user to resolve rather than auto-picking."
       - "Every principle is numbered, imperative, and testable (a number, command, or named artifact), not an aspiration like 'write clean code'."
       - "Includes the two fixed principles: git authorship is the human's (no Co-Authored-By AI / generated-with footer, enforced at ship) and significant decisions are logged."
       - "Produces a Definition of Done checklist (the merge bar verify runs against) covering format/lint, types, tests/coverage, conventions, branch+PR+authorship, security, and decisions logged."
-      - "Writes 02-DOCS/wiki/sdd/constitution.md with a version (v1.0.0), ratified date, and an append-only amendment log; adds the Knowledge-map row to root CLAUDE.md additively (never deleting sections)."
+      - "Writes .specify/memory/constitution.md with a version (v1.0.0), ratified date, and an append-only amendment log; adds the Knowledge-map row to root AGENTS.md additively (never deleting sections)."
       - "Shows the draft and gets explicit ratification from the user before it takes effect, and ends by pointing to the specify phase as next in the chain."

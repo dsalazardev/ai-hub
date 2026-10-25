@@ -1,28 +1,28 @@
 ---
 name: ship
-description: "Use when a verified, review-approved branch has to land — the close of the rsc SDD chain: safety checks, then three landing options (merge, PR, park/discard), authorship always Eric and never an AI trailer. NOT running the gates (that is `verify`), NOT reading the diff for defects (that is `review`), NOT shipping to a server (that is `deployment`)."
+description: "Use when a verified, review-approved branch has to land — the close of the ai-hub Spec-Kit chain: safety checks, then three landing options (merge, PR, park/discard), authorship always Daner Alejandro Salazar Colorado and never an AI trailer. NOT running the gates (that is `verify`), NOT reading the diff for defects (that is `review`), NOT shipping to a server (that is `deployment`)."
 tags: [sdd, ship, release, pr]
 recommends: []
 profiles: [core, full]
-origin: risco
+origin: ai-hub
 ---
 
 # Ship — close the development branch
 
-Ship is the **last gate** of the rsc SDD chain: `constitution → specify → clarify → plan → tasks → analyze → implement → verify → review → **ship**`. Everything upstream proved the work is *correct* and *green*; ship is the act of **landing it** — turning an approved branch into merged history, a pull request, or a clean parked branch — without breaking the trunk and without ever forging the author.
+Ship is the **last gate** of the ai-hub Spec-Kit chain: `constitution → specify → clarify → plan → tasks → analyze → implement → verify → review → **ship**`. Everything upstream proved the work is *correct* and *green*; ship is the act of **landing it** — turning an approved branch into merged history, a pull request, or a clean parked branch — without breaking the trunk and without ever forging the author.
 
 This skill owns one decision and its safe execution: **how does this work integrate?** It does not write code, run test gates, or read the diff for defects — those phases already happened. It is the **close, not the open**: creating the isolated branch or worktree is `../worktrees/SKILL.md`, taking the gates green is `../verify/SKILL.md`, reading the diff adversarially is `../review/SKILL.md`, and putting merged code onto a server is `../deployment/SKILL.md`.
 
-## The hard rule: git authorship is Eric, never Claude
+## The hard rule: git authorship is Daner Alejandro Salazar Colorado, never Claude
 
-> **Every commit and every PR ships under Eric's name. No `Co-Authored-By: Claude`. No `Co-Authored-By` for any AI. No "🤖 Generated with Claude Code" footer. No "made by an agent" line in the PR body. Nothing that attributes the work to a tool.**
+> **Every commit and every PR ships under Daner Alejandro Salazar Colorado's name. No `Co-Authored-By: Claude`. No `Co-Authored-By` for any AI. No "🤖 Generated with Claude Code" footer. No "made by an agent" line in the PR body. Nothing that attributes the work to a tool.**
 
-This is absolute — not a preference to weigh against convenience — because a commit is a permanent, published claim about who wrote something. The work is Eric's; the agent is a tool he used, like an editor or a compiler, and you do not credit the compiler in the commit message. Once a forged trailer is pushed it is in everyone's history and only a rewrite removes it.
+This is absolute — not a preference to weigh against convenience — because a commit is a permanent, published claim about who wrote something. The work is Daner Alejandro Salazar Colorado's; the agent is a tool he used, like an editor or a compiler, and you do not credit the compiler in the commit message. Once a forged trailer is pushed it is in everyone's history and only a rewrite removes it.
 
 Concretely, before any commit or PR:
 
-- **Never** pass `--author` to set a non-Eric author. The repo's configured `user.name` / `user.email` (Eric's) is the author and committer.
-- If `git config user.email` is unset or clearly not Eric's, **stop and ask** which identity to commit under — do not guess, and do not substitute an agent identity.
+- **Never** pass `--author` to set a non-Daner Alejandro Salazar Colorado author. The repo's configured `user.name` / `user.email` (Daner Alejandro Salazar Colorado's) is the author and committer.
+- If `git config user.email` is unset or clearly not Daner Alejandro Salazar Colorado's, **stop and ask** which identity to commit under — do not guess, and do not substitute an agent identity.
 - If you find a Claude/AI trailer in a commit you are about to push (e.g. left over from an upstream tool), **strip it** before the branch lands.
 
 Verify it after writing the commit. A non-empty match is a blocker: amend and re-check before the branch goes anywhere.
@@ -48,7 +48,7 @@ Run this before presenting the landing options. Any unchecked item is a stop —
 - [ ] **On a feature branch, not the trunk** — `git rev-parse --abbrev-ref HEAD` is not `main`/`master`. If work landed directly on the trunk, that is its own problem; flag it, don't paper over it.
 - [ ] **Rebased / up to date with the base** — branch is on top of latest `main`; conflicts resolved locally, not punted to the merge.
 - [ ] **No secrets in the diff** — scan the staged/branch diff for keys, tokens, `.env` values (`git diff main... | grep -iE 'api[_-]?key|secret|password|token|BEGIN .*PRIVATE KEY'`). A hit is a blocker; remove it, and rotate it if it was ever pushed.
-- [ ] **Authorship is Eric** — `git config user.email` is Eric's; no AI trailer in any commit on the branch (run the grep above across `main..HEAD`).
+- [ ] **Authorship is Daner Alejandro Salazar Colorado** — `git config user.email` is Daner Alejandro Salazar Colorado's; no AI trailer in any commit on the branch (run the grep above across `main..HEAD`).
 - [ ] **Commit history is intelligible** — squashed or organized so the history reads as deliberate, not "wip wip fix fix".
 
 ```bash
@@ -56,30 +56,30 @@ Run this before presenting the landing options. Any unchecked item is a stop —
 echo "branch:   $(git rev-parse --abbrev-ref HEAD)"
 echo "clean?:   $([ -z "$(git status --short)" ] && echo yes || echo NO-dirty)"
 echo "behind:   $(git rev-list --count HEAD..origin/main 2>/dev/null || echo '?') commits behind origin/main"
-git log main..HEAD --format='%an <%ae>' | sort -u   # authors on this branch — expect only Eric
+git log main..HEAD --format='%an <%ae>' | sort -u   # authors on this branch — expect only Daner Alejandro Salazar Colorado
 git diff main...HEAD | grep -icE 'api[_-]?key|secret|password|token|BEGIN .*PRIVATE KEY' \
   | sed 's/^/secret-hits: /'
 ```
 
 ### Automated guard (PreToolUse) — you cannot quietly abandon a feature
 
-When rsc is installed for Claude Code, a `PreToolUse` hook (`.rsc/ship-guard.mjs`) enforces this
+When ai-hub is installed for Claude Code, a `PreToolUse` hook (`.ai-hub/ship-guard.mjs`) enforces this
 phase at the one deterministic moment it matters: it **denies** any Bash command that switches to
 `main`/`master` or merges while the current feature branch has **uncommitted changes** or **commits
 that were never pushed**. The denial reason names the branch and routes you here. The guard is
 local-only (no network), **fail-open** (any ambiguity — detached HEAD, no repo, git error — allows
-the command), and can be disabled per project with `.rsc/.no-ship-guard`. It guarantees the
+the command), and can be disabled per project with `.ai-hub/.no-ship-guard`. It guarantees the
 commit → push step; opening the PR is still this skill's job (and its hard rule). If the guard
 blocks you, do not work around it — run ship.
 
 The same guard also enforces the **sello** where it was opted into — per project
-(`.rsc/sello-config.json`) or for all of them (`~/.rsc/sello-config.json` via
-`sello on --global`, with the project switch always winning; `rsc sello status` prints which
+(`.ai-hub/sello-config.json`) or for all of them (`~/.ai-hub/sello-config.json` via
+`sello on --global`, with the project switch always winning; `ai-hub sello status` prints which
 scope decided): commit, push and PR are denied unless the change's exact bytes match the
 sealed, approved review — one byte of drift, a moved base, or a missing review on a risk>0 change
-all block, and every denial names its way out (re-run `review`, or `npx @ericrisco/rsc sello off`).
+all block, and every denial names its way out (re-run `review`, or `npx ai-hub sello off`).
 Risk-0 changes (docs/copy) always pass silently. Off by default; the flow lives in the `review`
-skill. Note `.rsc/.no-ship-guard` opts out of the branch-hygiene rules above but **not** of the
+skill. Note `.ai-hub/.no-ship-guard` opts out of the branch-hygiene rules above but **not** of the
 sello, which has its own switch. The sello binds bytes, not intent — it proves what ships is what
 was reviewed, never that the review was any good.
 
@@ -94,9 +94,9 @@ This mirrors the harness "siempre 3 opciones" pattern. Gather the one fact that 
 | **3. Park or discard** | Keep the branch un-merged (park) or delete it (discard) | The approach was superseded, the spike answered its question, or the work is paused — it should not land |
 
 **When the default branch is closed for the agent** (team-safe-default: the project is complex or in
-production — `npx @ericrisco/rsc main status` says `closed: true`), **option 1 is not offered**: a
+production — `npx ai-hub main status` says `closed: true`), **option 1 is not offered**: a
 local merge is a commit on the default branch. Present option 2 (the recommendation) and option 3,
-and say in one line why option 1 is absent and that «desbloquea main» (`npx @ericrisco/rsc main
+and say in one line why option 1 is absent and that «desbloquea main» (`npx ai-hub main
 unlock`) would bring it back. The branch guard denies the local merge anyway.
 
 Recommend based on repo signals: protected `main` or an existing PR culture (look for `.github/`, prior PRs via `gh pr list`) → recommend **option 2**. A solo project with no protection and a passed review → **option 1** is honest and faster. Never default to a PR ceremony the repo doesn't use, and never force-merge a repo that gates `main`.
@@ -133,7 +133,7 @@ Use `--no-ff` so the feature is one legible merge commit tied to the spec. Confi
 
 This used to be an instruction in this paragraph, and it was skipped on both features that reached it. That is why it is a hook now: an instruction at the end of a long phase is the least reliable place to put a step that matters (P1).
 
-If something did survive, it survived *for a reason* — read it rather than forcing it: `npx @ericrisco/rsc worktrees` lists what is left and why. `worktrees reap <path>` still exists for the backlog and for anything the hook deliberately refused; name the path, because bare `reap` retires every worktree that qualifies and with `parallel` running two streams that is how shipping A deletes B. Naming a path selects it, it does not accept the risk: add `--confirm` only after the user has seen the reason and said yes.
+If something did survive, it survived *for a reason* — read it rather than forcing it: `npx ai-hub worktrees` lists what is left and why. `worktrees reap <path>` still exists for the backlog and for anything the hook deliberately refused; name the path, because bare `reap` retires every worktree that qualifies and with `parallel` running two streams that is how shipping A deletes B. Naming a path selects it, it does not accept the risk: add `--confirm` only after the user has seen the reason and said yes.
 
 ### Option 2 — pull request
 
@@ -197,7 +197,7 @@ reaper — it owns its own lifecycle and its tracking has to stay consistent.
 
 ## Commit message discipline
 
-The commit is the durable record. Make it describe the change and tie it to the spec — and keep it Eric's.
+The commit is the durable record. Make it describe the change and tie it to the spec — and keep it Daner Alejandro Salazar Colorado's.
 
 - **Subject:** `<gitmoji> type: imperative summary (<spec-slug>)` — `✨ feat:`, `🐛 fix:`, `♻️ refactor:`, etc. Under ~72 chars. The gitmoji is **not optional**: on Claude Code a PreToolUse guard denies a `git commit -m` without one, and the refusal hands back the corrected message. Emoji → intention table: `../git-workflow/references/gitmoji.md`.
 - **Body:** *why*, not a restatement of the diff. Reference the spec slug and any decision logged in `decisions.md`.
@@ -205,19 +205,19 @@ The commit is the durable record. Make it describe the change and tie it to the 
 
 ## Model tier — `light` (opt-in routing)
 
-Closing the branch (PR / merge / cleanup) is mechanical, so this phase's default tier is **`light`**. Routing is **off** unless `models.enabled: true` in `02-DOCS/wiki/sdd/config.yaml`; when it is on, follow `../sdd/references/model-routing.md` for resolving and announcing the switch rather than from memory. Routing off or no profile → honor the session model silently, and skip routing on a one-line change. The Eric-only authorship rule is independent of the model and never relaxes.
+Closing the branch (PR / merge / cleanup) is mechanical, so this phase's default tier is **`light`**. Routing is **off** unless `models.enabled: true` in `02-DOCS/wiki/sdd/config.yaml`; when it is on, follow `../sdd/references/model-routing.md` for resolving and announcing the switch rather than from memory. Routing off or no profile → honor the session model silently, and skip routing on a one-line change. The Daner Alejandro Salazar Colorado-only authorship rule is independent of the model and never relaxes.
 
 ## What ship shows
 
 Read `technical_level` from `02-DOCS/wiki/harness/user-profile.md`. It changes the words, **never** the safety checklist or the authorship rule. No profile → use analogies and proceed; don't stall the ship to ask.
 
-In the `orient` voice: the checklist result in one line, the three options as one-liners, the recommendation and its *why*, then execute on a yes — e.g. `Clean, rebased, authorship Eric. Recommend PR (main is protected). Open it?`. For a `non-technical` owner, explain the recommended option with an analogy: a protected `main` wants a PR ("asking permission before changing the shared copy"). Explain fast-forward vs `--no-ff` or what squashing trades away only when asked.
+In the `orient` voice: the checklist result in one line, the three options as one-liners, the recommendation and its *why*, then execute on a yes — e.g. `Clean, rebased, authorship Daner Alejandro Salazar Colorado. Recommend PR (main is protected). Open it?`. For a `non-technical` owner, explain the recommended option with an analogy: a protected `main` wants a PR ("asking permission before changing the shared copy"). Explain fast-forward vs `--no-ff` or what squashing trades away only when asked.
 
 ## Anti-patterns → STOP
 
 | Rationalization | Reality |
 | --- | --- |
-| "I'll add `Co-Authored-By: Claude` / a 'Generated with Claude Code' footer to be transparent" | It forges the record. The work is Eric's — no AI trailer, ever. Strip it. |
+| "I'll add `Co-Authored-By: Claude` / a 'Generated with Claude Code' footer to be transparent" | It forges the record. The work is Daner Alejandro Salazar Colorado's — no AI trailer, ever. Strip it. |
 | "Review didn't formally approve but it's obviously fine" | No verdict = not ready. Ship runs on APPROVE only. Route back to review. |
 | "The tree has a couple of stray edits, they're harmless" | A dirty tree means the merge is not the reviewed diff. Clean it or stash it first. |
 | "`main` is protected but I'll just force-merge, I'm sure" | Protected means PR. Don't bypass the gate the repo deliberately set. |

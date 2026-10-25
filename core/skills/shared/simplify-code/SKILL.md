@@ -4,7 +4,7 @@ description: "Use when correct working code is unnecessarily hard to read, chang
 tags: [code-simplification, refactoring, readability, complexity, behavior-preservation]
 recommends: [code-review, review, verify, debug, performance]
 profiles: [core, full]
-origin: risco
+origin: ai-hub
 ---
 
 # simplify-code — fewer moving parts, same contract

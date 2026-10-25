@@ -3,7 +3,7 @@ name: phoenix
 description: "Use when building an Elixir web app with Phoenix — contexts, Ecto schemas, changesets and migrations, LiveView, channels and PubSub, the generators, and the boundary between domain logic and the web layer. Covers the classic LiveView over-rendering and Ecto N+1 traps. NOT pure OTP work with no web or Ecto layer — GenServers, supervision trees, releases (that is `elixir`)."
 tags: [phoenix, elixir, liveview, ecto, channels, contexts, web, beam]
 recommends: [elixir, postgresdb, docker]
-origin: risco
+origin: ai-hub
 ---
 
 # Phoenix

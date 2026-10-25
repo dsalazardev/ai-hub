@@ -3,7 +3,7 @@ name: solid-js
 description: "Use when building, reviewing or debugging a SolidJS app — signals, stores, effects, memos and resources, and JSX that compiles to real DOM with no virtual DOM. Covers the classic traps: a signal that does not update the UI, For versus Index, effect loops, components that run once, and props losing reactivity when destructured. NOT React's re-render model (that is `react`)."
 tags: [solidjs, signals, reactivity, frontend, jsx, web]
 recommends: [vercel, testing-web, design]
-origin: risco
+origin: ai-hub
 ---
 
 # SolidJS — fine-grained reactivity, no VDOM
@@ -18,7 +18,7 @@ Versions: **stable is `solid-js` 1.9.x** (1.9.11/1.9.13 line). **Solid 2.0 is in
 |---|---|
 | Solid signals/stores/effects/memos/resources, JSX-to-DOM, `<For>`/`<Index>` | **this skill** |
 | React `useState`/hooks/re-render model (the body re-runs) | `react` |
-| Next.js routing, server actions, RSC | `nextjs` |
+| Next.js routing, server actions, React Server Components | `nextjs` |
 | Svelte 5 `$state`/`$derived` runes (similar look, different compiler) | `svelte` |
 | Vue/Nuxt `ref`/`reactive`/`computed` | `vue-nuxt` |
 | Astro island architecture / what ships to the client (can host a Solid island) | `astro` |

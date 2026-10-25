@@ -19,7 +19,7 @@ recommends:
   - sqlite-turso
   - typescript
   - sql
-origin: risco
+origin: ai-hub
 ---
 
 # Prisma ORM (v7)

@@ -4,7 +4,7 @@ description: "Use when an approved plan and task list exist and it is time to tu
 tags: [sdd, implement, code]
 recommends: [verify]
 profiles: [core, full]
-origin: risco
+origin: ai-hub
 ---
 
 # implement — turn the task list into tested code
@@ -39,9 +39,9 @@ back — you do not write feature code anyway.
    non-trivial work, stop and route to `sdd-init`. Use `testing.strict_tdd`,
    `testing.commands.apply`, `testing.commands.verify`, `sdd.review_budget` and
    `sdd.registry_path`. Do not choose a different test command from memory while config exists.
-3. **Read the skill registry.** Open `.rsc/skill-registry.json` if present. Select only the
+3. **Read the skill registry.** Open `.ai-hub/skill-registry.json` if present. Select only the
    relevant stack/process skills for this task, then digest them into compact rules. If the
-   registry is missing, run or recommend `npx @ericrisco/rsc registry refresh` and record the fallback.
+   registry is missing, run or recommend `npx ai-hub registry refresh` and record the fallback.
 4. **Read the register.** Open `02-DOCS/wiki/harness/user-profile.md` and read `technical_level`.
    It picks technical terms or plain words with analogies at each checkpoint (see "Checkpoints"
    below). No profile yet → use analogies, and ask before any irreversible step.
@@ -65,7 +65,7 @@ TRIANGULATE → add the smallest edge-case test that proves the behavior is not 
 REFACTOR → with the test green, clean up names/duplication/shape. Re-run; still green. Only now.
 CHECK    → re-read the task's done-check. Met? Constitution still honored? Decision worth logging?
 PROGRESS → append task/test/blocker/decision state to 02-DOCS/wiki/sdd/progress/<slug>.md.
-COMMIT   → commit this task as one logical unit (authorship = Eric; see ship for the rule).
+COMMIT   → commit this task as one logical unit (authorship = Daner Alejandro Salazar Colorado; see ship for the rule).
 REVIEW   → dispatch a fresh reviewer subagent over THIS task's commits (see "Per-task review gate").
            Fold its Critical/Important findings back in before you move on; Minor can wait.
 CHECKPOINT → stop and show: what changed, test output, review verdict, the next task. Wait for the user.
@@ -110,7 +110,7 @@ yours; the fixtures, runners and idioms are theirs.
 | --- | --- | --- |
 | FastAPI / async Python | `../fastapi/references/testing.md` | `ASGITransport` in-process client, `dependency_overrides`, transactional rollback fixture, `pytest-asyncio` |
 | Go services | `../go/references/testing.md` | table-driven subtests, `httptest`, interface fakes, golden files, `errors.Is` checks |
-| Next.js / React | `../nextjs/references/testing.md` | Vitest + Testing Library for units, Playwright for flows, server-action / RSC testing |
+| Next.js / React | `../nextjs/references/testing.md` | Vitest + Testing Library for units, Playwright for flows, server-action / React Server Components testing |
 | Flutter | `../flutter/references/testing.md` | `flutter test` widget tests, `pump`/`pumpAndSettle`, golden tests, mocked repositories |
 
 If the feature spans two stacks (a Next.js front-end calling a FastAPI back-end), each task names its
@@ -121,7 +121,7 @@ stack and pulls that stack's testing reference — you do not mix idioms inside 
 When a task or subagent needs skill context, use the registry path from config:
 
 ```text
-.rsc/skill-registry.json
+.ai-hub/skill-registry.json
 ```
 
 Select the smallest set of skills that match the task. Digest each selected skill into 4-5 compact rules that affect this task. A task brief or checkpoint includes:
@@ -190,7 +190,7 @@ test output. You merge the branches, then run the *combined* test suite before t
 green-in-isolation is not green-together. Hand the orchestration to `parallel`; keep the TDD
 discipline inside each branch.
 
-**Dispatch implementation work to the `developer` subagent.** rsc installs a `developer` agent
+**Dispatch implementation work to the `developer` subagent.** ai-hub installs a `developer` agent
 pinned to the balanced tier (Sonnet by default, chosen at onboarding, never `light`). When you
 delegate a task or fan out via `parallel`, dispatch it to that agent (e.g. Claude Code
 `subagent_type: developer`) so the bulk of TDD execution runs on the cheaper-but-capable model
@@ -332,7 +332,7 @@ outranks the plan, and the plan outranks your in-the-moment preference.
 - [ ] Non-obvious decision (if any) logged to 02-DOCS/wiki/sdd/decisions.md
 - [ ] Apply progress appended to 02-DOCS/wiki/sdd/progress/<slug>.md
 - [ ] Skill resolution recorded (used/missing/fallback/compact rules)
-- [ ] Committed as one logical unit (authorship = Eric)
+- [ ] Committed as one logical unit (authorship = Daner Alejandro Salazar Colorado)
 - [ ] Checkpoint shown in the orient voice; next task named
 ```
 

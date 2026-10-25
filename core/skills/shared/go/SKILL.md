@@ -3,7 +3,7 @@ name: go
 description: "Use when writing, reviewing, testing, or shipping Go code and HTTP services: idioms, `%w` error wrapping, goroutine/context/errgroup concurrency, net/http 1.22 routing, log/slog, project layout, table-driven tests, Go hardening. NOT language-agnostic threat modeling (that is `secure-coding`), NOT Dockerfile/CI shipping (that is `deployment`)."
 tags: [go, golang, http, backend, service]
 recommends: [postgresdb, secure-coding, deployment]
-origin: risco
+origin: ai-hub
 ---
 
 # Idiomatic Go services

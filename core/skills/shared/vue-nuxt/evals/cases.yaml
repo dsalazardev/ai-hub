@@ -19,7 +19,7 @@ should_trigger:
 should_not_trigger:
   - prompt: "Set up React Server Components and server actions in my app/ dir"
     route_to: nextjs
-    why: "RSC and server actions are React/Next concepts; Vue has no server-component boundary. The shared 'app/' word is a false signal."
+    why: "React Server Components and server actions are React/Next concepts; Vue has no server-component boundary. The shared 'app/' word is a false signal."
   - prompt: "Build a content-heavy static blog mixing React and Vue islands"
     route_to: astro
     why: "Multi-framework islands on a content-first static site is Astro's domain, not a single-framework Nuxt app."
@@ -46,4 +46,4 @@ capability:
       - "Uses a stable key so the two components share one data/error/status ref (dedupe + auto-cleanup)"
       - "Replaces the module-level ref with useState(key, init) or a Pinia store, explaining the per-request server leak from a module singleton"
       - "Notes shallowRef payload (Nuxt 4) and/or pick/transform to keep the SSR payload small where relevant"
-      - "Does NOT introduce RSC / 'use server' / server-component mental models"
+      - "Does NOT introduce React Server Components / 'use server' / server-component mental models"

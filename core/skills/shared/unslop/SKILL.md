@@ -4,7 +4,7 @@ description: "Use when a text that leaves the session (email, post, README, mess
 tags: [unslop, human-writing, humano, natural-language, plain-language, ai-tells, editing, rewrite, bro, revisar-texto]
 recommends: [brand-voice, technical-writing]
 profiles: [minimal, core, full]
-origin: risco
+origin: ai-hub
 ---
 
 # unslop: text that leaves the session sounds like a person

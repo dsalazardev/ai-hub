@@ -1,14 +1,14 @@
 ---
 name: code-review
-description: "Use to judge a concrete diff, branch, or GitHub PR on its own merits with no rsc-SDD spec/plan chain to key off — the spec-less giving pass behind /code-review: only findings you can defend, one verdict, read-only unless --comment or --fix. NOT the SDD gate keyed to 02-DOCS/wiki/sdd/ that also processes incoming review comments (that is `review`)."
+description: "Use to judge a concrete diff, branch, or GitHub PR on its own merits with no ai-hub Spec-Kit spec/plan chain to key off — the spec-less giving pass behind /code-review: only findings you can defend, one verdict, read-only unless --comment or --fix. NOT the SDD gate keyed to 02-DOCS/wiki/sdd/ that also processes incoming review comments (that is `review`)."
 tags: [code-review, pr-review, quality, correctness]
 recommends: [review, secure-coding, verify]
-origin: risco
+origin: ai-hub
 ---
 
 # Code review — standalone, spec-less diff judgment
 
-You are reviewing a concrete change — a `git diff`, a branch, a GitHub PR, a pasted patch — on its own merits. No rsc-SDD spec/plan/constitution chain is required and you should not pretend one exists. This is the doctrine behind the executable `/code-review` slash command: same evidence bar, written as a discipline you run by hand. If the user is mid-SDD and wants to process *incoming* comments against `02-DOCS/wiki/sdd/`, that is `../review/SKILL.md`; a naked diff or an inbound third-party PR is this skill.
+You are reviewing a concrete change — a `git diff`, a branch, a GitHub PR, a pasted patch — on its own merits. No ai-hub Spec-Kit spec/plan/constitution chain is required and you should not pretend one exists. This is the doctrine behind the executable `/code-review` slash command: same evidence bar, written as a discipline you run by hand. If the user is mid-SDD and wants to process *incoming* comments against `02-DOCS/wiki/sdd/`, that is `../review/SKILL.md`; a naked diff or an inbound third-party PR is this skill.
 
 **The north star is signal-to-noise.** Report only findings you would stake your name on. A clean diff is `APPROVE`, not a manufactured nit. High-false-positive review gets tuned out by humans in about two weeks; the bar to aim for is the logic-error review where under 1% of findings come back marked wrong. Padding does not make you look thorough — it trains the reader to ignore you.
 
@@ -93,7 +93,7 @@ Read the surrounding code, trace the *value*, confirm the path is reachable.
 
 If you cannot trace it to a concrete value and a reachable sink, you do not yet have a finding.
 
-When several reviewers looked at the same diff, merge before reporting. Have each one end with a ` ```json findings ` block, run `npx @ericrisco/rsc review consolidate <reports…>`, and send each blocker it marks `verify` to the `finding-verifier` agent. That is the `review` skill's step, and it applies here unchanged.
+When several reviewers looked at the same diff, merge before reporting. Have each one end with a ` ```json findings ` block, run `npx ai-hub review consolidate <reports…>`, and send each blocker it marks `verify` to the `finding-verifier` agent. That is the `review` skill's step, and it applies here unchanged.
 
 ## The verdict
 
@@ -120,7 +120,7 @@ gh pr review 1432 --request-changes -b "CHANGES REQUESTED — see inline. Blocke
 gh pr review 1432 --approve -b "APPROVE — correctness and contracts clean."
 ```
 
-Inline line-anchored comments go through the GitHub REST API — see `references/pr-workflow.md` for the JSON shape, fork-PR handling, and large-diff strategy. If `--fix` puts you on the default branch, **branch first**; commit or push **only when the user asks**; git authorship is **Eric** (no Claude co-author or generated footer).
+Inline line-anchored comments go through the GitHub REST API — see `references/pr-workflow.md` for the JSON shape, fork-PR handling, and large-diff strategy. If `--fix` puts you on the default branch, **branch first**; commit or push **only when the user asks**; git authorship is **Daner Alejandro Salazar Colorado** (no Claude co-author or generated footer).
 
 ## Anti-patterns
 

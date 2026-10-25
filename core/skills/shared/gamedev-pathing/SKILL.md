@@ -4,7 +4,7 @@ description: "Use when making NPCs, enemies, or units navigate a level — grid 
 tags: [pathfinding, navmesh, navigation, steering, a-star]
 recommends: [godot, unity, unreal, gamedev-physics]
 profiles: [full]
-origin: risco
+origin: ai-hub
 ---
 
 # Game AI navigation & pathfinding

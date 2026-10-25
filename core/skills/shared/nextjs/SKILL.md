@@ -3,10 +3,10 @@ name: nextjs
 description: "Use when building, reviewing, testing, securing, or optimizing a Next.js App Router app: Server vs Client boundaries, `use server` actions, route handlers, the v15 vs v16 `use cache` caching model, metadata/SEO, auth, and Core Web Vitals. NOT framework-agnostic React or a Vite SPA (that is `react`), and NOT visual/UI design (that is `design`)."
 tags: [nextjs, react, frontend, web, seo, ssr]
 recommends: [design, secure-coding, deployment]
-origin: risco
+origin: ai-hub
 ---
 
-# Next.js App Router — RSC, Server Actions, React 19, TypeScript
+# Next.js App Router — React Server Components, Server Actions, React 19, TypeScript
 
 > Build, review, test, secure and optimize App Router apps, handling both the Next.js 15 (uncached-by-default) and Next.js 16 (`use cache`) caching models correctly.
 
@@ -18,7 +18,7 @@ origin: risco
 
 **Not this skill:** Pages Router (`pages/`) — note the difference, defer to the Next.js Pages docs.
 A pure React SPA (Vite/CRA) → `../react/SKILL.md`; React Native / Expo → `../react-native/SKILL.md`;
-a generic React question with no Next/RSC dimension → keep it brief, from `references/react.md`.
+a generic React question with no Next/React Server Components dimension → keep it brief, from `references/react.md`.
 Non-Next backends → `../fastapi/SKILL.md`, `../go/SKILL.md`; the data layer behind the DAL →
 `../postgresdb/SKILL.md`; framework-agnostic security → `../secure-coding/SKILL.md`, complemented here, never duplicated.
 
@@ -294,7 +294,7 @@ export async function getCart(cartId: string) {
 The Next-relevant deltas (full discipline, hooks, state-location tree, composition →
 `references/react.md`): `useActionState(fn, initial)` → `[state, action, isPending]` (replaces
 `useFormState`); `useFormStatus()` for a child submit button; `useOptimistic` auto-reverts on
-action error; `use(promise)` unwraps an RSC-passed Promise under `<Suspense>`; `ref` is a normal
+action error; `use(promise)` unwraps an React Server Components-passed Promise under `<Suspense>`; `ref` is a normal
 prop (no `forwardRef`); `<Context value>` is the provider; React Compiler on
 (`reactCompiler: true`) ⇒ drop manual memoization.
 
@@ -374,7 +374,7 @@ on every review:
 | "Add `useMemo` everywhere for perf"                        | Measure first; with React Compiler manual memoization is noise             |
 | "`await params` is unnecessary"                            | v15+: `params`/`searchParams` are Promises — you must `await`              |
 | "Middleware protects my dashboard, the data fetch is safe" | Middleware is not a security boundary; check in the DAL                    |
-| "Snapshot-test the RSC page"                               | Async Server Components aren't jsdom-renderable; test data fns + Playwright |
+| "Snapshot-test the React Server Components page"                               | Async Server Components aren't jsdom-renderable; test data fns + Playwright |
 
 ## Verify
 
@@ -385,7 +385,7 @@ a failure). It reads the installed Next.js major version and only falls back to 
 never a false failure. The lint/type/test steps are read-only; the final `next build` writes the
 `.next/` output directory. No installs, no network mutations. Safe to re-run.
 
-Test strategy — Vitest 3 + RTL + MSW 2 for units, Playwright for pages, and the RSC testing reality
+Test strategy — Vitest 3 + RTL + MSW 2 for units, Playwright for pages, and the React Server Components testing reality
 behind that last anti-pattern row: `references/testing.md`.
 
 ## Project grounding (02-DOCS + CLAUDE.md)

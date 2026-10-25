@@ -3,7 +3,7 @@ name: secure-coding
 description: "Use when securing application code: threat-modeling a feature, security-reviewing a diff, hardening auth/authz, secrets, CORS/CSP, or fixing OWASP-class bugs (access control, injection, SSRF, supply chain) in FastAPI, Next.js, Go or Flutter. NOT running the scanners (that is security-scan), NOT agent prompt-injection guardrails (that is agent-safety)."
 tags: [security, owasp, stride, auth, review]
 recommends: [deployment]
-origin: risco
+origin: ai-hub
 ---
 
 # Secure coding — threat modeling + OWASP across the stack

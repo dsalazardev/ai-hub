@@ -1,6 +1,6 @@
 # Eval harness — `godot` skill
 
-These cases are read by the rsc skill-eval harness (a Claude agent with the full skill catalog
+These cases are read by the ai-hub skill-eval harness (a Claude agent with the full skill catalog
 loaded) or by hand. They assert two things. **Triggering**: the `godot` description fires on each
 `should_trigger` prompt — including symptom-only and Spanish phrasings — and stays quiet on the
 `should_not_trigger` near-misses, routing each to its named sibling (`unity`, `unreal`,

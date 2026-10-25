@@ -10,8 +10,8 @@ Four caches sit between your code and the response:
 
 - **Request memoization** — `fetch`/`React.cache` dedupes identical calls within a single render.
 - **Data cache** — persists fetch results across requests/deploys (server-side).
-- **Full-route cache** — caches the rendered HTML + RSC payload of a static route at build/revalidate.
-- **Client router cache** — caches RSC payloads in the browser for back/forward navigation.
+- **Full-route cache** — caches the rendered HTML + React Server Components payload of a static route at build/revalidate.
+- **Client router cache** — caches React Server Components payloads in the browser for back/forward navigation.
 
 | Concern         | v15 baseline                                       | v16 Cache Components                            |
 | --------------- | -------------------------------------------------- | ----------------------------------------------- |
@@ -284,7 +284,7 @@ export function SignupForm() {
 
 ## Client cache layer (TanStack Query)
 
-Rely on RSC by default. Add TanStack Query when data lives client-side: client-initiated mutations
+Rely on React Server Components by default. Add TanStack Query when data lives client-side: client-initiated mutations
 with cache updates, infinite scroll, or a cross-component client cache that must stay in sync.
 
 ```tsx

@@ -3,7 +3,7 @@ name: nestjs
 description: "Use when building or structuring a NestJS backend — feature modules, providers and DI wiring, provider scopes and request-lifecycle order, where to bind guards/pipes/interceptors/filters, and testing with Test.createTestingModule. NOT a bare Express/Fastify service with no DI (that is `nodejs`), NOT framework-agnostic REST design (that is `api-design`)."
 tags: [nestjs, nodejs, backend, dependency-injection, guards, pipes, testing, typescript]
 recommends: [nodejs, typescript, api-design, prisma-orm, testing-web]
-origin: risco
+origin: ai-hub
 ---
 
 # NestJS

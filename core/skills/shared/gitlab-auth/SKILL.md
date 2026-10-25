@@ -6,6 +6,7 @@ compatibility: Requires curl or Node and a GitLab personal access token with the
 metadata:
   author: Doligestion AI Hub
   version: "1.0"
+origin: ai-hub
 ---
 
 # GitLab Auth — self-managed con Personal Access Token

@@ -3,7 +3,7 @@ name: rag
 description: "Use when building grounded Q&A over your own corpus — chunk, retrieve hybrid, rerank, ground, cite chunk ids, refuse when the sources fall short — or when the right document is retrieved but the answer is still wrong, invented, or unmeasured. NOT operating the store itself — collection schema, HNSW ef_search, quantization (that is `vector-db`)."
 tags: [rag, retrieval-augmented-generation, chunking, hybrid-search, reranking, grounding, citations, faithfulness, contextual-retrieval]
 recommends: [vector-db, embeddings-search, document-processing, chatbot, agent-eval]
-origin: risco
+origin: ai-hub
 ---
 
 # rag — own the retrieve → rerank → ground → cite → refuse pipeline

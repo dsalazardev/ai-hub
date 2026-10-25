@@ -72,7 +72,7 @@
     <!-- Each: <div class="card"><div class="name">FastAPI (Python 3.11)</div><div class="path">myapp-backend/</div></div> -->
   </div>
 
-  <h2>2. Tools to create in <code>01-TOOLS/</code></h2>
+  <h2>2. Tools to create in <code>docs/tools/</code></h2>
   <table>
     <thead>
       <tr><th>Tool</th><th>Category</th><th>Evidence</th><th>Action</th></tr>
@@ -85,9 +85,9 @@
 
   <h2>3. Legacy <code>XX-*</code> folders detected</h2>
   {{LEGACY_FOLDERS_DETAILS}}
-  <!-- Each: <details><summary>00-TOOLS/ · 42 files · TOOLING: 35 · DOCS: 5 · AMBIGUOUS: 2 (deletion blocked)</summary><div class="body"><table>...rows with <span class="class tooling">TOOLING</span> etc...</table></div></details> -->
+  <!-- Each: <details><summary>docs/legacy/ · 42 files · TOOLING: 35 · DOCS: 5 · AMBIGUOUS: 2 (deletion blocked)</summary><div class="body"><table>...rows with <span class="class tooling">TOOLING</span> etc...</table></div></details> -->
 
-  <h2>4. Documentation → <code>02-DOCS/</code> (embedded protocol)</h2>
+  <h2>4. Documentation → <code>docs/</code> (embedded protocol)</h2>
   <ul class="sources">
     {{WIKI_SOURCES_LIST}}
     <!-- Each: <li><a href="...">path</a></li> -->
@@ -97,14 +97,14 @@
   <table>
     <thead><tr><th>File</th><th>State</th><th>Action</th></tr></thead>
     <tbody>
-      <tr><td><code>CLAUDE.md</code></td><td>{{CLAUDE_MD_STATE}}</td><td>{{CLAUDE_MD_ACTION}}</td></tr>
+      <tr><td><code>AGENTS.md</code></td><td>{{CLAUDE_MD_STATE}}</td><td>{{CLAUDE_MD_ACTION}}</td></tr>
       <tr><td><code>AGENTS.md</code></td><td>{{AGENTS_MD_STATE}}</td><td>{{AGENTS_MD_ACTION}}</td></tr>
     </tbody>
   </table>
 
   <h2>6. Files I will NEVER touch</h2>
   <div class="never-list">
-    <code>01-TOOLS/**/.env</code> · <code>01-TOOLS/**/keys/</code> · <code>*.p8</code> · <code>*.p12</code> · <code>*.jks</code> · service account JSONs<br>
+    <code>docs/tools/**/.env</code> · <code>docs/tools/**/keys/</code> · <code>*.p8</code> · <code>*.p12</code> · <code>*.jks</code> · service account JSONs<br>
     <code>node_modules/</code> · <code>.next/</code> · <code>.venv/</code> · <code>.pytest_cache/</code> · <code>__pycache__/</code> · <code>.dart_tool/</code> · <code>build/</code> · <code>dist/</code><br>
     Any <code>.git/</code> · subproject internals beyond their declarative root.
   </div>
@@ -118,7 +118,7 @@
       <thead><tr><th>Operation</th><th>When</th></tr></thead>
       <tbody>
         {{DESTRUCTIVE_OPS_ROWS}}
-        <!-- Each: <tr><td><code>Delete 00-TOOLS/</code></td><td>NEVER this run (AMBIGUOUS present)</td></tr> -->
+        <!-- Each: <tr><td><code>Delete docs/legacy/</code></td><td>NEVER this run (AMBIGUOUS present)</td></tr> -->
       </tbody>
     </table>
     <p style="margin: 12px 0 0; font-size: 13px; color: var(--muted);">

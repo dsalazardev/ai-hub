@@ -1,15 +1,15 @@
 ---
 name: constitution
-description: "Use when setting or amending a project's non-negotiables — stack canon, quality bars, conventions, security/a11y floors — as numbered, testable rules later phases obey. First rsc-sdd phase; writes 02-DOCS/wiki/sdd/constitution.md. NOT a feature spec (that is `specify`), NOT the technical plan (that is `plan`), NOT the wiki itself (that is `harness`)."
+description: "Use when setting or amending a project's non-negotiables — stack canon, quality bars, conventions, security/a11y floors — as numbered, testable rules later phases obey. First ai-hub Spec-Kit phase; writes 02-DOCS/wiki/sdd/constitution.md. NOT a feature spec (that is `specify`), NOT the technical plan (that is `plan`), NOT the wiki itself (that is `harness`)."
 tags: [sdd, constitution, principles]
 recommends: [specify]
 profiles: [core, full]
-origin: risco
+origin: ai-hub
 ---
 
 # constitution — the project's non-negotiable principles
 
-*The first rsc-sdd phase. Run once per project, then amend. It writes down the rules every later phase obeys: stack canon, quality bars, conventions. Everything downstream — specify, plan, analyze, implement, verify, review — reads this file as guardrails.*
+*The first ai-hub Spec-Kit phase. Run once per project, then amend. It writes down the rules every later phase obeys: stack canon, quality bars, conventions. Everything downstream — specify, plan, analyze, implement, verify, review — reads this file as guardrails.*
 
 A constitution is small, durable, and enforceable. It is **not** a wiki of everything you know about the project (that is what `02-DOCS/wiki/` already is, run by the `harness`). It is the short list of principles that, if violated, mean the work is wrong regardless of whether it runs. If a rule here cannot be checked or pointed at later, it does not belong here — move it to the stack wiki and link it.
 
@@ -70,9 +70,9 @@ For any significant either/or (e.g. "strict types or gradual?", "squash or merge
 
 ## Fixed principles (always present)
 
-Two principles are inherited from the rsc ecosystem and appear in every constitution unless the user explicitly overrides them:
+Two principles are inherited from the ai-hub ecosystem and appear in every constitution unless the user explicitly overrides them:
 
-- **Git authorship is the human's.** Commits and PRs are authored by the human (Eric, or whoever owns the repo). No `Co-Authored-By` an AI, no "generated with" footer. Enforced at the `ship` phase.
+- **Git authorship is the human's.** Commits and PRs are authored by the human (Daner Alejandro Salazar Colorado, or whoever owns the repo). No `Co-Authored-By` an AI, no "generated with" footer. Enforced at the `ship` phase.
 - **Decisions are logged.** Every significant decision is appended to `02-DOCS/wiki/sdd/decisions.md` (or the harness `decisions.md`) with date, options considered, and the why. The constitution itself is the highest-order decision record.
 
 ## Drafting the constitution
@@ -86,7 +86,7 @@ Write `02-DOCS/wiki/sdd/constitution.md` from the template in `references/consti
 
 Create `02-DOCS/wiki/sdd/` if it does not exist. Do not overwrite an existing constitution — amend it.
 
-**A draft is "complete me", not "amend me".** `rsc onboard` writes a skeleton with `status: draft` in the frontmatter: the template's headings, the facts onboarding knew (goal, kind, scope, workflow, detected stack) and no principle. Keep those facts, run the interview, fill the sections, then on ratification drop `status: draft`, set `version: v1.0.0` and log v1.0.0 in the amendment log.
+**A draft is "complete me", not "amend me".** `ai-hub onboard` writes a skeleton with `status: draft` in the frontmatter: the template's headings, the facts onboarding knew (goal, kind, scope, workflow, detected stack) and no principle. Keep those facts, run the interview, fill the sections, then on ratification drop `status: draft`, set `version: v1.0.0` and log v1.0.0 in the amendment log.
 
 ## Versioning & amendment protocol
 
@@ -129,7 +129,7 @@ This skill's `02-DOCS` record is the constitution at `02-DOCS/wiki/sdd/constitut
 | Project constitution (SDD non-negotiables) | `02-DOCS/wiki/sdd/constitution.md` |
 ```
 
-Every later rsc-sdd phase reads this file before it works. The harness maintains and improves the article over the life of the project; this skill is the place that ratifies and amends it.
+Every later ai-hub Spec-Kit phase reads this file before it works. The harness maintains and improves the article over the life of the project; this skill is the place that ratifies and amends it.
 
 ## Result envelope
 

@@ -3,7 +3,7 @@ name: tauri
 description: "Use when building a lightweight cross-platform desktop (or v2 mobile) app with Tauri — a Rust core plus the OS-native WebView: Rust commands and IPC, streaming to the frontend, the default-deny capabilities/permissions ACL, bundling and signed auto-updates. NOT a Chromium+Node shell needing Node APIs in a main process (that is electron)."
 tags: [tauri, desktop, rust, cross-platform, ipc, webview]
 recommends: [rust, electron, react, secure-coding, github-actions]
-origin: risco
+origin: ai-hub
 ---
 
 # Tauri — Rust core, OS WebView, locked-down IPC, tiny binaries

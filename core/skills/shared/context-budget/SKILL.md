@@ -3,7 +3,7 @@ name: context-budget
 description: "Use when a long-horizon task is filling the context window and you must decide what to keep, offload, drop, or hand off to a fresh window — when to compact, what the summary must preserve, and whether to isolate a read-heavy subtask in a subagent. NOT dollar spend or caps (that is cost-tracking), NOT finding context via embeddings (that is rag)."
 tags: ["context-window", "token-budget", "compaction", "context-rot", "long-running-agents", "handoff", "subagents"]
 recommends: ["cost-tracking", "rag", "parallel", "building-agents", "harness"]
-origin: risco
+origin: ai-hub
 ---
 
 # Context budget

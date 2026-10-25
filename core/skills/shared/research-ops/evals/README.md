@@ -1,6 +1,6 @@
 # Evals — research-ops
 
-These cases are run by the rsc eval harness. `should_trigger` and `should_not_trigger`
+These cases are run by the ai-hub eval harness. `should_trigger` and `should_not_trigger`
 check description routing — does the skill fire on real research asks (including the
 non-obvious "settle this argument" and the Spanish/Catalan phrasings) and stay quiet on
 market-sizing, standing-watch, scraping, and knowledge-filing asks that belong to siblings.

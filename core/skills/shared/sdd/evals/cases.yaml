@@ -1,8 +1,8 @@
 skill: sdd
 
-# Cases for the rsc-sdd "sdd" dispatcher / front door.
-# sdd states the SDD method, reads the user's register (technical_level) from
-# 02-DOCS/wiki/harness/user-profile.md, and ROUTES to the right phase skill in
+# Cases for the ai-hub Spec-Kit "sdd" dispatcher / front door.
+# sdd states the SDD method, reads the user's register (the register) from
+# AGENTS.md, and ROUTES to the right phase skill in
 # the chain constitution -> specify -> clarify -> plan -> tasks -> analyze ->
 # implement -> verify -> review -> ship (debug/worktrees/parallel on demand).
 # It does NOT perform a single phase itself and is NOT the workspace harness.
@@ -33,7 +33,7 @@ should_trigger:
     why: "The dispatcher should notice the missing runtime calibration and route to sdd-init before specify on non-trivial work."
 
   - prompt: "I want planning and review to run on the strongest model but implementation on a cheaper one. Set that up for our SDD flow."
-    why: "Per-phase model routing is an SDD concern the dispatcher owns: it should name the tier system (heavy/balanced/light), point at the models block in 02-DOCS/wiki/sdd/config.yaml written by sdd-init, and note it is opt-in — not start coding."
+    why: "Per-phase model routing is an SDD concern the dispatcher owns: it should name the tier system (heavy/balanced/light), point at the models block in .specify/config.yaml written by sdd-init, and note it is opt-in — not start coding."
 
 should_not_trigger:
   - prompt: "Write the spec for the new export-to-CSV feature."
@@ -46,11 +46,11 @@ should_not_trigger:
 
   - prompt: "All the code is written and tests pass — open the PR and merge it."
     route_to: "ship"
-    why: "Closing the branch (PR/merge/cleanup, Eric-only authorship) is the ship phase. No dispatching needed; this is squarely ship's job."
+    why: "Closing the branch (PR/merge/cleanup, human-only authorship) is the ship phase. No dispatching needed; this is squarely ship's job."
 
-  - prompt: "Audita mi proyecto y monta el 01-TOOLS y el 02-DOCS."
+  - prompt: "Audita mi proyecto y monta el docs/tools y el docs/."
     route_to: "harness"
-    why: "Workspace control plane (01-TOOLS/02-DOCS scaffolding/audit) is the harness, not the SDD engineering flow. sdd writes its artifacts INTO 02-DOCS but does not build the harness."
+    why: "Workspace control plane (docs/tools/docs/ scaffolding/audit) is the harness, not the SDD engineering flow. sdd writes its artifacts INTO docs/ but does not build the harness."
 
   - prompt: "There's a failing test and I don't know why — help me find the root cause before I change anything."
     route_to: "debug"
@@ -61,15 +61,15 @@ should_not_trigger:
     why: "A concrete stack build with a named framework is the nextjs stack skill. sdd is process, not stack; it would defer build specifics to nextjs rather than fire itself."
 
 capability:
-  - scenario: "A developer whose profile says technical_level: technical says: 'I've got a rough idea for a feature and I want to build it the spec-driven way, end to end. Where do I begin?' Show how the dispatcher opens the engagement."
+  - scenario: "A developer whose profile says the register: technical says: 'I've got a rough idea for a feature and I want to build it the spec-driven way, end to end. Where do I begin?' Show how the dispatcher opens the engagement."
     must_include:
       - "States the SDD method in brief: decide what & why before how, write it down, each artifact gates the next ('the artifact is the contract')"
-      - "Reads (or notes it should read) technical_level from 02-DOCS/wiki/harness/user-profile.md and, being technical, uses technical terms directly with a one-line why per step rather than long explanations or analogies"
+      - "Reads (or notes it should read) the register from AGENTS.md and, being technical, uses technical terms directly with a one-line why per step rather than long explanations or analogies"
       - "Presents the chained phase map: sdd-init -> constitution -> proposal? -> specify -> clarify -> plan -> tasks -> analyze -> implement -> verify -> review -> ship -> archive, with debug/worktrees/parallel on demand"
-      - "Includes sdd-init as step zero when 02-DOCS/wiki/sdd/config.yaml is missing, and explains that it detects test commands, strict TDD and .rsc/skill-registry.json"
+      - "Includes sdd-init as step zero when .specify/config.yaml is missing, and explains that it detects test commands, strict TDD and manifest.yaml"
       - "Applies the invoke rule: a fuzzy idea with no spec on disk routes to specify (and notes constitution runs once per project if not yet present)"
       - "Does NOT itself write the spec or start coding — it hands off to the specify phase skill (../specify/SKILL.md)"
-      - "Notes that artifacts will be written under 02-DOCS/wiki/sdd/ (specs/, plans/, decisions.md) and indexed in the root CLAUDE.md Knowledge map"
+      - "Notes that artifacts will be written under .specify/ (specs/, plans/, decisions.md) and indexed in the root AGENTS.md Knowledge map"
       - "Mentions standard result envelopes with status, artifact, next_recommended, risk, skill_resolution and evidence"
       - "Defers concrete stack tooling (test runner, build, framework idioms) to the relevant stack skill rather than prescribing it here"
 
@@ -78,13 +78,13 @@ capability:
       - "Applies the skip rule: a one-line, low-risk change does not need the full chain, and says so explicitly"
       - "Still requires a verification step after the change (the method serves shipping, not ceremony, but evidence before claiming done remains)"
       - "Does not abandon the method for genuinely risky work — distinguishes trivial from non-trivial and is honest about which this is"
-      - "If git authorship comes up, notes ship enforces Eric-only authorship (no Co-Authored-By Claude, no generated-with footer)"
+      - "If git authorship comes up, notes ship enforces human-only authorship (no Co-Authored-By Claude, no generated-with footer)"
 
   - scenario: "A user asks: 'Can SDD use a cheaper model for the boring phases and the strong one for the hard ones? How do I turn that on?' Show how the dispatcher explains per-phase model routing."
     must_include:
       - "Names the three tiers — heavy (deep reasoning), balanced (execution), light (mechanical) — and that each phase has a default tier"
       - "States the default quality-biased mapping: heavy on constitution/plan/analyze/review/debug, balanced on specify/clarify/tasks/implement/verify, light on ship/worktrees/sdd-init"
-      - "Says routing is OFF by default (models.enabled:false) and lives in the models block of 02-DOCS/wiki/sdd/config.yaml, written by sdd-init; turning it on is the user's choice"
+      - "Says routing is OFF by default (models.enabled:false) and lives in the models block of .specify/config.yaml, written by sdd-init; turning it on is the user's choice"
       - "Explains the two application layers: programmatic (dispatching Task/parallel subagents on the tier's model, e.g. Claude Code) and advisory (announcing the recommended switch at the phase boundary, in one line)"
       - "Is honest about limits: never switches unasked, never claims a model switch an assistant cannot make, and skips routing on trivial one-line changes"
       - "Points to references/model-routing.md for the full protocol, per-assistant mechanism, and provider→model table rather than inventing model names inline"

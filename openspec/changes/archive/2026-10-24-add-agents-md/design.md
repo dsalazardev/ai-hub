@@ -53,7 +53,7 @@ The document names the four sources by role and path:
 
 | Source | Use | If unavailable |
 |---|---|---|
-| `…\PROYECTOS_INTERESANTES\rsc-harness` | packaging, manifest hashing, CLI, worktrees, guards | Skip; do not invent patterns |
+| `…\PROYECTOS_INTERESANTES\ai-hub` | packaging, manifest hashing, CLI, worktrees, guards | Skip; do not invent patterns |
 | `…\ESCRITORIO\REPO-BETTATECH` | architecture and integration patterns | Skip; state the limitation |
 | Lucid master URL | visual target architecture | Use `architecture/master-agentic-architecture.mmd` |
 | `architecture/` (00–24) | component topology | Use the master file and README index |
@@ -102,7 +102,7 @@ Session state lives in `.planning/` (`findings.md`, `impl_<name>.md`, `review_ar
 | Section | Content |
 |---|---|
 | Preamble | Mandatory reading, precedence, conflict handling |
-| 1. Sources | rsc-harness, REPO-BETTATECH, Lucid, architecture/ with purpose and fallback |
+| 1. Sources | ai-hub, REPO-BETTATECH, Lucid, architecture/ with purpose and fallback |
 | 2. Target architecture | `hermes-control` (8 components), `hermes-agent` (channels, push, pull), 7 GitLab labels |
 | 3. Methodology | Spec Kit active; 17 commands in 3 tables; artifacts and verdicts |
 | 4. Agents | 8-role matrix, canonical mapping, write scopes, prohibitions |

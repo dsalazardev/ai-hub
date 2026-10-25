@@ -1,0 +1,481 @@
+core/skills/shared/ab-testing/SKILL.md:6:origin: risco
+core/skills/shared/accessibility/SKILL.md:6:origin: risco
+core/skills/shared/agent-eval/SKILL.md:6:origin: risco
+core/skills/shared/agent-safety/SKILL.md:6:origin: risco
+core/skills/shared/analyze/SKILL.md:3:description: "Use when constitution, spec, plan and tasks all exist and you want them cross-read against each other before any code is written — the rsc-sdd pre-implementation gate. Reports coverage gaps, contradictions, duplication, ambiguity and scope drift; edits nothing. NOT the task breakdown (that is `tasks`), NOT the coding (that is `implement`), NOT the post-code test gate (that is `verify`), NOT resolving ambiguity (that is `clarify`)."
+core/skills/shared/analyze/SKILL.md:7:origin: risco
+core/skills/shared/analyze/SKILL.md:14:Sixth phase of the rsc-sdd chain (`constitution → specify → clarify → plan → tasks → analyze → implement`); the method itself lives in `../sdd/SKILL.md`. It is a **gate, not a worker**: it produces a report and stops. The user reads the findings and decides what to fix, and which phase to send each fix back to.
+core/skills/shared/analyze/SKILL.md:26:Read all four before analyzing. The rsc-sdd artifacts live under `02-DOCS/wiki/sdd/`, indexed from `02-DOCS/wiki/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer to it):
+core/skills/shared/analyze/evals/README.md:3:`analyze` is the rsc-sdd **pre-implementation consistency gate**. These evals
+core/skills/shared/analyze/evals/README.md:31:   realistically. When the other rsc-sdd phase skills (clarify, plan, tasks,
+core/skills/shared/analyze/evals/cases.yaml:3:# Prompts that MUST load the `analyze` skill. `analyze` is the rsc-sdd
+core/skills/shared/angular/SKILL.md:6:origin: risco
+core/skills/shared/angular/evals/cases.yaml:21:    why: "Next.js App Router/RSC is a separate stack."
+core/skills/shared/api-connector-builder/SKILL.md:6:origin: risco
+core/skills/shared/api-design/SKILL.md:6:origin: risco
+core/skills/shared/astro/SKILL.md:6:origin: risco
+core/skills/shared/astro/evals/cases.yaml:18:    why: "Next.js RSC/App Router is not Astro."
+core/skills/shared/author-skill/SKILL.md:3:description: "Use when authoring a NEW rsc skill or editing an existing one — scoping it to one job, writing the description that decides whether it ever loads, splitting the body into references/, writing its evals, auditing it against the rubric. NOT building a product feature (that is `specify`) and NOT designing an agent loop (that is `building-agents`)."
+core/skills/shared/author-skill/SKILL.md:6:origin: risco
+core/skills/shared/author-skill/SKILL.md:11:This is the **meta skill**: it authors and edits the other skills in the rsc catalog. A skill is two things bolted together — a **description that fires at the right moment**, and a **body that makes the agent better once it fires**. Most skills fail on the first. Treat them as two separate engineering problems with two separate quality bars.
+core/skills/shared/author-skill/SKILL.md:45:5. **`origin: risco`** on its own line. This marks it as ours.
+core/skills/shared/author-skill/SKILL.md:99:4. **Write the body** in the rsc voice (see below). Tag every code/example fence with a language. Add a checklist or decision table *only where the flow actually branches* — not as decoration. Add a short anti-patterns table.
+core/skills/shared/author-skill/SKILL.md:102:7. **Wire it into the rsc plumbing** (`tags`, `recommends`, `npm run manifest`, and indexing any artifact in `02-DOCS/wiki/index.md` — the Knowledge map; root `CLAUDE.md` keeps only a short pointer). → `references/rsc-conventions.md`.
+core/skills/shared/author-skill/SKILL.md:105:## The rsc voice
+core/skills/shared/author-skill/SKILL.md:112:- Original prose. Mine ideas from anywhere; the words are Eric's. Do **not** reproduce another ecosystem's signature artifacts or phrasing — no borrowed "1% chance" urgency blocks, no copied rationalization wording, no `*-reviewer-prompt.md` files, no verbatim flowcharts. The rsc identity is its own.
+core/skills/shared/author-skill/SKILL.md:139:- [ ] **Frontmatter parses** as YAML; `name` matches the directory `<id>`; `origin: risco` present.
+core/skills/shared/author-skill/SKILL.md:155:Full rubric rationale and the rsc plumbing steps → `references/rsc-conventions.md`.
+core/skills/shared/author-skill/SKILL.md:190:| Another catalog mirrored wholesale ("it's basically superpowers' writing-skills") | Mine the idea, write it in the rsc voice. Copied artifacts or phrasing are a defect. |
+core/skills/shared/author-skill/evals/README.md:3:Evaluates the `author-skill` meta skill (the rsc-core tool that authors/edits other skills)
+core/skills/shared/author-skill/evals/README.md:20:1. Load **only** `author-skill` into the agent (no other rsc skills available, so routing is honest).
+core/skills/shared/author-skill/evals/README.md:49:  YAML aiming ≤ 350 chars (1024 hard limit), `origin: risco`.
+core/skills/shared/author-skill/evals/README.md:54:- **rsc wiring** named: `tags` + `recommends` frontmatter, `npm run manifest` regenerated,
+core/skills/shared/author-skill/evals/README.md:56:- **Original rsc voice** — no copied artifacts/phrasing from other skill ecosystems.
+core/skills/shared/author-skill/evals/cases.yaml:3:# Cases for the rsc-core "author-skill" meta skill.
+core/skills/shared/author-skill/evals/cases.yaml:4:# author-skill authors or edits a SKILL.md to the rsc catalog bar: a discriminating
+core/skills/shared/author-skill/evals/cases.yaml:5:# third-person description (~350 chars, valid YAML, origin: risco), a focused body with
+core/skills/shared/author-skill/evals/cases.yaml:7:# evals/cases.yaml + README for the NEW skill, plus the rsc plumbing (tags,
+core/skills/shared/author-skill/evals/cases.yaml:29:    why: "Combines the rubric audit and the rsc plumbing (tags, recommends, manifest) — both are author-skill responsibilities; this exercises the wiring + rubric surface."
+core/skills/shared/author-skill/evals/cases.yaml:43:  - prompt: "Bootstrap my workspace and figure out which rsc bundles I need."
+core/skills/shared/author-skill/evals/cases.yaml:56:  - scenario: "A user says: 'I keep telling the agent how to write our PR descriptions. Make that into a skill called pr-describe.' Show how author-skill produces it to the rsc bar."
+core/skills/shared/author-skill/evals/cases.yaml:60:      - "Drafts the description FIRST: third-person, 'Use when…' lead, only the capabilities that discriminate it from its nearest sibling, a 'NOT … (that is `sibling`)' boundary, valid single-line quoted YAML aiming <=350 chars (1024 hard limit), with origin: risco"
+core/skills/shared/author-skill/evals/cases.yaml:65:      - "States the rsc wiring: set tags + recommends in frontmatter, run npm run manifest to regenerate manifest.json, and confirm npm run validate / manifest:check / scripts/eval-lint.sh pass"
+core/skills/shared/author-skill/evals/cases.yaml:66:      - "Keeps the prose original in the rsc voice — does not reproduce another ecosystem's signature artifacts or phrasing"
+core/skills/shared/author-skill/evals/cases.yaml:74:      - "Verifies the result is valid single-line quoted YAML, aims <=350 chars against the 1024 hard limit, and keeps origin: risco"
+core/skills/shared/author-skill/references/description-recipe.md:79:assert meta.get("origin") == "risco", "missing origin: risco"
+core/skills/shared/author-skill/references/rsc-conventions.md:1:# rsc conventions — wiring a skill into the catalog
+core/skills/shared/author-skill/references/rsc-conventions.md:5:`npx @ericrisco/rsc` recommender, and reachable where the agent will find it. This reference
+core/skills/shared/author-skill/references/rsc-conventions.md:6:is the rsc plumbing.
+core/skills/shared/author-skill/references/rsc-conventions.md:25:copies in the repo any more — the `rsc-universal` CLI copies skills into the
+core/skills/shared/author-skill/references/rsc-conventions.md:53:skill under their own rsc folder (e.g. `.codex/rsc/<id>/`), reached from that
+core/skills/shared/author-skill/references/rsc-conventions.md:55:discovers project skills one level under `.claude/skills/`, so rsc skills install
+core/skills/shared/author-skill/references/rsc-conventions.md:56:**flat** at `.claude/skills/<id>/SKILL.md` (a nested `.claude/skills/rsc/<id>/`
+core/skills/shared/author-skill/references/rsc-conventions.md:59:`npx @ericrisco/rsc add <id>`.
+core/skills/shared/author-skill/references/rsc-conventions.md:95:The rsc catalog is its own ecosystem, not a re-skin. When mining ideas from other skill libraries, take the *idea* and re-express it in the rsc voice. Never reproduce another ecosystem's signature artifacts or phrasing: no borrowed urgency blocks ("1% chance…"), no copied rationalization-table wording, no `*-reviewer-prompt.md` file convention, no verbatim flowchart text. Git authorship on rsc commits is Eric, never the assistant. If a draft reads like it came from somewhere else, rewrite it.
+core/skills/shared/automation-flows/SKILL.md:7:origin: risco
+core/skills/shared/aws-essentials/SKILL.md:6:origin: risco
+core/skills/shared/backups/SKILL.md:6:origin: risco
+core/skills/shared/bash-scripting/SKILL.md:6:origin: risco
+core/skills/shared/building-agents/SKILL.md:6:origin: risco
+core/skills/shared/chatbot/SKILL.md:6:origin: risco
+core/skills/shared/chrome-extension/SKILL.md:6:origin: risco
+core/skills/shared/clarify/SKILL.md:3:description: "Use when a spec exists and must be de-risked before planning — hunt its ambiguities, unstated assumptions and edge cases, ask the few build-changing questions, bake the answers back into the spec. The rsc SDD gate between `specify` (writes the spec) and `plan` (designs the build). NOT the cross-artifact consistency check (that is `analyze`)."
+core/skills/shared/clarify/SKILL.md:7:origin: risco
+core/skills/shared/clarify/SKILL.md:14:This is the fourth phase of the rsc SDD chain (`constitution` → `specify` → **`clarify`** → `plan` → `tasks` → `analyze` → `implement` → `verify` → `review` → `ship`); the method itself lives in `../sdd/SKILL.md`. `specify` turned a fuzzy intent into a spec; clarify interrogates that spec, asks the user the questions that actually change the build, and writes the answers back so the spec becomes safe to plan from. It produces **no new artifact** — it sharpens the existing one in place. The line is **specify creates, clarify de-risks, plan designs**: if you find yourself proposing how to *build* it, you have left clarify.
+core/skills/shared/clarify/evals/cases.yaml:4:# rsc SDD chain: a spec already exists and needs DE-RISKING before planning —
+core/skills/shared/clickhouse-analytics/SKILL.md:6:origin: risco
+core/skills/shared/cloudflare/SKILL.md:6:origin: risco
+core/skills/shared/code-review/SKILL.md:3:description: "Use to judge a concrete diff, branch, or GitHub PR on its own merits with no rsc-SDD spec/plan chain to key off — the spec-less giving pass behind /code-review: only findings you can defend, one verdict, read-only unless --comment or --fix. NOT the SDD gate keyed to 02-DOCS/wiki/sdd/ that also processes incoming review comments (that is `review`)."
+core/skills/shared/code-review/SKILL.md:6:origin: risco
+core/skills/shared/code-review/SKILL.md:11:You are reviewing a concrete change — a `git diff`, a branch, a GitHub PR, a pasted patch — on its own merits. No rsc-SDD spec/plan/constitution chain is required and you should not pretend one exists. This is the doctrine behind the executable `/code-review` slash command: same evidence bar, written as a discipline you run by hand. If the user is mid-SDD and wants to process *incoming* comments against `02-DOCS/wiki/sdd/`, that is `../review/SKILL.md`; a naked diff or an inbound third-party PR is this skill.
+core/skills/shared/code-review/SKILL.md:96:When several reviewers looked at the same diff, merge before reporting. Have each one end with a ` ```json findings ` block, run `npx @ericrisco/rsc review consolidate <reports…>`, and send each blocker it marks `verify` to the `finding-verifier` agent. That is the `review` skill's step, and it applies here unchanged.
+core/skills/shared/code-review/evals/cases.yaml:13:    why: Inbound external change where you have only the diff + stated intent, no rsc-SDD artifacts to key off.
+core/skills/shared/codebase-onboarding/SKILL.md:6:origin: risco
+core/skills/shared/compose-multiplatform/SKILL.md:6:origin: risco
+core/skills/shared/connect-tool/SKILL.md:7:origin: risco
+core/skills/shared/connect-tool/SKILL.md:16:rsc ships no ready-made connections. Every project builds only the ones its user asks for, so the
+core/skills/shared/constitution/SKILL.md:3:description: "Use when setting or amending a project's non-negotiables — stack canon, quality bars, conventions, security/a11y floors — as numbered, testable rules later phases obey. First rsc-sdd phase; writes 02-DOCS/wiki/sdd/constitution.md. NOT a feature spec (that is `specify`), NOT the technical plan (that is `plan`), NOT the wiki itself (that is `harness`)."
+core/skills/shared/constitution/SKILL.md:7:origin: risco
+core/skills/shared/constitution/SKILL.md:12:*The first rsc-sdd phase. Run once per project, then amend. It writes down the rules every later phase obeys: stack canon, quality bars, conventions. Everything downstream — specify, plan, analyze, implement, verify, review — reads this file as guardrails.*
+core/skills/shared/constitution/SKILL.md:73:Two principles are inherited from the rsc ecosystem and appear in every constitution unless the user explicitly overrides them:
+core/skills/shared/constitution/SKILL.md:89:**A draft is "complete me", not "amend me".** `rsc onboard` writes a skeleton with `status: draft` in the frontmatter: the template's headings, the facts onboarding knew (goal, kind, scope, workflow, detected stack) and no principle. Keep those facts, run the interview, fill the sections, then on ratification drop `status: draft`, set `version: v1.0.0` and log v1.0.0 in the amendment log.
+core/skills/shared/constitution/SKILL.md:132:Every later rsc-sdd phase reads this file before it works. The harness maintains and improves the article over the life of the project; this skill is the place that ratifies and amends it.
+core/skills/shared/constitution/evals/README.md:23:   for routing (constitution + its rsc-sdd phase siblings once they exist, plus
+core/skills/shared/constitution/evals/README.md:66:- Several `route_to` targets are rsc-sdd phase siblings (`specify`, `plan`,
+core/skills/shared/constitution/evals/cases.yaml:3:# Prompts that MUST load the `constitution` skill. It is the FIRST rsc-sdd phase:
+core/skills/shared/constitution/references/constitution-template.md:11:description: The non-negotiable principles every rsc-sdd phase obeys.
+core/skills/shared/constitution/references/constitution-template.md:21:> The non-negotiable principles every rsc-sdd phase obeys. Stack mechanics live in
+core/skills/shared/context-budget/SKILL.md:6:origin: risco
+core/skills/shared/continuous-learning/SKILL.md:6:origin: risco
+core/skills/shared/continuous-learning/evals/cases.yaml:39:      - "Keeps prose original in rsc voice; no copied signature artifacts."
+core/skills/shared/coolify/SKILL.md:6:origin: risco
+core/skills/shared/cost-tracking/SKILL.md:6:origin: risco
+core/skills/shared/cpp/SKILL.md:6:origin: risco
+core/skills/shared/cpp/evals/README.md:3:These cases are run by the rsc skill-eval harness (a Claude agent with the full skill catalog
+core/skills/shared/csharp-dotnet/SKILL.md:6:origin: risco
+core/skills/shared/data-cleaning/SKILL.md:7:origin: risco
+core/skills/shared/data-scraper/SKILL.md:6:origin: risco
+core/skills/shared/db-migrations/SKILL.md:6:origin: risco
+core/skills/shared/debug/SKILL.md:7:origin: risco
+core/skills/shared/debug/SKILL.md:12:`debug` is the on-demand diagnosis discipline of the rsc-sdd chain. Something is broken — a test
+core/skills/shared/debug/SKILL.md:115:| Next.js / React | `../nextjs/references/testing.md` | Vitest `--no-isolate`/`.only`, Playwright trace viewer, RSC vs client boundary errors, hydration mismatches |
+core/skills/shared/debug/evals/README.md:3:`debug` is the on-demand rsc-sdd **diagnosis discipline**: reproduce → isolate →
+core/skills/shared/debug/evals/README.md:36:   for routing (debug + the rsc-sdd phases it chains with — implement, verify,
+core/skills/shared/debug/evals/cases.yaml:3:# Prompts that MUST load the `debug` skill. `debug` is the on-demand rsc-sdd
+core/skills/shared/decision-challenge/SKILL.md:7:origin: risco
+core/skills/shared/decision-records/SKILL.md:6:origin: risco
+core/skills/shared/deep-learning/SKILL.md:6:origin: risco
+core/skills/shared/deployment/SKILL.md:6:origin: risco
+core/skills/shared/deprecation/SKILL.md:7:origin: risco
+core/skills/shared/design/SKILL.md:7:origin: risco
+core/skills/shared/digitalocean/SKILL.md:6:origin: risco
+core/skills/shared/django/SKILL.md:6:origin: risco
+core/skills/shared/docker/SKILL.md:6:origin: risco
+core/skills/shared/domains-dns/SKILL.md:6:origin: risco
+core/skills/shared/drizzle-orm/SKILL.md:6:origin: risco
+core/skills/shared/duckdb/SKILL.md:6:origin: risco
+core/skills/shared/dynamodb/SKILL.md:6:origin: risco
+core/skills/shared/e2e-testing/SKILL.md:6:origin: risco
+core/skills/shared/electron/SKILL.md:6:origin: risco
+core/skills/shared/elixir/SKILL.md:6:origin: risco
+core/skills/shared/email-deliverability/SKILL.md:6:origin: risco
+core/skills/shared/embeddings-search/SKILL.md:6:origin: risco
+core/skills/shared/error-handling/SKILL.md:6:origin: risco
+core/skills/shared/expo/SKILL.md:6:origin: risco
+core/skills/shared/fal/SKILL.md:6:origin: risco
+core/skills/shared/fastapi/SKILL.md:6:origin: risco
+core/skills/shared/finetuning/SKILL.md:6:origin: risco
+core/skills/shared/firebase/SKILL.md:6:origin: risco
+core/skills/shared/flutter/SKILL.md:6:origin: risco
+core/skills/shared/fly-io/SKILL.md:6:origin: risco
+core/skills/shared/ftd/SKILL.md:7:origin: risco
+core/skills/shared/ftd/SKILL.md:52:it by hand: when the branch lands on the default branch, rsc's post-merge hook sets `status: done`
+core/skills/shared/ftd/SKILL.md:53:and replaces Next with where and when it merged (on a closed default branch, via `rsc/knowledge`).
+core/skills/shared/ftd/SKILL.md:65:Where the work runs follows the project's decision (asked at install: «main» or «ramas y PR»; rsc
+core/skills/shared/ftd/SKILL.md:74:  intent and closes with a pull request. Unlocking is `rsc main unlock`; never without that answer.
+core/skills/shared/ftd/SKILL.md:77:  branch switch under the other session. Not a question: rsc tells you when that is the case.
+core/skills/shared/game-design/SKILL.md:7:origin: risco
+core/skills/shared/game-storytelling/SKILL.md:7:origin: risco
+core/skills/shared/gamedev-multiplayer/SKILL.md:7:origin: risco
+core/skills/shared/gamedev-pathing/SKILL.md:7:origin: risco
+core/skills/shared/gamedev-physics/SKILL.md:7:origin: risco
+core/skills/shared/gamedev-physics/evals/README.md:3:These cases are read by the rsc skill-eval harness (a Claude agent with the full catalog loaded), or
+core/skills/shared/gamedev-shaders/SKILL.md:7:origin: risco
+core/skills/shared/gamedev-shaders/evals/README.md:3:These cases are run by the rsc skill-eval harness (a Claude agent with the full catalog loaded),
+core/skills/shared/gamedev-shipping/SKILL.md:7:origin: risco
+core/skills/shared/gcp-essentials/SKILL.md:6:origin: risco
+core/skills/shared/git-workflow/SKILL.md:6:origin: risco
+core/skills/shared/git-workflow/references/gitmoji.md:154:- On Claude Code, rsc wires a `gitmoji-guard` PreToolUse hook that denies a `git commit` whose
+core/skills/shared/git-workflow/references/gitmoji.md:157:  --no-edit`. Opt out per project with `.rsc/.no-gitmoji`.
+core/skills/shared/github-actions/SKILL.md:6:origin: risco
+core/skills/shared/go/SKILL.md:6:origin: risco
+core/skills/shared/godot/SKILL.md:7:origin: risco
+core/skills/shared/godot/evals/README.md:3:These cases are read by the rsc skill-eval harness (a Claude agent with the full skill catalog
+core/skills/shared/harness/SKILL.md:7:origin: risco
+core/skills/shared/harness/SKILL.md:31:  "ingest this"): run `npx @ericrisco/rsc ingest <file> --topic <topic>`. It moves the file into
+core/skills/shared/harness/SKILL.md:73:`.rsc/.no-harness` is the user's explicit "no harness in this repo". Treat it as canonical: never
+core/skills/shared/harness/SKILL.md:256:Once the structure stands, make sure the workspace has the rsc skills its stack and goals call for — detection here, not just at `init`:
+core/skills/shared/harness/SKILL.md:258:1. **Detect → propose.** From the detected stacks/providers and the user's goals in `02-DOCS/wiki/harness/`, build a shortlist. Ask the CLI if unsure: `npx @ericrisco/rsc consult "<stack + goal>"`. (Map e.g. detected Stripe→`stripe`, Postgres→`postgresdb`, Next→`nextjs`+`design`, a company/ops focus→`finance-ops`/`invoicing`/`gdpr-privacy`…)
+core/skills/shared/harness/SKILL.md:261:   npx @ericrisco/rsc add <skill> [<skill> ...]
+core/skills/shared/harness/SKILL.md:289:Opt out of the size nudge with `.rsc/.no-claudemd-check`.
+core/skills/shared/harness/examples/audit-example.md:11:/tmp/risco-harness-test/
+core/skills/shared/harness/examples/audit-example.md:34:Workspace: /tmp/risco-harness-test
+core/skills/shared/harness/references/providers.yaml:3443:          -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"rsc","version":"1"}}}')
+core/skills/shared/harness/references/wiki-article-template.md:9:# rsc custom fields (OKF allows any; conformant consumers preserve unknown keys)
+core/skills/shared/harness/references/wiki-article-template.md:50:rsc custom fields (allowed by OKF; never required for conformance):
+core/skills/shared/harness/references/wiki-protocol.md:403:  worklog (Karpathy: the LLM writes). Wired by `targets/` → `.rsc/worklog-checkpoint.mjs`
+core/skills/shared/harness/references/wiki-protocol.md:531:  `npx @ericrisco/rsc ingest <file>`, which verifies the copy by hash before removing the original.
+core/skills/shared/harness/references/wiki-protocol.md:842:     resource, tags, timestamp` (recommended, OKF-named). rsc adds custom fields
+core/skills/shared/harness/references/wiki-worklog-template.md:15:# (title/description/timestamp) plus rsc custom fields (topic/status/sources).
+core/skills/shared/hetzner/SKILL.md:6:origin: risco
+core/skills/shared/htmx/SKILL.md:6:origin: risco
+core/skills/shared/huggingface/SKILL.md:6:origin: risco
+core/skills/shared/idea-refinement/SKILL.md:7:origin: risco
+core/skills/shared/implement/SKILL.md:7:origin: risco
+core/skills/shared/implement/SKILL.md:42:3. **Read the skill registry.** Open `.rsc/skill-registry.json` if present. Select only the
+core/skills/shared/implement/SKILL.md:44:   registry is missing, run or recommend `npx @ericrisco/rsc registry refresh` and record the fallback.
+core/skills/shared/implement/SKILL.md:113:| Next.js / React | `../nextjs/references/testing.md` | Vitest + Testing Library for units, Playwright for flows, server-action / RSC testing |
+core/skills/shared/implement/SKILL.md:124:.rsc/skill-registry.json
+core/skills/shared/implement/SKILL.md:193:**Dispatch implementation work to the `developer` subagent.** rsc installs a `developer` agent
+core/skills/shared/implement/scripts/sdd-workspace:9:# Otherwise fall back to ${TMPDIR:-/tmp}/rsc-sdd-<pid>.
+core/skills/shared/implement/scripts/sdd-workspace:36:    SCRATCH="${TMPDIR:-/tmp}/rsc-sdd-scratch"
+core/skills/shared/init/SKILL.md:3:description: "Use when starting from nothing or pointing rsc at an existing project — the front door. First asks one question — technical terms or analogies (analogies by default) — then discovers what the user wants to build or govern (any stack, or a non-code harness: company/ops, research, knowledge, content), writes the profile to 02-DOCS, and installs the skills discovery justified. NOT the scaffolder (that is `harness`), NOT a stack skill."
+core/skills/shared/init/SKILL.md:7:origin: risco
+core/skills/shared/init/SKILL.md:10:# init — the rsc-skills Front Door
+core/skills/shared/init/SKILL.md:55:**Step 3 — Propose the developer model.** rsc installs a `developer` subagent (the implementation
+core/skills/shared/init/SKILL.md:63:Record to `.rsc/developer.json` and re-run install/sync so the agent files adopt it. Skipped →
+core/skills/shared/init/SKILL.md:67:not want a harness in this repo, write an empty `.rsc/.no-harness` — that silences the auto-start
+core/skills/shared/init/SKILL.md:119:confirm: `npx @ericrisco/rsc add <ids>`. Only if you genuinely cannot run a shell, hand the exact
+core/skills/shared/init/SKILL.md:144:   Declined → write `.rsc/.no-git` so neither you nor the hook asks again, and log the decision.
+core/skills/shared/init/SKILL.md:147:   docs instead of guessing from memory. Declined → `.rsc/.no-context7`.
+core/skills/shared/init/SKILL.md:148:3. **Skill audit.** Run `npx @ericrisco/rsc audit`. It inventories what is installed here and on the
+core/skills/shared/init/SKILL.md:155:   user is never guarded. It turns off only if the user explicitly asks: `.rsc/.no-danger-guard`.
+core/skills/shared/init/SKILL.md:158:   > *"Cuando salga una versión nueva de rsc, ¿la instalo sola? Las que cambian mucho (major) te las
+core/skills/shared/init/SKILL.md:161:   > *"When a new rsc version comes out, should I install it on my own? Big ones (major) I will
+core/skills/shared/init/SKILL.md:164:   Yes, or no clear answer → do nothing; it is on. No → create `.rsc/.no-auto-update`: every
+core/skills/shared/init/SKILL.md:165:   release then asks. It is a project switch, recorded in `.rsc.json` on the next sync.
+core/skills/shared/init/SKILL.md:184:user rsc is ready**: name what is missing and what will create it. The installer holds the same rule
+core/skills/shared/init/evals/README.md:3:Evaluates the `init` skill (the rsc-skills front door / bootstrapper) on two axes:
+core/skills/shared/init/evals/README.md:18:1. Load **only** `init` into the agent (no other rsc skills available, so routing is honest).
+core/skills/shared/init/evals/README.md:48:  different thing — the rsc `init` does discovery/profiling/recommendation, not codebase docs.
+core/skills/shared/init/evals/cases.yaml:3:# Cases for the rsc-skills "init" front door / bootstrapper.
+core/skills/shared/init/evals/cases.yaml:5:# they want to BUILD or GOVERN (code OR a non-code harness), recommends rsc
+core/skills/shared/init/evals/cases.yaml:14:    why: "Brownfield bootstrapping: pointing the rsc harness at an existing project is exactly init's front-door role (detect greenfield vs brownfield, profile, recommend skills)."
+core/skills/shared/init/evals/cases.yaml:34:    why: "This is the built-in /init (CLAUDE.md generator), not the rsc-skills front door. init only writes the user-profile + a Knowledge-map link, and it does NOT scaffold or document the codebase — that is harness/other tooling. No rsc sibling owns generic architecture docs, so route to none."
+core/skills/shared/init/evals/cases.yaml:63:      - "Recommends specific rsc skills matched to discovery (at minimum harness; nextjs/flutter + design if app surfaces justify it) and PRINTS the exact install commands (npx @ericrisco/rsc add <skill> ...)"
+core/skills/shared/init/references/accompaniment-and-profile.md:55:> Source of truth for how every rsc skill talks to this user. Updated continuously.
+core/skills/shared/init/references/recommend-skills.md:3:Phase 3 detail. Map discovery to individual rsc skills, print the exact
+core/skills/shared/init/references/recommend-skills.md:4:`npx @ericrisco/rsc add` commands, and run the requirements-first 3-option decision pattern
+core/skills/shared/init/references/recommend-skills.md:30:One `npx @ericrisco/rsc add` line per recommendation (or batch them on one line), each with
+core/skills/shared/init/references/recommend-skills.md:34:npx @ericrisco/rsc add <skill> [<skill> ...]
+core/skills/shared/init/references/recommend-skills.md:43:npx @ericrisco/rsc add harness        # the control plane — scaffolds and governs the workspace
+core/skills/shared/init/references/recommend-skills.md:44:npx @ericrisco/rsc add fastapi postgresdb   # the API and the database
+core/skills/shared/init/references/recommend-skills.md:45:npx @ericrisco/rsc add nextjs design  # the web UI people see
+core/skills/shared/init/references/recommend-skills.md:46:npx @ericrisco/rsc add marketing      # the words for your landing page
+core/skills/shared/init/references/recommend-skills.md:47:npx @ericrisco/rsc add secure-coding deployment   # ship it safely
+core/skills/shared/init/references/recommend-skills.md:58:npx @ericrisco/rsc add harness        # your 01-TOOLS (connections) + 02-DOCS (your second brain)
+core/skills/shared/init/references/recommend-skills.md:59:npx @ericrisco/rsc add secure-coding deployment   # connect email, payments, drive — and keep credentials safe
+core/skills/shared/init/references/recommend-skills.md:60:npx @ericrisco/rsc add marketing      # for the proposals, decks and copy you send clients
+core/skills/shared/init/references/recommend-skills.md:70:npx @ericrisco/rsc add harness            # the control plane
+core/skills/shared/init/references/recommend-skills.md:71:npx @ericrisco/rsc add building-agents    # agent loops, tools, RAG
+core/skills/shared/init/references/recommend-skills.md:72:npx @ericrisco/rsc add fastapi postgresdb # an API + database to serve it
+core/skills/shared/init/references/recommend-skills.md:73:npx @ericrisco/rsc add secure-coding deployment   # ship it safely
+core/skills/shared/java/SKILL.md:6:origin: risco
+core/skills/shared/knowledge-ops/SKILL.md:6:origin: risco
+core/skills/shared/kotlin-android/SKILL.md:6:origin: risco
+core/skills/shared/laravel/SKILL.md:6:origin: risco
+core/skills/shared/level-design/SKILL.md:7:origin: risco
+core/skills/shared/llm-pipeline/SKILL.md:6:origin: risco
+core/skills/shared/machine-learning/SKILL.md:6:origin: risco
+core/skills/shared/modal/SKILL.md:6:origin: risco
+core/skills/shared/mongodb/SKILL.md:7:origin: risco
+core/skills/shared/monitoring/SKILL.md:6:origin: risco
+core/skills/shared/mysql/SKILL.md:6:origin: risco
+core/skills/shared/neon/SKILL.md:6:origin: risco
+core/skills/shared/neon/SKILL.md:51:| One independent read/write per request (edge, Lambda, RSC) | HTTP `neon()` | Single fetch round-trip (~3 round trips vs ~8 for TCP setup); no connection to manage or leak. |
+core/skills/shared/nestjs/SKILL.md:6:origin: risco
+core/skills/shared/netlify/SKILL.md:6:origin: risco
+core/skills/shared/nextjs/SKILL.md:6:origin: risco
+core/skills/shared/nextjs/SKILL.md:9:# Next.js App Router — RSC, Server Actions, React 19, TypeScript
+core/skills/shared/nextjs/SKILL.md:21:a generic React question with no Next/RSC dimension → keep it brief, from `references/react.md`.
+core/skills/shared/nextjs/SKILL.md:297:action error; `use(promise)` unwraps an RSC-passed Promise under `<Suspense>`; `ref` is a normal
+core/skills/shared/nextjs/SKILL.md:377:| "Snapshot-test the RSC page"                               | Async Server Components aren't jsdom-renderable; test data fns + Playwright |
+core/skills/shared/nextjs/SKILL.md:388:Test strategy — Vitest 3 + RTL + MSW 2 for units, Playwright for pages, and the RSC testing reality
+core/skills/shared/nextjs/evals/cases.yaml:7:    why: "RSC server/client boundary error from the App Router; the skill owns the 'use client' boundary laws and composition-via-children fix."
+core/skills/shared/nextjs/evals/cases.yaml:22:    why: "Pure client-side React SPA (Vite/react-router), no Next.js App Router or RSC dimension — the skill explicitly excludes Vite/CRA SPAs and defers to a generic React skill."
+core/skills/shared/nextjs/references/data-and-caching.md:13:- **Full-route cache** — caches the rendered HTML + RSC payload of a static route at build/revalidate.
+core/skills/shared/nextjs/references/data-and-caching.md:14:- **Client router cache** — caches RSC payloads in the browser for back/forward navigation.
+core/skills/shared/nextjs/references/data-and-caching.md:287:Rely on RSC by default. Add TanStack Query when data lives client-side: client-initiated mutations
+core/skills/shared/nextjs/references/react.md:3:React 19 (App Router on Next.js 15; React 19.2 on Next.js 16) inside RSC. This file is the deep
+core/skills/shared/nextjs/references/react.md:99:Most pages need neither Context nor a global store — server-derived data belongs in an RSC.
+core/skills/shared/nextjs/references/react.md:108:└── Derived from the server / persisted   → RSC fetch (server) or TanStack Query (client)
+core/skills/shared/nextjs/references/react.md:361:- **`useEffect` + `fetch` for app data** → fetch in a Server Component (RSC) or use TanStack Query.
+core/skills/shared/nextjs/references/testing.md:203:## RSC caveat
+core/skills/shared/nextjs/references/testing.md:271:| Pages (RSC) & full flows    | e2e    | Playwright       |
+core/skills/shared/nextjs/references/testing.md:285:- Snapshotting an RSC page — async Server Components are not jsdom-renderable; use Playwright.
+core/skills/shared/nlp/SKILL.md:6:origin: risco
+core/skills/shared/no-code-app/SKILL.md:6:origin: risco
+core/skills/shared/nodejs/SKILL.md:6:origin: risco
+core/skills/shared/observability/SKILL.md:6:origin: risco
+core/skills/shared/ollama/SKILL.md:6:origin: risco
+core/skills/shared/open-weights/SKILL.md:6:origin: risco
+core/skills/shared/orient/SKILL.md:7:origin: risco
+core/skills/shared/orient/evals/cases.yaml:48:  - scenario: "The user just ran `npx @ericrisco/rsc add postgresdb` and says 'ya está, ¿y ahora qué?'. The profile shows technical_level non-technical. Show how orient closes the turn."
+core/skills/shared/orient/references/orientation-contract.md:21:| Warnings | the order first, the risk next | "No borres `.rsc/`. Los hooks dejan de funcionar." |
+core/skills/shared/parallel/SKILL.md:7:origin: risco
+core/skills/shared/parallel/SKILL.md:64:- Selected skills — ids + paths resolved from .rsc/skill-registry.json
+core/skills/shared/parallel/SKILL.md:78:**Set the model on every dispatch — an omitted model silently inherits the session's, usually the most expensive one, and that is how a fan-out's cost quietly explodes.** rsc installs a `developer` subagent pinned to the **balanced** tier (Sonnet by default; the user's onboarding choice in `.rsc/developer.json`, never `light`). For implement-type units, **dispatch to the `developer` agent** (e.g. Claude Code `subagent_type: developer`) — that's the deliberate cost cap the user asked for. Only escalate a genuinely heavy unit (real design / root-cause) to a heavy model, and only when routing is enabled; otherwise balanced is the floor and the ceiling. If you dispatch a raw subagent instead, name its tier explicitly.
+core/skills/shared/performance/SKILL.md:7:origin: risco
+core/skills/shared/performance/SKILL.md:187:**RSC boundary discipline.** React Server Components ship zero JS for non-interactive trees; teams report 50–70% First-Load-JS cuts from full RSC adoption. The `'use client'` directive is a *boundary*: everything imported below it becomes client code. So push interactivity into the smallest leaf component and keep data fetching and layout on the server.
+core/skills/shared/performance/evals/cases.yaml:15:    why: "Non-obvious RSC boundary discipline; performance owns the measure-cut loop, framework idioms defer to nextjs."
+core/skills/shared/phoenix/SKILL.md:6:origin: risco
+core/skills/shared/php/SKILL.md:6:origin: risco
+core/skills/shared/plan/SKILL.md:7:origin: risco
+core/skills/shared/plan/evals/README.md:3:These evals are run by an **agent harness** (an LLM agent with the rsc-sdd + stack skill catalog
+core/skills/shared/plan/evals/README.md:17:   skills for routing: the rsc-sdd phases (constitution, specify, clarify, tasks, analyze,
+core/skills/shared/planetscale/SKILL.md:6:origin: risco
+core/skills/shared/postgresdb/SKILL.md:6:origin: risco
+core/skills/shared/prisma-orm/SKILL.md:22:origin: risco
+core/skills/shared/prompt-engineering/SKILL.md:6:origin: risco
+core/skills/shared/python/SKILL.md:6:origin: risco
+core/skills/shared/rag/SKILL.md:6:origin: risco
+core/skills/shared/rails/SKILL.md:7:origin: risco
+core/skills/shared/railway/SKILL.md:6:origin: risco
+core/skills/shared/react-native/SKILL.md:6:origin: risco
+core/skills/shared/react-native/scripts/verify.sh:8:# Greps SKILL.md + references/ for currency and rsc-hygiene violations and prints each hit
+core/skills/shared/react-native/scripts/verify.sh:71:  # sh; simplest correct rule for rsc skills: openers must be tagged, closers are bare. So a
+core/skills/shared/react/SKILL.md:6:origin: risco
+core/skills/shared/react/SKILL.md:17:> Build or review a fast, typed, correctly-architected **client-side** React single-page app bundled by Vite. No server runtime, no RSC tree, no framework router. Server-rendered React (App Router, server actions, SSR/SSG) is not this skill — that is `../nextjs/SKILL.md`.
+core/skills/shared/react/SKILL.md:23:Read `package.json` before giving any advice — it stops you applying SSR/RSC patterns to a client SPA.
+core/skills/shared/react/SKILL.md:28:| `next`                                | metaframework / RSC   | `../nextjs/SKILL.md`   |
+core/skills/shared/react/evals/cases.yaml:22:    why: "Server actions / App Router / RSC — server-rendered React, not a Vite SPA."
+core/skills/shared/redis/SKILL.md:7:origin: risco
+core/skills/shared/render/SKILL.md:6:origin: risco
+core/skills/shared/replicate/SKILL.md:6:origin: risco
+core/skills/shared/research-ops/SKILL.md:6:origin: risco
+core/skills/shared/research-ops/evals/README.md:3:These cases are run by the rsc eval harness. `should_trigger` and `should_not_trigger`
+core/skills/shared/review/SKILL.md:3:description: "Use when a green diff needs adversarial judgment in the rsc SDD chain, between verify and ship — give a review keyed to the spec/plan/constitution in 02-DOCS/wiki/sdd/, or receive one and verify each comment before agreeing. NOT running lint/type/tests (that is `verify`), NOT the spec-less standalone pass (that is `code-review`), NOT merging (that is `ship`)."
+core/skills/shared/review/SKILL.md:7:origin: risco
+core/skills/shared/review/SKILL.md:12:Review is the **penultimate gate** of the rsc SDD chain: `constitution → specify → clarify → plan → tasks → analyze → implement → verify → **review** → ship`. By the time a diff reaches review, the `verify` phase has already proven that lint, types, tests and the stack `verify.sh` are green. Review answers a different question: **is the green diff actually correct, well-scoped, and faithful to the spec — or did it pass for the wrong reasons?**
+core/skills/shared/review/SKILL.md:40:This skill is the discipline; the **`rsc-review` bundle is it executed** — `/code-review [pr]` fans a diff out to the per-language reviewer fleet and aggregates one ranked verdict, `/security-scan` merges automated scanners with the `security-reviewer` agent into an exploitability-ranked report. Both enforce the same evidence bar and confidence filtering described here.
+core/skills/shared/review/SKILL.md:107:If the sello is on — `.rsc/sello-config.json` in the project, or `~/.rsc/sello-config.json` for
+core/skills/shared/review/SKILL.md:119:1. npx @ericrisco/rsc sello freeze      → hashes the candidate, prints risk tier + lens count
+core/skills/shared/review/SKILL.md:121:3a. approved → npx @ericrisco/rsc sello approve --lenses correctness,security,tests
+core/skills/shared/review/SKILL.md:122:3b. blocked  → npx @ericrisco/rsc sello block --reason "<the blocking finding>"
+core/skills/shared/review/SKILL.md:127:`.rsc/sello-log.jsonl`, so what shipped under which verdict survives the next freeze.
+core/skills/shared/review/SKILL.md:173:   three reports and run `npx @ericrisco/rsc review consolidate <reports…>`. It merges findings on
+core/skills/shared/review/SKILL.md:192:   `--note "<finding>"` (they land in `.rsc/sello-findings.md`, surfaced by `doctor`) and
+core/skills/shared/review/SKILL.md:199:declare it — `npx @ericrisco/rsc sello budget --lines <N>`. After the fix:
+core/skills/shared/ruby/SKILL.md:7:origin: risco
+core/skills/shared/runpod/SKILL.md:6:origin: risco
+core/skills/shared/rust/SKILL.md:6:origin: risco
+core/skills/shared/scaling/SKILL.md:7:origin: risco
+core/skills/shared/sdd-init/SKILL.md:3:description: "Use when calibrating an existing repo for the rsc SDD chain: detect stack, package manager, test runners and apply/verify commands, refresh the skill registry, and write the runtime config at 02-DOCS/wiki/sdd/config.yaml. NOT the dispatcher that routes SDD phases (that is `sdd`), NOT first-contact user/workspace bootstrap (that is `init`)."
+core/skills/shared/sdd-init/SKILL.md:7:origin: risco
+core/skills/shared/sdd-init/SKILL.md:27:- `.rsc/skill-registry.json`, if present, to decide whether it is stale or missing.
+core/skills/shared/sdd-init/SKILL.md:38:| `artifact_store` | `02-DOCS/wiki/sdd` | Keep RSC artifacts in `02-DOCS`; do not create an `openspec/` parallel tree. |
+core/skills/shared/sdd-init/SKILL.md:63:npx @ericrisco/rsc registry refresh
+core/skills/shared/sdd-init/SKILL.md:69:.rsc/skill-registry.json
+core/skills/shared/sdd-init/SKILL.md:70:.rsc/skill-registry.md
+core/skills/shared/sdd-init/SKILL.md:79:1. **Detect what this repo needs.** Use the stack you just detected, or ask the CLI: `npx @ericrisco/rsc consult "<one line: stack + what we're building>"`. Map signals to skills — e.g. `next`→`nextjs`+`design`, `go.mod`→`go`, FastAPI→`fastapi`, `*.sql`/Prisma→`postgresdb`/`prisma-orm`, Stripe→`stripe`, Dockerfile/CI→`docker`/`github-actions`, tests→`testing-*`/`e2e-testing`. The SDD phase skills (`specify`…`ship`) should already be present from `--profile core`; install any that are missing.
+core/skills/shared/sdd-init/SKILL.md:83:   npx @ericrisco/rsc add <skill> [<skill> ...]
+core/skills/shared/sdd-init/SKILL.md:103:  registry_path: .rsc/skill-registry.json
+core/skills/shared/sdd-init/SKILL.md:169:      "Use .rsc/skill-registry.json as the cheap skill index.",
+core/skills/shared/sdd-init/SKILL.md:173:  "evidence": ["npx @ericrisco/rsc registry refresh", "detected test commands recorded"]
+core/skills/shared/sdd-init/SKILL.md:185:| "Create openspec/ because Gentle does." | RSC uses `02-DOCS/wiki/sdd/` as source of truth. |
+core/skills/shared/sdd-init/evals/cases.yaml:41:      - "Runs or instructs npx @ericrisco/rsc registry refresh and records .rsc/skill-registry.json as registry_path."
+core/skills/shared/sdd/SKILL.md:7:origin: risco
+core/skills/shared/sdd/SKILL.md:10:# sdd — the rsc Spec-Driven Development dispatcher
+core/skills/shared/sdd/SKILL.md:12:*The front door for building software the rsc way: intent in, shipped-and-verified software out, with the spec, plan and decisions recorded into the project's living knowledge model as you go.*
+core/skills/shared/sdd/SKILL.md:26:Before the first non-trivial feature in a repo, run `../sdd-init/SKILL.md`. It detects the stack, package manager, test runners, scripts, monorepo signals and review budget, refreshes `.rsc/skill-registry.json`, and writes:
+core/skills/shared/sdd/SKILL.md:51:| **sdd-init** | Technical runtime calibration: stack, tests, commands, registry, budgets | `02-DOCS/wiki/sdd/config.yaml`, `.rsc/skill-registry.*` | light | `../sdd-init/SKILL.md` |
+core/skills/shared/sdd/SKILL.md:80:2. **No constitution yet AND this project will grow — or its frontmatter says `status: draft` (the one `rsc onboard` writes)?** → `constitution` once, then come back to the chain.
+core/skills/shared/sdd/SKILL.md:124:Before dispatching, read `technical_level` in `02-DOCS/wiki/harness/user-profile.md` — exactly as every rsc skill does. It picks the register (technical terms, or plain words with analogies); it never changes whether the gates exist. Speak in the `orient` voice:
+core/skills/shared/sdd/SKILL.md:186:.rsc/skill-registry.json
+core/skills/shared/sdd/SKILL.md:187:.rsc/skill-registry.md
+core/skills/shared/sdd/evals/README.md:3:Evaluates the `sdd` dispatcher (the rsc-sdd front door) on two axes: **triggering**
+core/skills/shared/sdd/evals/README.md:22:1. Load **only** `sdd` into the agent (no other rsc skills available, so routing is honest).
+core/skills/shared/sdd/evals/cases.yaml:3:# Cases for the rsc-sdd "sdd" dispatcher / front door.
+core/skills/shared/sdd/evals/cases.yaml:69:      - "Includes sdd-init as step zero when 02-DOCS/wiki/sdd/config.yaml is missing, and explains that it detects test commands, strict TDD and .rsc/skill-registry.json"
+core/skills/shared/sdd/references/model-routing.md:153:rsc installs a **`developer`** subagent into every assistant that supports file-based agents
+core/skills/shared/sdd/references/model-routing.md:161:  in `.rsc/developer.json` and the installer writes the per-target agent file with the resolved
+core/skills/shared/secure-coding/SKILL.md:6:origin: risco
+core/skills/shared/security-scan/SKILL.md:6:origin: risco
+core/skills/shared/ship/SKILL.md:3:description: "Use when a verified, review-approved branch has to land — the close of the rsc SDD chain: safety checks, then three landing options (merge, PR, park/discard), authorship always Eric and never an AI trailer. NOT running the gates (that is `verify`), NOT reading the diff for defects (that is `review`), NOT shipping to a server (that is `deployment`)."
+core/skills/shared/ship/SKILL.md:7:origin: risco
+core/skills/shared/ship/SKILL.md:12:Ship is the **last gate** of the rsc SDD chain: `constitution → specify → clarify → plan → tasks → analyze → implement → verify → review → **ship**`. Everything upstream proved the work is *correct* and *green*; ship is the act of **landing it** — turning an approved branch into merged history, a pull request, or a clean parked branch — without breaking the trunk and without ever forging the author.
+core/skills/shared/ship/SKILL.md:66:When rsc is installed for Claude Code, a `PreToolUse` hook (`.rsc/ship-guard.mjs`) enforces this
+core/skills/shared/ship/SKILL.md:71:the command), and can be disabled per project with `.rsc/.no-ship-guard`. It guarantees the
+core/skills/shared/ship/SKILL.md:76:(`.rsc/sello-config.json`) or for all of them (`~/.rsc/sello-config.json` via
+core/skills/shared/ship/SKILL.md:77:`sello on --global`, with the project switch always winning; `rsc sello status` prints which
+core/skills/shared/ship/SKILL.md:80:all block, and every denial names its way out (re-run `review`, or `npx @ericrisco/rsc sello off`).
+core/skills/shared/ship/SKILL.md:82:skill. Note `.rsc/.no-ship-guard` opts out of the branch-hygiene rules above but **not** of the
+core/skills/shared/ship/SKILL.md:97:production — `npx @ericrisco/rsc main status` says `closed: true`), **option 1 is not offered**: a
+core/skills/shared/ship/SKILL.md:99:and say in one line why option 1 is absent and that «desbloquea main» (`npx @ericrisco/rsc main
+core/skills/shared/ship/SKILL.md:136:If something did survive, it survived *for a reason* — read it rather than forcing it: `npx @ericrisco/rsc worktrees` lists what is left and why. `worktrees reap <path>` still exists for the backlog and for anything the hook deliberately refused; name the path, because bare `reap` retires every worktree that qualifies and with `parallel` running two streams that is how shipping A deletes B. Naming a path selects it, it does not accept the risk: add `--confirm` only after the user has seen the reason and said yes.
+core/skills/shared/shopify/SKILL.md:6:origin: risco
+core/skills/shared/shopify/evals/cases.yaml:24:  - prompt: "Build the React/RSC frontend and routing for our headless storefront."
+core/skills/shared/simplify-code/SKILL.md:7:origin: risco
+core/skills/shared/skill-scout/SKILL.md:6:origin: risco
+core/skills/shared/skill-scout/SKILL.md:29:| An installed **agent** already does this work | AGENT-COVERS | Name it, use it (delegate), propose nothing. Agents are listed by `npx @ericrisco/rsc capabilities`; they are invisible to the catalog, so a scan that skips them proposes duplicates. |
+core/skills/shared/skill-scout/SKILL.md:44:2. **Enumerate what exists** — `npx @ericrisco/rsc capabilities` lists installed skills (with their scope), **agent files** and the catalog ids in one pass. Read it; do not recall it. Add `--full` for catalog descriptions, or use `catalog --available` when you need to match by meaning — the default stays cheap on purpose. If the command cannot run, **propose nothing** and say the check did not happen: never propose building on a check that did not occur.
+core/skills/shared/skill-scout/SKILL.md:47:5. **Record it either way** — `npx @ericrisco/rsc capabilities gap-log --procedure "<what YOU observed doing>" --verdict <covered-installed|covered-catalog|covered-agent|proposed-accepted|proposed-declined>`.
+core/skills/shared/skill-scout/SKILL.md:53:**Which log:** this one (`.rsc/automation-gaps.md`, verdicts `covered-*`/`proposed-*`) is for the after-the-work automation gap. The coverage-audit log below (`skill-gaps.jsonl`, verdicts `MISSING`/`NONEXISTENT`) is for a deliberate catalog audit. One event, one log — never both.
+core/skills/shared/solid-js/SKILL.md:6:origin: risco
+core/skills/shared/solid-js/SKILL.md:21:| Next.js routing, server actions, RSC | `nextjs` |
+core/skills/shared/solid-js/evals/cases.yaml:21:    why: "Next.js App Router/RSC belongs to nextjs."
+core/skills/shared/source-grounded-development/SKILL.md:7:origin: risco
+core/skills/shared/specify/SKILL.md:7:origin: risco
+core/skills/shared/specify/SKILL.md:12:This is the **specify** phase of the rsc-sdd chain: `constitution` → **`specify`** → `clarify` → `plan` → `tasks` → `analyze` → `implement` → `verify` → `review` → `ship`. Its single job is to turn a fuzzy intent into a written specification that states **WHAT** the change is and **WHY** it matters — and nothing about **HOW** it gets built.
+core/skills/shared/specify/SKILL.md:344:- Read `02-DOCS/wiki/sdd/constitution.md` first — its principles are inherited constraints, not things to re-decide. If it's missing, note that the project has no constitution yet and suggest the `constitution` phase before continuing (you can still draft a spec, but flag the absence). If its frontmatter says `status: draft` (written by `rsc onboard`, unratified), route to `constitution` first and come back: a draft has no principles to inherit.
+core/skills/shared/specify/evals/README.md:11:with the rsc skill catalog loaded) plus a human spot-check.
+core/skills/shared/specify/evals/README.md:26:1. Configure an agent with the **full rsc skill catalog** available for routing
+core/skills/shared/specify/evals/cases.yaml:16:    why: "Spanish 'especifica … antes de construir' is the exact specify trigger — capture the spec before implementation, in the rsc bilingual register."
+core/skills/shared/spreadsheet-ops/SKILL.md:6:origin: risco
+core/skills/shared/spring-boot/SKILL.md:6:origin: risco
+core/skills/shared/sql/SKILL.md:6:origin: risco
+core/skills/shared/sqlite-turso/SKILL.md:6:origin: risco
+core/skills/shared/structured-extraction/SKILL.md:7:origin: risco
+core/skills/shared/suggest/SKILL.md:3:description: "Always-on. Use whenever the current user turn would clearly benefit from an rsc skill that is not yet installed — detect the gap during normal agent use, name the skill, and (with a one-word confirm) install it via `npx @ericrisco/rsc add <id>`. Triggers on capability intent in any language: building technology, creating content/assets, automating workflows, analyzing data, connecting tools, shipping/deploying, security, business ops, marketing, education, research, or company/documentation harness work."
+core/skills/shared/suggest/SKILL.md:7:origin: risco
+core/skills/shared/suggest/SKILL.md:10:# rsc-suggest — the always-on layer
+core/skills/shared/suggest/SKILL.md:38:`rsc main unlock`? Never branch alone. Another session here → `.worktrees/<branch>`.
+core/skills/shared/suggest/SKILL.md:43:Lane's skill missing? Offer it (§2) first. SDD recorded as deferred in `.rsc.json`? Run
+core/skills/shared/suggest/SKILL.md:44:`npx @ericrisco/rsc@latest reassess`; silent on `RSC_REASSESSMENT_NO_CHANGE`, and on new evidence
+core/skills/shared/suggest/SKILL.md:55:1. `npx @ericrisco/rsc catalog --available` lists every not-installed skill as
+core/skills/shared/suggest/SKILL.md:62:4. On yes, run `npx @ericrisco/rsc add <id>`, then continue the original task.
+core/skills/shared/suggest/SKILL.md:66:(`npx @ericrisco/rsc list`).
+core/skills/shared/suggest/SKILL.md:68:`npx @ericrisco/rsc consult "<task>"` is a **lexical** hint only: it misses natural-language and
+core/skills/shared/suggest/SKILL.md:74:`npx @ericrisco/rsc capabilities`: covered by a skill or agent → use it, say nothing.
+core/skills/shared/suggest/SKILL.md:85:- `.rsc.json` exists and what it declares is not what is installed;
+core/skills/shared/suggest/SKILL.md:89:Run `npx @ericrisco/rsc doctor`, and say in one line what is wrong **as a symptom**, not as
+core/skills/shared/suggest/SKILL.md:92:- **Nothing built** — `.rsc.json` without `.rsc/`: a clone. Name
+core/skills/shared/suggest/SKILL.md:93:  `npx @ericrisco/rsc@<catalogVersion in .rsc.json> sync`, that exact version, **never** `@latest`
+core/skills/shared/suggest/SKILL.md:95:  is not a no, `.rsc/.no-harness` is.
+core/skills/shared/suggest/SKILL.md:98:  `npx @ericrisco/rsc repair`. Restoring is not deciding, and a recoverable copy is kept.
+core/skills/shared/suggest/SKILL.md:109:- No `02-DOCS/wiki/harness/user-profile.md` **and** no `.rsc/.no-harness` → invoke `init` first
+core/skills/shared/suggest/SKILL.md:111:- A clone (`.rsc.json` committed) is not first contact: ask that once, in one line, then continue
+core/skills/shared/suggest/SKILL.md:112:  with their task; with `.rsc/.profile-offered`, never again.
+core/skills/shared/suggest/SKILL.md:114:  `.rsc/.no-harness`, confirm in one line, and never auto-start `init` in this repo again.
+core/skills/shared/suggest/evals/README.md:1:# Evals — rsc-suggest
+core/skills/shared/suggest/evals/README.md:16:"sí" runs `npx @ericrisco/rsc add <id>`. It must never auto-install without confirmation and
+core/skills/shared/suggest/evals/README.md:17:must not recommend a skill already in `npx @ericrisco/rsc list`.
+core/skills/shared/suggest/evals/cases.yaml:4:# from an rsc skill that is NOT yet installed, names it, and (with confirmation)
+core/skills/shared/suggest/evals/cases.yaml:5:# runs `npx @ericrisco/rsc add <id>`. It should stay silent for trivial work and defer to a
+core/skills/shared/suggest/evals/cases.yaml:19:    why: "A database task with no DB skill present — the detector should propose `npx @ericrisco/rsc add postgresdb` before diving in."
+core/skills/shared/suggest/evals/cases.yaml:54:  - scenario: "Mid-conversation, the user says 'ayúdame a guardar los pedidos en una base de datos' and no database skill is installed. Show how rsc-suggest behaves."
+core/skills/shared/suggest/evals/cases.yaml:58:      - "On confirmation, runs `npx @ericrisco/rsc add postgresdb` via Bash, then continues the original task"
+core/skills/shared/suggest/evals/cases.yaml:59:      - "Checks what is already installed (npx @ericrisco/rsc list) and never proposes a skill the user already has"
+core/skills/shared/suggest/evals/cases.yaml:62:  - scenario: "Mid-conversation, after base install, the user says 'quiero montar una pagina web para vender cursos online'. `init`, `harness`, `orient`, `suggest`, and `unslop` are already installed; `nextjs` is not. Show how rsc-suggest behaves."
+core/skills/shared/suggest/evals/cases.yaml:65:      - "Runs `npx @ericrisco/rsc catalog --available` to see the not-installed skills (already excludes installed `init`/`harness`)"
+core/skills/shared/suggest/evals/cases.yaml:69:      - "On confirmation, runs `npx @ericrisco/rsc add nextjs`, then resumes the original website task"
+core/skills/shared/suggest/evals/cases.yaml:71:  - scenario: "Mid-conversation, the user says 'Automatiza el flujo de leads desde el formulario hasta mi CRM'. The base skills are installed, but `automation-flows` and CRM/connector skills are not. Show how rsc-suggest behaves."
+core/skills/shared/suggest/evals/cases.yaml:74:      - "Runs `npx @ericrisco/rsc catalog --available` to see the not-installed skills"
+core/skills/shared/suggest/evals/cases.yaml:78:      - "On confirmation, runs `npx @ericrisco/rsc add <id>` for that one missing skill, then resumes the automation task"
+core/skills/shared/supabase/SKILL.md:6:origin: risco
+core/skills/shared/supabase/SKILL.md:106:RSC/caching/server-action mechanics see [../nextjs/SKILL.md](../nextjs/SKILL.md) — this skill only covers
+core/skills/shared/svelte/SKILL.md:3:description: "Use when building, reviewing or fixing Svelte 5 (runes) and SvelteKit code — components with the rune primitives, rune modules versus stores, file routing, universal versus server load functions, form actions with progressive enhancement, remote functions, SSR/CSR/prerender choices, and adapters. Covers migrating Svelte 4 reactive statements to runes and hydration mismatches. NOT Next.js or RSC (that is `nextjs`)."
+core/skills/shared/svelte/SKILL.md:6:origin: risco
+core/skills/shared/svelte/SKILL.md:26:- Next.js / React Server Components → `../nextjs/SKILL.md`. Different reactivity model and data-loading contract. Never cross runes with RSC.
+core/skills/shared/svelte/evals/cases.yaml:22:    why: "Different framework, reactivity model, and data-loading contract; runes and RSC must not be crossed."
+core/skills/shared/swift-ios/SKILL.md:7:origin: risco
+core/skills/shared/tasks/SKILL.md:7:origin: risco
+core/skills/shared/tasks/evals/README.md:23:   for routing — the other rsc-sdd phases (`sdd`, `constitution`, `specify`,
+core/skills/shared/tauri/SKILL.md:6:origin: risco
+core/skills/shared/technical-writing/SKILL.md:6:origin: risco
+core/skills/shared/testing-go/SKILL.md:6:origin: risco
+core/skills/shared/testing-py/SKILL.md:6:origin: risco
+core/skills/shared/testing-web/SKILL.md:6:origin: risco
+core/skills/shared/together-fireworks/SKILL.md:6:origin: risco
+core/skills/shared/training-data/SKILL.md:6:origin: risco
+core/skills/shared/translation-l10n/SKILL.md:6:origin: risco
+core/skills/shared/translation-l10n/SKILL.md:23:| App Router structure, RSC, data fetching (non-locale) | `../nextjs/SKILL.md` |
+core/skills/shared/translation-l10n/SKILL.md:59:| Next.js App Router | `next-intl` | Request-scoped `i18n/request.ts` + `defineRouting()`, RSC-native, `localePrefix` strategies |
+core/skills/shared/translation-l10n/evals/README.md:3:These cases are run by the rsc skill eval harness. `should_trigger` and `should_not_trigger` check routing precision: that locale/translation requests (including non-obvious symptom phrasings and a Spanish prompt) select this skill, while voice (brand-voice), framework wiring (nextjs), ranking strategy (seo-geo), and copy authoring (content-engine) route to the correct sibling instead. The single `capability` case is a rubric, not an executable test — a reviewer (human or model) reads the SKILL.md guidance against an "add Arabic to a React product" scenario and confirms each `must_include` point is covered (i18n-first sequencing, ICU plurals with CLDR `other`, no concatenation, `Intl.*` formatting, RTL via `dir` + logical properties, the glossary/TM/post-edit workflow, pseudoloc + missing-key testing, fallback locale). There is no code to execute — this is a process/knowledge skill, so its rigor lives in the capability rubric rather than a verify.sh.
+core/skills/shared/typescript/SKILL.md:6:origin: risco
+core/skills/shared/ui-engineering/SKILL.md:7:origin: risco
+core/skills/shared/unity/SKILL.md:7:origin: risco
+core/skills/shared/unreal/SKILL.md:7:origin: risco
+core/skills/shared/unreal/evals/README.md:3:These cases are run by the rsc skill-eval harness (a Claude agent with the full catalog loaded)
+core/skills/shared/unslop/SKILL.md:7:origin: risco
+core/skills/shared/unsloth/SKILL.md:6:origin: risco
+core/skills/shared/variant-explorer/SKILL.md:7:origin: risco
+core/skills/shared/vector-db/SKILL.md:6:origin: risco
+core/skills/shared/vercel/SKILL.md:6:origin: risco
+core/skills/shared/vercel/SKILL.md:46:- Next.js application code, App Router, RSC, `next.config.js`, ISR logic → `../nextjs/SKILL.md`.
+core/skills/shared/verify/SKILL.md:3:description: "Use when implementation is finished and about to be called done or merged — the rsc-sdd evidence gate: runs the stack's scripts/verify.sh (lint, type, test, audit), walks every task done-check and acceptance criterion, records a dated verdict. NOT judging the diff by eye (that is `review`, spec-less `code-review`), NOT diagnosis (that is `debug`)."
+core/skills/shared/verify/SKILL.md:7:origin: risco
+core/skills/shared/verify/SKILL.md:12:`verify` is the post-implementation **gate** in the rsc-sdd chain. Implementation just finished; nobody is allowed to call it *done*, *fixed*, *working*, or *ready to merge* until the evidence exists and has been read. This skill produces that evidence: it runs the project's real quality gate, walks every task's done-check and every acceptance criterion from the spec, and records the result. Pass or fail, the verdict is grounded in command output you actually saw — never in a hunch.
+core/skills/shared/verify/evals/README.md:3:`verify` is the rsc-sdd post-implementation **gate**. These evals check two
+core/skills/shared/verify/evals/README.md:31:   for routing (verify + the rsc-sdd phase skills it chains to — implement,
+core/skills/shared/verify/evals/cases.yaml:3:# Prompts that MUST load the `verify` skill. `verify` is the rsc-sdd
+core/skills/shared/vllm/SKILL.md:6:origin: risco
+core/skills/shared/vue-nuxt/SKILL.md:3:description: "Use when building or reviewing a Vue 3 + Nuxt 4 app — `<script setup>` reactivity, SSR/SSG/hybrid `routeRules`, the `app/`+`server/` layout, SSR-safe fetching (`useFetch`/`useAsyncData`) and state (`useState`/Pinia), Nitro routes, hydration mismatches, Nuxt 3→4 migration. NOT React/RSC (that is nextjs), NOT a static islands site (that is astro)."
+core/skills/shared/vue-nuxt/SKILL.md:6:origin: risco
+core/skills/shared/vue-nuxt/SKILL.md:15:so never import RSC mental models here.
+core/skills/shared/vue-nuxt/SKILL.md:293:| Treating Nuxt like Next RSC ("use server", server components) | Vue has no RSC boundary; whole component renders + hydrates | model it as SSR + client hydration |
+core/skills/shared/vue-nuxt/evals/README.md:10:with the per-request-leak explanation, payload-size notes, and no RSC mental models). Pair this with
+core/skills/shared/vue-nuxt/evals/cases.yaml:22:    why: "RSC and server actions are React/Next concepts; Vue has no server-component boundary. The shared 'app/' word is a false signal."
+core/skills/shared/vue-nuxt/evals/cases.yaml:49:      - "Does NOT introduce RSC / 'use server' / server-component mental models"
+core/skills/shared/webhooks/SKILL.md:7:origin: risco
+core/skills/shared/wordpress/SKILL.md:6:origin: risco
+core/skills/shared/worktrees/SKILL.md:7:origin: risco
+core/skills/shared/worktrees/SKILL.md:47:| **Another session is working in this same folder** (rsc says so on each message) | **worktree — mandatory** | Switching branches would change its files under it; rsc's branch guard denies the switch. Tell the person that `.worktrees/<branch>/` is where the project now runs. Off for the project: `npx @ericrisco/rsc isolation off`. |
+core/skills/shared/worktrees/SKILL.md:59:   no `02-DOCS/` at all (a worktree can be created in any git repo with no rsc harness present) →
+core/skills/shared/worktrees/SKILL.md:130:npx @ericrisco/rsc worktrees reap
+core/skills/shared/worktrees/SKILL.md:144:npx @ericrisco/rsc worktrees        # every landed worktree, with a verdict and a reason
+core/skills/shared/worktrees/SKILL.md:145:npx @ericrisco/rsc worktrees reap   # retire the ones that are safe with nothing to lose
+core/skills/shared/worktrees/SKILL.md:146:npx @ericrisco/rsc worktrees reap <path>   # retire one the user has just confirmed
+core/skills/shared/worktrees/SKILL.md:152:- **rsc created it** — location *and* branch shape both match. Only one matches → it might be the
+core/skills/shared/worktrees/SKILL.md:166:**When the command is unavailable** (no rsc in this project), the manual equivalent is: confirm it is
+core/skills/shared/worktrees/evals/README.md:3:These evals are run by an **agent harness** (an LLM agent with the rsc-sdd + stack skill catalog
+core/skills/shared/worktrees/evals/README.md:20:   skills for routing: the rsc-sdd phases (constitution, specify, clarify, plan, tasks, analyze,
+manifest.yaml:267:    - rsc/skill-rubric
+manifest.yaml:268:    - rsc/skill-harden-rubric
+manifest.yaml:269:    - rsc/skill-behavior-rubric
+manifest.yaml:270:    - rsc/skill-migration-brief
+rules/rsc/skill-migration-brief.md:140:1. `minimal` profile — in every rsc install.
+rules/rsc/skill-rubric.md:1:# skill-rubric — the objective test every rsc skill must pass before shipping
+rules/rsc/skill-rubric.md:16:| 3 | **Body craft & progressive disclosure** | 0.15 | **The smallest body that routes correctly** — ≤400 lines is a ceiling, not a target, and there is no minimum: a skill that does its job in 60 lines scores higher than the same skill padded to 200. Every `references/` file is pointed to inline from this body (an unlinked reference is never loaded, so it is dead weight). rsc voice, every fence language-tagged, a checklist/decision table only where the flow branches, an anti-patterns table present. |
+rules/rsc/skill-rubric.md:20:| 7 | **Originality & safety** | 0.10 | rsc voice, not a clone of any external catalog (no borrowed urgency blocks / rationalization tables / `*-reviewer-prompt.md` conventions / verbatim flowcharts). `verify.sh` present iff there is a checkable artifact. No destructive or unsafe advice presented without guardrails. |
+rules/rsc/skill-rubric.md:26:1. `name` matches the directory id; `origin: risco` present.
