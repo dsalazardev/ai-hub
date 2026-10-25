@@ -1,7 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { parse, stringify } from 'yaml';
-import type { SyncConfig } from './config.js';
+import { resolveSourcePath, type SyncConfig } from './config.js';
+import { TARGETS } from './targets.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export interface RenderedFile {
   content: string;
@@ -10,16 +14,67 @@ export interface RenderedFile {
 
 export type RenderedFiles = Map<string, RenderedFile>;
 
-const MANIFEST_SOURCE = '.ai-hub/manifest.yaml';
+const MANIFEST_SOURCE = 'manifest.yaml';
 const CLAUDE_AGENT_KEYS = ['name', 'description', 'tools', 'model', 'color', 'memory'];
+
+const PREFLIGHT_SOURCE = 'engine/preflight.md';
 
 export async function renderAll(root: string, config: SyncConfig): Promise<RenderedFiles> {
   const out: RenderedFiles = new Map();
   await renderSkills(root, config, out);
   await renderAgents(root, config, out);
   await renderRules(root, config, out);
+  await renderPreflight(root, config, out);
   await renderMcp(root, config, out);
   return out;
+}
+
+async function renderPreflight(root: string, config: SyncConfig, out: RenderedFiles): Promise<void> {
+  const sourcePath = path.join(__dirname, '..', '..', 'engine', 'preflight.md');
+  const body = normalize(await fs.readFile(sourcePath, 'utf8'));
+  for (const tool of config.tools) {
+    const spec = TARGETS[tool];
+    if (spec.hookKind === 'cursor-mdc') {
+      putRendered(out, spec.hook, {
+        content: withMarker(
+          frontmatter({ description: 'Deterministic preflight guard', alwaysApply: true }) + body,
+          PREFLIGHT_SOURCE,
+        ),
+        source: PREFLIGHT_SOURCE,
+      });
+      continue;
+    }
+    if (spec.hookKind === 'copilot-instructions') {
+      putRendered(out, spec.hook, {
+        content: withMarker(frontmatter({ applyTo: '**' }) + body, PREFLIGHT_SOURCE),
+        source: PREFLIGHT_SOURCE,
+      });
+      continue;
+    }
+    putRendered(out, spec.hook, {
+      content: withMarker(body, PREFLIGHT_SOURCE),
+      source: PREFLIGHT_SOURCE,
+    });
+  }
+}
+
+export class DestinationCollisionError extends Error {
+  constructor(
+    readonly destination: string,
+    readonly first: string,
+    readonly second: string,
+  ) {
+    super(`colisión de destinos: ${destination} (${first} vs ${second})`);
+    this.name = 'DestinationCollisionError';
+  }
+}
+
+export function putRendered(out: RenderedFiles, destination: string, file: RenderedFile): void {
+  const existing = out.get(destination);
+  if (existing && existing.source !== file.source) {
+    throw new DestinationCollisionError(destination, existing.source, file.source);
+  }
+  out.set(destination, file);
 }
 
 export function normalize(text: string): string {
@@ -56,7 +111,7 @@ function splitFrontmatter(text: string, source: string): { data: Record<string, 
 }
 
 async function readSource(root: string, sourcePath: string): Promise<string> {
-  const text = await fs.readFile(path.join(root, sourcePath), 'utf8').catch(() => {
+  const text = await fs.readFile(resolveSourcePath(root, sourcePath), 'utf8').catch(() => {
     throw new Error(`fuente no encontrada: ${sourcePath}`);
   });
   return normalize(text);
@@ -80,20 +135,50 @@ function toPosix(relative: string): string {
   return relative.split(path.sep).join('/');
 }
 
+function skillDescription(text: string, fallback: string): string {
+  const match = /^---\n([\s\S]*?)\n---\n/.exec(text);
+  if (!match) {
+    return fallback;
+  }
+  try {
+    const data = parse(match[1]) as Record<string, unknown>;
+    return typeof data.description === 'string' ? data.description : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function skillBody(text: string): string {
+  const match = /^---\n[\s\S]*?\n---\n/.exec(text);
+  return match ? text.slice(match[0].length) : text;
+}
+
 async function renderSkills(root: string, config: SyncConfig, out: RenderedFiles): Promise<void> {
-  const { source, publish, targets } = config.skills;
-  for (const name of publish) {
-    const skillDir = path.join(root, source, name);
-    const files = await listFiles(skillDir).catch(() => {
-      throw new Error(`skill publicada no existe: ${source}/${name}`);
-    });
-    for (const file of files) {
-      const rel = toPosix(path.relative(skillDir, file));
-      const sourcePath = `${source}/${name}/${rel}`;
-      const text = normalize(await fs.readFile(file, 'utf8'));
-      const content = rel.endsWith('.md') ? withMarker(text, sourcePath) : text;
-      for (const target of targets) {
-        out.set(`${target}/${name}/${rel}`, { content, source: sourcePath });
+  for (const { source, publish } of config.skills.sources) {
+    for (const name of publish) {
+      const skillDir = resolveSourcePath(root, `${source}/${name}`);
+      const files = await listFiles(skillDir).catch(() => {
+        throw new Error(`skill publicada no existe: ${source}/${name}`);
+      });
+      for (const target of config.skills.targets) {
+        if (target.shape === 'file') {
+          const sourcePath = `${source}/${name}/SKILL.md`;
+          const text = await readSource(root, sourcePath);
+          const content =
+            frontmatter({
+              description: skillDescription(text, name),
+              alwaysApply: false,
+            }) + withMarker(skillBody(text), sourcePath);
+          putRendered(out, `${target.path}/${name}.mdc`, { content, source: sourcePath });
+          continue;
+        }
+        for (const file of files) {
+          const rel = toPosix(path.relative(skillDir, file));
+          const sourcePath = `${source}/${name}/${rel}`;
+          const text = normalize(await fs.readFile(file, 'utf8'));
+          const content = rel.endsWith('.md') ? withMarker(text, sourcePath) : text;
+          putRendered(out, `${target.path}/${name}/${rel}`, { content, source: sourcePath });
+        }
       }
     }
   }
@@ -110,53 +195,54 @@ async function renderAgents(root: string, config: SyncConfig, out: RenderedFiles
     const claudeData = Object.fromEntries(
       CLAUDE_AGENT_KEYS.filter((key) => key in data).map((key) => [key, data[key]]),
     );
-    const opencodeData = { description: data.description, mode: 'subagent' };
-    out.set(`${targets.claude}/${name}.md`, {
-      content: withMarker(frontmatter(claudeData) + body, sourcePath),
-      source: sourcePath,
-    });
-    out.set(`${targets.opencode}/${name}.md`, {
-      content: withMarker(frontmatter(opencodeData) + body, sourcePath),
-      source: sourcePath,
-    });
+    const subagentData = { description: data.description, mode: 'subagent' };
+    for (const [tool, target] of Object.entries(targets)) {
+      putRendered(out, `${target.path}/${name}.md`, {
+        content:
+          tool === 'claude'
+            ? withMarker(frontmatter(claudeData) + body, sourcePath)
+            : withMarker(frontmatter(subagentData) + body, sourcePath),
+        source: sourcePath,
+      });
+    }
   }
 }
 
 async function renderRules(root: string, config: SyncConfig, out: RenderedFiles): Promise<void> {
   const dir = config.rules.source;
-  const names = (await fs.readdir(path.join(root, dir)))
-    .filter((file) => file.endsWith('.md'))
-    .map((file) => file.slice(0, -'.md'.length))
-    .sort();
-
-  const emit = (outPath: string, sourcePath: string, content: string): void => {
-    out.set(outPath, { content: withMarker(content, sourcePath), source: sourcePath });
-  };
-
-  for (const area of names) {
+  for (const area of config.rules.publish) {
     const sourcePath = `${dir}/${area}.md`;
     const body = await readSource(root, sourcePath);
-    if (area === 'core') {
-      emit('.github/instructions/core.instructions.md', sourcePath, frontmatter({ applyTo: '**' }) + body);
-      emit(
-        '.cursor/rules/core.mdc',
-        sourcePath,
-        frontmatter({ description: 'Reglas base de Doligestion', alwaysApply: true }) + body,
-      );
-      continue;
+    const isCore = area === 'core';
+    for (const [tool, target] of Object.entries(config.rules.targets)) {
+      if (target.shape === 'mdc') {
+        putRendered(out, `${target.path}/${area}.mdc`, {
+          content: withMarker(
+            frontmatter({
+              description: isCore ? 'Core project rules' : `Rules for ${area}`,
+              globs: isCore ? '**' : `${area}/**`,
+              alwaysApply: isCore,
+            }) + body,
+            sourcePath,
+          ),
+          source: sourcePath,
+        });
+        continue;
+      }
+      if (target.shape === 'instructions') {
+        putRendered(out, `${target.path}/${area}.instructions.md`, {
+          content: withMarker(frontmatter({ applyTo: isCore ? '**' : `${area}/**` }) + body, sourcePath),
+          source: sourcePath,
+        });
+        continue;
+      }
+      const data = isCore ? {} : { paths: [`${area}/**`] };
+      putRendered(out, `${target.path}/${area}.md`, {
+        content: withMarker(frontmatter(data) + body, sourcePath),
+        source: sourcePath,
+      });
+      void tool;
     }
-    emit(`${area}/AGENTS.md`, sourcePath, body);
-    emit(`.claude/rules/${area}.md`, sourcePath, frontmatter({ paths: [`${area}/**`] }) + body);
-    emit(
-      `.cursor/rules/${area}.mdc`,
-      sourcePath,
-      frontmatter({ description: `Reglas de ${area}`, globs: `${area}/**`, alwaysApply: false }) + body,
-    );
-    emit(
-      `.github/instructions/${area}.instructions.md`,
-      sourcePath,
-      frontmatter({ applyTo: `${area}/**` }) + body,
-    );
   }
 }
 
@@ -197,35 +283,41 @@ function readMcpServers(text: string, source: string): McpServer[] {
 }
 
 async function renderMcp(root: string, config: SyncConfig, out: RenderedFiles): Promise<void> {
-  const source = config.mcp.source;
-  const servers = readMcpServers(await readSource(root, source), source);
   const claude: Record<string, unknown> = {};
   const cursor: Record<string, unknown> = {};
   const vscode: Record<string, unknown> = {};
   const opencode: Record<string, unknown> = {};
-  for (const server of servers) {
-    if (server.url !== null) {
-      claude[server.id] = { type: 'http', url: server.url };
-      cursor[server.id] = { url: server.url };
-      vscode[server.id] = { type: 'http', url: server.url };
-      opencode[server.id] = { type: 'remote', url: server.url, enabled: true };
-    } else if (server.command !== null) {
-      claude[server.id] = { command: server.command, args: server.args };
-      cursor[server.id] = { command: server.command, args: server.args };
-      vscode[server.id] = { type: 'stdio', command: server.command, args: server.args };
-      opencode[server.id] = { type: 'local', command: [server.command, ...server.args], enabled: true };
+  const source = config.mcp?.source ?? MANIFEST_SOURCE;
+  if (config.mcp) {
+    const servers = readMcpServers(await readSource(root, config.mcp.source), config.mcp.source);
+    for (const server of servers) {
+      if (server.url !== null) {
+        claude[server.id] = { type: 'http', url: server.url };
+        cursor[server.id] = { url: server.url };
+        vscode[server.id] = { type: 'http', url: server.url };
+        opencode[server.id] = { type: 'remote', url: server.url, enabled: true };
+      } else if (server.command !== null) {
+        claude[server.id] = { command: server.command, args: server.args };
+        cursor[server.id] = { command: server.command, args: server.args };
+        vscode[server.id] = { type: 'stdio', command: server.command, args: server.args };
+        opencode[server.id] = { type: 'local', command: [server.command, ...server.args], enabled: true };
+      }
     }
+    const json = (data: Record<string, unknown>): string => `${JSON.stringify(data, null, 2)}\n`;
+    putRendered(out, '.mcp.json', { content: json({ mcpServers: claude }), source });
+    putRendered(out, '.cursor/mcp.json', { content: json({ mcpServers: cursor }), source });
+    putRendered(out, '.vscode/mcp.json', { content: json({ servers: vscode }), source });
   }
-  const json = (data: Record<string, unknown>): string => `${JSON.stringify(data, null, 2)}\n`;
-  out.set('.mcp.json', { content: json({ mcpServers: claude }), source });
-  out.set('.cursor/mcp.json', { content: json({ mcpServers: cursor }), source });
-  out.set('.vscode/mcp.json', { content: json({ servers: vscode }), source });
-  out.set('opencode.json', {
-    content: json({
-      $schema: 'https://opencode.ai/config.json',
-      instructions: config.opencode.instructions,
-      mcp: opencode,
-    }),
+  putRendered(out, 'opencode.json', {
+    content: `${JSON.stringify(
+      {
+        $schema: 'https://opencode.ai/config.json',
+        instructions: config.opencode.instructions,
+        mcp: opencode,
+      },
+      null,
+      2,
+    )}\n`,
     source: MANIFEST_SOURCE,
   });
 }

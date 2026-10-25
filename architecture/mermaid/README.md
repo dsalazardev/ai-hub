@@ -84,7 +84,7 @@ docs/architecture/mermaid/
 - **Amarillo**: personas, aprobaciones y decisiones humanas.
 - **Azul**: control, planificacion y estados del sistema.
 - **Verde**: ejecucion, agentes y resultados exitosos.
-- **Violeta**: conocimiento, OpenSpec, artefactos y datos.
+- **Violeta**: conocimiento, Spec Kit, artefactos y datos.
 - **Naranja**: integracion, GitLab y despliegue.
 - **Rojo**: seguridad, gates, riesgos y fallos.
 - **Gris**: decisiones pendientes, alternativas o elementos no verificados.

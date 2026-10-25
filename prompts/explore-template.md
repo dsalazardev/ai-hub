@@ -1,18 +1,26 @@
-Explore Prompt Template
+# Spec Kit exploration template
 
-Use this template when running exploratory investigations (`/opsx-explore` semantics).
+Use this template when the orchestrator needs to investigate before a spec.
 
-Context:
-- TASK: {{TASK}}
-- OPSX_PREFIX: {{OPSX_PREFIX}}
+## Context
 
-Instructions:
-1. Read the repository files related to the task and report findings concisely.
-2. List assumptions, unknowns, and one recommended next step.
-3. If a code change is required, produce a minimal patch to implement it and include verification steps.
+- QUESTION: {{QUESTION}}
 
-Output format (Markdown):
-- Findings (short bullets)
-- Assumptions (short)
-- Proposed next step (one-line)
-- Files to change (if any)
+## Structure
+
+1. **Question** — what exactly must be answered.
+2. **Evidence** — file path or command per claim.
+3. **Facts vs assumptions** — mark assumptions `NO VERIFICADO`.
+4. **Affected paths** — source, tests and configuration.
+5. **Open questions** — what still blocks a specification.
+6. **Recommendation** — investigate further, specify, or kill.
+
+## Artifact
+
+`.planning/findings.md`
+
+## Rules
+
+- Never modify code to answer a question.
+- Never invent an endpoint, schema or behavior.
+- Prefer code and tests over prose.

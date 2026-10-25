@@ -1,0 +1,47 @@
+id: python
+version: 1
+extends: base
+description: Python project with pytest, mypy and ruff.
+detect:
+  files:
+    - pyproject.toml
+    - requirements.txt
+  dependencies:
+    - pytest
+stack:
+  languages:
+    - python
+  packageManager: pip
+commands:
+  install: pip install -e .
+  build: python -m build
+  test: pytest
+  typecheck: mypy .
+  lint: ruff check .
+  verify: pytest
+paths:
+  source:
+    - src
+  tests:
+    - tests
+  docs:
+    - docs
+policy:
+  trunk: auto
+  guardMode: shadow
+  worktrees: true
+  optOuts: []
+rules:
+  - rules/python.md
+agents:
+  publish:
+    - spec-author
+    - implementer-frontend
+    - implementer-backend
+    - reviewer-architecture
+    - reviewer-tests
+    - explorer-domain
+skills:
+  publish: []
+mcp:
+  source: mcp-manifest.yaml

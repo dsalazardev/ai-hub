@@ -7,7 +7,7 @@ Estas decisiones se toman como base del modelado y no se reabren en los diagrama
 1. GitLab es la fuente de verdad para issues, comentarios, labels y Merge Requests.
 2. Hermes es el plano de control y la orquestacion.
 3. Claude Code es el motor principal de ejecucion tecnica aislada.
-4. OpenSpec formaliza propuestas, decisiones, requisitos, tareas y criterios de aceptacion.
+4. Spec Kit formaliza propuestas, decisiones, requisitos, tareas y criterios de aceptacion.
 5. El sistema se divide en cinco planos: control, ejecucion, conocimiento, integracion y gobernanza.
 6. Los estados de issue, job/run y Merge Request son distintos y no se mezclan.
 7. Las aprobaciones humanas son obligatorias en los puntos definidos por la politica.

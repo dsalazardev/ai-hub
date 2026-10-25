@@ -1,0 +1,140 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AiHubProjectManifestV2",
+  "type": "object",
+  "required": [
+    "version",
+    "project",
+    "preset",
+    "stack",
+    "commands",
+    "paths",
+    "targets",
+    "policy",
+    "skills",
+    "agents",
+    "rules"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 2 },
+    "project": {
+      "type": "object",
+      "required": ["id", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "name": { "type": "string", "minLength": 1 }
+      }
+    },
+    "preset": {
+      "type": "object",
+      "required": ["id", "version", "source"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "version": { "type": "integer", "minimum": 1 },
+        "source": { "enum": ["package"] }
+      }
+    },
+    "stack": {
+      "type": "object",
+      "required": ["languages"],
+      "additionalProperties": false,
+      "properties": {
+        "languages": { "type": "array", "items": { "type": "string" } },
+        "frontend": { "type": "string" },
+        "backend": { "type": "string" },
+        "packageManager": { "type": "string" }
+      }
+    },
+    "commands": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "install": { "type": "string" },
+        "build": { "type": "string" },
+        "test": { "type": "string" },
+        "typecheck": { "type": "string" },
+        "lint": { "type": "string" },
+        "verify": { "type": "string" }
+      }
+    },
+    "paths": {
+      "type": "object",
+      "required": ["source", "tests", "docs"],
+      "additionalProperties": false,
+      "properties": {
+        "source": { "type": "array", "items": { "type": "string" } },
+        "tests": { "type": "array", "items": { "type": "string" } },
+        "docs": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "targets": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "policy": {
+      "type": "object",
+      "required": ["trunk", "guardMode", "worktrees", "optOuts"],
+      "additionalProperties": false,
+      "properties": {
+        "trunk": { "enum": ["auto", "closed", "open"] },
+        "guardMode": { "enum": ["shadow", "enforce"] },
+        "worktrees": { "type": "boolean" },
+        "optOuts": { "type": "array", "items": { "type": "string" } },
+        "dangerPatterns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "pattern", "decision", "reason"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string", "pattern": "^[a-z][a-z0-9:-]*$" },
+              "pattern": { "type": "string", "minLength": 1 },
+              "decision": { "enum": ["ask", "deny"] },
+              "reason": { "type": "string", "minLength": 10 }
+            }
+          }
+        }
+      }
+    },
+    "skills": {
+      "type": "object",
+      "required": ["source", "publish"],
+      "additionalProperties": false,
+      "properties": {
+        "source": { "type": "string", "minLength": 1 },
+        "publish": { "type": "array", "uniqueItems": true, "items": { "type": "string" } }
+      }
+    },
+    "agents": {
+      "type": "object",
+      "required": ["source", "publish"],
+      "additionalProperties": false,
+      "properties": {
+        "source": { "type": "string", "minLength": 1 },
+        "publish": { "type": "array", "uniqueItems": true, "items": { "type": "string" } }
+      }
+    },
+    "rules": {
+      "type": "object",
+      "required": ["source", "publish"],
+      "additionalProperties": false,
+      "properties": {
+        "source": { "type": "string", "minLength": 1 },
+        "publish": { "type": "array", "uniqueItems": true, "items": { "type": "string" } }
+      }
+    },
+    "mcp": {
+      "type": "object",
+      "required": ["source"],
+      "additionalProperties": false,
+      "properties": {
+        "source": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

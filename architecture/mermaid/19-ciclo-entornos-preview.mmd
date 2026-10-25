@@ -1,7 +1,7 @@
 stateDiagram-v2
     [*] --> REQUESTED : MR o validacion solicita preview
     REQUESTED --> PROVISIONING : aprovisionar recursos
-    PROVISIONING --> READY : frontend, BFF y Dolibarr disponibles
+    PROVISIONING --> READY : proyecto target disponibles
     PROVISIONING --> FAILED : error de aprovisionamiento
     READY --> VALIDATING : QA funcional y visual
     VALIDATING --> READY : cambios solicitados

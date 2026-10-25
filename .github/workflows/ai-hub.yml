@@ -1,0 +1,40 @@
+name: ai-hub
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: core/package-lock.json
+
+      - name: Install
+        run: npm ci --prefix core
+
+      - name: Build
+        run: npm run ai:build
+
+      - name: Test (includes the coupling gate)
+        run: npm run ai:test
+
+      - name: Manifest inventory is current
+        run: npm run manifest:check
+
+      - name: Generate copies
+        run: node core/dist/bin/ai-hub.js sync
+
+      - name: Drift is empty
+        run: npm run ai:drift
+
+      - name: Doctor
+        run: npm run ai:doctor

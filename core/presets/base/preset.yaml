@@ -1,0 +1,27 @@
+id: base
+version: 1
+description: Minimal harness for any repository, regardless of language or framework.
+detect:
+  files: []
+  dependencies: []
+stack:
+  languages: []
+  packageManager: npm
+commands: {}
+paths:
+  source: []
+  tests: []
+  docs: []
+policy:
+  trunk: auto
+  guardMode: shadow
+  worktrees: true
+  optOuts: []
+rules:
+  - rules/core.md
+agents:
+  publish: []
+skills:
+  publish: []
+mcp:
+  source: mcp-manifest.yaml

@@ -98,6 +98,7 @@ pip-log.txt
 .claude/
 .opencode/
 .pi/
+.cursor/
 .specify/
 openspec/
 specs/
@@ -169,3 +170,7 @@ tmp/
 *.rej
 *.swp
 *.swo
+
+.backups/
+
+.worktrees/

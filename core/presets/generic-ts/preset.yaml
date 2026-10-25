@@ -1,0 +1,46 @@
+id: generic-ts
+version: 1
+extends: base
+description: TypeScript repository with npm-compatible scripts and a standard test runner.
+detect:
+  files:
+    - package.json
+    - tsconfig.json
+  dependencies:
+    - typescript
+stack:
+  languages:
+    - typescript
+  packageManager: npm
+commands:
+  install: npm ci
+  build: npm run build
+  test: npm test
+  typecheck: npx tsc --noEmit
+  lint: npm run lint
+  verify: npm test
+paths:
+  source:
+    - src
+  tests:
+    - tests
+  docs:
+    - docs
+policy:
+  trunk: auto
+  guardMode: shadow
+  worktrees: true
+  optOuts: []
+rules: []
+agents:
+  publish:
+    - spec-author
+    - implementer-frontend
+    - implementer-backend
+    - reviewer-architecture
+    - reviewer-tests
+    - explorer-domain
+skills:
+  publish: []
+mcp:
+  source: mcp-manifest.yaml

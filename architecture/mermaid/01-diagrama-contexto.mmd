@@ -7,13 +7,13 @@ flowchart LR
   subgraph SYSTEM["AI Hub 3.0"]
     HERMES["Hermes control plane"]
     RUNNER["Runner + Claude Code"]
-    KNOW["OpenSpec + AI Hub"]
+    KNOW["Spec Kit + AI Hub"]
   end
   subgraph EXTERNAL["Sistemas externos"]
     GL["GitLab self-managed"]
     CI["GitLab CI"]
     MODEL["Proveedor de modelos"]
-    APP["Frontend + BFF + Dolibarr"]
+    APP["Proyecto target"]
     PREV["Preview environments"]
     NOTIF["Canal de notificaciones"]
   end

@@ -1,0 +1,250 @@
+# AI Hub Engine — invariants shared by every project.
+# This file ships with @onna/ai-hub-cli and is never edited by a target project.
+version: 2
+
+roles:
+  - id: prompt-explorer
+    canonical: orchestrator
+    derived: true
+    description: Turns a vague request into a researchable question.
+    can_modify: []
+    cannot_modify:
+      - '**'
+    commands: []
+    gate: none
+
+  - id: spec-explorer
+    canonical: explorer-domain
+    derived: false
+    description: Investigates the domain and produces verifiable findings.
+    can_modify:
+      - .planning/findings.md
+      - .specify/assessments/**
+    cannot_modify:
+      - src/**
+    commands:
+      - assess-intake
+      - assess-research
+      - assess-define
+      - assess-shape
+      - assess-decide
+    gate: none
+
+  - id: reviewer-exploration
+    canonical: orchestrator
+    derived: true
+    description: Confirms exploration is sufficient before authoring the spec.
+    can_modify: []
+    cannot_modify:
+      - '**'
+    commands: []
+    gate: convergence >= 95 %
+
+  - id: spec-author
+    canonical: spec-author
+    derived: false
+    description: Authors requirements, design and tasks.
+    can_modify:
+      - .specify/**
+      - .planning/**
+    cannot_modify:
+      - src/**
+    commands:
+      - constitution
+      - specify
+      - clarify
+      - plan
+      - checklist
+      - tasks
+      - analyze
+    gate: spec complete with no open questions
+
+  - id: implementer-frontend
+    canonical: implementer-frontend
+    derived: false
+    description: Implements the frontend side of the approved change.
+    can_modify:
+      - src/**
+    cannot_modify: []
+    commands:
+      - implement
+      - bug-fix
+    gate: frontend build and tests
+
+  - id: implementer-backend
+    canonical: implementer-backend
+    derived: false
+    description: Implements the backend side of the approved change.
+    can_modify:
+      - src/**
+    cannot_modify: []
+    commands:
+      - implement
+      - bug-fix
+    gate: backend typecheck and tests
+
+  - id: reviewer-architecture
+    canonical: reviewer-architecture
+    derived: false
+    description: Reviews architecture, conventions and bug diagnosis.
+    can_modify:
+      - .planning/review_arch_*.md
+    cannot_modify:
+      - src/**
+    commands:
+      - converge
+      - bug-assess
+    gate: PASS / NEEDS_FIX / BLOCKED
+
+  - id: reviewer-tests
+    canonical: reviewer-tests
+    derived: false
+    description: Reviews coverage, traceability and test verdicts.
+    can_modify:
+      - .planning/review_tests_*.md
+    cannot_modify:
+      - src/**
+    commands:
+      - bug-test
+    gate: coverage thresholds met
+
+commands:
+  - id: assess-intake
+    name: /speckit-assess-intake
+    lane: assessment
+    artifacts: [intake.md]
+    exit: [GO, KILL, NEEDS_CLARIFICATION]
+    role: spec-explorer
+    skill: speckit-assess-intake
+  - id: assess-research
+    name: /speckit-assess-research
+    lane: assessment
+    artifacts: [research.md]
+    exit: [GO, KILL, NEEDS_CLARIFICATION]
+    role: spec-explorer
+    skill: speckit-assess-research
+  - id: assess-define
+    name: /speckit-assess-define
+    lane: assessment
+    artifacts: [problem.md]
+    exit: [GO, KILL, NEEDS_CLARIFICATION]
+    role: spec-explorer
+    skill: speckit-assess-define
+  - id: assess-shape
+    name: /speckit-assess-shape
+    lane: assessment
+    artifacts: [concept.md]
+    exit: [GO, KILL, NEEDS_CLARIFICATION]
+    role: spec-explorer
+    skill: speckit-assess-shape
+  - id: assess-decide
+    name: /speckit-assess-decide
+    lane: assessment
+    artifacts: [decision.md]
+    exit: [GO, KILL, NEEDS_CLARIFICATION]
+    role: spec-explorer
+    skill: speckit-assess-decide
+
+  - id: constitution
+    name: /speckit.constitution
+    lane: feature
+    artifacts: [constitution.md]
+    exit: [CREATED, UPDATED]
+    role: spec-author
+    skill: speckit-constitution
+  - id: specify
+    name: /speckit.specify
+    lane: feature
+    artifacts: [spec.md]
+    exit: [DRAFT, READY]
+    role: spec-author
+    skill: speckit-specify
+  - id: clarify
+    name: /speckit.clarify
+    lane: feature
+    artifacts: [spec.md]
+    exit: [RESOLVED, OPEN]
+    role: spec-author
+    skill: speckit-clarify
+  - id: plan
+    name: /speckit.plan
+    lane: feature
+    artifacts: [plan.md]
+    exit: [READY]
+    role: spec-author
+    skill: speckit-plan
+  - id: checklist
+    name: /speckit.checklist
+    lane: feature
+    artifacts: [checklist.md]
+    exit: [PASS, NEEDS_FIX]
+    role: spec-author
+    skill: speckit-checklist
+  - id: tasks
+    name: /speckit.tasks
+    lane: feature
+    artifacts: [tasks.md]
+    exit: [READY]
+    role: spec-author
+    skill: speckit-tasks
+  - id: analyze
+    name: /speckit.analyze
+    lane: feature
+    artifacts: [analysis.md]
+    exit: [PASS, NEEDS_FIX]
+    role: spec-author
+    skill: speckit-analyze
+  - id: implement
+    name: /speckit.implement
+    lane: feature
+    artifacts: [codebase]
+    exit: [DONE, BLOCKED]
+    role: implementer-frontend
+    co_roles: [implementer-backend]
+    skill: speckit-implement
+  - id: converge
+    name: /speckit.converge
+    lane: feature
+    artifacts: [convergence.md]
+    exit: [CONVERGED, NEEDS_WORK]
+    role: reviewer-architecture
+    skill: speckit-converge
+
+  - id: bug-assess
+    name: /speckit-bug-assess
+    lane: bug
+    artifacts: [assessment.md]
+    exit: [ROOT_CAUSE, NEEDS_DATA]
+    role: reviewer-architecture
+    skill: speckit-bug-assess
+  - id: bug-fix
+    name: /speckit-bug-fix
+    lane: bug
+    artifacts: [fix.md]
+    exit: [FIXED, BLOCKED]
+    role: implementer-backend
+    co_roles: [implementer-frontend]
+    skill: speckit-bug-fix
+  - id: bug-test
+    name: /speckit-bug-test
+    lane: bug
+    artifacts: [test.md]
+    exit: [VERIFIED, PARTIAL, FAILED]
+    role: reviewer-tests
+    skill: speckit-bug-test
+
+labels:
+  - ai::todo
+  - ai::in-spec
+  - ai::spec-ready
+  - ai::in-dev
+  - ai::in-review
+  - ai::done
+  - ai::blocked
+
+targets:
+  - claude
+  - opencode
+  - pi
+  - cursor
+  - copilot

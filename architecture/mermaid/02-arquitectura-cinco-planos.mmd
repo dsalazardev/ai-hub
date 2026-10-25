@@ -24,7 +24,7 @@ flowchart TB
     ART["Artifact Collector"]
   end
   subgraph KNOW["3. Knowledge plane"]
-    OPENSPEC["OpenSpec"]
+    Spec Kit["Spec Kit"]
     SKILLS["AI Hub skills y rules"]
     ADR["ADRs"]
     TPL["Templates y prompts"]
@@ -34,7 +34,7 @@ flowchart TB
     GIT["Git"]
     CI["GitLab CI"]
     PREVIEW["Preview environments"]
-    APP["Frontend + BFF + Dolibarr"]
+    APP["Proyecto target"]
   end
   subgraph GOV["5. Governance plane"]
     IAM["Identity"]
@@ -59,7 +59,7 @@ flowchart TB
   APPR --> GLAPI
   COST --> Q
   AUD --> REP
-  OPENSPEC --> PC
+  Spec Kit --> PC
   SKILLS --> PC
   ADR --> PC
   TPL --> PC
@@ -80,6 +80,6 @@ flowchart TB
   classDef governance fill:#fee2e2,stroke:#dc2626,color:#000
   class EG,SM,PE,REG,PC,Q,DEP,APPR,COST,AUD,REP,COORD,EVID,PUB control
   class RUN,CC,WT,TESTS,PW,ART exec
-  class OPENSPEC,SKILLS,ADR,TPL knowledge
+  class Spec Kit,SKILLS,ADR,TPL knowledge
   class GLAPI,GIT,CI,PREVIEW,APP integration
   class IAM,SECRETS,POLICY,AUDIT,METRICS governance

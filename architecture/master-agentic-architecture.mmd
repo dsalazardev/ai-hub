@@ -19,9 +19,9 @@ flowchart TB
   subgraph F1["1 - DEFINICION"]
     TRI["Agente Intake / Triage"]
     SREV["Agente Spec Reviewer - solo pregunta"]
-    SA["Agente Spec Author - escribe OpenSpec"]
+    SA["Agente Spec Author - escribe Spec Kit"]
     ARCH["Agente Architect - diseno y ADR"]
-    SPEC["OpenSpec"]
+    SPEC["Spec Kit"]
     HG1{"Gate humano - spec?"}
     GLI --> TRI
     TRI --> SREV
@@ -112,7 +112,7 @@ flowchart TB
     MR["Merge Request"]
     CI["GitLab CI"]
     PREVIEW["Preview environment"]
-    APP["Frontend + BFF + Dolibarr"]
+    APP["Proyecto target"]
     HG4{"Gate humano - produccion?"}
     DEPLOY["Deploy produccion"]
     CLOSE["Cierre"]
@@ -130,7 +130,7 @@ flowchart TB
   end
 
   subgraph F6["6 - CONOCIMIENTO, DATOS Y APRENDIZAJE"]
-    OS["OpenSpec y skills"]
+    OS["Spec Kit y skills"]
     ADR["ADRs"]
     RUNREC["Run - rol, modelo y coste"]
     ART["Artifact - diff, logs y capturas"]

@@ -1,190 +1,169 @@
-# AI Hub 2.0 — Multi-Agent Orchestration for Doligestion
+# AI Hub — universal software factory
 
-> **Single Source of Truth for AI Skills, Agents, and Orchestration Rules**
-> 
-> This directory implements the Harness + Subagents pattern (adapted from BettaTech) to eliminate skill duplication, context loss, and configuration drift across OpenCode and Claude Code.
+> Un motor agnóstico, presets por stack y Spec Kit como única metodología.
+> `ai-hub` instala un arnés verificado en cualquier repositorio, sin contener el dominio de ninguno.
 
 ---
 
-## Quick Start
+## Inicio rápido
 
 ```bash
-# 0. Create your local AI credentials file (never committed)
-cp .ai-hub/.env.example .ai-hub/.env   # set GITLAB_TOKEN (see skills/shared/gitlab-auth)
+# 1. Compila el motor
+npm ci --prefix core && npm run ai:build
 
-# 1. Prepare the environment (once per clone; the devcontainer does it)
-npm ci && npm run ai:setup
+# 2. Onboarding: detecta el stack y muestra el plan (no escribe nada)
+node core/dist/bin/ai-hub.js init
 
-# 2. Regenerate the tool copies after editing .ai-hub/
-npm run ai:sync
+# 3. Aplica el plan
+node core/dist/bin/ai-hub.js init --yes
 
-# 3. Verify the environment
-./.ai-hub/bootstrap/verify.sh
+# 4. Proyecta a los asistentes y verifica
+node core/dist/bin/ai-hub.js sync
+node core/dist/bin/ai-hub.js doctor
+```
 
-# 4. Install planning skill for session persistence
-./.ai-hub/bootstrap/install-planning-skill.sh
+`init` detecta el preset desde `package.json`, `angular.json`, `pyproject.toml` o `requirements.txt`. Si dos presets empatan, exige `--preset <id>`. El plan tiene un hash SHA-256 determinista.
+
+---
+
+## Capas
+
+| Capa | Ruta | Quién la edita |
+|---|---|---|
+| Motor | `core/src/`, `core/engine/`, `core/agents/`, `core/skills/shared/` | Mantenedores del CLI |
+| Preset | `core/presets/<id>/` | Mantenedores del preset |
+| Proyecto | `.ai-hub/`, `manifest.yaml`, `.ai-hubrc.json` | Equipo del proyecto |
+
+El motor no nombra lenguajes, frameworks, empresas ni módulos. El contenido de dominio vive en `core/presets/` y se copia una sola vez a `.ai-hub/`.
+
+### Presets incluidos
+
+| Preset | Detecta | Stack |
+|---|---|---|
+| `base` | sin señales | mínimo, cualquier lenguaje |
+| `generic-ts` | `package.json`, `tsconfig.json` | TypeScript + npm |
+| `angular-express` | `angular.json`, `@angular/core`, `express` | Angular + Express BFF |
+| `python` | `pyproject.toml`, `requirements.txt` | Python + pytest/mypy/ruff |
+
+Un preset puede extender otro (`angular-express` → `generic-ts` → `base`). La resolución sigue el orden: `--preset` > `.ai-hubrc.json` > detección > `base`.
+
+---
+
+## CLI: 18 comandos
+
+| Comando | Responsabilidad |
+|---|---|
+| `init` | Detecta stack, elige preset y aplica un plan reproducible |
+| `install` | Materializa el preset y sincroniza los destinos |
+| `add` | Añade una skill o agente del preset |
+| `list` | Lista preset, targets, comandos, skills y agentes |
+| `sync` | Proyecta las fuentes a los destinos; `--check` informa deriva |
+| `drift` | Informa deriva de hash sin escribir |
+| `doctor` | Valida motor, preset, manifiesto, targets, hooks y deriva |
+| `check` | Alias de `doctor` + `drift` para CI |
+| `backups` | Lista snapshots |
+| `restore` | Restaura un snapshot |
+| `uninstall` | Elimina una skill o agente añadido |
+| `purge` | Elimina el arnés tras crear un snapshot |
+| `upgrade` | Actualiza el paquete y re-sincroniza |
+| `repair` | Reaplica solo lo que falta o está roto |
+| `worktrees` | Lista o reapea worktrees (`reap --confirm`, `--auto`) |
+| `trunk` | Muestra, cierra o abre la rama principal |
+| `memory` | Escribe, lista y reanuda el ledger |
+| `context` | Regenera `.planning/context-next.md` |
+
+`ai-hub help` lista exactamente estos 18. Un comando desconocido sale con 2. `verify` y `judge` se mantienen como compatibilidad.
+
+### Contrato de `.ai-hubrc.json`
+
+```json
+{
+  "version": 2,
+  "dir": ".",
+  "preset": "generic-ts",
+  "targets": ["claude", "opencode", "pi", "cursor", "copilot"],
+  "guardMode": "shadow"
+}
+```
+
+`resolveAiHubDir()` resuelve: `AI_HUB_DIR` → `dir` del rc → `./.ai-hub` → `./ai-hub` → ancestro con `manifest.yaml`. Un rc v1 se migra; una fuente explícita inválida falla en vez de continuar.
+
+---
+
+## Metodología: Spec Kit
+
+17 comandos en tres carriles:
+
+- **Assessment (5)** — `assess-intake`, `assess-research`, `assess-define`, `assess-shape`, `assess-decide`.
+- **Feature SDD (9)** — `constitution`, `specify`, `clarify`, `plan`, `checklist`, `tasks`, `analyze`, `implement`, `converge`.
+- **Bug Fix (3)** — `bug-assess`, `bug-fix`, `bug-test`.
+
+Las 17 skills son nativas (`speckit-*`). No hay comandos ni estado de OpenSpec en el runtime; el `openspec/` del repositorio de autoría es histórico.
+
+### Etiquetas GitLab
+
+`ai::todo`, `ai::in-spec`, `ai::spec-ready`, `ai::in-dev`, `ai::in-review`, `ai::done`, `ai::blocked`.
+
+`ai::spec-ready` se aprueba con el SHA-256 de `spec.md + plan.md + tasks.md`; ningún agente se autoaprueba.
+
+---
+
+## Guardias
+
+`core/src/harness/guards/` implementa un `runPreflight(command, ctx)` puro:
+
+- `danger`: borrado recursivo forzado, `mkfs`, escritura en dispositivo, fork bomb, push forzado, reset duro, SQL destructivo, pipe-to-shell.
+- `trunk`: cierra la rama con CI, despliegue, equipo o política explícita.
+- `branch`: impide cambiar a una rama ocupada por otro worktree.
+- `ship`: impide volver a la trunk con trabajo sin commit o sin push.
+
+Cada decisión incluye regla, motivo y salida. `guardMode` es `shadow` por defecto; `enforce` es opt-in. Los adaptadores (Hermes, Claude, OpenCode) comparten el mismo contrato y fallan abiertos. La superficie siempre activa se genera para Claude, OpenCode, Pi, Cursor y Copilot.
+
+El reaper de worktrees solo elimina un worktree propio, limpio e integrado, y exige `--confirm` en modo interactivo. `install --hooks` cablea el `post-merge` opcional.
+
+---
+
+## Memoria y estado
+
+- `.planning/state.json` — proyecto, preset, cambio activo, fase y conteo de tareas.
+- `.planning/memory.jsonl` — eventos `start`, `checkpoint`, `decision`, `end`; esquema cerrado; nunca prompts, contenido ni secretos.
+- `.planning/context-next.md` — contexto regenerable con `ai-hub context`.
+
+---
+
+## Targets
+
+| Target | Skills | Agentes | Reglas | Superficie |
+|---|---|---|---|---|
+| Claude | `.claude/skills` | `.claude/agents` | `.claude/rules` | `.claude/rules/preflight.md` |
+| OpenCode | `.opencode/skills` | `.opencode/agents` | `.opencode/rules` | `.opencode/rules/preflight.md` |
+| Pi | `.pi/skills` | `.pi/agents` | `.pi/prompts` | `.pi/prompts/preflight.md` |
+| Cursor | `.cursor/rules/*.mdc` | — | `.cursor/rules/*.mdc` | `.cursor/rules/preflight.mdc` |
+| Copilot | `.github/skills` | `.github/agents` | `.github/instructions` | `.github/instructions/preflight.instructions.md` |
+
+Añadir un target es una fila en `core/src/sync/targets.ts` y un id en `core/engine/engine.yaml`.
+
+---
+
+## Desarrollo
+
+```bash
+npm run ai:build        # compila core/
+npm run ai:test         # tests
+npm run ai:typecheck    # tsc --noEmit
+npm run ai:sync         # regenera destinos
+npm run ai:drift        # verifica deriva
+npm run ai:doctor       # diagnóstico completo
+npm run manifest:build  # regenera core/manifest.json
+npm run manifest:check  # verifica inventario
 ```
 
 ---
 
-## Architecture Overview
+## Referencias
 
-```
-User Input
-    │
-    ▼
-┌─────────────────────────────────────┐
-│  ORCHESTRATOR (Leader)              │
-│  - Reads manifest.yaml              │
-│  - Detects workspace (root/fe/be)   │
-│  - Delegates to subagents           │
-└─────────────────────────────────────┘
-    │
-    ├── /opsx:propose ──► Agent(spec-author)
-    │
-    ├── /opsx:apply ────► Agent(implementer-frontend)
-    │                 └──► Agent(implementer-backend)
-    │
-    └── Review ─────────► Agent(reviewer-architecture)
-                      └──► Agent(reviewer-tests)
-```
-
----
-
-## Directory Structure
-
-| Directory | Purpose |
-|-----------|---------|
-| `orchestrator/` | Central coordinator prompt, workflow rules, delegation logic |
-| `agents/` | Subagent definitions (spec-author, implementer-*, reviewer-*) |
-| `skills/shared/` | Consolidated skills (one copy each, tool-agnostic) |
-| `skills/adapters/` | Tool-specific command mappings (OpenCode vs Claude) |
-| `mcp-local/` | Setup scripts for local MCP servers |
-| `prompts/` | Reusable prompt templates |
-| `bootstrap/` | Environment setup scripts |
-
----
-
-## Key Principles
-
-1. **Single Source of Truth**: Every skill exists exactly once in `skills/shared/`. Legacy locations (`.claude/`, `.opencode/`, `.agents/`) contain only symlinks.
-
-2. **Tool Agnosticism**: Skills use `{{OPSX_PREFIX}}` tokens. Adapters replace them with tool-specific prefixes (`/opsx:` for Claude, `/opsx-` for OpenCode).
-
-3. **State on Disk**: Following BettaTech's anti-broken-telephone rule, subagents write results to files (`.planning/impl_*.md`, `.planning/review_*.md`) instead of chat.
-
-4. **Workspace Awareness**: `detect-workspace.sh` determines whether the developer opened the monorepo root, `/frontend`, or `/backend`, loading the appropriate skill set.
-
-5. **Human Approval Gate**: The orchestrator pauses after `spec-author` completes. A human must approve the spec before implementation begins.
-
----
-
-## Workflow
-
-### 1. Exploration (`/opsx:explore` or `/opsx-explore`)
-```
-User: "How does the invoice approval flow work?"
-Orchestrator: Launches explorer-domain
-Output: .planning/findings.md
-```
-
-### 2. Proposal (`/opsx:propose` or `/opsx-propose`)
-```
-User: "Add recurring invoices"
-Orchestrator: Launches spec-author
-Output: openspec/changes/recurring-invoices/{proposal,design,tasks}.md
-Status: spec_ready
-⏸ HUMAN APPROVAL REQUIRED
-```
-
-### 3. Implementation (`/opsx:apply` or `/opsx-apply`)
-```
-User: "approved"
-Orchestrator: Launches implementer-frontend + implementer-backend (parallel)
-Output: frontend/src/**, backend/src/**, .planning/impl_*.md
-```
-
-### 4. Review
-```
-Orchestrator: Launches reviewer-architecture + reviewer-tests
-Output: .planning/review_arch_*.md, .planning/review_tests_*.md
-```
-
-### 5. Archive (`/opsx:archive` or `/opsx-archive`)
-```
-Orchestrator: Moves change to openspec/changes/archive/
-Updates: .planning/history.md
-```
-
----
-
-## Agent Registry
-
-See `.ai-hub/manifest.yaml` for the complete registry.
-
-| Agent | Role | Can Modify | Cannot Modify |
-|-------|------|------------|---------------|
-| **spec-author** | Writes OpenSpec specs | `openspec/**`, `.planning/**` | `frontend/**`, `backend/**` |
-| **implementer-frontend** | Angular 22 code | `frontend/**` | `backend/**` |
-| **implementer-backend** | Node.js BFF code | `backend/**` | `frontend/**` |
-| **reviewer-architecture** | Validates conventions | `.planning/review_arch_*.md` | All source code |
-| **reviewer-tests** | Validates coverage | `.planning/review_tests_*.md` | All source code |
-| **explorer-domain** | Investigates before spec | `.planning/findings.md` | All source code |
-
----
-
-## Skill Inventory
-
-### Shared Skills (all workspaces)
-- `openspec-workflow` — Unified propose/explore/apply/archive
-- `angular-developer` — Angular 22 standalone, Signals, inject()
-- `onna-architecture-common` — Domain models, DTOs, enums, Zero-Any policy
-
-### Frontend-Only Skills
-- `onna-architecture-angular` — Components, DALs, Services, Tailwind CSS 4
-- `onna-design-system` — Glassmorphism, responsive design, Material patterns
-
-### Backend-Only Skills
-- `onna-architecture-bff` — Express routes, DolibarrDal composition, ErrorResult
-
----
-
-## Compatibility
-
-| Feature | OpenCode | Claude Code |
-|---------|----------|-------------|
-| Command syntax | `/opsx-explore` | `/opsx:explore` |
-| Subagent launch | `Task` tool | `Task` tool (universal!) |
-| File ops | `Read/Write/Edit` | `Read/Write/Edit` |
-| Bash | Supported | Supported |
-
-**Note**: We use `Task` tool (not `Agent`) for subagent launch because `Agent` is Claude-only.
-
----
-
-## Troubleshooting
-
-### verify.sh fails with "copias generadas desactualizadas"
-Run `npm run ai:sync`. If it still fails, `npm run ai:check` shows which copy differs and which source to edit. Never edit the generated copies by hand.
-
-### verify.sh fails with "frontend build error"
-Ensure `cd frontend && npm install && ng build` works independently.
-
-### verify.sh fails with "backend TypeScript errors"
-Ensure `cd backend && npx tsc --noEmit` works independently.
-
-### Subagent not found
-Check `manifest.yaml` — the agent definition path must be relative to repo root.
-
----
-
-## References
-
-- **Doligestion Constitution**: `AGENTS.md` (root)
-- **OpenSpec Changes**: `openspec/changes/`
-- **BettaTech Harness**: `/tmp/betta-tech-repos/harness-sdd/`
-- **Planning Skill**: `https://github.com/othmanadi/planning-with-files`
-
----
-
-*Version: 2.0 | Last updated: 2026-05-14*
+- `AGENTS.md` — constitución operativa.
+- `manifest.yaml` — configuración del proyecto.
+- `core/engine/engine.yaml` — invariantes del motor.
+- `core/schema/` — esquemas de manifiesto, preset, estado y motor.
+- `openspec/changes/` — historial de cambios del propio `ai-hub`.

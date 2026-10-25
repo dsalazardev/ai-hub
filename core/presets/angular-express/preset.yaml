@@ -1,0 +1,61 @@
+id: angular-express
+version: 1
+extends: generic-ts
+description: Angular frontend with an Express BFF, Vitest and an optional Dolibarr-style REST backend.
+detect:
+  files:
+    - angular.json
+    - backend/package.json
+  dependencies:
+    - "@angular/core"
+    - express
+stack:
+  languages:
+    - typescript
+  frontend: angular
+  backend: express
+  packageManager: npm
+commands:
+  install: npm ci
+  build: npm run build
+  test: npm test
+  typecheck: npx tsc --noEmit
+  lint: npm run lint
+  verify: bash .ai-hub/harness/run-all.sh
+paths:
+  source:
+    - frontend/src
+    - backend/src
+  tests:
+    - "**/*.spec.ts"
+    - "**/*.test.ts"
+  docs:
+    - docs
+policy:
+  trunk: auto
+  guardMode: shadow
+  worktrees: true
+  optOuts: []
+rules:
+  - rules/frontend.md
+  - rules/backend.md
+  - rules/architecture.md
+agents:
+  publish:
+    - spec-author
+    - implementer-frontend
+    - implementer-backend
+    - reviewer-architecture
+    - reviewer-tests
+    - explorer-domain
+skills:
+  publish:
+    - angular-developer
+    - angular-new-app
+    - frontend-design
+    - onna-architecture-angular
+    - onna-architecture-bff
+    - onna-architecture-common
+    - onna-design-system
+mcp:
+  source: mcp-manifest.yaml

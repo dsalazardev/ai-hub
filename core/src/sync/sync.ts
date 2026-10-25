@@ -1,9 +1,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { SyncConfig } from './config.js';
-import { loadSyncConfig } from './config.js';
+import { loadSyncConfig, resolveSourcePath } from './config.js';
 import { normalize, renderAll, type RenderedFile, type RenderedFiles } from './render.js';
-import { readLock, sha256, writeLock, type SyncLock } from './lock.js';
+import { GENERATOR_VERSION, readLock, sha256, writeLock, type SyncLock } from './lock.js';
 
 export interface SyncResult {
   written: string[];
@@ -66,10 +66,9 @@ async function checkCopies(root: string, rendered: RenderedFiles, previous: Sync
     } else if (current !== file.content) {
       const registered = previous?.files[rel];
       if (registered && sha256(current) !== registered.sha256) {
-        const hint = file.source.includes('/skills/shared/openspec-')
-          ? '; si vino de openspec update, ejecuta npm run ai:openspec-upgrade'
-          : '';
-        problems.push(`editado a mano: ${rel} (edita la fuente: ${file.source}${hint})`);
+        problems.push(
+          `editado a mano: ${rel} (edita la fuente: ${file.source}; luego ejecuta ai-hub sync)`,
+        );
       } else {
         problems.push(`desactualizado: ${rel} (fuente: ${file.source})`);
       }
@@ -84,21 +83,18 @@ async function buildLock(root: string, rendered: RenderedFiles): Promise<SyncLoc
   for (const [rel, file] of sortedEntries(rendered)) {
     files[rel] = { sha256: sha256(file.content), source: file.source };
     if (!(file.source in sources)) {
-      const sourceText = await readCopy(path.join(root, file.source));
+      const sourceText = await readCopy(resolveSourcePath(root, file.source));
       sources[file.source] = sha256(sourceText ?? '');
     }
   }
-  return { version: 1, sources: sortRecord(sources), files };
+  return { version: 2, generatorVersion: GENERATOR_VERSION, sources: sortRecord(sources), files };
 }
 
 async function findSymlinks(root: string, config: SyncConfig, rendered: RenderedFiles): Promise<string[]> {
   const generatedDirs = [
-    ...config.skills.targets,
-    config.agents.targets.claude,
-    config.agents.targets.opencode,
-    '.claude/rules',
-    '.cursor/rules',
-    '.github/instructions',
+    ...config.skills.targets.map((target) => target.path),
+    ...Object.values(config.agents.targets).map((target) => target.path),
+    ...Object.values(config.rules.targets).map((target) => target.path),
   ];
   const found = new Set<string>();
   for (const dir of generatedDirs) {

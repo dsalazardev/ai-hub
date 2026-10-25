@@ -1,18 +1,30 @@
-Propose Prompt Template
+# Spec Kit proposal template
 
-Use this template when generating an OpenSpec proposal (`/opsx-propose` semantics).
+Use this template when the orchestrator needs a feature specification.
 
-Context:
+## Context
+
 - TASK: {{TASK}}
-- OPSX_PREFIX: {{OPSX_PREFIX}}
+- LANE: assessment | feature | bug
 
-Template structure:
-1. Title: short descriptive title
-2. Problem statement: 1-2 paragraphs
-3. Proposal: what will be implemented (files, routes, APIs)
-4. Design summary: important decisions and security considerations
-5. Tasks: checklist of implementation steps
+## Structure
 
-Placeholders:
-- {{TASK}} - high-level task name
-- {{OPSX_PREFIX}} - CLI prefix used by orchestrator for commands
+1. **Title** — short and descriptive.
+2. **Problem** — one paragraph, no solution language.
+3. **Requirements** — EARS statements with `MUST` / `MUST NOT`.
+4. **Scenarios** — `#### Scenario:` blocks with WHEN/THEN.
+5. **Plan** — components, contracts, data flow and risks.
+6. **Tasks** — atomic checklist with a verification criterion per task.
+7. **Out of scope** — what this change deliberately excludes.
+
+## Artifacts
+
+- `.specify/memory/constitution.md`
+- `specs/<feature>/spec.md`
+- `specs/<feature>/plan.md`
+- `specs/<feature>/tasks.md`
+
+## Placeholders
+
+- `{{TASK}}` — high-level task name.
+- `<feature>` — kebab-case feature id.

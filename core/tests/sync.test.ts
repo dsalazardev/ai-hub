@@ -3,48 +3,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { runSync } from '../src/sync/sync.js';
-
-const MANIFEST = `sync:
-  skills:
-    source: .ai-hub/skills/shared
-    publish:
-      - demo-skill
-      - openspec-demo
-    targets:
-      - .claude/skills
-  agents:
-    source: .ai-hub/agents
-    publish:
-      - demo-agent
-    targets:
-      claude: .claude/agents
-      opencode: .opencode/agents
-  rules:
-    source: .ai-hub/rules
-  mcp:
-    source: .ai-hub/mcp-manifest.yaml
-  opencode:
-    instructions:
-      - .ai-hub/rules/core.md
-`;
-
-const MCP_MANIFEST = `required_mcps:
-  - id: playwright
-    type: local
-    client:
-      command: npx
-      args:
-        - "-y"
-        - "@playwright/mcp@0.0.83"
-  - id: notion
-    type: remote
-    client:
-      url: https://mcp.notion.com/mcp
-`;
-
-const SKILL_SOURCE = '---\nname: demo-skill\ndescription: Skill de prueba\n---\n\n# Demo\r\nLínea con CRLF\r\n';
-const AGENT_SOURCE =
-  '---\nname: demo-agent\ndescription: Agente de prueba\ntools: Read, Grep\n---\n\n# Cuerpo del agente\n';
+import { normalize, putRendered, type RenderedFiles } from '../src/sync/render.js';
+import { sha256 } from '../src/sync/lock.js';
+import { seedFixture } from './fixtures.js';
 
 let root: string;
 
@@ -58,163 +19,209 @@ async function read(rel: string): Promise<string> {
   return fs.readFile(path.join(root, rel), 'utf8');
 }
 
-async function seed(manifest: string = MANIFEST): Promise<void> {
-  await write('.ai-hub/manifest.yaml', manifest);
-  await write('.ai-hub/skills/shared/demo-skill/SKILL.md', SKILL_SOURCE);
-  await write('.ai-hub/agents/demo-agent.md', AGENT_SOURCE);
-  await write('.ai-hub/rules/core.md', '# Core\n');
-  await write('.ai-hub/rules/frontend.md', '# Frontend\n');
-  await write('.ai-hub/skills/shared/openspec-demo/SKILL.md', SKILL_SOURCE.replace('demo-skill', 'openspec-demo'));
-  await write('.ai-hub/mcp-manifest.yaml', MCP_MANIFEST);
-}
+beforeEach(async () => {
+  root = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-sync-'));
+  await seedFixture(root);
+});
 
-describe('runSync: escritura', () => {
-  beforeEach(async () => {
-    root = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-sync-'));
-    await seed();
-  });
+afterEach(async () => {
+  await fs.rm(root, { recursive: true, force: true });
+});
 
-  afterEach(async () => {
-    await fs.rm(root, { recursive: true, force: true });
-  });
-
-  it('genera las copias y el lock, y la comprobación posterior pasa', async () => {
+describe('runSync: writing', () => {
+  it('projects engine skills and project content to five targets, then checks clean', async () => {
     const result = await runSync(root, { check: false });
-    expect(result.written).toContain('.claude/skills/demo-skill/SKILL.md');
-    expect(result.written).toContain('.claude/agents/demo-agent.md');
-    expect(await read('.ai-hub/sync.lock.json')).toContain('"version": 1');
+    expect(result.written).toContain('.claude/skills/speckit-plan/SKILL.md');
+    expect(result.written).toContain('.claude/agents/spec-author.md');
+    expect(result.written).toContain('.claude/rules/core.md');
+    expect(result.written).toContain('.claude/rules/preflight.md');
+    expect(await read('sync.lock.json')).toContain('"version": 2');
 
     const check = await runSync(root, { check: true });
     expect(check.problems).toEqual([]);
   });
 
-  it('no vuelve a escribir nada si la fuente no ha cambiado', async () => {
+  it('records the generator version and a SHA-256 for every source and output', async () => {
+    await runSync(root, { check: false });
+    const lock = JSON.parse(await read('sync.lock.json')) as {
+      generatorVersion: string;
+      sources: Record<string, string>;
+      files: Record<string, { sha256: string }>;
+    };
+    expect(lock.generatorVersion).toBe('1.0.0');
+    expect(Object.keys(lock.sources).length).toBeGreaterThan(0);
+    for (const hash of Object.values(lock.sources)) {
+      expect(hash).toMatch(/^[a-f0-9]{64}$/);
+    }
+    for (const entry of Object.values(lock.files)) {
+      expect(entry.sha256).toMatch(/^[a-f0-9]{64}$/);
+    }
+    const projectSource = Object.keys(lock.sources).find((source) => source.startsWith('.ai-hub/'));
+    expect(projectSource).toBeDefined();
+    expect(lock.sources[projectSource as string]).toBe(sha256(normalize(await read(projectSource as string))));
+  });
+
+  it('is idempotent on a second run', async () => {
     await runSync(root, { check: false });
     const second = await runSync(root, { check: false });
     expect(second.written).toEqual([]);
     expect(second.removed).toEqual([]);
   });
 
-  it('normaliza CRLF a LF en las copias', async () => {
+  it('normalizes CRLF to LF in generated copies', async () => {
+    await write('.ai-hub/rules/core.md', '# Core\r\n\r\n- rule\r\n');
     await runSync(root, { check: false });
-    const copy = await read('.claude/skills/demo-skill/SKILL.md');
+    const copy = await read('.claude/rules/core.md');
     expect(copy).not.toContain('\r');
-    expect(copy).toContain('Línea con CRLF\n');
+    expect(copy).toContain('- rule\n');
   });
 
-  it('marca cada Markdown generado con su fuente, debajo del frontmatter', async () => {
+  it('marks generated Markdown with its source below the frontmatter', async () => {
     await runSync(root, { check: false });
-    const copy = await read('.claude/skills/demo-skill/SKILL.md');
+    const copy = await read('.claude/agents/spec-author.md');
     expect(copy).toMatch(
-      /^---\nname: demo-skill\ndescription: Skill de prueba\n---\n<!-- GENERADO por ai-hub sync desde \.ai-hub\/skills\/shared\/demo-skill\/SKILL\.md — no editar -->\n/,
+      /^---\nname: spec-author\ndescription: fixture agent spec-author\n---\n<!-- GENERADO por ai-hub sync desde \.ai-hub\/agents\/spec-author\.md — no editar -->\n/,
     );
   });
 
-  it('genera el agente para Claude con sus claves y para OpenCode como subagente, con el mismo cuerpo', async () => {
+  it('uses the target shape: Cursor .mdc, Copilot instructions, Claude settings-free rule', async () => {
     await runSync(root, { check: false });
-    const claude = await read('.claude/agents/demo-agent.md');
-    const opencode = await read('.opencode/agents/demo-agent.md');
-    expect(claude).toContain('name: demo-agent');
-    expect(claude).toContain('tools:');
-    expect(opencode).toContain('mode: subagent');
-    expect(opencode).not.toContain('tools:');
-    expect(claude.endsWith('# Cuerpo del agente\n')).toBe(true);
-    expect(opencode.endsWith('# Cuerpo del agente\n')).toBe(true);
-  });
-
-  it('genera las reglas por carpeta y la regla core para Cursor y Copilot', async () => {
-    await runSync(root, { check: false });
-    expect(await read('frontend/AGENTS.md')).toContain('# Frontend');
-    expect(await read('.claude/rules/frontend.md')).toContain('paths:');
-    expect(await read('.cursor/rules/frontend.mdc')).toContain('globs: frontend/**');
-    expect(await read('.github/instructions/core.instructions.md')).toContain('applyTo: "**"');
     expect(await read('.cursor/rules/core.mdc')).toContain('alwaysApply: true');
+    expect(await read('.github/instructions/core.instructions.md')).toContain('applyTo: "**"');
+    expect(await read('.claude/rules/core.md')).toContain('# Fixture core rules');
+    expect(await read('.github/skills/speckit-plan/SKILL.md')).toContain('speckit-plan');
+    expect(await read('.opencode/skills/speckit-plan/SKILL.md')).toContain('speckit-plan');
+    expect(await read('.pi/skills/speckit-plan/SKILL.md')).toContain('speckit-plan');
+    expect(await read('.cursor/rules/speckit-plan.mdc')).toContain('speckit-plan');
   });
 
-  it('genera la configuración MCP de cada cliente en su formato y sin claves', async () => {
+  it('writes MCP configuration per client', async () => {
     await runSync(root, { check: false });
     const claude = JSON.parse(await read('.mcp.json'));
     const cursor = JSON.parse(await read('.cursor/mcp.json'));
-    const vscode = JSON.parse(await read('.vscode/mcp.json'));
     const opencode = JSON.parse(await read('opencode.json'));
-    expect(claude.mcpServers.notion).toEqual({ type: 'http', url: 'https://mcp.notion.com/mcp' });
-    expect(claude.mcpServers.playwright).toEqual({ command: 'npx', args: ['-y', '@playwright/mcp@0.0.83'] });
-    expect(cursor.mcpServers.notion).toEqual({ url: 'https://mcp.notion.com/mcp' });
-    expect(vscode.servers.playwright.type).toBe('stdio');
+    expect(claude.mcpServers.demo).toEqual({ type: 'http', url: 'https://example.com/mcp' });
+    expect(cursor.mcpServers.demo).toEqual({ url: 'https://example.com/mcp' });
+    expect(opencode.mcp.demo.type).toBe('remote');
     expect(opencode.instructions).toEqual(['.ai-hub/rules/core.md']);
-    expect(opencode.mcp.playwright).toEqual({ type: 'local', command: ['npx', '-y', '@playwright/mcp@0.0.83'], enabled: true });
-    expect(opencode.mcp.notion.type).toBe('remote');
-    expect(Object.keys(claude.mcpServers)).toEqual(['notion', 'playwright']);
   });
 
-  it('elimina los destinos que ya no están en el manifest', async () => {
+  it('migrates a v1 lock and preserves the destination set', async () => {
     await runSync(root, { check: false });
-    const reduced = MANIFEST.replace('      - demo-skill\n', '      - demo-skill-none\n');
-    await write('.ai-hub/manifest.yaml', reduced);
-    await write('.ai-hub/skills/shared/demo-skill-none/SKILL.md', SKILL_SOURCE);
+    const current = JSON.parse(await read('sync.lock.json')) as {
+      sources: Record<string, string>;
+      files: Record<string, unknown>;
+    };
+    await write('sync.lock.json', JSON.stringify({ version: 1, sources: current.sources, files: current.files }));
     const result = await runSync(root, { check: false });
-    expect(result.removed).toContain('.claude/skills/demo-skill/SKILL.md');
-    await expect(fs.access(path.join(root, '.claude/skills/demo-skill/SKILL.md'))).rejects.toThrow();
+    expect(result.written).toEqual([]);
+    const migrated = JSON.parse(await read('sync.lock.json')) as {
+      version: number;
+      files: Record<string, unknown>;
+    };
+    expect(migrated.version).toBe(2);
+    expect(Object.keys(migrated.files).sort()).toEqual(Object.keys(current.files).sort());
   });
 
-  it('rechaza un agente sin name o description en su frontmatter', async () => {
-    await write('.ai-hub/agents/demo-agent.md', '# Sin frontmatter\n');
+  it('restores a deleted generated file and leaves hand-written files alone', async () => {
+    await runSync(root, { check: false });
+    await fs.rm(path.join(root, '.claude/agents/spec-author.md'));
+    await write('notes/manual.md', 'manual\n');
+    const result = await runSync(root, { check: false });
+    expect(result.written).toContain('.claude/agents/spec-author.md');
+    expect(await read('notes/manual.md')).toBe('manual\n');
+  });
+
+  it('removes destinations that leave the manifest', async () => {
+    await runSync(root, { check: false });
+    const manifest = await read('manifest.yaml');
+    await write('manifest.yaml', manifest.replace('    - reviewer-tests\n', ''));
+    const result = await runSync(root, { check: false });
+    expect(result.removed).toContain('.claude/agents/reviewer-tests.md');
+  });
+
+  it('rejects an agent without name or description', async () => {
+    await write('.ai-hub/agents/spec-author.md', '# No frontmatter\n');
     await expect(runSync(root, { check: false })).rejects.toThrow(/sin frontmatter/);
   });
 });
 
-describe('runSync: comprobación', () => {
+describe('runSync: check', () => {
   beforeEach(async () => {
-    root = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-sync-check-'));
-    await seed();
     await runSync(root, { check: false });
   });
 
-  afterEach(async () => {
-    await fs.rm(root, { recursive: true, force: true });
-  });
-
-  it('no escribe nada en modo comprobación', async () => {
-    await fs.rm(path.join(root, '.claude/agents/demo-agent.md'));
+  it('does not write in check mode', async () => {
+    await fs.rm(path.join(root, '.claude/agents/spec-author.md'));
     const before = await fs.readdir(path.join(root, '.claude/agents'));
     await runSync(root, { check: true });
     expect(await fs.readdir(path.join(root, '.claude/agents'))).toEqual(before);
   });
 
-  it('detecta una copia que falta y nombra su fuente', async () => {
-    await fs.rm(path.join(root, '.claude/agents/demo-agent.md'));
-    const result = await runSync(root, { check: true });
-    expect(result.problems.join('\n')).toContain('falta .claude/agents/demo-agent.md (fuente: .ai-hub/agents/demo-agent.md)');
-  });
-
-  it('detecta una copia desactualizada cuando cambia la fuente', async () => {
-    await write('.ai-hub/agents/demo-agent.md', AGENT_SOURCE.replace('Cuerpo del agente', 'Cuerpo nuevo'));
-    const result = await runSync(root, { check: true });
-    expect(result.problems.join('\n')).toContain('desactualizado: .claude/agents/demo-agent.md');
-  });
-
-  it('detecta una edición a mano usando el lock y nombra la fuente a editar', async () => {
-    await write('.claude/skills/demo-skill/SKILL.md', (await read('.claude/skills/demo-skill/SKILL.md')) + 'edición\n');
+  it('detects a missing copy and names its source', async () => {
+    await fs.rm(path.join(root, '.claude/agents/spec-author.md'));
     const result = await runSync(root, { check: true });
     expect(result.problems.join('\n')).toContain(
-      'editado a mano: .claude/skills/demo-skill/SKILL.md (edita la fuente: .ai-hub/skills/shared/demo-skill/SKILL.md)',
+      'falta .claude/agents/spec-author.md (fuente: .ai-hub/agents/spec-author.md)',
     );
   });
 
-  it('sugiere ai:openspec-upgrade cuando se edita a mano una skill openspec-*', async () => {
-    await write('.claude/skills/openspec-demo/SKILL.md', 'cambiado por openspec update\n');
+  it('detects a stale copy when the source changes', async () => {
+    await write('.ai-hub/agents/spec-author.md', '---\nname: spec-author\ndescription: changed\n---\n\n# New\n');
     const result = await runSync(root, { check: true });
-    expect(result.problems.join('\n')).toContain('npm run ai:openspec-upgrade');
+    expect(result.problems.join('\n')).toContain('desactualizado: .claude/agents/spec-author.md');
   });
 
-  it('rechaza enlaces simbólicos dentro de las carpetas generadas', async () => {
-    await fs.symlink(path.join(root, '.ai-hub/skills/shared/demo-skill'), path.join(root, '.claude/skills/enlace'));
+  it('detects a hand-edited copy and names the source to edit', async () => {
+    await write('.claude/agents/spec-author.md', `${await read('.claude/agents/spec-author.md')}edited\n`);
     const result = await runSync(root, { check: true });
-    expect(result.problems.join('\n')).toContain('enlace simbólico no permitido: .claude/skills/enlace');
+    expect(result.problems.join('\n')).toContain(
+      'editado a mano: .claude/agents/spec-author.md (edita la fuente: .ai-hub/agents/spec-author.md',
+    );
   });
 
-  it('sin diferencias devuelve cero problemas', async () => {
+  it('detects an obsolete destination', async () => {
+    const manifest = await read('manifest.yaml');
+    await write('manifest.yaml', manifest.replace('    - reviewer-tests\n', ''));
     const result = await runSync(root, { check: true });
-    expect(result.problems).toEqual([]);
+    expect(result.problems.join('\n')).toContain('destino obsoleto: .claude/agents/reviewer-tests.md');
+  });
+
+  it('returns no problems on a clean tree', async () => {
+    expect((await runSync(root, { check: true })).problems).toEqual([]);
+  });
+
+  const itSymlink = process.platform === 'win32' ? it.skip : it;
+  itSymlink('rejects symlinks inside generated folders', async () => {
+    await fs.symlink(path.join(root, '.ai-hub/agents'), path.join(root, '.claude/agents/enlace'));
+    const result = await runSync(root, { check: true });
+    expect(result.problems.join('\n')).toContain('enlace simbólico no permitido: .claude/agents/enlace');
+  });
+});
+
+describe('normalization, spaces and collisions', () => {
+  it('normalizes CRLF and CR to LF', () => {
+    expect(normalize('a\r\nb\rc')).toBe('a\nb\nc');
+  });
+
+  it('rejects two sources writing the same destination', () => {
+    const out: RenderedFiles = new Map();
+    putRendered(out, 'destino/comun.md', { content: 'a', source: 'one' });
+    expect(() => putRendered(out, 'destino/comun.md', { content: 'b', source: 'two' })).toThrow(
+      /colisión de destinos/,
+    );
+  });
+
+  it('syncs from a path with spaces', async () => {
+    const base = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-sync-space-'));
+    const spaced = path.join(base, 'repo con espacios');
+    await seedFixture(spaced);
+    try {
+      const result = await runSync(spaced, { check: false });
+      expect(result.written).toContain('.claude/skills/speckit-plan/SKILL.md');
+      expect((await runSync(spaced, { check: true })).problems).toEqual([]);
+    } finally {
+      await fs.rm(base, { recursive: true, force: true });
+    }
   });
 });

@@ -1,37 +1,46 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { parse } from 'yaml';
+import { fileURLToPath } from 'node:url';
+import { loadManifestContext } from '../manifest/manifest.js';
+import { TARGETS, assertToolIds, type SkillShape, type ToolId } from './targets.js';
 
-export interface SyncSkills {
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+export const CORE_ROOT = path.join(__dirname, '..', '..');
+export const ENGINE_SKILLS_SOURCE = '@engine/skills/shared';
+
+export function resolveSourcePath(root: string, source: string): string {
+  if (source.startsWith('@engine/')) {
+    return path.join(CORE_ROOT, ...source.slice('@engine/'.length).split('/'));
+  }
+  return path.join(root, ...source.split('/'));
+}
+
+export interface SkillSource {
   source: string;
   publish: string[];
-  targets: string[];
 }
 
-export interface SyncAgents {
-  source: string;
-  publish: string[];
-  targets: { claude: string; opencode: string };
+export interface SkillTarget {
+  path: string;
+  shape: SkillShape;
 }
 
-export interface SyncRules {
-  source: string;
+export interface AgentTarget {
+  path: string;
 }
 
-export interface SyncMcp {
-  source: string;
-}
-
-export interface SyncOpencode {
-  instructions: string[];
+export interface RuleTarget {
+  path: string;
+  shape: 'md' | 'mdc' | 'instructions';
 }
 
 export interface SyncConfig {
-  skills: SyncSkills;
-  agents: SyncAgents;
-  rules: SyncRules;
-  mcp: SyncMcp;
-  opencode: SyncOpencode;
+  tools: ToolId[];
+  skills: { sources: SkillSource[]; targets: SkillTarget[] };
+  agents: { source: string; publish: string[]; targets: Record<string, AgentTarget> };
+  rules: { source: string; publish: string[]; targets: Record<string, RuleTarget> };
+  mcp: { source: string } | null;
+  opencode: { instructions: string[] };
 }
 
 export class SyncConfigError extends Error {
@@ -41,62 +50,78 @@ export class SyncConfigError extends Error {
   }
 }
 
-export const MANIFEST_PATH = '.ai-hub/manifest.yaml';
+export const MANIFEST_PATH = 'manifest.yaml';
+
+async function exists(file: string): Promise<boolean> {
+  return fs.access(file).then(
+    () => true,
+    () => false,
+  );
+}
 
 export async function loadSyncConfig(root: string): Promise<SyncConfig> {
-  const raw = await fs.readFile(path.join(root, MANIFEST_PATH), 'utf8').catch(() => {
-    throw new SyncConfigError(`no se encuentra ${MANIFEST_PATH}`);
-  });
-  const manifest = asRecord(parse(raw), 'manifest');
-  const sync = asRecord(manifest.sync, 'sync');
-  return {
-    skills: parseSkills(asRecord(sync.skills, 'sync.skills')),
-    agents: parseAgents(asRecord(sync.agents, 'sync.agents')),
-    rules: { source: asString(asRecord(sync.rules, 'sync.rules').source, 'sync.rules.source') },
-    mcp: { source: asString(asRecord(sync.mcp, 'sync.mcp').source, 'sync.mcp.source') },
-    opencode: {
-      instructions: asStringArray(asRecord(sync.opencode, 'sync.opencode').instructions, 'sync.opencode.instructions'),
-    },
-  };
-}
-
-function parseSkills(section: Record<string, unknown>): SyncSkills {
-  return {
-    source: asString(section.source, 'sync.skills.source'),
-    publish: asStringArray(section.publish, 'sync.skills.publish'),
-    targets: asStringArray(section.targets, 'sync.skills.targets'),
-  };
-}
-
-function parseAgents(section: Record<string, unknown>): SyncAgents {
-  const targets = asRecord(section.targets, 'sync.agents.targets');
-  return {
-    source: asString(section.source, 'sync.agents.source'),
-    publish: asStringArray(section.publish, 'sync.agents.publish'),
-    targets: {
-      claude: asString(targets.claude, 'sync.agents.targets.claude'),
-      opencode: asString(targets.opencode, 'sync.agents.targets.opencode'),
-    },
-  };
-}
-
-function asRecord(value: unknown, key: string): Record<string, unknown> {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    throw new SyncConfigError(`falta la clave "${key}" en ${MANIFEST_PATH}`);
+  let context;
+  try {
+    context = await loadManifestContext(root);
+  } catch (error) {
+    throw new SyncConfigError((error as Error).message);
   }
-  return value as Record<string, unknown>;
-}
+  const { manifest, engine } = context;
+  const tools = assertToolIds(manifest.targets);
 
-function asString(value: unknown, key: string): string {
-  if (typeof value !== 'string' || value === '') {
-    throw new SyncConfigError(`"${key}" debe ser un texto no vacío en ${MANIFEST_PATH}`);
+  const skillTargets: SkillTarget[] = [];
+  const seenSkillTargets = new Set<string>();
+  for (const tool of tools) {
+    const spec = TARGETS[tool];
+    if (!seenSkillTargets.has(spec.skills)) {
+      seenSkillTargets.add(spec.skills);
+      skillTargets.push({ path: spec.skills, shape: spec.skillShape });
+    }
   }
-  return value;
-}
 
-function asStringArray(value: unknown, key: string): string[] {
-  if (!Array.isArray(value) || !value.every((item): item is string => typeof item === 'string')) {
-    throw new SyncConfigError(`"${key}" debe ser una lista de textos en ${MANIFEST_PATH}`);
+  const agentTargets: Record<string, AgentTarget> = {};
+  for (const tool of tools) {
+    const spec = TARGETS[tool];
+    if (spec.agents) {
+      agentTargets[tool] = { path: spec.agents };
+    }
   }
-  return value;
+
+  const ruleTargets: Record<string, RuleTarget> = {};
+  for (const tool of tools) {
+    const spec = TARGETS[tool];
+    ruleTargets[tool] = { path: spec.rules, shape: spec.ruleShape };
+  }
+
+  const engineSkills = [...new Set(engine.commands.map((command) => command.skill))].sort();
+  const sources: SkillSource[] = [{ source: ENGINE_SKILLS_SOURCE, publish: engineSkills }];
+  if (manifest.skills.publish.length > 0) {
+    sources.push({ source: manifest.skills.source, publish: manifest.skills.publish });
+  }
+
+  let mcp: { source: string } | null = null;
+  if (manifest.mcp) {
+    const direct = manifest.mcp.source;
+    const project = path.join('.ai-hub', path.basename(direct));
+    if (await exists(path.join(root, direct))) {
+      mcp = { source: direct };
+    } else if (await exists(path.join(root, project))) {
+      mcp = { source: project };
+    }
+  }
+
+  const instructions: string[] = [];
+  const coreRule = path.posix.join(manifest.rules.source.replace(/\\/g, '/'), 'core.md');
+  if (await exists(path.join(root, ...coreRule.split('/')))) {
+    instructions.push(coreRule);
+  }
+
+  return {
+    tools,
+    skills: { sources, targets: skillTargets },
+    agents: { source: manifest.agents.source, publish: manifest.agents.publish, targets: agentTargets },
+    rules: { source: manifest.rules.source, publish: manifest.rules.publish, targets: ruleTargets },
+    mcp,
+    opencode: { instructions },
+  };
 }

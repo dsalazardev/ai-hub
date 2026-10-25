@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AiHubEngineV2",
+  "type": "object",
+  "required": ["version", "roles", "commands", "labels", "targets"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 2 },
+    "roles": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "required": ["id", "canonical", "derived", "can_modify", "cannot_modify", "commands", "gate"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "canonical": { "type": "string", "minLength": 1 },
+          "derived": { "type": "boolean" },
+          "description": { "type": "string" },
+          "can_modify": { "type": "array", "items": { "type": "string" } },
+          "cannot_modify": { "type": "array", "items": { "type": "string" } },
+          "commands": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+          "gate": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "commands": {
+      "type": "array",
+      "minItems": 17,
+      "maxItems": 17,
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "lane", "artifacts", "exit", "role", "skill"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "name": { "type": "string", "pattern": "^/speckit[.-]" },
+          "lane": { "enum": ["assessment", "feature", "bug"] },
+          "artifacts": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+          "exit": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+          "role": { "type": "string", "minLength": 1 },
+          "co_roles": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+          "skill": { "type": "string", "pattern": "^speckit-" }
+        }
+      }
+    },
+    "labels": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "ai::todo",
+          "ai::in-spec",
+          "ai::spec-ready",
+          "ai::in-dev",
+          "ai::in-review",
+          "ai::done",
+          "ai::blocked"
+        ]
+      }
+    },
+    "targets": {
+      "type": "array",
+      "minItems": 5,
+      "uniqueItems": true,
+      "items": { "enum": ["claude", "opencode", "pi", "cursor", "copilot"] }
+    }
+  }
+}

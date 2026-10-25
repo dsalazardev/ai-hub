@@ -1,467 +1,527 @@
 {
-  "version": 1,
+  "version": 2,
+  "generatorVersion": "1.0.0",
   "sources": {
-    ".ai-hub/agents/explorer-domain.md": "9b04aec8afede6c0240c2fc64cc243c5beb4f4ba6f406e3fa91088bc9107af69",
-    ".ai-hub/agents/implementer-backend.md": "9c9c84c7df1b16444d77750436340ba91dce7e4719176737c3da3e424f5b4dca",
-    ".ai-hub/agents/implementer-frontend.md": "74fa5301215d60de104deab698a2f18de25036864447cbf8d87f1b036d551691",
-    ".ai-hub/agents/reviewer-architecture.md": "fac3cceed03ab8f98f52ddf00d410bebd1af02ab1ee4fdac86259758baeb27c0",
-    ".ai-hub/agents/reviewer-tests.md": "59d1a9e2f5ed6d2a8f4ec3137a3f30cb5cbb5c0cf12258959dfd8fd82a677cc1",
-    ".ai-hub/agents/spec-author.md": "7b0a3e8071755b58632d79f9047e4a0fba0aaf46cbb9333f65abc3d31c61ba28",
-    ".ai-hub/manifest.yaml": "715122826977e2dc0d6caa3f0b95ceb7009066ba0853a19c2bdc0e950da58e55",
-    ".ai-hub/mcp-manifest.yaml": "a9ed00138de3c2d2632ccbb5b87915f9cdfbde6050303a8354fd6479ce5065c6",
-    ".ai-hub/rules/backend.md": "3277c021d3ed6b2269cbb0bf4f1cf06172524a137e8b80e4c64942d5664b5bf4",
-    ".ai-hub/rules/core.md": "b596418160b054e5f05c7eea448708ebc4381d82ffdcf0bd74ae7121dad4f4ce",
-    ".ai-hub/rules/frontend.md": "ea518afd5279b1036a4ba7acafcaa721382c0e77a6814069a5b5143fb802cf9d",
-    ".ai-hub/skills/shared/angular-developer/SKILL.md": "faf49f2c11fb19085ff4cdfc985adc8bf27e888b122e309da6fb00b17b7b1e5b",
-    ".ai-hub/skills/shared/angular-developer/references/angular-animations.md": "0361278cabc4925807c8a93ebce717f1c8d52d553870ddd8634b1075b0395dbc",
-    ".ai-hub/skills/shared/angular-developer/references/angular-aria.md": "258262515f0b9f11df3a291c80e6326432b14d3f67109a6ff1592f4c5761a98d",
-    ".ai-hub/skills/shared/angular-developer/references/cli.md": "39468f1be907a1abff746e79cb9fabd9675956df00c87d9b8bd1517855b9fd7d",
-    ".ai-hub/skills/shared/angular-developer/references/component-harnesses.md": "6b4f4958684308e76b4c57fb4b5f7efdf1cfc64001dd671fe40ae1ceab8e0943",
-    ".ai-hub/skills/shared/angular-developer/references/component-styling.md": "de3351fdb72174361c6eee150940193f20d148afaceab0f22107758a3cb2d787",
-    ".ai-hub/skills/shared/angular-developer/references/components.md": "dbfb520f2dddd017acb617369c45544374440fcb0b178d9648fab7ada0178468",
-    ".ai-hub/skills/shared/angular-developer/references/creating-services.md": "6e4353c2263a31ad3edcefc6c33fcb0e328b9d0421b124ba121feae84972701e",
-    ".ai-hub/skills/shared/angular-developer/references/data-resolvers.md": "0a6eb7ee89b29d1766941ed88881803b32870e705f2e438a7cae1c4e59ed8289",
-    ".ai-hub/skills/shared/angular-developer/references/define-routes.md": "1288b38bad6cc9749e9d0fd35a294771ea2181dd712bfc2887d80e8b40fab7e6",
-    ".ai-hub/skills/shared/angular-developer/references/defining-providers.md": "e654c23a080c642cf7031b5cc5de1101b8c75030c15256f7e3b81b0336953c6d",
-    ".ai-hub/skills/shared/angular-developer/references/di-fundamentals.md": "87a0bd6addde006dde9fbc9bd89db0525ce37308beb4f6ca474ae4372b046109",
-    ".ai-hub/skills/shared/angular-developer/references/e2e-testing.md": "c04a12aa5fb763b9b592aeb3b5dc68a1d6c707ccf94469095c193227d180d1e7",
-    ".ai-hub/skills/shared/angular-developer/references/effects.md": "c06ad02460be7f57d024bb8e263a3390e72059815879bf6bcd0583e510a2b4ad",
-    ".ai-hub/skills/shared/angular-developer/references/hierarchical-injectors.md": "05546d8043b93a2ab8deccdc2bd9c1704350883107701139e790ff8adb0f626a",
-    ".ai-hub/skills/shared/angular-developer/references/host-elements.md": "b898bab74d518feba3c527dbf9694abe6d3ec7bfa44d81b34cff119016984080",
-    ".ai-hub/skills/shared/angular-developer/references/injection-context.md": "4435dfcec91bd9fb68d6c318802cac1b37424d4e76452e6f0f52ed0d2b6536fb",
-    ".ai-hub/skills/shared/angular-developer/references/inputs.md": "229a6e37f7006a6f3426cc2bc42baa67ecbbab77c343d141e44b10c1bb11de09",
-    ".ai-hub/skills/shared/angular-developer/references/linked-signal.md": "4971692a36c4d470b5c8efec1a8106418ac28cdc33601e554ecff9dded95d289",
-    ".ai-hub/skills/shared/angular-developer/references/loading-strategies.md": "fa82c48573532a7f5e3ccf7eaa50dc7a2db1f23a8599638d9c18e023dbd73e2f",
-    ".ai-hub/skills/shared/angular-developer/references/mcp.md": "38a5187f1e2e7eb9b20cd1f12d44f74faadeb8f4c71664e7f06b0c2ee65489cd",
-    ".ai-hub/skills/shared/angular-developer/references/migrations.md": "47983ed2683dc10f692d254cdca9c97fc13dec9ad099b759f5d31886f3cbaa7a",
-    ".ai-hub/skills/shared/angular-developer/references/navigate-to-routes.md": "ea3c3d53b5db47b4f8d8b05124330e72bea92fc908d42c06aa7edb9e652b425e",
-    ".ai-hub/skills/shared/angular-developer/references/outputs.md": "a191f8982d9ac6868023d56c887f362052c4fccc70a89adc8a6bc546f851e5dc",
-    ".ai-hub/skills/shared/angular-developer/references/reactive-forms.md": "e71118562247c94141dfaca74efd246e38226bf26ffedbd7f3337f1866113283",
-    ".ai-hub/skills/shared/angular-developer/references/rendering-strategies.md": "329aa9aa35c85dd2048c899f26025439d3b0244067dbb508e724d291fdad7c97",
-    ".ai-hub/skills/shared/angular-developer/references/resource.md": "c7a9f7f550e4187b853ea847c0666a33bb4227454b4acab8ba2f2ecce5ca8fed",
-    ".ai-hub/skills/shared/angular-developer/references/route-animations.md": "eda1452f85ce05f3f28753cc77cd8c31c7a52515d7ccebbb35de0ec1e3beb374",
-    ".ai-hub/skills/shared/angular-developer/references/route-guards.md": "491a93cb49fbcba04f7e8ffcd0f784fce7319ca3e2fe393c553f3d683a68424c",
-    ".ai-hub/skills/shared/angular-developer/references/router-lifecycle.md": "4abc8cb8dfeb2e9f57dc11c117d5f4a5b756b39dc076910d9ced9da640effc2d",
-    ".ai-hub/skills/shared/angular-developer/references/router-testing.md": "c1bebdf31808659161891783ac32cfe7300e4ba314ba93b1980c6f35a3e871a2",
-    ".ai-hub/skills/shared/angular-developer/references/show-routes-with-outlets.md": "43a2ed62ea2edafa8569bf7045f20928110f8f844d5890bfb6a2f2dde45e754b",
-    ".ai-hub/skills/shared/angular-developer/references/signal-forms.md": "bcd6ed1b975d28768fb450cc231635d9ba38cbbff6b485874a6571355f4ade7c",
-    ".ai-hub/skills/shared/angular-developer/references/signals-overview.md": "da07c58fdea2ab7d82a28faf9f3d117ccb98ccaf3eec06f103b898f557791146",
-    ".ai-hub/skills/shared/angular-developer/references/tailwind-css.md": "bdb952d0dd2d415560a796ecaf843cacff5ac20d8ef961eaaf75656fef9b9263",
-    ".ai-hub/skills/shared/angular-developer/references/template-driven-forms.md": "52e83e576b0c6dc05f854e903c4cfda1222bcd55c50ddee07344d1e53d02c1df",
-    ".ai-hub/skills/shared/angular-developer/references/testing-fundamentals.md": "c19aba15bd188bb6570fb593e0ca06d52ab86b9ef071611ad89aef1fbdd1a45e",
-    ".ai-hub/skills/shared/angular-new-app/SKILL.md": "807120998cc2161b14963300fcb8fd594c71f3a527f67f0172123b458178631e",
-    ".ai-hub/skills/shared/frontend-design/LICENSE.txt": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",
-    ".ai-hub/skills/shared/frontend-design/SKILL.md": "1608ea77fbb6fc30d13a97d12cfa8ebf31358d40f0dd97beed24829d6b3f45dd",
-    ".ai-hub/skills/shared/onna-architecture-angular/SKILL.md": "af26e2b2279756869cfefa45a7a51c89cfebeecb5ee6d106c2d9e989ae53dc8e",
-    ".ai-hub/skills/shared/onna-architecture-bff/SKILL.md": "f7f9452403226fb89a24df1047b0766c7dae7633421f8aea7b43dcd971847e45",
-    ".ai-hub/skills/shared/onna-architecture-common/SKILL.md": "bcad973b5838a50587a0a0a7aa4ba29441cc1fda636ba786a23132e47aba2154",
-    ".ai-hub/skills/shared/onna-design-system/SKILL.md": "91371b6479096f102214f79fe32a56c68369b038f09c2313720428bbbc612dca",
-    ".ai-hub/skills/shared/openspec-apply-change/SKILL.md": "6b4b50f0316f47a5be4a3c463495ac6dfcb938cb7c596c4a515a45a16ac7b7db",
-    ".ai-hub/skills/shared/openspec-archive-change/SKILL.md": "5d214ad332e83a1846cb06b8ac60ba70d68abace8ece333c41c653666f3635a9",
-    ".ai-hub/skills/shared/openspec-explore/SKILL.md": "2d430c96d898060904edd7e1fb32b3933d1c7f3913cba0eacf432e53433a89c3",
-    ".ai-hub/skills/shared/openspec-propose/SKILL.md": "75178fa06feb5e15a797f8838ec96ef3f2ca55f493d15ca8d2ab1da7f235f7b4",
-    ".ai-hub/skills/shared/openspec-sync-specs/SKILL.md": "0f8d143167bb7738fb8e14aaac3a7c4a0490f607f571c224fc38c407b4db94a6",
-    ".ai-hub/skills/shared/openspec-workflow/SKILL.md": "10739d9c3b5b332e4eefbfed535a2f4cf70018c46682d2467ebeb99848dbaa79",
-    ".ai-hub/skills/shared/planning-with-files/SKILL.md": "3c1b673975c26fb1f2c972b84de45c9effd3f6ae84d9901adc8b30fe5ff19675",
-    ".ai-hub/skills/shared/planning-with-files/examples.md": "450355fac69e0fac93453b6c7383c8fb9ba3470662f6c8291080028f73ce00dc",
-    ".ai-hub/skills/shared/planning-with-files/reference.md": "f8b4edf7037a19cc4119f8cdc11dcda511da2d949328786202e0434d6044b830",
-    ".ai-hub/skills/shared/planning-with-files/scripts/attest-plan.ps1": "5a0473ddfea7c5936a8f9be30b94b23af2e37e7454057482dcb57d6b599f506c",
-    ".ai-hub/skills/shared/planning-with-files/scripts/attest-plan.sh": "61d24c3ffee1c51afa001a8608a667056931d2692c515467eb6f5a00850ffb3b",
-    ".ai-hub/skills/shared/planning-with-files/scripts/check-complete.ps1": "f9e5d7bc1e92a466a44fcd7de1bfa3f69174a55396af0a54e739407f75911e13",
-    ".ai-hub/skills/shared/planning-with-files/scripts/check-complete.sh": "9aceee61cc0d9932fb9efccef2b231b61c3122be71224acac90f5930e3dfb1fe",
-    ".ai-hub/skills/shared/planning-with-files/scripts/init-session.ps1": "4c720adf32e7f3548b13c9c754be58531daddbcabd38a9c3b837cf75b2dbb7a2",
-    ".ai-hub/skills/shared/planning-with-files/scripts/init-session.sh": "05f29e372a5cec9d3df939dc04740a3f52ea0921c3e819164bdc980502e69cd8",
-    ".ai-hub/skills/shared/planning-with-files/scripts/resolve-plan-dir.ps1": "96d61686053722e81bfa9fe2e918c546ce5d51dbad54d5388735b39b2c9ca2f1",
-    ".ai-hub/skills/shared/planning-with-files/scripts/resolve-plan-dir.sh": "3c94eba0ad09363b1cbda57641c8543954356ffba439e5b68bff3de34e740218",
-    ".ai-hub/skills/shared/planning-with-files/scripts/session-catchup.py": "95046e4bfec66ddc3a44e85fd87b610557c166ffafb83e89d0d9b6aeab6d6274",
-    ".ai-hub/skills/shared/planning-with-files/scripts/set-active-plan.ps1": "81328fd39fef216a9133eea38cdca4eb25a39defb3084f58c746948ba287333d",
-    ".ai-hub/skills/shared/planning-with-files/scripts/set-active-plan.sh": "72e3e2b3dcd9cb40018ebd86491f54deb84b540f723dd4a0e78ac47931c5db6c",
-    ".ai-hub/skills/shared/planning-with-files/templates/findings.md": "b5e64d73704daefa8492356d2c2c67ffeb78d79d448b316c0a0debc9226ad785",
-    ".ai-hub/skills/shared/planning-with-files/templates/progress.md": "a2366167ed178bc4a3c1d72ec6c5f6ea9e38aed67c6f3dd2c1a8cbdb4cde76b6",
-    ".ai-hub/skills/shared/planning-with-files/templates/task_plan.md": "03ab63b35434c8cf2375000762bb1f360db2e9b3a825810d0aee311bad5f49aa",
-    ".ai-hub/skills/shared/super-dev/SKILL.md": "d1592eaac200e7c0a1b476b726a821a3bcbef80195056b49f0a4326b92e29d8c",
-    ".ai-hub/skills/shared/super-dev/references/products-anatomy.md": "618e0173af31983329395b9a374c5167e37659ecc18c926831effef9090eeb13"
+    ".ai-hub/agents/explorer-domain.md": "17c431f2399da96ff5aa4bacb95e9eb7c73c223ad18478ce83a8790e14640e79",
+    ".ai-hub/agents/implementer-backend.md": "96590895ac61abe20c9161830acf8c8f16076a33d27c84cf50a457422d55d902",
+    ".ai-hub/agents/implementer-frontend.md": "1459b16f02ee4607192196711a50a998b27685b1bcf002fd4a13e932355b32ca",
+    ".ai-hub/agents/reviewer-architecture.md": "0b186d4be660aeabbc7867d7b43b5d1b9b003c7a73407d810e85a0ff1efe73be",
+    ".ai-hub/agents/reviewer-tests.md": "1d9db3b0ceb955f85725fd08b56ae7b4f7b72a6aff1da1fb7e8c9f465286f6f2",
+    ".ai-hub/agents/spec-author.md": "a0066e72e3532f69459d8639ab160037aa21c366ff2b1318bf651bf763d53983",
+    ".ai-hub/rules/core.md": "56af9b30d7190f27d1c34d1a7c5416d0c6ad87b9d057f7431d7d2299c1e0182e",
+    "@engine/skills/shared/speckit-analyze/SKILL.md": "f5b618606630fc3375f57e2db0a714309ea61a8d87ac85fa8a70d41455bb3072",
+    "@engine/skills/shared/speckit-assess-decide/SKILL.md": "da90b85c0f09dac404a1d49b0424bba5c3a26df26011ae4fa6d13fa637551f71",
+    "@engine/skills/shared/speckit-assess-define/SKILL.md": "7ce19b983623d99994d55a5429f47614e0faa8df93fe46f231cba09808c0fe63",
+    "@engine/skills/shared/speckit-assess-intake/SKILL.md": "a3826c837d85cc4c2e8868f52be77b697e35358d4132ddedfd110d44518de1fe",
+    "@engine/skills/shared/speckit-assess-research/SKILL.md": "9412dd35e55da831a5e2254f05b81ce2a7c46012d398d38d6830f3c1e47db3b1",
+    "@engine/skills/shared/speckit-assess-shape/SKILL.md": "67849ce2c0024ada478b6b5d3e22bef68d648d2076634dd036409bc213048ad8",
+    "@engine/skills/shared/speckit-bug-assess/SKILL.md": "9a757e81409be556fb20058068e81353d0f4c2d3d7e1bb73b361f4184b4c8e45",
+    "@engine/skills/shared/speckit-bug-fix/SKILL.md": "cf5de62bad0cacfcc68230f3e11ad6a317d0e3a390a0d0b12d7ca36bf4a13bfb",
+    "@engine/skills/shared/speckit-bug-test/SKILL.md": "389b10a25d6943b6753c048af1edd8713db710dbd4917ea96ff61dca18f3526b",
+    "@engine/skills/shared/speckit-checklist/SKILL.md": "75d1302e426a61ed2f992e5a2e685191179ab5a4bdb5888e064e1678f81fc57b",
+    "@engine/skills/shared/speckit-clarify/SKILL.md": "7c6d25708ee03bf08db99f88eace2d41b0f312fec6bfa662c071a98151822bcd",
+    "@engine/skills/shared/speckit-constitution/SKILL.md": "027df9e598d6f3b9a5ed5cee3597c92e55001595b6cdbd849cef87d391e3645c",
+    "@engine/skills/shared/speckit-converge/SKILL.md": "56eda5cefc49e3abba342d5daa1e849f0b4efc82d878a58aa27702c60f25758c",
+    "@engine/skills/shared/speckit-implement/SKILL.md": "e8b17c9e327d3651306b1a32cd73c5829f5ecf4c69aca1b63594794cd800e064",
+    "@engine/skills/shared/speckit-plan/SKILL.md": "1d3f0d98b77fbb51d701c0551c49e409c3dafc11e45f1afebc44184134eab8c0",
+    "@engine/skills/shared/speckit-specify/SKILL.md": "e19ca838e3e5311825f7db41b65f0957d41aa1ba110b71e811ff52e718aca586",
+    "@engine/skills/shared/speckit-tasks/SKILL.md": "d1596bdeb261314f045cd367909d34a0cefe2aa6fedbae547acd9fa8b51d6b90",
+    "engine/preflight.md": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "manifest.yaml": "c7099e68021a9d96560593313dbf6de2ae11c0b03087158c5bbb4c272a36d8b4",
+    "mcp-manifest.yaml": "a9ed00138de3c2d2632ccbb5b87915f9cdfbde6050303a8354fd6479ce5065c6"
   },
   "files": {
     ".claude/agents/explorer-domain.md": {
-      "sha256": "540fdb9072c929080251ac306b6d9bc92390bfba0a1a39d34c4ec7429d5180cf",
+      "sha256": "01058a97d6dbd47bc5d2472cc72086138690fcdc2fccbbc10605cce23e1b5c46",
       "source": ".ai-hub/agents/explorer-domain.md"
     },
     ".claude/agents/implementer-backend.md": {
-      "sha256": "0e87bcb9cbed3a69ea129bb4f47ebf9c3c9ee0cdd4d737596059830982d471bf",
+      "sha256": "70e919f46f28a6e575951f1dec98aa4461e7997c8a22a12a3f08487527282baf",
       "source": ".ai-hub/agents/implementer-backend.md"
     },
     ".claude/agents/implementer-frontend.md": {
-      "sha256": "630a1f41c1197096bed6ae1b2f1f9d37056ccf9bb44faf8f2be75abb1045cce9",
+      "sha256": "f5f609950a55c42adc2140fb061fd5881ae92419637cc0c4efc3e702caa0916b",
       "source": ".ai-hub/agents/implementer-frontend.md"
     },
     ".claude/agents/reviewer-architecture.md": {
-      "sha256": "6951d2c0a49a7ed324cc68445c65182b991755516d635f8f83094431b59afa00",
+      "sha256": "89584f3bd068ac2ee729da42f9cb46a0f9e7fbb6fa8c66921ad7c8ed875dc1ce",
       "source": ".ai-hub/agents/reviewer-architecture.md"
     },
     ".claude/agents/reviewer-tests.md": {
-      "sha256": "336494cf6f86e0d34b83cdeb5fbb8f1b406cb1aa6c24829e7a12629ab1598f43",
+      "sha256": "6c9ed1b53a92e17912eda16b95dddbd8325a6b9d3d7a5628b89f8cda95bc7356",
       "source": ".ai-hub/agents/reviewer-tests.md"
     },
     ".claude/agents/spec-author.md": {
-      "sha256": "99a0a6cdc611887972718aa2c11896c5276b541bcf2b2bcd29a89bd8351ebacf",
+      "sha256": "73129f97d39dfd3ead8a8635a4871e1f44ed024b7e4f4d7150727533c8b5791a",
       "source": ".ai-hub/agents/spec-author.md"
     },
-    ".claude/rules/backend.md": {
-      "sha256": "d360159f7fe6ffb8f1a8aee9eb91cfaf89249092b2020be7d246b0dfeef45b31",
-      "source": ".ai-hub/rules/backend.md"
-    },
-    ".claude/rules/frontend.md": {
-      "sha256": "45fade8c24847f04078a360814597c62b395bbaecfca771f8272e7710af27242",
-      "source": ".ai-hub/rules/frontend.md"
-    },
-    ".claude/skills/angular-developer/SKILL.md": {
-      "sha256": "3ff6f3901287af1a7f722593e2357c27a6097ed51b331fbcc74f2b24132777ef",
-      "source": ".ai-hub/skills/shared/angular-developer/SKILL.md"
-    },
-    ".claude/skills/angular-developer/references/angular-animations.md": {
-      "sha256": "adf98dd1343f64494c959775e2379476537866d9ae7d65075ddf6c761d1390fc",
-      "source": ".ai-hub/skills/shared/angular-developer/references/angular-animations.md"
-    },
-    ".claude/skills/angular-developer/references/angular-aria.md": {
-      "sha256": "5820b2b9a7acb3ef5e8e1e71ef6969ba4d3945dce64cc7e5c065e5d8a4dac860",
-      "source": ".ai-hub/skills/shared/angular-developer/references/angular-aria.md"
-    },
-    ".claude/skills/angular-developer/references/cli.md": {
-      "sha256": "dce47209fc5bf522335766b2a9ed278dbd48abf0752e9af6128b505bc54adabb",
-      "source": ".ai-hub/skills/shared/angular-developer/references/cli.md"
-    },
-    ".claude/skills/angular-developer/references/component-harnesses.md": {
-      "sha256": "d995bf94b4315eb4c5f285946e30829fa9bfb5c9ef2a16ac0eb71a460b5c334c",
-      "source": ".ai-hub/skills/shared/angular-developer/references/component-harnesses.md"
-    },
-    ".claude/skills/angular-developer/references/component-styling.md": {
-      "sha256": "25516c5a4f3fec6942b2ab6253f61b8c99efb99a000fb7bf728d3dfdc72366c4",
-      "source": ".ai-hub/skills/shared/angular-developer/references/component-styling.md"
-    },
-    ".claude/skills/angular-developer/references/components.md": {
-      "sha256": "9e21132161daa016dacf7e86b2f46df748401388876155f3cc0325450109ef43",
-      "source": ".ai-hub/skills/shared/angular-developer/references/components.md"
-    },
-    ".claude/skills/angular-developer/references/creating-services.md": {
-      "sha256": "54525cce523f34ecfeec25c048b0ecc7e5dcb5f94ac96d40758a352b23fc8221",
-      "source": ".ai-hub/skills/shared/angular-developer/references/creating-services.md"
-    },
-    ".claude/skills/angular-developer/references/data-resolvers.md": {
-      "sha256": "2a4f3f3dc92589f3fb8ddce3e91ab2bb14c997413bb7cef973a7aebd87e0a485",
-      "source": ".ai-hub/skills/shared/angular-developer/references/data-resolvers.md"
-    },
-    ".claude/skills/angular-developer/references/define-routes.md": {
-      "sha256": "d450d0abb082bff8d0cdf04c406b6256e02d4ea81a1c9da7d9378340dab8e576",
-      "source": ".ai-hub/skills/shared/angular-developer/references/define-routes.md"
-    },
-    ".claude/skills/angular-developer/references/defining-providers.md": {
-      "sha256": "cc6e8ba930dce3cbe5367acaa0606c170e516ded835376294e7e9d77db362c7f",
-      "source": ".ai-hub/skills/shared/angular-developer/references/defining-providers.md"
-    },
-    ".claude/skills/angular-developer/references/di-fundamentals.md": {
-      "sha256": "5fe052f9ffadd1c082b7466a2d77698f1bfd3bd1eb1bb04e4d5088c45b60bc56",
-      "source": ".ai-hub/skills/shared/angular-developer/references/di-fundamentals.md"
-    },
-    ".claude/skills/angular-developer/references/e2e-testing.md": {
-      "sha256": "08c2f184825ce2a9aa6c6a66001edf1d2cbbe42a9606edbc42624e18ce69b66f",
-      "source": ".ai-hub/skills/shared/angular-developer/references/e2e-testing.md"
-    },
-    ".claude/skills/angular-developer/references/effects.md": {
-      "sha256": "d7b3653e293deae89aca2075b1383c8e9d7b790bac1c85e115c97774ff09d22c",
-      "source": ".ai-hub/skills/shared/angular-developer/references/effects.md"
-    },
-    ".claude/skills/angular-developer/references/hierarchical-injectors.md": {
-      "sha256": "9c60ede0b84387a268ecaf589adb43b734fccac5f9925badae99e6b271ceab01",
-      "source": ".ai-hub/skills/shared/angular-developer/references/hierarchical-injectors.md"
-    },
-    ".claude/skills/angular-developer/references/host-elements.md": {
-      "sha256": "d67fcce5d5f4e981bc6e497c79629b3a7be93fb2b12c1c7fdb8885b7089f396f",
-      "source": ".ai-hub/skills/shared/angular-developer/references/host-elements.md"
-    },
-    ".claude/skills/angular-developer/references/injection-context.md": {
-      "sha256": "b7b25e548d13069b55d615d756610c466f45f6e895afc2c8453c6a8a18243289",
-      "source": ".ai-hub/skills/shared/angular-developer/references/injection-context.md"
-    },
-    ".claude/skills/angular-developer/references/inputs.md": {
-      "sha256": "43a9594070dcea8b167c8be80eba6c1bd754a1672d68596cac2a23217c1c8e5d",
-      "source": ".ai-hub/skills/shared/angular-developer/references/inputs.md"
-    },
-    ".claude/skills/angular-developer/references/linked-signal.md": {
-      "sha256": "792de2821ea81e9825b91ffcf8b39b20a2d3f5ea9aeaeb6a0aeb7a28a11b2204",
-      "source": ".ai-hub/skills/shared/angular-developer/references/linked-signal.md"
-    },
-    ".claude/skills/angular-developer/references/loading-strategies.md": {
-      "sha256": "fce928bfe91af56fab987c16f7287d9e859526d4e5de85e9a08ba08f5f9b6524",
-      "source": ".ai-hub/skills/shared/angular-developer/references/loading-strategies.md"
-    },
-    ".claude/skills/angular-developer/references/mcp.md": {
-      "sha256": "0a5c27efdc3976e0482b82d2be47fc36b9d9e534c729a15fb2c798e6947c81e3",
-      "source": ".ai-hub/skills/shared/angular-developer/references/mcp.md"
-    },
-    ".claude/skills/angular-developer/references/migrations.md": {
-      "sha256": "b697cc681f48cd077d62fcbfa5d8ec875773dd49171765dd3986434ef57955b2",
-      "source": ".ai-hub/skills/shared/angular-developer/references/migrations.md"
-    },
-    ".claude/skills/angular-developer/references/navigate-to-routes.md": {
-      "sha256": "fd990b5ac66d2542a505e734a5a1060d037149ecee149a6009a9a67c54c3d4a7",
-      "source": ".ai-hub/skills/shared/angular-developer/references/navigate-to-routes.md"
-    },
-    ".claude/skills/angular-developer/references/outputs.md": {
-      "sha256": "870fa38ef9862825ae990821af06e912755f9210faab3e8fce85922613004c42",
-      "source": ".ai-hub/skills/shared/angular-developer/references/outputs.md"
-    },
-    ".claude/skills/angular-developer/references/reactive-forms.md": {
-      "sha256": "2ebea960d2488540e7ca7901399cacfc83d5486accc036e5ff116f3d22646fcb",
-      "source": ".ai-hub/skills/shared/angular-developer/references/reactive-forms.md"
-    },
-    ".claude/skills/angular-developer/references/rendering-strategies.md": {
-      "sha256": "5c257e641deef1ee179294889713e559638ecc26b480b6e8e308533901f2458c",
-      "source": ".ai-hub/skills/shared/angular-developer/references/rendering-strategies.md"
-    },
-    ".claude/skills/angular-developer/references/resource.md": {
-      "sha256": "903001079760898ef2adeaafa3d789a4020f05ecc9c32112e569921a7a139949",
-      "source": ".ai-hub/skills/shared/angular-developer/references/resource.md"
-    },
-    ".claude/skills/angular-developer/references/route-animations.md": {
-      "sha256": "5fd75ffee5ae6cb9fff5d233125636be440cf58eae8e6a3ed5a7f4fc35d01026",
-      "source": ".ai-hub/skills/shared/angular-developer/references/route-animations.md"
-    },
-    ".claude/skills/angular-developer/references/route-guards.md": {
-      "sha256": "d935cdf8c9aab97b58aa892ac2108259e65382b93292e2b932671c90baaf7b07",
-      "source": ".ai-hub/skills/shared/angular-developer/references/route-guards.md"
-    },
-    ".claude/skills/angular-developer/references/router-lifecycle.md": {
-      "sha256": "802c851eeee9a4d12b225d25ee80a7b0bf31c3c7a69af0f37c00ffc3a200b412",
-      "source": ".ai-hub/skills/shared/angular-developer/references/router-lifecycle.md"
-    },
-    ".claude/skills/angular-developer/references/router-testing.md": {
-      "sha256": "28f67e400f1e081e729ee135e09366aad1b1fccf981b35042e4fb10e7f0ff0da",
-      "source": ".ai-hub/skills/shared/angular-developer/references/router-testing.md"
-    },
-    ".claude/skills/angular-developer/references/show-routes-with-outlets.md": {
-      "sha256": "e50d9ce2801e8204ca31ae430d5416b401189a186953d8b13d73500c48552c9a",
-      "source": ".ai-hub/skills/shared/angular-developer/references/show-routes-with-outlets.md"
-    },
-    ".claude/skills/angular-developer/references/signal-forms.md": {
-      "sha256": "df894fb897ac60c61e3c37e350fc9b0f392d4f103aab01f56c9f436506866695",
-      "source": ".ai-hub/skills/shared/angular-developer/references/signal-forms.md"
-    },
-    ".claude/skills/angular-developer/references/signals-overview.md": {
-      "sha256": "0b543090e52f024e930c7cf57188391b12a16e0059128c20fa34fe4df91f0cf0",
-      "source": ".ai-hub/skills/shared/angular-developer/references/signals-overview.md"
-    },
-    ".claude/skills/angular-developer/references/tailwind-css.md": {
-      "sha256": "930a68836f1df7f60d2214666049bc7859dca6c48d704a02db7bd9035893e74b",
-      "source": ".ai-hub/skills/shared/angular-developer/references/tailwind-css.md"
-    },
-    ".claude/skills/angular-developer/references/template-driven-forms.md": {
-      "sha256": "5bccfdf146a5dc5213c0c987eb6a38a34144dac6bf1c7b2ea086f1b7327cf24e",
-      "source": ".ai-hub/skills/shared/angular-developer/references/template-driven-forms.md"
-    },
-    ".claude/skills/angular-developer/references/testing-fundamentals.md": {
-      "sha256": "cf64e4ccf0a5a4db5d417c2f061d235ad013f163506664c83838fdc2ec4381f7",
-      "source": ".ai-hub/skills/shared/angular-developer/references/testing-fundamentals.md"
-    },
-    ".claude/skills/angular-new-app/SKILL.md": {
-      "sha256": "82bd21d233bd0200a28d12491b419a5c9587582ab0560674e9e112f7a1fcbecf",
-      "source": ".ai-hub/skills/shared/angular-new-app/SKILL.md"
-    },
-    ".claude/skills/frontend-design/LICENSE.txt": {
-      "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",
-      "source": ".ai-hub/skills/shared/frontend-design/LICENSE.txt"
-    },
-    ".claude/skills/frontend-design/SKILL.md": {
-      "sha256": "e5efaa14befedb238cce13d82ec5e8238a04d9f81f51b4de2c0ee33eeeced1a7",
-      "source": ".ai-hub/skills/shared/frontend-design/SKILL.md"
-    },
-    ".claude/skills/onna-architecture-angular/SKILL.md": {
-      "sha256": "2fdef7fdc52a65a4cbfa3c292344857916ce1dac2a8ab7b3f4c65089d717fc43",
-      "source": ".ai-hub/skills/shared/onna-architecture-angular/SKILL.md"
-    },
-    ".claude/skills/onna-architecture-bff/SKILL.md": {
-      "sha256": "91e2395661ab1c15321724144f65b67362be6608aa4273ac4d644a8b94e4311d",
-      "source": ".ai-hub/skills/shared/onna-architecture-bff/SKILL.md"
-    },
-    ".claude/skills/onna-architecture-common/SKILL.md": {
-      "sha256": "f75c1cb209de04d15f4ed46589b53fbc3ef6b240a347cb6eeee063c9570d6769",
-      "source": ".ai-hub/skills/shared/onna-architecture-common/SKILL.md"
-    },
-    ".claude/skills/onna-design-system/SKILL.md": {
-      "sha256": "10072f43fc53ac31c5984ebc086d3ef547890e3e93a045a72921d044ada98c64",
-      "source": ".ai-hub/skills/shared/onna-design-system/SKILL.md"
-    },
-    ".claude/skills/openspec-apply-change/SKILL.md": {
-      "sha256": "4ace6fcf26aab58b2acc209d33269b261a08d1aeb2de20f16e9fc5ccac7a16ad",
-      "source": ".ai-hub/skills/shared/openspec-apply-change/SKILL.md"
-    },
-    ".claude/skills/openspec-archive-change/SKILL.md": {
-      "sha256": "0f87eb4a68094d0f502c99bb95a8c81d8d0130bd8cefd424d53f52718877c4a2",
-      "source": ".ai-hub/skills/shared/openspec-archive-change/SKILL.md"
-    },
-    ".claude/skills/openspec-explore/SKILL.md": {
-      "sha256": "5eefdd1f72396821e8c559a80595049fe41a0dbebbca025e21a48bd4fa31ff59",
-      "source": ".ai-hub/skills/shared/openspec-explore/SKILL.md"
-    },
-    ".claude/skills/openspec-propose/SKILL.md": {
-      "sha256": "cc88d8ff62c7fe0070bb4e63bce62f1801da2819bc0a652c9d1da3acd3d4eb5f",
-      "source": ".ai-hub/skills/shared/openspec-propose/SKILL.md"
-    },
-    ".claude/skills/openspec-sync-specs/SKILL.md": {
-      "sha256": "17616388ca0f88c87529bbe7cdf1148f75f89e289d52d81bb41dabab0ed9a6bf",
-      "source": ".ai-hub/skills/shared/openspec-sync-specs/SKILL.md"
-    },
-    ".claude/skills/openspec-workflow/SKILL.md": {
-      "sha256": "bc13425660c8ab1168971101b126316f13277ae336b91568873def8c6fa09915",
-      "source": ".ai-hub/skills/shared/openspec-workflow/SKILL.md"
-    },
-    ".claude/skills/planning-with-files/SKILL.md": {
-      "sha256": "5a63e59381feeb562dc2d9b96ed5d63eae0851f24f48ce9f2d306756af90257c",
-      "source": ".ai-hub/skills/shared/planning-with-files/SKILL.md"
-    },
-    ".claude/skills/planning-with-files/examples.md": {
-      "sha256": "9fdbb8cd2d76e503c3f63721593458426e03bad75b64303f54a85f849f98ea6d",
-      "source": ".ai-hub/skills/shared/planning-with-files/examples.md"
-    },
-    ".claude/skills/planning-with-files/reference.md": {
-      "sha256": "e5afe4f34eaaa3c1b49184a04839492a4646641a77c1414d4128cc8b995a8a99",
-      "source": ".ai-hub/skills/shared/planning-with-files/reference.md"
-    },
-    ".claude/skills/planning-with-files/scripts/attest-plan.ps1": {
-      "sha256": "5a0473ddfea7c5936a8f9be30b94b23af2e37e7454057482dcb57d6b599f506c",
-      "source": ".ai-hub/skills/shared/planning-with-files/scripts/attest-plan.ps1"
-    },
-    ".claude/skills/planning-with-files/scripts/attest-plan.sh": {
-      "sha256": "61d24c3ffee1c51afa001a8608a667056931d2692c515467eb6f5a00850ffb3b",
-      "source": ".ai-hub/skills/shared/planning-with-files/scripts/attest-plan.sh"
-    },
-    ".claude/skills/planning-with-files/scripts/check-complete.ps1": {
-      "sha256": "f9e5d7bc1e92a466a44fcd7de1bfa3f69174a55396af0a54e739407f75911e13",
-      "source": ".ai-hub/skills/shared/planning-with-files/scripts/check-complete.ps1"
-    },
-    ".claude/skills/planning-with-files/scripts/check-complete.sh": {
-      "sha256": "9aceee61cc0d9932fb9efccef2b231b61c3122be71224acac90f5930e3dfb1fe",
-      "source": ".ai-hub/skills/shared/planning-with-files/scripts/check-complete.sh"
-    },
-    ".claude/skills/planning-with-files/scripts/init-session.ps1": {
-      "sha256": "4c720adf32e7f3548b13c9c754be58531daddbcabd38a9c3b837cf75b2dbb7a2",
-      "source": ".ai-hub/skills/shared/planning-with-files/scripts/init-session.ps1"
-    },
-    ".claude/skills/planning-with-files/scripts/init-session.sh": {
-      "sha256": "05f29e372a5cec9d3df939dc04740a3f52ea0921c3e819164bdc980502e69cd8",
-      "source": ".ai-hub/skills/shared/planning-with-files/scripts/init-session.sh"
-    },
-    ".claude/skills/planning-with-files/scripts/resolve-plan-dir.ps1": {
-      "sha256": "96d61686053722e81bfa9fe2e918c546ce5d51dbad54d5388735b39b2c9ca2f1",
-      "source": ".ai-hub/skills/shared/planning-with-files/scripts/resolve-plan-dir.ps1"
-    },
-    ".claude/skills/planning-with-files/scripts/resolve-plan-dir.sh": {
-      "sha256": "3c94eba0ad09363b1cbda57641c8543954356ffba439e5b68bff3de34e740218",
-      "source": ".ai-hub/skills/shared/planning-with-files/scripts/resolve-plan-dir.sh"
-    },
-    ".claude/skills/planning-with-files/scripts/session-catchup.py": {
-      "sha256": "95046e4bfec66ddc3a44e85fd87b610557c166ffafb83e89d0d9b6aeab6d6274",
-      "source": ".ai-hub/skills/shared/planning-with-files/scripts/session-catchup.py"
-    },
-    ".claude/skills/planning-with-files/scripts/set-active-plan.ps1": {
-      "sha256": "81328fd39fef216a9133eea38cdca4eb25a39defb3084f58c746948ba287333d",
-      "source": ".ai-hub/skills/shared/planning-with-files/scripts/set-active-plan.ps1"
-    },
-    ".claude/skills/planning-with-files/scripts/set-active-plan.sh": {
-      "sha256": "72e3e2b3dcd9cb40018ebd86491f54deb84b540f723dd4a0e78ac47931c5db6c",
-      "source": ".ai-hub/skills/shared/planning-with-files/scripts/set-active-plan.sh"
-    },
-    ".claude/skills/planning-with-files/templates/findings.md": {
-      "sha256": "e735f19bdcfdeb117f5c0d3c1a3fb1422334955f190d1aa008da9a5c9e7805c5",
-      "source": ".ai-hub/skills/shared/planning-with-files/templates/findings.md"
-    },
-    ".claude/skills/planning-with-files/templates/progress.md": {
-      "sha256": "43d8f06d20ad3b5287df266cafde7572ddf3d5f95d96a8395d8d768aa814db73",
-      "source": ".ai-hub/skills/shared/planning-with-files/templates/progress.md"
-    },
-    ".claude/skills/planning-with-files/templates/task_plan.md": {
-      "sha256": "605dba60548c309f6b3c7cce3357214a0bb189fe7434e3ff48158013344625ae",
-      "source": ".ai-hub/skills/shared/planning-with-files/templates/task_plan.md"
-    },
-    ".claude/skills/super-dev/SKILL.md": {
-      "sha256": "1a67d46134322e738fc6e5239071890d92fccbed4e54362f863ca0f79b3cf1f9",
-      "source": ".ai-hub/skills/shared/super-dev/SKILL.md"
-    },
-    ".claude/skills/super-dev/references/products-anatomy.md": {
-      "sha256": "c6953272961c1a5996bceb14e4479850759550c9863c78e188a957b9d26e7a4a",
-      "source": ".ai-hub/skills/shared/super-dev/references/products-anatomy.md"
+    ".claude/rules/core.md": {
+      "sha256": "185db95e0743c8e8f37b8ef655f4d7b433cd8c646ed73e37f75ef9941849bc6e",
+      "source": ".ai-hub/rules/core.md"
+    },
+    ".claude/rules/preflight.md": {
+      "sha256": "1eb18a29e75aa9a8cd72ac86714f4a574a570e4960ad76486d77bf2ac62fc864",
+      "source": "engine/preflight.md"
+    },
+    ".claude/skills/speckit-analyze/SKILL.md": {
+      "sha256": "f099514730261c5382bb14c3cb0e43c47e80afec16c07f79f5fe5b0f10d1b6e4",
+      "source": "@engine/skills/shared/speckit-analyze/SKILL.md"
+    },
+    ".claude/skills/speckit-assess-decide/SKILL.md": {
+      "sha256": "2ce1ba87a83d591f57321e05fb2dc8f01c3118fafdd2cb80a4edfda10004c8f9",
+      "source": "@engine/skills/shared/speckit-assess-decide/SKILL.md"
+    },
+    ".claude/skills/speckit-assess-define/SKILL.md": {
+      "sha256": "e0d152c4b45e65ce64f1b512672dc5e327fbb30bb50375e052f223232aba8208",
+      "source": "@engine/skills/shared/speckit-assess-define/SKILL.md"
+    },
+    ".claude/skills/speckit-assess-intake/SKILL.md": {
+      "sha256": "15dac74375fc28db6140c068dce916a2af4334fbec65dba4a119868a03808a0b",
+      "source": "@engine/skills/shared/speckit-assess-intake/SKILL.md"
+    },
+    ".claude/skills/speckit-assess-research/SKILL.md": {
+      "sha256": "963d9f10e2614a9f7ae4a6b9a4e5eb229bceac27935b804e6ae0f0fcbfcacf83",
+      "source": "@engine/skills/shared/speckit-assess-research/SKILL.md"
+    },
+    ".claude/skills/speckit-assess-shape/SKILL.md": {
+      "sha256": "283d0812f28deb2db873a60506bfc11cf3e66078f36f666d5f4c9afdd65942ed",
+      "source": "@engine/skills/shared/speckit-assess-shape/SKILL.md"
+    },
+    ".claude/skills/speckit-bug-assess/SKILL.md": {
+      "sha256": "7779a6b7c9cd25fa5b8133a589e072320a489e72db85c4ce24d0565581c19231",
+      "source": "@engine/skills/shared/speckit-bug-assess/SKILL.md"
+    },
+    ".claude/skills/speckit-bug-fix/SKILL.md": {
+      "sha256": "9126fb67f6e6b51955bf2d89996b78098e127a2bbb4b6def17f644692a4425bb",
+      "source": "@engine/skills/shared/speckit-bug-fix/SKILL.md"
+    },
+    ".claude/skills/speckit-bug-test/SKILL.md": {
+      "sha256": "d9af4f0bf5677c4cad21b3638f4a17a422c3953a3d9f35e1d9b7df4e57495cc8",
+      "source": "@engine/skills/shared/speckit-bug-test/SKILL.md"
+    },
+    ".claude/skills/speckit-checklist/SKILL.md": {
+      "sha256": "5da7c6b39eea92ef3a09c27a510cbe1290fbbb49d129b0938ea138ac79d99548",
+      "source": "@engine/skills/shared/speckit-checklist/SKILL.md"
+    },
+    ".claude/skills/speckit-clarify/SKILL.md": {
+      "sha256": "1f5b98f0cdc6fc2ae7e500bdff2c2245531aec29e7416a9ce4ee7f95591f990e",
+      "source": "@engine/skills/shared/speckit-clarify/SKILL.md"
+    },
+    ".claude/skills/speckit-constitution/SKILL.md": {
+      "sha256": "5f4fd117df719e716ee973c20562b2fc5ffe13f918d10be723f366698d2a2267",
+      "source": "@engine/skills/shared/speckit-constitution/SKILL.md"
+    },
+    ".claude/skills/speckit-converge/SKILL.md": {
+      "sha256": "3ee0c10ec5b7f2895ce9ca0c1e18a88bece50163bb462f957ba49c286bb445d2",
+      "source": "@engine/skills/shared/speckit-converge/SKILL.md"
+    },
+    ".claude/skills/speckit-implement/SKILL.md": {
+      "sha256": "0bf4891cb1c086dfa40b01e519b57c11fbf5cc40cd861b71338d2ed301495456",
+      "source": "@engine/skills/shared/speckit-implement/SKILL.md"
+    },
+    ".claude/skills/speckit-plan/SKILL.md": {
+      "sha256": "3478d4ed9287340e1b795d9bce2e2560c50d45388658b73e347cd9931b3b4882",
+      "source": "@engine/skills/shared/speckit-plan/SKILL.md"
+    },
+    ".claude/skills/speckit-specify/SKILL.md": {
+      "sha256": "81ff1dec7256a64afe4be7e2958286b105c9fa1bbb96fc4f33eca46d1d2c66ff",
+      "source": "@engine/skills/shared/speckit-specify/SKILL.md"
+    },
+    ".claude/skills/speckit-tasks/SKILL.md": {
+      "sha256": "aed5345d968108aa2e505f803d9c0d7d8adac1317ad51b068283142bc19a2241",
+      "source": "@engine/skills/shared/speckit-tasks/SKILL.md"
     },
     ".cursor/mcp.json": {
       "sha256": "d031c136768ee18549a1f173d4b43755fa02a9b4d6de9fac93991ea6d8f1fb1b",
-      "source": ".ai-hub/mcp-manifest.yaml"
-    },
-    ".cursor/rules/backend.mdc": {
-      "sha256": "4e73b3e1ba7b513c9a6bf38b41719b28459255affb37307d2101248158a7e81b",
-      "source": ".ai-hub/rules/backend.md"
+      "source": "mcp-manifest.yaml"
     },
     ".cursor/rules/core.mdc": {
-      "sha256": "e233fc86c80abe1d7971417b348a6df7daa6d0996c0c83b62a099c9659660ad4",
+      "sha256": "26d6516aafb7a3061bed0aa96ad9da91e42876ab1b322c5fc52e1adce803cd68",
       "source": ".ai-hub/rules/core.md"
     },
-    ".cursor/rules/frontend.mdc": {
-      "sha256": "9dee78eeccfdae13a9568de7d5d8e69459494fb1d08fe8dfe8ef7341b4d0018d",
-      "source": ".ai-hub/rules/frontend.md"
+    ".cursor/rules/preflight.mdc": {
+      "sha256": "b35cf2f4df94cecdde978df89abae19dd6adc9884d12055be1040d145f5a21e3",
+      "source": "engine/preflight.md"
     },
-    ".github/instructions/backend.instructions.md": {
-      "sha256": "290349e75fdd17e7eaecbf5c003df74dd30a27233288aca03048dbf5fa10312c",
-      "source": ".ai-hub/rules/backend.md"
+    ".cursor/rules/speckit-analyze.mdc": {
+      "sha256": "a78b3ea8a852945ebbb46da7433529ac0319e76458a3f7bb026f4a9e7405ad7b",
+      "source": "@engine/skills/shared/speckit-analyze/SKILL.md"
+    },
+    ".cursor/rules/speckit-assess-decide.mdc": {
+      "sha256": "86a1ebb0875b24a1039a04ce97ca13c5418135d45454b54ee06143666070cb29",
+      "source": "@engine/skills/shared/speckit-assess-decide/SKILL.md"
+    },
+    ".cursor/rules/speckit-assess-define.mdc": {
+      "sha256": "ea4b647e681cda5b727fccda928de1d79b31ff0921aa038d5fb6494158c34d86",
+      "source": "@engine/skills/shared/speckit-assess-define/SKILL.md"
+    },
+    ".cursor/rules/speckit-assess-intake.mdc": {
+      "sha256": "426e6effff44cfeedd589eeae360839e5b5c42d185e9ccbb6673e378df55fd0a",
+      "source": "@engine/skills/shared/speckit-assess-intake/SKILL.md"
+    },
+    ".cursor/rules/speckit-assess-research.mdc": {
+      "sha256": "60b03a52ab5b25a805a6d9a971c79c9a16fd313b535855b73ba34a03dbe2c104",
+      "source": "@engine/skills/shared/speckit-assess-research/SKILL.md"
+    },
+    ".cursor/rules/speckit-assess-shape.mdc": {
+      "sha256": "c40d811be2654bcf5582ecd951663aa5c032e314919f622a483df7610ee15589",
+      "source": "@engine/skills/shared/speckit-assess-shape/SKILL.md"
+    },
+    ".cursor/rules/speckit-bug-assess.mdc": {
+      "sha256": "dfa0a15209ecca3c6d54d92ffd592833fbf7fbee55938e3d9b821b4a48b8b3a8",
+      "source": "@engine/skills/shared/speckit-bug-assess/SKILL.md"
+    },
+    ".cursor/rules/speckit-bug-fix.mdc": {
+      "sha256": "84822fc1b9179c7f755c95d5418735d65bb7fcfe2efca33acf139861ca4d92d4",
+      "source": "@engine/skills/shared/speckit-bug-fix/SKILL.md"
+    },
+    ".cursor/rules/speckit-bug-test.mdc": {
+      "sha256": "4e5802b999f67caaf932a3ab2c60466c339a25325d0d02d398c20faed9039adb",
+      "source": "@engine/skills/shared/speckit-bug-test/SKILL.md"
+    },
+    ".cursor/rules/speckit-checklist.mdc": {
+      "sha256": "398a5814be054268503ae0f64671f8b68c659f0c9748042641d0d8590170ad1b",
+      "source": "@engine/skills/shared/speckit-checklist/SKILL.md"
+    },
+    ".cursor/rules/speckit-clarify.mdc": {
+      "sha256": "ce5cf045de9a9ce117e68fbd83d9375a9942b6c3f7b31762c4135b6e02148ebf",
+      "source": "@engine/skills/shared/speckit-clarify/SKILL.md"
+    },
+    ".cursor/rules/speckit-constitution.mdc": {
+      "sha256": "a22d84b7f1c65c268ed45f7f605cd0d9974e4c879a0548e7ed1058d0435d58eb",
+      "source": "@engine/skills/shared/speckit-constitution/SKILL.md"
+    },
+    ".cursor/rules/speckit-converge.mdc": {
+      "sha256": "4d1d0c274c54c56801bbb3426d7edf639f633baafc3ff2b4c07d6dc7ac3c3aa3",
+      "source": "@engine/skills/shared/speckit-converge/SKILL.md"
+    },
+    ".cursor/rules/speckit-implement.mdc": {
+      "sha256": "5283ec29c2ef5b24d10e2de580b94d793bb6815c9c398da3877849744a621f12",
+      "source": "@engine/skills/shared/speckit-implement/SKILL.md"
+    },
+    ".cursor/rules/speckit-plan.mdc": {
+      "sha256": "8a3b76b5bf87526a166f609532c8d8bfd779accfbb5308e62a7a8983e640f2ce",
+      "source": "@engine/skills/shared/speckit-plan/SKILL.md"
+    },
+    ".cursor/rules/speckit-specify.mdc": {
+      "sha256": "72338f5dabaf0f991fc46cc423a396f0cedf22068137f55cd83a6fccaaf99108",
+      "source": "@engine/skills/shared/speckit-specify/SKILL.md"
+    },
+    ".cursor/rules/speckit-tasks.mdc": {
+      "sha256": "a67ed21b4476abf0c9628bcffba977200b9310749cb1ea23e1fc795733472535",
+      "source": "@engine/skills/shared/speckit-tasks/SKILL.md"
+    },
+    ".github/agents/explorer-domain.md": {
+      "sha256": "eadbb044a9177e9d298aaa0229c9d38af04700e72d99b4fd8edd7dedfefc47b0",
+      "source": ".ai-hub/agents/explorer-domain.md"
+    },
+    ".github/agents/implementer-backend.md": {
+      "sha256": "4da1bbf4c9184a3f312c2e9d0fd9bfc8953c8ddda00c93aba70aa4dbf68b1ab7",
+      "source": ".ai-hub/agents/implementer-backend.md"
+    },
+    ".github/agents/implementer-frontend.md": {
+      "sha256": "1f9f4f3dd737c803f2ad5e5f4ca5c0a9bdf867c4604bf8a95ae6fda3a32222cb",
+      "source": ".ai-hub/agents/implementer-frontend.md"
+    },
+    ".github/agents/reviewer-architecture.md": {
+      "sha256": "b23ba2366805d03634bb75c72e933ce0d2da3f3b75e0b2effee2b3ca40f3308f",
+      "source": ".ai-hub/agents/reviewer-architecture.md"
+    },
+    ".github/agents/reviewer-tests.md": {
+      "sha256": "5b06dc1a5612ab74eff5c1d56d39e322e5d26b48d366660173e30cadb8d6c7ad",
+      "source": ".ai-hub/agents/reviewer-tests.md"
+    },
+    ".github/agents/spec-author.md": {
+      "sha256": "0971816fc8e8c7adf7e46885b021fd5263aa477600c712223f69f07f5ba338d0",
+      "source": ".ai-hub/agents/spec-author.md"
     },
     ".github/instructions/core.instructions.md": {
-      "sha256": "0bdb1f8fe7ac8774f6271bb4a3235abe94a25c6affcfd9c25f7a063e5b65d289",
+      "sha256": "d771c7680ac2c3f7ac83aed3dfe57b3ac217e52a6f6637ecee522bcca08192ea",
       "source": ".ai-hub/rules/core.md"
     },
-    ".github/instructions/frontend.instructions.md": {
-      "sha256": "0e8a6de94ed1ebef8751baf13bf6b10af5851159a36094b45892a621ab875589",
-      "source": ".ai-hub/rules/frontend.md"
+    ".github/instructions/preflight.instructions.md": {
+      "sha256": "647f1f29a48a99b529b30bfaa2c747f9ef1bdbc794c4d2955f3f792a2534edad",
+      "source": "engine/preflight.md"
+    },
+    ".github/skills/speckit-analyze/SKILL.md": {
+      "sha256": "f099514730261c5382bb14c3cb0e43c47e80afec16c07f79f5fe5b0f10d1b6e4",
+      "source": "@engine/skills/shared/speckit-analyze/SKILL.md"
+    },
+    ".github/skills/speckit-assess-decide/SKILL.md": {
+      "sha256": "2ce1ba87a83d591f57321e05fb2dc8f01c3118fafdd2cb80a4edfda10004c8f9",
+      "source": "@engine/skills/shared/speckit-assess-decide/SKILL.md"
+    },
+    ".github/skills/speckit-assess-define/SKILL.md": {
+      "sha256": "e0d152c4b45e65ce64f1b512672dc5e327fbb30bb50375e052f223232aba8208",
+      "source": "@engine/skills/shared/speckit-assess-define/SKILL.md"
+    },
+    ".github/skills/speckit-assess-intake/SKILL.md": {
+      "sha256": "15dac74375fc28db6140c068dce916a2af4334fbec65dba4a119868a03808a0b",
+      "source": "@engine/skills/shared/speckit-assess-intake/SKILL.md"
+    },
+    ".github/skills/speckit-assess-research/SKILL.md": {
+      "sha256": "963d9f10e2614a9f7ae4a6b9a4e5eb229bceac27935b804e6ae0f0fcbfcacf83",
+      "source": "@engine/skills/shared/speckit-assess-research/SKILL.md"
+    },
+    ".github/skills/speckit-assess-shape/SKILL.md": {
+      "sha256": "283d0812f28deb2db873a60506bfc11cf3e66078f36f666d5f4c9afdd65942ed",
+      "source": "@engine/skills/shared/speckit-assess-shape/SKILL.md"
+    },
+    ".github/skills/speckit-bug-assess/SKILL.md": {
+      "sha256": "7779a6b7c9cd25fa5b8133a589e072320a489e72db85c4ce24d0565581c19231",
+      "source": "@engine/skills/shared/speckit-bug-assess/SKILL.md"
+    },
+    ".github/skills/speckit-bug-fix/SKILL.md": {
+      "sha256": "9126fb67f6e6b51955bf2d89996b78098e127a2bbb4b6def17f644692a4425bb",
+      "source": "@engine/skills/shared/speckit-bug-fix/SKILL.md"
+    },
+    ".github/skills/speckit-bug-test/SKILL.md": {
+      "sha256": "d9af4f0bf5677c4cad21b3638f4a17a422c3953a3d9f35e1d9b7df4e57495cc8",
+      "source": "@engine/skills/shared/speckit-bug-test/SKILL.md"
+    },
+    ".github/skills/speckit-checklist/SKILL.md": {
+      "sha256": "5da7c6b39eea92ef3a09c27a510cbe1290fbbb49d129b0938ea138ac79d99548",
+      "source": "@engine/skills/shared/speckit-checklist/SKILL.md"
+    },
+    ".github/skills/speckit-clarify/SKILL.md": {
+      "sha256": "1f5b98f0cdc6fc2ae7e500bdff2c2245531aec29e7416a9ce4ee7f95591f990e",
+      "source": "@engine/skills/shared/speckit-clarify/SKILL.md"
+    },
+    ".github/skills/speckit-constitution/SKILL.md": {
+      "sha256": "5f4fd117df719e716ee973c20562b2fc5ffe13f918d10be723f366698d2a2267",
+      "source": "@engine/skills/shared/speckit-constitution/SKILL.md"
+    },
+    ".github/skills/speckit-converge/SKILL.md": {
+      "sha256": "3ee0c10ec5b7f2895ce9ca0c1e18a88bece50163bb462f957ba49c286bb445d2",
+      "source": "@engine/skills/shared/speckit-converge/SKILL.md"
+    },
+    ".github/skills/speckit-implement/SKILL.md": {
+      "sha256": "0bf4891cb1c086dfa40b01e519b57c11fbf5cc40cd861b71338d2ed301495456",
+      "source": "@engine/skills/shared/speckit-implement/SKILL.md"
+    },
+    ".github/skills/speckit-plan/SKILL.md": {
+      "sha256": "3478d4ed9287340e1b795d9bce2e2560c50d45388658b73e347cd9931b3b4882",
+      "source": "@engine/skills/shared/speckit-plan/SKILL.md"
+    },
+    ".github/skills/speckit-specify/SKILL.md": {
+      "sha256": "81ff1dec7256a64afe4be7e2958286b105c9fa1bbb96fc4f33eca46d1d2c66ff",
+      "source": "@engine/skills/shared/speckit-specify/SKILL.md"
+    },
+    ".github/skills/speckit-tasks/SKILL.md": {
+      "sha256": "aed5345d968108aa2e505f803d9c0d7d8adac1317ad51b068283142bc19a2241",
+      "source": "@engine/skills/shared/speckit-tasks/SKILL.md"
     },
     ".mcp.json": {
       "sha256": "d031c136768ee18549a1f173d4b43755fa02a9b4d6de9fac93991ea6d8f1fb1b",
-      "source": ".ai-hub/mcp-manifest.yaml"
+      "source": "mcp-manifest.yaml"
     },
     ".opencode/agents/explorer-domain.md": {
-      "sha256": "dfd1298964565229f3a3a0474f3249ec53abdc6996cf9462497085595295c7c4",
+      "sha256": "eadbb044a9177e9d298aaa0229c9d38af04700e72d99b4fd8edd7dedfefc47b0",
       "source": ".ai-hub/agents/explorer-domain.md"
     },
     ".opencode/agents/implementer-backend.md": {
-      "sha256": "b2350d9e6e7d4179003aac7d7a8721e1ea6558f524ada7bedb9f2e3ed1eb0f9c",
+      "sha256": "4da1bbf4c9184a3f312c2e9d0fd9bfc8953c8ddda00c93aba70aa4dbf68b1ab7",
       "source": ".ai-hub/agents/implementer-backend.md"
     },
     ".opencode/agents/implementer-frontend.md": {
-      "sha256": "bd7bb3453c5122fd2f1c7082794761b815c1d557cc629981da242fe63c8fa799",
+      "sha256": "1f9f4f3dd737c803f2ad5e5f4ca5c0a9bdf867c4604bf8a95ae6fda3a32222cb",
       "source": ".ai-hub/agents/implementer-frontend.md"
     },
     ".opencode/agents/reviewer-architecture.md": {
-      "sha256": "3b8ef072f18193cf205ee7d22b0ce026d034f762b8652810de0e499a4017cd21",
+      "sha256": "b23ba2366805d03634bb75c72e933ce0d2da3f3b75e0b2effee2b3ca40f3308f",
       "source": ".ai-hub/agents/reviewer-architecture.md"
     },
     ".opencode/agents/reviewer-tests.md": {
-      "sha256": "3613bfb9bd756f27cbb3fa31a8959351380856562b63629b41ce5098c2ff5fdb",
+      "sha256": "5b06dc1a5612ab74eff5c1d56d39e322e5d26b48d366660173e30cadb8d6c7ad",
       "source": ".ai-hub/agents/reviewer-tests.md"
     },
     ".opencode/agents/spec-author.md": {
-      "sha256": "a9a08820b1aed99a237017545477a116d23d412a38c1956f3445281831541bbb",
+      "sha256": "0971816fc8e8c7adf7e46885b021fd5263aa477600c712223f69f07f5ba338d0",
       "source": ".ai-hub/agents/spec-author.md"
+    },
+    ".opencode/rules/core.md": {
+      "sha256": "185db95e0743c8e8f37b8ef655f4d7b433cd8c646ed73e37f75ef9941849bc6e",
+      "source": ".ai-hub/rules/core.md"
+    },
+    ".opencode/rules/preflight.md": {
+      "sha256": "1eb18a29e75aa9a8cd72ac86714f4a574a570e4960ad76486d77bf2ac62fc864",
+      "source": "engine/preflight.md"
+    },
+    ".opencode/skills/speckit-analyze/SKILL.md": {
+      "sha256": "f099514730261c5382bb14c3cb0e43c47e80afec16c07f79f5fe5b0f10d1b6e4",
+      "source": "@engine/skills/shared/speckit-analyze/SKILL.md"
+    },
+    ".opencode/skills/speckit-assess-decide/SKILL.md": {
+      "sha256": "2ce1ba87a83d591f57321e05fb2dc8f01c3118fafdd2cb80a4edfda10004c8f9",
+      "source": "@engine/skills/shared/speckit-assess-decide/SKILL.md"
+    },
+    ".opencode/skills/speckit-assess-define/SKILL.md": {
+      "sha256": "e0d152c4b45e65ce64f1b512672dc5e327fbb30bb50375e052f223232aba8208",
+      "source": "@engine/skills/shared/speckit-assess-define/SKILL.md"
+    },
+    ".opencode/skills/speckit-assess-intake/SKILL.md": {
+      "sha256": "15dac74375fc28db6140c068dce916a2af4334fbec65dba4a119868a03808a0b",
+      "source": "@engine/skills/shared/speckit-assess-intake/SKILL.md"
+    },
+    ".opencode/skills/speckit-assess-research/SKILL.md": {
+      "sha256": "963d9f10e2614a9f7ae4a6b9a4e5eb229bceac27935b804e6ae0f0fcbfcacf83",
+      "source": "@engine/skills/shared/speckit-assess-research/SKILL.md"
+    },
+    ".opencode/skills/speckit-assess-shape/SKILL.md": {
+      "sha256": "283d0812f28deb2db873a60506bfc11cf3e66078f36f666d5f4c9afdd65942ed",
+      "source": "@engine/skills/shared/speckit-assess-shape/SKILL.md"
+    },
+    ".opencode/skills/speckit-bug-assess/SKILL.md": {
+      "sha256": "7779a6b7c9cd25fa5b8133a589e072320a489e72db85c4ce24d0565581c19231",
+      "source": "@engine/skills/shared/speckit-bug-assess/SKILL.md"
+    },
+    ".opencode/skills/speckit-bug-fix/SKILL.md": {
+      "sha256": "9126fb67f6e6b51955bf2d89996b78098e127a2bbb4b6def17f644692a4425bb",
+      "source": "@engine/skills/shared/speckit-bug-fix/SKILL.md"
+    },
+    ".opencode/skills/speckit-bug-test/SKILL.md": {
+      "sha256": "d9af4f0bf5677c4cad21b3638f4a17a422c3953a3d9f35e1d9b7df4e57495cc8",
+      "source": "@engine/skills/shared/speckit-bug-test/SKILL.md"
+    },
+    ".opencode/skills/speckit-checklist/SKILL.md": {
+      "sha256": "5da7c6b39eea92ef3a09c27a510cbe1290fbbb49d129b0938ea138ac79d99548",
+      "source": "@engine/skills/shared/speckit-checklist/SKILL.md"
+    },
+    ".opencode/skills/speckit-clarify/SKILL.md": {
+      "sha256": "1f5b98f0cdc6fc2ae7e500bdff2c2245531aec29e7416a9ce4ee7f95591f990e",
+      "source": "@engine/skills/shared/speckit-clarify/SKILL.md"
+    },
+    ".opencode/skills/speckit-constitution/SKILL.md": {
+      "sha256": "5f4fd117df719e716ee973c20562b2fc5ffe13f918d10be723f366698d2a2267",
+      "source": "@engine/skills/shared/speckit-constitution/SKILL.md"
+    },
+    ".opencode/skills/speckit-converge/SKILL.md": {
+      "sha256": "3ee0c10ec5b7f2895ce9ca0c1e18a88bece50163bb462f957ba49c286bb445d2",
+      "source": "@engine/skills/shared/speckit-converge/SKILL.md"
+    },
+    ".opencode/skills/speckit-implement/SKILL.md": {
+      "sha256": "0bf4891cb1c086dfa40b01e519b57c11fbf5cc40cd861b71338d2ed301495456",
+      "source": "@engine/skills/shared/speckit-implement/SKILL.md"
+    },
+    ".opencode/skills/speckit-plan/SKILL.md": {
+      "sha256": "3478d4ed9287340e1b795d9bce2e2560c50d45388658b73e347cd9931b3b4882",
+      "source": "@engine/skills/shared/speckit-plan/SKILL.md"
+    },
+    ".opencode/skills/speckit-specify/SKILL.md": {
+      "sha256": "81ff1dec7256a64afe4be7e2958286b105c9fa1bbb96fc4f33eca46d1d2c66ff",
+      "source": "@engine/skills/shared/speckit-specify/SKILL.md"
+    },
+    ".opencode/skills/speckit-tasks/SKILL.md": {
+      "sha256": "aed5345d968108aa2e505f803d9c0d7d8adac1317ad51b068283142bc19a2241",
+      "source": "@engine/skills/shared/speckit-tasks/SKILL.md"
+    },
+    ".pi/agents/explorer-domain.md": {
+      "sha256": "eadbb044a9177e9d298aaa0229c9d38af04700e72d99b4fd8edd7dedfefc47b0",
+      "source": ".ai-hub/agents/explorer-domain.md"
+    },
+    ".pi/agents/implementer-backend.md": {
+      "sha256": "4da1bbf4c9184a3f312c2e9d0fd9bfc8953c8ddda00c93aba70aa4dbf68b1ab7",
+      "source": ".ai-hub/agents/implementer-backend.md"
+    },
+    ".pi/agents/implementer-frontend.md": {
+      "sha256": "1f9f4f3dd737c803f2ad5e5f4ca5c0a9bdf867c4604bf8a95ae6fda3a32222cb",
+      "source": ".ai-hub/agents/implementer-frontend.md"
+    },
+    ".pi/agents/reviewer-architecture.md": {
+      "sha256": "b23ba2366805d03634bb75c72e933ce0d2da3f3b75e0b2effee2b3ca40f3308f",
+      "source": ".ai-hub/agents/reviewer-architecture.md"
+    },
+    ".pi/agents/reviewer-tests.md": {
+      "sha256": "5b06dc1a5612ab74eff5c1d56d39e322e5d26b48d366660173e30cadb8d6c7ad",
+      "source": ".ai-hub/agents/reviewer-tests.md"
+    },
+    ".pi/agents/spec-author.md": {
+      "sha256": "0971816fc8e8c7adf7e46885b021fd5263aa477600c712223f69f07f5ba338d0",
+      "source": ".ai-hub/agents/spec-author.md"
+    },
+    ".pi/prompts/core.md": {
+      "sha256": "185db95e0743c8e8f37b8ef655f4d7b433cd8c646ed73e37f75ef9941849bc6e",
+      "source": ".ai-hub/rules/core.md"
+    },
+    ".pi/prompts/preflight.md": {
+      "sha256": "1eb18a29e75aa9a8cd72ac86714f4a574a570e4960ad76486d77bf2ac62fc864",
+      "source": "engine/preflight.md"
+    },
+    ".pi/skills/speckit-analyze/SKILL.md": {
+      "sha256": "f099514730261c5382bb14c3cb0e43c47e80afec16c07f79f5fe5b0f10d1b6e4",
+      "source": "@engine/skills/shared/speckit-analyze/SKILL.md"
+    },
+    ".pi/skills/speckit-assess-decide/SKILL.md": {
+      "sha256": "2ce1ba87a83d591f57321e05fb2dc8f01c3118fafdd2cb80a4edfda10004c8f9",
+      "source": "@engine/skills/shared/speckit-assess-decide/SKILL.md"
+    },
+    ".pi/skills/speckit-assess-define/SKILL.md": {
+      "sha256": "e0d152c4b45e65ce64f1b512672dc5e327fbb30bb50375e052f223232aba8208",
+      "source": "@engine/skills/shared/speckit-assess-define/SKILL.md"
+    },
+    ".pi/skills/speckit-assess-intake/SKILL.md": {
+      "sha256": "15dac74375fc28db6140c068dce916a2af4334fbec65dba4a119868a03808a0b",
+      "source": "@engine/skills/shared/speckit-assess-intake/SKILL.md"
+    },
+    ".pi/skills/speckit-assess-research/SKILL.md": {
+      "sha256": "963d9f10e2614a9f7ae4a6b9a4e5eb229bceac27935b804e6ae0f0fcbfcacf83",
+      "source": "@engine/skills/shared/speckit-assess-research/SKILL.md"
+    },
+    ".pi/skills/speckit-assess-shape/SKILL.md": {
+      "sha256": "283d0812f28deb2db873a60506bfc11cf3e66078f36f666d5f4c9afdd65942ed",
+      "source": "@engine/skills/shared/speckit-assess-shape/SKILL.md"
+    },
+    ".pi/skills/speckit-bug-assess/SKILL.md": {
+      "sha256": "7779a6b7c9cd25fa5b8133a589e072320a489e72db85c4ce24d0565581c19231",
+      "source": "@engine/skills/shared/speckit-bug-assess/SKILL.md"
+    },
+    ".pi/skills/speckit-bug-fix/SKILL.md": {
+      "sha256": "9126fb67f6e6b51955bf2d89996b78098e127a2bbb4b6def17f644692a4425bb",
+      "source": "@engine/skills/shared/speckit-bug-fix/SKILL.md"
+    },
+    ".pi/skills/speckit-bug-test/SKILL.md": {
+      "sha256": "d9af4f0bf5677c4cad21b3638f4a17a422c3953a3d9f35e1d9b7df4e57495cc8",
+      "source": "@engine/skills/shared/speckit-bug-test/SKILL.md"
+    },
+    ".pi/skills/speckit-checklist/SKILL.md": {
+      "sha256": "5da7c6b39eea92ef3a09c27a510cbe1290fbbb49d129b0938ea138ac79d99548",
+      "source": "@engine/skills/shared/speckit-checklist/SKILL.md"
+    },
+    ".pi/skills/speckit-clarify/SKILL.md": {
+      "sha256": "1f5b98f0cdc6fc2ae7e500bdff2c2245531aec29e7416a9ce4ee7f95591f990e",
+      "source": "@engine/skills/shared/speckit-clarify/SKILL.md"
+    },
+    ".pi/skills/speckit-constitution/SKILL.md": {
+      "sha256": "5f4fd117df719e716ee973c20562b2fc5ffe13f918d10be723f366698d2a2267",
+      "source": "@engine/skills/shared/speckit-constitution/SKILL.md"
+    },
+    ".pi/skills/speckit-converge/SKILL.md": {
+      "sha256": "3ee0c10ec5b7f2895ce9ca0c1e18a88bece50163bb462f957ba49c286bb445d2",
+      "source": "@engine/skills/shared/speckit-converge/SKILL.md"
+    },
+    ".pi/skills/speckit-implement/SKILL.md": {
+      "sha256": "0bf4891cb1c086dfa40b01e519b57c11fbf5cc40cd861b71338d2ed301495456",
+      "source": "@engine/skills/shared/speckit-implement/SKILL.md"
+    },
+    ".pi/skills/speckit-plan/SKILL.md": {
+      "sha256": "3478d4ed9287340e1b795d9bce2e2560c50d45388658b73e347cd9931b3b4882",
+      "source": "@engine/skills/shared/speckit-plan/SKILL.md"
+    },
+    ".pi/skills/speckit-specify/SKILL.md": {
+      "sha256": "81ff1dec7256a64afe4be7e2958286b105c9fa1bbb96fc4f33eca46d1d2c66ff",
+      "source": "@engine/skills/shared/speckit-specify/SKILL.md"
+    },
+    ".pi/skills/speckit-tasks/SKILL.md": {
+      "sha256": "aed5345d968108aa2e505f803d9c0d7d8adac1317ad51b068283142bc19a2241",
+      "source": "@engine/skills/shared/speckit-tasks/SKILL.md"
     },
     ".vscode/mcp.json": {
       "sha256": "a397750087c0c5051d23e2339da95fa94aa293ffe523731ddf220463469fcc9a",
-      "source": ".ai-hub/mcp-manifest.yaml"
-    },
-    "backend/AGENTS.md": {
-      "sha256": "fa5959f8df2cada076fa667bb4cf23c68fefe68040017fdd8c05672a10e03344",
-      "source": ".ai-hub/rules/backend.md"
-    },
-    "frontend/AGENTS.md": {
-      "sha256": "3f81da42d99cc0956834a2e42532614656ce24c86b4958f832979ccb1b4ed835",
-      "source": ".ai-hub/rules/frontend.md"
+      "source": "mcp-manifest.yaml"
     },
     "opencode.json": {
-      "sha256": "96e91dfe9821f1d6e32b3ce5dd7c5aa58a2008cac963f5141e3a2194a184210c",
-      "source": ".ai-hub/manifest.yaml"
+      "sha256": "5c84e4ee65350e4b627ca0ba85aa0ab1e002df23d58d4e76866589046a1b28f5",
+      "source": "manifest.yaml"
     }
   }
 }

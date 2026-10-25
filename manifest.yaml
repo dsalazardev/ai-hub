@@ -1,338 +1,273 @@
-# AI Hub Manifest v2
-# Single registry of all agents, skills, MCPs, and rule sources
-# This file is read by the orchestrator on every session start
+version: 2
 
-version: 1
-schema: ai-hub-manifest
+project:
+  id: ai-hub
+  name: AI Hub
 
-orchestrator:
-  prompt: .ai-hub/orchestrator/PROMPT.md
-  workflow: .ai-hub/orchestrator/workflow.md
-  delegation: .ai-hub/orchestrator/delegation-rules.md
-  startup_protocol:
-    - Read AGENTS.md for global rules
-    - Read .ai-hub/manifest.yaml for registry
-    - Read .planning/current.md for session state
-    - Execute .ai-hub/bootstrap/verify.sh
-    - Resume from .planning/.active_plan if exists
+preset:
+  id: generic-ts
+  version: 1
+  source: package
 
-references:
-  products_module_blueprint:
-    path: .ai-hub/references/products-module-blueprint.md
-    description: Canonical products module pattern for replicating fichajes, users, and other CRUD modules (FE + BE + common)
-  products_coding_standard:
-    path: .ai-hub/references/products-coding-standard.md
-    description: Always-on coding standard from products/services (id number, no unions inventadas, numeric enums, @Field DTOs, FE≡BE domain, naming/locations)
-  replicate_module_checklist:
-    path: .ai-hub/references/replicate-module-checklist.md
-    description: Short pre-flight checklist derived from products blueprint
-  module_implementation_flow:
-    path: .ai-hub/references/module-implementation-flow.md
-    description: Phased step-by-step implementation order (domain first, then BE, then FE)
-  common_imports_catalog:
-    path: .ai-hub/references/common-imports-catalog.md
-    description: What products imports from common and when to reuse in other modules
-  fichajes_migration_notes:
-    path: .ai-hub/references/fichajes-migration-notes.md
-    description: Fichajes legacy inventory, renaming map, endpoints, open questions
-  users_migration_notes:
-    path: .ai-hub/references/users-migration-notes.md
-    description: Users/employees/auth inventory, migration phases, open questions
-  migration_guide_monorepo:
-    path: guia-migracion-monorepo.md
-    description: Punto de entrada, arbol de decision, orden de migracion, dependencias entre modulos
-  migration_guide_backend:
-    path: backend/guia-migracion-backend.md
-    description: Paso a paso tecnico BFF, templates de DALs segregados, mappers, router con Zod
-  migration_guide_frontend:
-    path: frontend/guia-migracion-frontend.md
-    description: Paso a paso tecnico Angular, DTOs con @Field, catalogo de 25 componentes UI, modulo complejo
+stack:
+  languages:
+    - typescript
+  packageManager: npm
+
+commands:
+  install: npm ci --prefix core
+  build: npm run ai:build
+  test: npm run ai:test
+  typecheck: npm run ai:typecheck
+  lint: npm run ai:typecheck
+  verify: npm run ai:test
+
+paths:
+  source:
+    - core/src
+  tests:
+    - core/tests
+  docs:
+    - docs
+
+targets:
+  - claude
+  - opencode
+  - pi
+  - cursor
+  - copilot
+
+policy:
+  trunk: auto
+  guardMode: shadow
+  worktrees: true
+  optOuts: []
+
+skills:
+  source: core/skills/shared
+  publish:
+    - ab-testing
+    - accessibility
+    - agent-eval
+    - agent-safety
+    - analyze
+    - angular
+    - api-connector-builder
+    - api-design
+    - astro
+    - author-skill
+    - automation-flows
+    - aws-essentials
+    - backups
+    - bash-scripting
+    - building-agents
+    - chatbot
+    - chrome-extension
+    - clarify
+    - clickhouse-analytics
+    - cloudflare
+    - codebase-onboarding
+    - code-review
+    - compose-multiplatform
+    - connect-tool
+    - constitution
+    - context-budget
+    - continuous-learning
+    - coolify
+    - cost-tracking
+    - cpp
+    - csharp-dotnet
+    - data-cleaning
+    - data-scraper
+    - db-migrations
+    - debug
+    - decision-challenge
+    - decision-records
+    - deep-learning
+    - deployment
+    - deprecation
+    - design
+    - digitalocean
+    - django
+    - docker
+    - domains-dns
+    - drizzle-orm
+    - duckdb
+    - dynamodb
+    - e2e-testing
+    - electron
+    - elixir
+    - email-deliverability
+    - embeddings-search
+    - error-handling
+    - expo
+    - fal
+    - fastapi
+    - finetuning
+    - firebase
+    - flutter
+    - fly-io
+    - ftd
+    - game-design
+    - gamedev-multiplayer
+    - gamedev-pathing
+    - gamedev-physics
+    - gamedev-shaders
+    - gamedev-shipping
+    - game-storytelling
+    - gcp-essentials
+    - github-actions
+    - gitlab-auth
+    - gitlab-workflow
+    - git-workflow
+    - go
+    - godot
+    - harness
+    - hetzner
+    - htmx
+    - huggingface
+    - idea-refinement
+    - implement
+    - init
+    - java
+    - knowledge-ops
+    - kotlin-android
+    - laravel
+    - level-design
+    - llm-pipeline
+    - machine-learning
+    - modal
+    - mongodb
+    - monitoring
+    - mysql
+    - neon
+    - nestjs
+    - netlify
+    - nextjs
+    - nlp
+    - no-code-app
+    - nodejs
+    - observability
+    - ollama
+    - open-weights
+    - orient
+    - parallel
+    - performance
+    - phoenix
+    - php
+    - plan
+    - planetscale
+    - planning-with-files
+    - postgresdb
+    - prisma-orm
+    - prompt-engineering
+    - python
+    - rag
+    - rails
+    - railway
+    - react
+    - react-native
+    - redis
+    - render
+    - replicate
+    - research-ops
+    - review
+    - ruby
+    - runpod
+    - rust
+    - scaling
+    - sdd
+    - sdd-init
+    - secure-coding
+    - security-scan
+    - ship
+    - shopify
+    - simplify-code
+    - skill-scout
+    - solid-js
+    - source-grounded-development
+    - specify
+    - spreadsheet-ops
+    - spring-boot
+    - sql
+    - sqlite-turso
+    - structured-extraction
+    - suggest
+    - supabase
+    - svelte
+    - swift-ios
+    - tasks
+    - tauri
+    - technical-writing
+    - testing-go
+    - testing-py
+    - testing-web
+    - together-fireworks
+    - training-data
+    - translation-l10n
+    - typescript
+    - ui-engineering
+    - unity
+    - unreal
+    - unslop
+    - unsloth
+    - variant-explorer
+    - vector-db
+    - vercel
+    - verify
+    - vllm
+    - vue-nuxt
+    - webhooks
+    - wordpress
+    - worktrees
 
 agents:
-  spec-author:
-    definition: .ai-hub/agents/spec-author.md
-    scope: write-specs-only
-    can_modify:
-      - openspec/changes/**
-      - .planning/**
-    cannot_modify:
-      - frontend/src/**
-      - backend/src/**
-    skills:
-      - openspec-workflow
-      - onna-architecture-common
+  source: core/agents
+  publish:
+    - cpp-build-resolver
+    - cpp-reviewer
+    - csharp-reviewer
+    - django-build-resolver
+    - django-reviewer
+    - explorer-domain
+    - fastapi-reviewer
+    - flutter-build-resolver
+    - flutter-reviewer
+    - go-build-resolver
+    - go-reviewer
+    - implementer-backend
+    - implementer-frontend
+    - java-build-resolver
+    - java-reviewer
+    - kotlin-build-resolver
+    - kotlin-reviewer
+    - mle-reviewer
+    - php-reviewer
+    - postgres-reviewer
+    - python-reviewer
+    - pytorch-build-resolver
+    - rag-reviewer
+    - react-build-resolver
+    - react-reviewer
+    - reviewer-architecture
+    - reviewer-tests
+    - rust-build-resolver
+    - rust-reviewer
+    - spec-author
+    - spec-miner
+    - swift-build-resolver
+    - swift-reviewer
+    - typescript-reviewer
+    - vue-reviewer
 
-  implementer-frontend:
-    definition: .ai-hub/agents/implementer-frontend.md
-    scope: angular-22
-    can_modify:
-      - frontend/src/**
-      - frontend/*.md
-      - frontend/**/*.spec.ts
-    cannot_modify:
-      - backend/src/**
-    verification: cd frontend && ng build
-    skills:
-      - angular-developer
-      - onna-architecture-angular
-      - onna-design-system
-      - onna-architecture-common
-      - frontend-design
+rules:
+  source: rules
+  publish:
+    - core
+    - rsc/skill-rubric
+    - rsc/skill-harden-rubric
+    - rsc/skill-behavior-rubric
+    - rsc/skill-migration-brief
 
-  implementer-backend:
-    definition: .ai-hub/agents/implementer-backend.md
-    scope: nodejs-bff
-    can_modify:
-      - backend/src/**
-      - backend/*.md
-      - backend/**/*.test.ts
-    cannot_modify:
-      - frontend/src/**
-    verification: cd backend && npx tsc --noEmit
-    skills:
-      - onna-architecture-bff
-      - onna-architecture-common
-
-  reviewer-architecture:
-    definition: .ai-hub/agents/reviewer-architecture.md
-    scope: read-only-review
-    can_modify:
-      - .planning/review_arch_*.md
-    cannot_modify:
-      - frontend/src/**
-      - backend/src/**
-    checks:
-      - Zero-Any policy enforcement
-      - No NgModule usage (Angular standalone only)
-      - inject() instead of constructor injection
-      - Composition over inheritance in DALs
-      - ErrorResult hierarchy usage
-      - Domain types in domain/ directory only
-      - No TODOs or placeholders in production code
-
-  reviewer-tests:
-    definition: .ai-hub/agents/reviewer-tests.md
-    scope: read-only-review
-    can_modify:
-      - .planning/review_tests_*.md
-    cannot_modify:
-      - frontend/src/**
-      - backend/src/**
-    checks:
-      - Backend test coverage >= 70%
-      - Frontend test coverage >= 60%
-      - Property-based tests present for complex logic
-      - Task-to-code traceability (every task has corresponding code + tests)
-      - Vitest explicit imports (no Jest globals)
-
-  explorer-domain:
-    definition: .ai-hub/agents/explorer-domain.md
-    scope: investigation-only
-    can_modify:
-      - .planning/findings.md
-    cannot_modify:
-      - frontend/src/**
-      - backend/src/**
-    skills:
-      - openspec-workflow
-      - angular-developer
-      - onna-architecture-common
-      - onna-architecture-angular
-      - onna-architecture-bff
-
-shared_skills:
-  - id: gitlab-auth
-    path: .ai-hub/skills/shared/gitlab-auth/
-    description: GitLab self-managed authentication for agents — PAT via environment, security rules, Playwright UI fallback
-    triggers:
-      - gitlab
-      - token
-      - PAT
-      - login
-    tools:
-      - opencode
-      - claude_code
-
-  - id: gitlab-workflow
-    path: .ai-hub/skills/shared/gitlab-workflow/
-    description: Daily GitLab operations via REST API v4 — assigned issues, comments, labels, merge requests, pipelines
-    triggers:
-      - issue
-      - merge request
-      - pipeline
-      - gitlab
-    tools:
-      - opencode
-      - claude_code
-
-  - id: openspec-workflow
-    path: .ai-hub/skills/shared/openspec-workflow/
-    description: Unified OpenSpec propose/explore/apply/archive
-    triggers:
-      - "{{OPSX_PREFIX}}explore"
-      - "{{OPSX_PREFIX}}propose"
-      - "{{OPSX_PREFIX}}apply"
-      - "{{OPSX_PREFIX}}archive"
-    tools:
-      - opencode
-      - claude_code
-
-  - id: angular-developer
-    path: .ai-hub/skills/shared/angular-developer/
-    description: Angular 22 standalone components, Signals, inject(), Tailwind CSS 4
-    triggers:
-      - component
-      - service
-      - signal
-      - route
-      - standalone
-    tools:
-      - opencode
-      - claude_code
-
-  - id: onna-architecture-common
-    path: .ai-hub/skills/shared/onna-architecture-common/
-    description: Shared domain architecture rules (Zero-Any, Clean Architecture, Vertical Slicing)
-    triggers:
-      - domain/
-      - DTO
-      - enum
-      - mapper
-      - entity
-    tools:
-      - opencode
-      - claude_code
-
-environment_skills:
-  frontend:
-    - id: onna-architecture-angular
-      path: .ai-hub/skills/shared/onna-architecture-angular/
-      description: Frontend-specific rules (Components in infrastructure/components/, DAL pattern, Service orchestation)
-      triggers:
-        - infrastructure/components/
-        - .dal.ts
-        - .service.ts
-        - MatTableDataSource
-        - Glassmorphism
-    - id: onna-design-system
-      path: .ai-hub/skills/shared/onna-design-system/
-      description: UI/UX conventions (Tailwind CSS 4, Material Angular, responsive breakpoints, empty states)
-      triggers:
-        - tailwind
-        - mat-table
-        - empty state
-        - responsive
-    - id: frontend-design
-      path: .ai-hub/skills/shared/frontend-design/
-      description: Guidance for distinctive, intentional visual design when building new UI. Helps with aesthetic direction, typography, and intentional design choices.
-      triggers:
-        - design
-        - UI
-        - visual
-        - aesthetic
-        - layout
-        - typography
-
-  backend:
-    - id: onna-architecture-bff
-      path: .ai-hub/skills/shared/onna-architecture-bff/
-      description: Backend-specific rules (Express routes, DolibarrDal composition, ErrorResult, EntityResolver)
-      triggers:
-        - routes/
-        - DolibarrDal
-        - EntityResolver
-        - ErrorResult
-        - BaseError
-
-required_mcps:
-  - name: playwright
-    type: local
-    setup_script: .ai-hub/mcp-local/setup-playwright.sh
-    health_check: npx playwright --version
-    description: Browser automation for E2E testing
-
-excluded_mcps:
-  - name: packet-tracer
-    reason: Not applicable to Doligestion business domain
-
-rule_sources:
-  - path: AGENTS.md
-    scope: global
-    priority: 1
-    description: Constitution document — global rules for all agents
-
-  - path: .ai-hub/rules/frontend.md
-    scope: frontend
-    condition: workspace == "frontend"
-    priority: 2
-    description: Frontend-specific rules (Angular 22, Signals, Tailwind CSS 4)
-
-  - path: .ai-hub/rules/backend.md
-    scope: backend
-    condition: workspace == "backend"
-    priority: 2
-    description: Backend-specific rules (Node.js BFF, Dolibarr integration, Docker)
-
-  - path: frontend/dessign.md
-    scope: frontend
-    condition: workspace == "frontend"
-    priority: 3
-    description: UI/UX design system (window patterns, form layouts, glassmorphism)
-
-legacy_paths:
-  - .claude/skills/
-  - .opencode/skills/
-  - .agents/skills/
-  - .agent/skills/
-  - frontend/.agents/skills/
-  - backend/.agents/skills/
-
-migration:
-  status: in_progress
-  phase: 1
-  symlinks_created: false
-  legacy_removed: false
-
-# Destinos que genera `ai-hub sync`. La fuente se edita aquí; las carpetas
-# de cada herramienta son copias generadas (ver openspec ai-hub-single-source).
-sync:
-  skills:
-    source: .ai-hub/skills/shared
-    publish:
-      - angular-developer
-      - angular-new-app
-      - frontend-design
-      - onna-architecture-angular
-      - onna-architecture-bff
-      - onna-architecture-common
-      - onna-design-system
-      - openspec-apply-change
-      - openspec-archive-change
-      - openspec-explore
-      - openspec-propose
-      - openspec-sync-specs
-      - openspec-workflow
-      - planning-with-files
-      - super-dev
-    targets:
-      - .claude/skills
-  agents:
-    source: .ai-hub/agents
-    publish:
-      - spec-author
-      - implementer-frontend
-      - implementer-backend
-      - reviewer-architecture
-      - reviewer-tests
-      - explorer-domain
-    targets:
-      claude: .claude/agents
-      opencode: .opencode/agents
-  rules:
-    source: .ai-hub/rules
-  mcp:
-    source: .ai-hub/mcp-manifest.yaml
-  opencode:
-    instructions:
-      - .ai-hub/rules/core.md
-      - .ai-hub/orchestrator/PROMPT.md
+mcp:
+  source: mcp-manifest.yaml

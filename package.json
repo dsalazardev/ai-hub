@@ -1,0 +1,20 @@
+{
+  "name": "ai-hub-workspace",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "npm run ai:build",
+    "ai:build": "npm --prefix core run build",
+    "ai:test": "npm --prefix core test",
+    "ai:typecheck": "npm --prefix core run typecheck",
+    "ai:init": "node core/dist/bin/ai-hub.js init",
+    "ai:install": "node core/dist/bin/ai-hub.js install",
+    "ai:sync": "node core/dist/bin/ai-hub.js sync",
+    "ai:check": "node core/dist/bin/ai-hub.js doctor",
+    "ai:drift": "node core/dist/bin/ai-hub.js drift",
+    "ai:doctor": "node core/dist/bin/ai-hub.js doctor",
+    "ai:context": "node core/dist/bin/ai-hub.js context",
+    "manifest:build": "node core/dist/manifest/cli.js",
+    "manifest:check": "node core/dist/manifest/cli.js --check"
+  }
+}

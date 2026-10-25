@@ -2,90 +2,64 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
-import { readState, writeState, StateNotFoundError, StateSchemaError } from '../src/state.js';
-import type { StateV3 } from '../src/state.js';
+import {
+  emptyState,
+  readState,
+  writeState,
+  migrateLegacyState,
+  StateNotFoundError,
+  StateSchemaError,
+} from '../src/harness/memory/state.js';
 
-const VALID_STATE: StateV3 = {
-  version: 3,
-  project: 'test-project',
-  active_change: null,
-  changes: [],
-};
-
-let tmpDir: string;
+let root: string;
 
 beforeEach(async () => {
-  tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-hub-test-'));
-  await fs.mkdir(path.join(tmpDir, 'openspec'), { recursive: true });
+  root = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-state-'));
 });
 
 afterEach(async () => {
-  await fs.rm(tmpDir, { recursive: true, force: true });
+  await fs.rm(root, { recursive: true, force: true });
 });
 
-describe('readState', () => {
-  it('devuelve StateV3 cuando el archivo es válido', async () => {
-    const statePath = path.join(tmpDir, 'openspec', 'state.json');
-    await fs.writeFile(statePath, JSON.stringify(VALID_STATE));
-
-    const state = await readState(tmpDir);
-
-    expect(state.version).toBe(3);
-    expect(state.active_change).toBeNull();
-    expect(Array.isArray(state.changes)).toBe(true);
+describe('project state', () => {
+  it('writes and reads a valid state', async () => {
+    const state = emptyState('demo', 'generic-ts');
+    await writeState(root, { ...state, activeChange: 'feat-a', phase: 'apply', tasks: { total: 3, done: 1 } });
+    const read = await readState(root);
+    expect(read.project).toBe('demo');
+    expect(read.activeChange).toBe('feat-a');
+    expect(read.tasks).toEqual({ total: 3, done: 1 });
   });
 
-  it('lanza StateNotFoundError cuando el archivo no existe', async () => {
-    await expect(readState(tmpDir)).rejects.toThrow(StateNotFoundError);
+  it('fails when state.json is missing', async () => {
+    await expect(readState(root)).rejects.toThrow(StateNotFoundError);
   });
 
-  it('lanza StateSchemaError cuando el schema es inválido (version incorrecta)', async () => {
-    const statePath = path.join(tmpDir, 'openspec', 'state.json');
-    await fs.writeFile(statePath, JSON.stringify({ version: 2, active_change: null, changes: [] }));
-
-    await expect(readState(tmpDir)).rejects.toThrow(StateSchemaError);
+  it('rejects an invalid state with the field name', async () => {
+    await fs.mkdir(path.join(root, '.planning'), { recursive: true });
+    await fs.writeFile(path.join(root, '.planning', 'state.json'), JSON.stringify({ version: 1 }));
+    await expect(readState(root)).rejects.toThrow(StateSchemaError);
+    await expect(readState(root)).rejects.toThrow(/project/);
   });
 
-  it('lanza StateSchemaError cuando faltan campos requeridos', async () => {
-    const statePath = path.join(tmpDir, 'openspec', 'state.json');
-    await fs.writeFile(statePath, JSON.stringify({ version: 3 }));
-
-    await expect(readState(tmpDir)).rejects.toThrow(StateSchemaError);
-  });
-});
-
-describe('writeState', () => {
-  it('escribe state.json correctamente', async () => {
-    await writeState(tmpDir, VALID_STATE);
-
-    const statePath = path.join(tmpDir, 'openspec', 'state.json');
-    const raw = await fs.readFile(statePath, 'utf8');
-    const parsed = JSON.parse(raw) as StateV3;
-    expect(parsed.version).toBe(3);
-    expect(parsed.active_change).toBeNull();
-  });
-
-  it('el archivo temporal .tmp no queda en disco tras escritura exitosa', async () => {
-    await writeState(tmpDir, VALID_STATE);
-
-    const tmpPath = path.join(tmpDir, '.planning', 'state.json.tmp');
-    await expect(fs.access(tmpPath)).rejects.toThrow();
-  });
-
-  it('lanza StateSchemaError y no escribe nada si el estado es inválido', async () => {
-    const invalid = { version: 2, active_change: null, changes: [] } as unknown as StateV3;
-
-    await expect(writeState(tmpDir, invalid)).rejects.toThrow(StateSchemaError);
-
-    const statePath = path.join(tmpDir, 'openspec', 'state.json');
-    await expect(fs.access(statePath)).rejects.toThrow();
-  });
-
-  it('permite active_change como string no nulo', async () => {
-    const stateWithChange: StateV3 = { ...VALID_STATE, active_change: 'mi-cambio' };
-    await writeState(tmpDir, stateWithChange);
-
-    const result = await readState(tmpDir);
-    expect(result.active_change).toBe('mi-cambio');
+  it('migrates a legacy state into .planning', async () => {
+    await fs.mkdir(path.join(root, 'openspec', 'changes', 'demo'), { recursive: true });
+    await fs.writeFile(
+      path.join(root, 'openspec', 'state.json'),
+      JSON.stringify({
+        version: 3,
+        active_change: 'demo',
+        changes: [{ name: 'demo', phase: 'implementing' }],
+      }),
+    );
+    await fs.writeFile(
+      path.join(root, 'openspec', 'changes', 'demo', 'tasks.md'),
+      '- [x] one\n- [ ] two\n',
+    );
+    const migrated = await migrateLegacyState(root, 'demo', 'generic-ts');
+    expect(migrated?.activeChange).toBe('demo');
+    expect(migrated?.phase).toBe('implementing');
+    expect(migrated?.tasks).toEqual({ total: 2, done: 1 });
+    expect((await readState(root)).activeChange).toBe('demo');
   });
 });
