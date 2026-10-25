@@ -1,6 +1,6 @@
 ---
 name: go-reviewer
-description: Go reviewer: inspects changed code for stack-specific failure modes and reports evidence without editing. NOT generic service review or Go build repair.
+description: 'Go reviewer: inspects changed code for stack-specific failure modes and reports evidence without editing. NOT generic service review or Go build repair.'
 role: reviewer
 tier: balanced
 skills:

@@ -2,9 +2,9 @@
 name: gitlab-workflow
 description: "Daily GitLab operations for the self-managed instance via REST API v4: my assigned issues, issue detail and comments, labels and state, merge requests and pipelines."
 license: MIT
-compatibility: Requires gitlab-auth (GITLAB_URL/GITLAB_TOKEN in environment) and curl or Node.
+compatibility: Requires gitlab-auth (GITLAB_URL/GITLAB_TOKEN/GITLAB_PROJECT_PATH in environment) and curl or Node.
 metadata:
-  author: Doligestion AI Hub
+  author: ai-hub
   version: "1.0"
 origin: ai-hub
 ---
@@ -19,7 +19,7 @@ Constantes:
 
 - `BASE = {GITLAB_URL}/api/v4`
 - Header: `PRIVATE-TOKEN: {GITLAB_TOKEN}`
-- Proyecto: `dolibarr%2Fdoligestion` (path `dolibarr/doligestion` codificado)
+- Proyecto: `$GITLAB_PROJECT_PATH` (path URL-encoded, por ejemplo `group%2Fproject`)
 
 ## Reglas
 
@@ -42,21 +42,21 @@ Issues abiertas del proyecto:
 
 ```
 curl -s -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-  "$GITLAB_URL/api/v4/projects/dolibarr%2Fdoligestion/issues?state=opened&per_page=100"
+  "$GITLAB_URL/api/v4/projects/$GITLAB_PROJECT_PATH/issues?state=opened&per_page=100"
 ```
 
 Detalle de una issue:
 
 ```
 curl -s -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-  "$GITLAB_URL/api/v4/projects/dolibarr%2Fdoligestion/issues/<iid>"
+  "$GITLAB_URL/api/v4/projects/$GITLAB_PROJECT_PATH/issues/<iid>"
 ```
 
 Comentarios (notas) de una issue:
 
 ```
 curl -s -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-  "$GITLAB_URL/api/v4/projects/dolibarr%2Fdoligestion/issues/<iid>/notes?sort=asc&per_page=100"
+  "$GITLAB_URL/api/v4/projects/$GITLAB_PROJECT_PATH/issues/<iid>/notes?sort=asc&per_page=100"
 ```
 
 Comentar una issue (cuerpo aprobado por el usuario):
@@ -64,7 +64,7 @@ Comentar una issue (cuerpo aprobado por el usuario):
 ```
 curl -s -X POST -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
   --data-urlencode "body=<texto>" \
-  "$GITLAB_URL/api/v4/projects/dolibarr%2Fdoligestion/issues/<iid>/notes"
+  "$GITLAB_URL/api/v4/projects/$GITLAB_PROJECT_PATH/issues/<iid>/notes"
 ```
 
 Etiquetas y estado:
@@ -73,7 +73,7 @@ Etiquetas y estado:
 curl -s -X PUT -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
   --data-urlencode "labels=En curso" \
   --data-urlencode "state_event=close" \
-  "$GITLAB_URL/api/v4/projects/dolibarr%2Fdoligestion/issues/<iid>"
+  "$GITLAB_URL/api/v4/projects/$GITLAB_PROJECT_PATH/issues/<iid>"
 ```
 
 (`state_event` admite `close` o `reopen`; omitirlo si solo se cambian etiquetas.)
@@ -89,21 +89,21 @@ MR de una rama:
 
 ```
 curl -s -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-  "$GITLAB_URL/api/v4/projects/dolibarr%2Fdoligestion/merge_requests?source_branch=<rama>&state=opened"
+  "$GITLAB_URL/api/v4/projects/$GITLAB_PROJECT_PATH/merge_requests?source_branch=<rama>&state=opened"
 ```
 
 Pipelines del proyecto:
 
 ```
 curl -s -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-  "$GITLAB_URL/api/v4/projects/dolibarr%2Fdoligestion/pipelines?per_page=10"
+  "$GITLAB_URL/api/v4/projects/$GITLAB_PROJECT_PATH/pipelines?per_page=10"
 ```
 
 Jobs de un pipeline:
 
 ```
 curl -s -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-  "$GITLAB_URL/api/v4/projects/dolibarr%2Fdoligestion/pipelines/<id>/jobs"
+  "$GITLAB_URL/api/v4/projects/$GITLAB_PROJECT_PATH/pipelines/<id>/jobs"
 ```
 
 Crear MR (solo con confirmación; sin merges automáticos):
@@ -113,7 +113,7 @@ curl -s -X POST -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
   --data-urlencode "source_branch=<rama>" \
   --data-urlencode "target_branch=main" \
   --data-urlencode "title=<titulo aprobado>" \
-  "$GITLAB_URL/api/v4/projects/dolibarr%2Fdoligestion/merge_requests"
+  "$GITLAB_URL/api/v4/projects/$GITLAB_PROJECT_PATH/merge_requests"
 ```
 
 ## Variante PowerShell
@@ -127,7 +127,7 @@ Para POST con cuerpo:
 
 ```
 Invoke-RestMethod -Method Post -Headers $h -Body @{ body = "<texto>" } `
-  -Uri "$env:GITLAB_URL/api/v4/projects/dolibarr%2Fdoligestion/issues/<iid>/notes"
+  -Uri "$env:GITLAB_URL/api/v4/projects/$env:GITLAB_PROJECT_PATH/issues/<iid>/notes"
 ```
 
 ## Presentación al usuario

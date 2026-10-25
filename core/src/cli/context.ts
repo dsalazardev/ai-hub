@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { loadManifestContext } from '../manifest/manifest.js';
@@ -5,11 +6,24 @@ import { readLedger, resumeLedger } from '../harness/memory/ledger.js';
 import type { CliContext, ParsedArgs } from './types.js';
 
 export const CONTEXT_RELATIVE = '.planning/context-next.md';
+export const CONTEXT_EVENTS = 5;
 
-export async function buildContext(root: string): Promise<string> {
+async function stateText(root: string): Promise<string | null> {
+  return fs.readFile(path.join(root, '.planning', 'state.json'), 'utf8').catch(() => null);
+}
+
+export async function contextHash(root: string): Promise<string> {
+  const state = await stateText(root);
+  const events = await readLedger(root, CONTEXT_EVENTS);
+  return createHash('sha256')
+    .update(JSON.stringify({ state, events }), 'utf8')
+    .digest('hex');
+}
+
+export async function renderContext(root: string): Promise<string> {
   const { manifest, engine, preset } = await loadManifestContext(root);
   const summary = await resumeLedger(root);
-  const events = await readLedger(root, 5);
+  const events = await readLedger(root, CONTEXT_EVENTS);
   const lines: string[] = [
     '# Contexto de sesión',
     '',
@@ -44,11 +58,17 @@ export async function buildContext(root: string): Promise<string> {
     '- Trabaja en rama o worktree; no en una trunk cerrada.',
     '',
   ];
-  const body = lines.join('\n');
+  return lines.join('\n');
+}
+
+export async function buildContext(root: string): Promise<string> {
+  const body = await renderContext(root);
+  const hash = await contextHash(root);
+  const content = `${body}<!-- context-hash: ${hash} -->\n`;
   const file = path.join(root, CONTEXT_RELATIVE);
   await fs.mkdir(path.dirname(file), { recursive: true });
-  await fs.writeFile(file, body, 'utf8');
-  return body;
+  await fs.writeFile(file, content, 'utf8');
+  return content;
 }
 
 export async function cmdContext(_args: ParsedArgs, ctx: CliContext): Promise<number> {

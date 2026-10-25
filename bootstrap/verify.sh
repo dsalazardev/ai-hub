@@ -80,12 +80,6 @@ if command -v node >/dev/null 2>&1 && [ -f core/dist/bin/ai-hub.js ]; then
     EXIT_CODE=1
   fi
 
-  if node core/dist/bin/ai-hub.js drift >/dev/null 2>&1; then
-    ok "generated copies have no drift"
-  else
-    warn "generated copies drifted; run node core/dist/bin/ai-hub.js sync"
-  fi
-
   if node core/dist/bin/ai-hub.js doctor >/dev/null 2>&1; then
     ok "doctor reports a healthy harness"
   else

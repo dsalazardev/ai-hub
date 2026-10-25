@@ -2,10 +2,19 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
-import { runSync } from '../src/sync/sync.js';
+import { fileURLToPath } from 'node:url';
+import {
+  buildLock,
+  checkLock,
+  runSync,
+  SyncSourceCheckoutError,
+  SyncSourceError,
+} from '../src/sync/sync.js';
 import { normalize, putRendered, type RenderedFiles } from '../src/sync/render.js';
 import { sha256 } from '../src/sync/lock.js';
 import { seedFixture } from './fixtures.js';
+
+const PREFLIGHT_SOURCE = fileURLToPath(new URL('../engine/preflight.md', import.meta.url));
 
 let root: string;
 
@@ -59,6 +68,52 @@ describe('runSync: writing', () => {
     const projectSource = Object.keys(lock.sources).find((source) => source.startsWith('.ai-hub/'));
     expect(projectSource).toBeDefined();
     expect(lock.sources[projectSource as string]).toBe(sha256(normalize(await read(projectSource as string))));
+  });
+
+  it('records a canonical preflight source and keeps its marker', async () => {
+    await runSync(root, { check: false });
+    const lock = JSON.parse(await read('sync.lock.json')) as {
+      sources: Record<string, string>;
+      files: Record<string, { sha256: string; source: string; markerSource?: string }>;
+    };
+    const destination = '.claude/rules/preflight.md';
+    expect(lock.files[destination].source).toBe('@engine/engine/preflight.md');
+    expect(lock.files[destination].markerSource).toBe('engine/preflight.md');
+    expect(lock.sources['@engine/engine/preflight.md']).toBe(
+      sha256(normalize(await fs.readFile(PREFLIGHT_SOURCE, 'utf8'))),
+    );
+    expect(lock.sources['@engine/engine/preflight.md']).not.toBe(sha256(''));
+    expect(await read(destination)).toContain(
+      '<!-- GENERADO por ai-hub sync desde engine/preflight.md',
+    );
+    for (const [rel, entry] of Object.entries(lock.files)) {
+      expect(lock.sources[entry.source], `source missing for ${rel}`).toBeDefined();
+    }
+  });
+
+  it('fails with SyncSourceError when a rendered source does not resolve', async () => {
+    const rendered: RenderedFiles = new Map([
+      ['destino.md', { content: 'x', source: 'missing.md' }],
+    ]);
+    await expect(buildLock(root, rendered)).rejects.toBeInstanceOf(SyncSourceError);
+    await expect(buildLock(root, rendered)).rejects.toThrow(/missing\.md/);
+  });
+
+  it('explains engine sources without exposing the package path', async () => {
+    await runSync(root, { check: false });
+    await fs.rm(path.join(root, '.claude/skills/speckit-plan/SKILL.md'));
+    const result = await runSync(root, { check: true });
+    expect(result.problems.join('\n')).toContain('viene del motor; actualiza el paquete');
+  });
+
+  it('refuses to write in an engine checkout without force', async () => {
+    await write('core/package.json', JSON.stringify({ name: '@onna/ai-hub-cli' }));
+    await write('core/src/paths.ts', 'export {};\n');
+    await expect(runSync(root, { check: false })).rejects.toBeInstanceOf(
+      SyncSourceCheckoutError,
+    );
+    const forced = await runSync(root, { check: false, force: true });
+    expect(forced.written.length).toBeGreaterThan(0);
   });
 
   it('is idempotent on a second run', async () => {
@@ -196,6 +251,76 @@ describe('runSync: check', () => {
     await fs.symlink(path.join(root, '.ai-hub/agents'), path.join(root, '.claude/agents/enlace'));
     const result = await runSync(root, { check: true });
     expect(result.problems.join('\n')).toContain('enlace simbólico no permitido: .claude/agents/enlace');
+  });
+});
+
+describe('checkLock', () => {
+  beforeEach(async () => {
+    await runSync(root, { check: false });
+  });
+
+  it('reports a clean fixture with the category breakdown', async () => {
+    const result = await checkLock(root);
+    expect(result.ok).toBe(true);
+    expect(result.expectedCount).toBe(123);
+    expect(result.actualCount).toBe(123);
+    expect(result.breakdown).toEqual({
+      skills: 85,
+      agents: 24,
+      rules: 5,
+      preflight: 5,
+      mcp: 4,
+      other: 0,
+    });
+  });
+
+  it('reports missing entries without writing', async () => {
+    const lock = JSON.parse(await read('sync.lock.json')) as {
+      files: Record<string, unknown>;
+    };
+    delete lock.files['.claude/agents/spec-author.md'];
+    await write('sync.lock.json', `${JSON.stringify(lock, null, 2)}\n`);
+    const before = await read('sync.lock.json');
+    const result = await checkLock(root);
+    expect(result.ok).toBe(false);
+    expect(result.missing).toContain('.claude/agents/spec-author.md');
+    expect(await read('sync.lock.json')).toBe(before);
+  });
+
+  it('reports extra entries', async () => {
+    const lock = JSON.parse(await read('sync.lock.json')) as {
+      files: Record<string, { sha256: string; source: string }>;
+    };
+    lock.files['.claude/agents/ghost.md'] = {
+      sha256: '0'.repeat(64),
+      source: 'ghost.md',
+    };
+    await write('sync.lock.json', `${JSON.stringify(lock, null, 2)}\n`);
+    const result = await checkLock(root);
+    expect(result.ok).toBe(false);
+    expect(result.extra).toContain('.claude/agents/ghost.md');
+  });
+
+  it('reports changed hashes as different', async () => {
+    const lock = JSON.parse(await read('sync.lock.json')) as {
+      files: Record<string, { sha256: string; source: string }>;
+    };
+    lock.files['.claude/agents/spec-author.md'].sha256 = '0'.repeat(64);
+    await write('sync.lock.json', `${JSON.stringify(lock, null, 2)}\n`);
+    const result = await checkLock(root);
+    expect(result.ok).toBe(false);
+    expect(result.different).toContain('.claude/agents/spec-author.md');
+  });
+
+  it('reports invalid source hashes', async () => {
+    const lock = JSON.parse(await read('sync.lock.json')) as {
+      sources: Record<string, string>;
+    };
+    lock.sources['manifest.yaml'] = '0'.repeat(64);
+    await write('sync.lock.json', `${JSON.stringify(lock, null, 2)}\n`);
+    const result = await checkLock(root);
+    expect(result.ok).toBe(false);
+    expect(result.invalidSources).toContain('hash de source no coincide: manifest.yaml');
   });
 });
 

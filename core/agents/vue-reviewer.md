@@ -1,6 +1,6 @@
 ---
 name: vue-reviewer
-description: Vue and Nuxt reviewer: inspects changed code for stack-specific failure modes and reports evidence without editing. NOT React review or Vue build repair.
+description: 'Vue and Nuxt reviewer: inspects changed code for stack-specific failure modes and reports evidence without editing. NOT React review or Vue build repair.'
 role: reviewer
 tier: balanced
 skills:

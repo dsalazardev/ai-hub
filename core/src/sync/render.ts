@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse, stringify } from 'yaml';
+import { frontmatterString, splitFrontmatter } from '../frontmatter.js';
 import { resolveSourcePath, type SyncConfig } from './config.js';
 import { TARGETS } from './targets.js';
 
@@ -10,6 +11,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export interface RenderedFile {
   content: string;
   source: string;
+  markerSource?: string;
 }
 
 export type RenderedFiles = Map<string, RenderedFile>;
@@ -17,7 +19,8 @@ export type RenderedFiles = Map<string, RenderedFile>;
 const MANIFEST_SOURCE = 'manifest.yaml';
 const CLAUDE_AGENT_KEYS = ['name', 'description', 'tools', 'model', 'color', 'memory'];
 
-const PREFLIGHT_SOURCE = 'engine/preflight.md';
+const PREFLIGHT_SOURCE = '@engine/engine/preflight.md';
+const PREFLIGHT_MARKER_SOURCE = 'engine/preflight.md';
 
 export async function renderAll(root: string, config: SyncConfig): Promise<RenderedFiles> {
   const out: RenderedFiles = new Map();
@@ -38,22 +41,28 @@ async function renderPreflight(root: string, config: SyncConfig, out: RenderedFi
       putRendered(out, spec.hook, {
         content: withMarker(
           frontmatter({ description: 'Deterministic preflight guard', alwaysApply: true }) + body,
-          PREFLIGHT_SOURCE,
+          PREFLIGHT_MARKER_SOURCE,
         ),
         source: PREFLIGHT_SOURCE,
+        markerSource: PREFLIGHT_MARKER_SOURCE,
       });
       continue;
     }
     if (spec.hookKind === 'copilot-instructions') {
       putRendered(out, spec.hook, {
-        content: withMarker(frontmatter({ applyTo: '**' }) + body, PREFLIGHT_SOURCE),
+        content: withMarker(
+          frontmatter({ applyTo: '**' }) + body,
+          PREFLIGHT_MARKER_SOURCE,
+        ),
         source: PREFLIGHT_SOURCE,
+        markerSource: PREFLIGHT_MARKER_SOURCE,
       });
       continue;
     }
     putRendered(out, spec.hook, {
-      content: withMarker(body, PREFLIGHT_SOURCE),
+      content: withMarker(body, PREFLIGHT_MARKER_SOURCE),
       source: PREFLIGHT_SOURCE,
+      markerSource: PREFLIGHT_MARKER_SOURCE,
     });
   }
 }
@@ -98,18 +107,6 @@ function frontmatter(data: Record<string, unknown>): string {
   return `---\n${stringify(data)}---\n`;
 }
 
-function splitFrontmatter(text: string, source: string): { data: Record<string, unknown>; body: string } {
-  const match = /^---\n([\s\S]*?)\n---\n/.exec(text);
-  if (!match) {
-    throw new Error(`sin frontmatter: ${source}`);
-  }
-  const data = parse(match[1]) as unknown;
-  if (typeof data !== 'object' || data === null || Array.isArray(data)) {
-    throw new Error(`frontmatter inválido: ${source}`);
-  }
-  return { data: data as Record<string, unknown>, body: text.slice(match[0].length) };
-}
-
 async function readSource(root: string, sourcePath: string): Promise<string> {
   const text = await fs.readFile(resolveSourcePath(root, sourcePath), 'utf8').catch(() => {
     throw new Error(`fuente no encontrada: ${sourcePath}`);
@@ -135,47 +132,32 @@ function toPosix(relative: string): string {
   return relative.split(path.sep).join('/');
 }
 
-function skillDescription(text: string, fallback: string): string {
-  const match = /^---\n([\s\S]*?)\n---\n/.exec(text);
-  if (!match) {
-    return fallback;
-  }
-  try {
-    const data = parse(match[1]) as Record<string, unknown>;
-    return typeof data.description === 'string' ? data.description : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function skillBody(text: string): string {
-  const match = /^---\n[\s\S]*?\n---\n/.exec(text);
-  return match ? text.slice(match[0].length) : text;
-}
-
 async function renderSkills(root: string, config: SyncConfig, out: RenderedFiles): Promise<void> {
   for (const { source, publish } of config.skills.sources) {
     for (const name of publish) {
       const skillDir = resolveSourcePath(root, `${source}/${name}`);
+      const skillSourcePath = `${source}/${name}/SKILL.md`;
+      const skillText = await readSource(root, skillSourcePath);
+      const { data: skillData, body: skillBody } = splitFrontmatter(skillText, skillSourcePath);
+      frontmatterString(skillData, 'name', skillSourcePath);
+      const description = frontmatterString(skillData, 'description', skillSourcePath);
       const files = await listFiles(skillDir).catch(() => {
         throw new Error(`skill publicada no existe: ${source}/${name}`);
       });
       for (const target of config.skills.targets) {
         if (target.shape === 'file') {
-          const sourcePath = `${source}/${name}/SKILL.md`;
-          const text = await readSource(root, sourcePath);
           const content =
-            frontmatter({
-              description: skillDescription(text, name),
-              alwaysApply: false,
-            }) + withMarker(skillBody(text), sourcePath);
-          putRendered(out, `${target.path}/${name}.mdc`, { content, source: sourcePath });
+            frontmatter({ description, alwaysApply: false }) + withMarker(skillBody, skillSourcePath);
+          putRendered(out, `${target.path}/${name}.mdc`, { content, source: skillSourcePath });
           continue;
         }
         for (const file of files) {
           const rel = toPosix(path.relative(skillDir, file));
           const sourcePath = `${source}/${name}/${rel}`;
-          const text = normalize(await fs.readFile(file, 'utf8'));
+          const text =
+            rel === 'SKILL.md'
+              ? skillText
+              : normalize(await fs.readFile(file, 'utf8'));
           const content = rel.endsWith('.md') ? withMarker(text, sourcePath) : text;
           putRendered(out, `${target.path}/${name}/${rel}`, { content, source: sourcePath });
         }
@@ -189,13 +171,12 @@ async function renderAgents(root: string, config: SyncConfig, out: RenderedFiles
   for (const name of publish) {
     const sourcePath = `${source}/${name}.md`;
     const { data, body } = splitFrontmatter(await readSource(root, sourcePath), sourcePath);
-    if (typeof data.name !== 'string' || typeof data.description !== 'string') {
-      throw new Error(`el agente necesita "name" y "description" en su frontmatter: ${sourcePath}`);
-    }
+    frontmatterString(data, 'name', sourcePath);
+    const description = frontmatterString(data, 'description', sourcePath);
     const claudeData = Object.fromEntries(
       CLAUDE_AGENT_KEYS.filter((key) => key in data).map((key) => [key, data[key]]),
     );
-    const subagentData = { description: data.description, mode: 'subagent' };
+    const subagentData = { description, mode: 'subagent' };
     for (const [tool, target] of Object.entries(targets)) {
       putRendered(out, `${target.path}/${name}.md`, {
         content:

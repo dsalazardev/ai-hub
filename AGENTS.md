@@ -46,6 +46,30 @@ El motor no contiene nombres de lenguajes, frameworks, empresas ni módulos. Esa
 | `harness/memory` | `.planning/state.json` y ledger JSONL |
 | `hermes-control` | Plano de control event-driven (fuera de alcance de este repo) |
 
+### Dos ambientes, una frontera
+
+Este repositorio es el **ambiente de desarrollo**. Un repositorio consumidor es el **ambiente de instalación**. Las carpetas se parecen; el contrato no.
+
+| | Ambiente de desarrollo (este repo) | Ambiente de instalación (consumidor) |
+|---|---|---|
+| Naturaleza | Taller: compila, prueba y publica el motor | Fábrica instalada: opera el producto |
+| `.ai-hub/` | No existe | **Obligatoria**, siempre |
+| Metodología | La del mantenedor: OpenSpec | Spec Kit, única de runtime |
+| `openspec/`, `.planning/`, `.github/` | Artefactos del taller; gitignoreados | No existen, salvo `.github/workflows` |
+| `.claude/`, `.opencode/`, `.pi/`, `.codex/` | Herramientas del taller, con lo que el mantenedor necesite | Salida generada por `sync`, sólo en los `targets` elegidos |
+| `sync`, `install`, `upgrade` | Se niegan a escribir sin `--force` | Escriben los destinos del consumidor |
+| `drift`, `sync --check-lock` | No aplican: no hay destinos que comparar | Deben estar en verde |
+
+**Reglas:**
+
+1. `runSync` aborta si `root` es el checkout del motor (`core/package.json` + `core/src/paths.ts`). `--force` existe sólo para dogfooding deliberado.
+2. El gate de artefactos legacy escanea el catálogo publicado (`core/presets`, `core/skills`, `core/agents`) en el motor, y todos los destinos en el consumidor. Nunca el taller.
+3. `.ai-hub/` es obligatoria en la instalación; los destinos de agente son opcionales y se eligen con `targets`.
+4. El catálogo publicado no puede describir un flujo SDD paralelo ni depender de `openspec`.
+5. Lo que el mantenedor use para desarrollar —OpenSpec, `.planning/`, `.github/`— no viaja en el paquete ni se proyecta al consumidor.
+
+El consumidor no es un usuario local: es una **fábrica de software autónoma**, operable en remoto —incluso desde un dispositivo móvil— sobre un host con el arnés instalado. De ahí que la instalación tenga que ser reproducible por `npx`/`pnpm`, sin pasos manuales ni estado oculto en el checkout.
+
 ---
 
 ## 3. Metodología activa: Spec Kit

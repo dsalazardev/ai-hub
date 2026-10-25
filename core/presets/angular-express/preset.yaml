@@ -2,13 +2,7 @@ id: angular-express
 version: 1
 extends: generic-ts
 description: Angular frontend with an Express BFF, Vitest and an optional Dolibarr-style REST backend.
-detect:
-  files:
-    - angular.json
-    - backend/package.json
-  dependencies:
-    - "@angular/core"
-    - express
+# Sin detect: preset de cliente. Sólo se elige con --preset angular-express.
 stack:
   languages:
     - typescript

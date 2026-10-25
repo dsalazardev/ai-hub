@@ -3,7 +3,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Ajv } from 'ajv';
 import { parse } from 'yaml';
-import { ENGINE_COUNTS, loadEngine, type EngineManifest } from '../engine/engine.js';
+import { ENGINE_COUNTS, ENGINE_SKILLS_DIR, loadEngine, type EngineManifest } from '../engine/engine.js';
+import { frontmatterString, splitFrontmatter } from '../frontmatter.js';
 import { resolvePreset, type ResolvedPreset } from '../presets/resolve.js';
 import type { PresetDangerPattern } from '../presets/schema.js';
 
@@ -62,6 +63,21 @@ async function exists(file: string): Promise<boolean> {
     () => true,
     () => false,
   );
+}
+
+async function validateCatalogFile(file: string, errors: string[]): Promise<void> {
+  const text = await fs.readFile(file, 'utf8').catch(() => null);
+  if (text === null) {
+    errors.push(`no se puede leer ${file}`);
+    return;
+  }
+  try {
+    const { data } = splitFrontmatter(text, file);
+    frontmatterString(data, 'name', file);
+    frontmatterString(data, 'description', file);
+  } catch (error) {
+    errors.push(error instanceof Error ? error.message : String(error));
+  }
 }
 
 export async function readManifestFile(root: string): Promise<unknown> {
@@ -124,18 +140,39 @@ export async function validateManifestData(
       errors.push(`targets "${target}" no existe en el motor`);
     }
   }
+  const skillFiles = new Set<string>();
   for (const skill of manifest.skills.publish) {
     const file = path.join(root, manifest.skills.source, skill, 'SKILL.md');
+    skillFiles.add(file);
     if (!(await exists(file))) {
       errors.push(`skills.publish "${skill}" no existe en ${manifest.skills.source}`);
+    }
+  }
+  for (const skill of new Set(engine.commands.map((command) => command.skill))) {
+    const file = path.join(ENGINE_SKILLS_DIR, skill, 'SKILL.md');
+    skillFiles.add(file);
+    if (!(await exists(file))) {
+      errors.push(`skill del motor "${skill}" no existe en ${ENGINE_SKILLS_DIR}`);
+    }
+  }
+  for (const file of skillFiles) {
+    if (await exists(file)) {
+      await validateCatalogFile(file, errors);
     }
   }
   for (const agent of manifest.agents.publish) {
     const projectFile = path.join(root, manifest.agents.source, `${agent}.md`);
     const engineFile = path.join(ENGINE_AGENTS, `${agent}.md`);
-    if (!(await exists(projectFile)) && !(await exists(engineFile))) {
+    const file = (await exists(projectFile))
+      ? projectFile
+      : (await exists(engineFile))
+        ? engineFile
+        : null;
+    if (file === null) {
       errors.push(`agents.publish "${agent}" no existe en ${manifest.agents.source} ni en el motor`);
+      continue;
     }
+    await validateCatalogFile(file, errors);
   }
   for (const rule of manifest.rules.publish) {
     const file = path.join(root, manifest.rules.source, `${rule}.md`);

@@ -1,5 +1,5 @@
 import { AiHubDirNotFoundError, resolveAiHubDir } from '../paths.js';
-import { runSync } from '../sync/sync.js';
+import { checkLock, runSync, SyncSourceCheckoutError, SyncSourceError, type LockCheckResult } from '../sync/sync.js';
 import { SyncConfigError } from '../sync/config.js';
 import { diagnose, printReport } from './doctor.js';
 import { parseArgs } from './args.js';
@@ -20,6 +20,7 @@ import { cmdInit, cmdInstall, cmdRepair } from './onboarding.js';
 import { cmdTrunk } from './trunk.js';
 import { cmdWorktrees } from './worktrees.js';
 import { cliVersion } from './onboarding.js';
+import { sourceCheckout } from './source.js';
 import type { CliContext, CliIO, CommandHandler, ParsedArgs } from './types.js';
 import { processIO } from './types.js';
 
@@ -28,8 +29,46 @@ interface CommandSpec {
   handler: CommandHandler;
 }
 
+function printLockCheck(result: LockCheckResult, ctx: CliContext): void {
+  const header = `destinos esperados ${result.expectedCount} / actuales ${result.actualCount} · sources ${result.expectedSourceCount}/${result.actualSourceCount}`;
+  const extraCategories =
+    result.breakdown.other > 0 ? `, other ${result.breakdown.other}` : '';
+  const breakdown = `desglose: skills ${result.breakdown.skills}, agents ${result.breakdown.agents}, rules ${result.breakdown.rules}, preflight ${result.breakdown.preflight}, mcp ${result.breakdown.mcp}${extraCategories}`;
+  if (result.ok) {
+    ctx.io.out(`[OK]    lock: ${header}`);
+    ctx.io.out(breakdown);
+    return;
+  }
+  ctx.io.err(`[FAIL]  lock: ${header}`);
+  ctx.io.out(breakdown);
+  if (result.error !== null) {
+    ctx.io.err(result.error);
+  }
+  for (const [label, list] of [
+    ['faltan', result.missing],
+    ['sobran', result.extra],
+    ['difieren', result.different],
+    ['sources inválidas', result.invalidSources],
+  ] as const) {
+    ctx.io.out(`${label}: ${list.length}`);
+    for (const item of list) {
+      ctx.io.out(`  ${item}`);
+    }
+  }
+}
+
 async function cmdSync(args: ParsedArgs, ctx: CliContext): Promise<number> {
   try {
+    if (args.flags['check-lock']) {
+      const source = await sourceCheckout(ctx.root);
+      if (source.isSource) {
+        ctx.io.out('[OK]    lock: no aplica en el checkout del motor');
+        return 0;
+      }
+      const result = await checkLock(ctx.root);
+      printLockCheck(result, ctx);
+      return result.ok ? 0 : 1;
+    }
     if (args.flags['dry-run']) {
       const preview = await runSync(ctx.root, { check: true });
       for (const problem of preview.problems) {
@@ -42,7 +81,10 @@ async function cmdSync(args: ParsedArgs, ctx: CliContext): Promise<number> {
       );
       return preview.problems.length === 0 ? 0 : 1;
     }
-    const result = await runSync(ctx.root, { check: Boolean(args.flags.check) });
+    const result = await runSync(ctx.root, {
+      check: Boolean(args.flags.check),
+      force: Boolean(args.flags.force),
+    });
     if (args.flags.check) {
       if (result.problems.length > 0) {
         for (const problem of result.problems) {
@@ -57,7 +99,11 @@ async function cmdSync(args: ParsedArgs, ctx: CliContext): Promise<number> {
     ctx.io.out(`[OK]    Escritos: ${result.written.length} · Eliminados: ${result.removed.length}`);
     return 0;
   } catch (error) {
-    if (error instanceof SyncConfigError) {
+    if (
+      error instanceof SyncConfigError ||
+      error instanceof SyncSourceError ||
+      error instanceof SyncSourceCheckoutError
+    ) {
       ctx.io.err(error.message);
       return 1;
     }

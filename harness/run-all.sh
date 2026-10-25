@@ -8,7 +8,7 @@ cd "$ROOT" || exit 1
 
 status=0
 
-if ! node core/dist/bin/ai-hub.js drift; then
+if ! npm run manifest:check; then
   status=1
 fi
 

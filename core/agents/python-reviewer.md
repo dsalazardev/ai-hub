@@ -1,6 +1,6 @@
 ---
 name: python-reviewer
-description: Python reviewer: inspects changed code for stack-specific failure modes and reports evidence without editing. NOT FastAPI/Django-specific review or environment repair.
+description: 'Python reviewer: inspects changed code for stack-specific failure modes and reports evidence without editing. NOT FastAPI/Django-specific review or environment repair.'
 role: reviewer
 tier: balanced
 skills:

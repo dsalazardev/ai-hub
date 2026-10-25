@@ -1,6 +1,6 @@
 ---
 name: postgres-reviewer
-description: PostgreSQL reviewer: inspects changed code for stack-specific failure modes and reports evidence without editing. NOT application ORM review or migration execution.
+description: 'PostgreSQL reviewer: inspects changed code for stack-specific failure modes and reports evidence without editing. NOT application ORM review or migration execution.'
 role: reviewer
 tier: balanced
 skills:

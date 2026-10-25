@@ -4,7 +4,7 @@ description: "GitLab self-managed (gitlab.v3.onnadigital.com) authentication for
 license: MIT
 compatibility: Requires curl or Node and a GitLab personal access token with the "api" scope.
 metadata:
-  author: Doligestion AI Hub
+  author: ai-hub
   version: "1.0"
 origin: ai-hub
 ---
@@ -26,6 +26,7 @@ Plantilla: `.ai-hub/.env.example`.
 |---|---|---|
 | `GITLAB_URL` | sí | Base sin `/api` (por defecto `https://gitlab.v3.onnadigital.com`) |
 | `GITLAB_TOKEN` | sí | PAT con scope `api` |
+| `GITLAB_PROJECT_PATH` | sí (workflow) | Path URL-encoded del proyecto (por ejemplo, `group%2Fproject`) |
 | `GITLAB_USER` | no | Solo fallback UI (Playwright) |
 | `GITLAB_PASSWORD` | no | Solo fallback UI (Playwright) |
 
@@ -93,6 +94,6 @@ Solo cuando la operación no exista en la API (ajustes de UI o formularios sin e
 |---|---|---|
 | 401 en API | Token inválido o caducado | Reponer PAT y actualizar `.env` |
 | 403 en API | Scope insuficiente | PAT con scope `api` |
-| 404 en proyecto | Path mal codificado | Usar `dolibarr%2Fdoligestion` |
+| 404 en proyecto | Path mal codificado | Codificar el path en `GITLAB_PROJECT_PATH` (por ejemplo, `group%2Fproject`) |
 | Error SSL | Certificado interno | Pedir al usuario el certificado raíz |
 | `glab` ausente | No instalado | Usar curl/Node (no requiere glab) |

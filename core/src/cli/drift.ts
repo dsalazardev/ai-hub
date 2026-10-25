@@ -1,5 +1,3 @@
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import { runSync } from '../sync/sync.js';
 import { sourceCheckout } from './source.js';
 import type { CliContext, ParsedArgs } from './types.js';
@@ -12,26 +10,10 @@ const CATEGORIES = [
   ['enlace simbólico', 'symlink'],
 ] as const;
 
-async function hasGeneratedTargets(root: string): Promise<boolean> {
-  for (const dir of ['.claude', '.opencode', '.pi', '.cursor', '.github/skills']) {
-    if (
-      await fs
-        .access(path.join(root, ...dir.split('/')))
-        .then(
-          () => true,
-          () => false,
-        )
-    ) {
-      return true;
-    }
-  }
-  return false;
-}
-
 export async function cmdDrift(args: ParsedArgs, ctx: CliContext): Promise<number> {
   const source = await sourceCheckout(ctx.root);
-  if (source.isSource && !(await hasGeneratedTargets(ctx.root))) {
-    ctx.io.out('[OK]    Modo fuente: sin destinos generados que verificar');
+  if (source.isSource) {
+    ctx.io.out('[OK]    Modo fuente: sin destinos que verificar (taller, no instalación)');
     return 0;
   }
 

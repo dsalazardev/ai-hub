@@ -1,6 +1,6 @@
 ---
 name: kotlin-build-resolver
-description: Kotlin Android build resolver: reproduces a failing build and applies the minimum verified repair. NOT UI/coroutine review or project modernization.
+description: 'Kotlin Android build resolver: reproduces a failing build and applies the minimum verified repair. NOT UI/coroutine review or project modernization.'
 role: build-resolver
 tier: balanced
 skills:

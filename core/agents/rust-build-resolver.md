@@ -1,6 +1,6 @@
 ---
 name: rust-build-resolver
-description: Rust build resolver: reproduces a failing build and applies the minimum verified repair. NOT unsafe-code review or dependency modernization.
+description: 'Rust build resolver: reproduces a failing build and applies the minimum verified repair. NOT unsafe-code review or dependency modernization.'
 role: build-resolver
 tier: balanced
 skills:

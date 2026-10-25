@@ -8,6 +8,7 @@ export const GENERATOR_VERSION = '1.0.0';
 export interface LockFileEntry {
   sha256: string;
   source: string;
+  markerSource?: string;
 }
 
 export interface SyncLock {

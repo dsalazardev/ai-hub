@@ -118,6 +118,7 @@ describe('init', () => {
     await fs.writeFile(path.join(root, 'pyproject.toml'), '[project]\nname = "demo"\n');
     expect((await cli(['init', '--preset', 'python', '--yes'])).code).toBe(0);
     expect((await cli(['sync'])).code).toBe(0);
+    expect((await cli(['context'])).code).toBe(0);
     const doctor = await cli(['doctor']);
     expect(doctor.code).toBe(0);
     expect(doctor.out).toContain('python');
@@ -129,6 +130,7 @@ describe('init', () => {
     await fs.writeFile(path.join(root, 'angular.json'), '{}');
     expect((await cli(['init', '--preset', 'angular-express', '--yes'])).code).toBe(0);
     expect((await cli(['sync'])).code).toBe(0);
+    expect((await cli(['context'])).code).toBe(0);
     const doctor = await cli(['doctor']);
     expect(doctor.code).toBe(0);
     await expect(fs.access(path.join(root, '.ai-hub', 'skills', 'angular-developer', 'SKILL.md'))).resolves.toBeUndefined();
@@ -137,6 +139,7 @@ describe('init', () => {
   it('applies the base preset in an empty repository', async () => {
     expect((await cli(['init', '--preset', 'base', '--yes'])).code).toBe(0);
     expect((await cli(['sync'])).code).toBe(0);
+    expect((await cli(['context'])).code).toBe(0);
     const doctor = await cli(['doctor']);
     expect(doctor.code).toBe(0);
     expect(doctor.out).toContain('base@1');
@@ -179,6 +182,7 @@ describe('sync, drift and doctor', () => {
   it('runs init -> sync -> drift -> doctor -> worktrees with 0', async () => {
     await seeded();
     expect((await cli(['sync'])).code).toBe(0);
+    expect((await cli(['context'])).code).toBe(0);
     expect((await cli(['drift'])).code).toBe(0);
     const doctor = await cli(['doctor']);
     expect(doctor.err).toBe('');
@@ -222,12 +226,41 @@ describe('sync, drift and doctor', () => {
     expect(upgrade.out).toContain('"action": "upgrade"');
   });
 
+  it('reports lock and drift as not applicable in the engine checkout', async () => {
+    await seeded();
+    await cli(['sync']);
+    await fs.mkdir(path.join(root, 'core', 'src'), { recursive: true });
+    await fs.writeFile(
+      path.join(root, 'core', 'package.json'),
+      JSON.stringify({ name: '@onna/ai-hub-cli' }),
+    );
+    await fs.writeFile(path.join(root, 'core', 'src', 'paths.ts'), 'export {};\n');
+
+    const lock = await cli(['sync', '--check-lock']);
+    expect(lock.code).toBe(0);
+    expect(lock.out).toContain('no aplica');
+
+    const drift = await cli(['drift']);
+    expect(drift.code).toBe(0);
+    expect(drift.out).toContain('Modo fuente');
+  });
+
+  it('does not require context in an installation', async () => {
+    await seeded();
+    await cli(['sync']);
+    const doctor = await cli(['doctor']);
+    expect(doctor.code).toBe(0);
+    expect(doctor.out).toContain('context: no aplica en instalación');
+  });
+
   it('doctor reports project opt-outs', async () => {
     await seeded();
     await cli(['sync']);
     const manifest = await fs.readFile(path.join(root, 'manifest.yaml'), 'utf8');
     await fs.writeFile(path.join(root, 'manifest.yaml'), manifest.replace('optOuts: []', 'optOuts:\n    - trunk'));
+    await cli(['sync']);
     await writeInventory(root);
+    expect((await cli(['context'])).code).toBe(0);
     const result = await cli(['doctor']);
     expect(result.code).toBe(0);
     expect(result.out).toContain('opt-outs activos: trunk');
@@ -236,6 +269,7 @@ describe('sync, drift and doctor', () => {
   it('doctor fails with a stale inventory', async () => {
     await seeded();
     await cli(['sync']);
+    expect((await cli(['context'])).code).toBe(0);
     await fs.writeFile(path.join(root, 'core', 'manifest.json'), '{}\n');
     const result = await cli(['doctor']);
     expect(result.code).toBe(1);
@@ -280,6 +314,7 @@ describe('add, list and uninstall', () => {
     await expect(fs.access(path.join(root, '.ai-hub/skills/code-review/SKILL.md'))).resolves.toBeUndefined();
     const listed = JSON.parse((await cli(['list', '--json'])).out);
     expect(listed.skills).toContain('code-review');
+    expect((await cli(['context'])).code).toBe(0);
     expect((await cli(['doctor'])).code).toBe(0);
   });
 
@@ -308,6 +343,7 @@ describe('add, list and uninstall', () => {
     expect((await cli(['uninstall', 'skill', 'angular-developer'])).code).toBe(0);
     const listed = JSON.parse((await cli(['list', '--json'])).out);
     expect(listed.skills).not.toContain('angular-developer');
+    expect((await cli(['context'])).code).toBe(0);
     expect((await cli(['doctor'])).code).toBe(0);
   });
 });
@@ -349,6 +385,58 @@ describe('memory, context and trunk', () => {
     expect(filtered[0].changeId).toBe('feat-a');
     expect((await cli(['context'])).code).toBe(0);
     await expect(fs.access(path.join(root, '.planning/context-next.md'))).resolves.toBeUndefined();
+    expect(await fs.readFile(path.join(root, '.planning/context-next.md'), 'utf8')).toMatch(
+      /<!-- context-hash: [a-f0-9]{64} -->/,
+    );
+  });
+
+  it('doctor fails when context is stale and context repairs it', async () => {
+    await seeded();
+    const coreDir = path.join(root, 'core');
+    await fs.mkdir(path.join(coreDir, 'agents'), { recursive: true });
+    await fs.mkdir(path.join(coreDir, 'presets'), { recursive: true });
+    await fs.mkdir(path.join(coreDir, 'skills', 'shared'), { recursive: true });
+    await fs.mkdir(path.join(coreDir, 'src'), { recursive: true });
+    await fs.mkdir(path.join(coreDir, 'dist', 'bin'), { recursive: true });
+    await fs.writeFile(
+      path.join(coreDir, 'package.json'),
+      JSON.stringify({
+        name: '@onna/ai-hub-cli',
+        files: ['dist', 'schema', 'manifest.json', 'engine', 'presets', 'agents', 'skills'],
+      }),
+    );
+    await fs.writeFile(path.join(coreDir, 'src', 'paths.ts'), 'export {};\n');
+    await fs.writeFile(path.join(coreDir, 'dist', 'bin', 'ai-hub.js'), '');
+    const stateFile = path.join(root, '.planning/state.json');
+    const state = {
+      version: 1,
+      project: 'fixture',
+      preset: 'generic-ts',
+      activeChange: 'feat-a',
+      lane: 'feature',
+      phase: 'plan',
+      tasks: { total: 1, done: 0 },
+      branch: null,
+      worktree: null,
+      updatedAt: new Date().toISOString(),
+    };
+    await fs.mkdir(path.dirname(stateFile), { recursive: true });
+    await fs.writeFile(stateFile, `${JSON.stringify(state, null, 2)}\n`, 'utf8');
+
+    expect((await cli(['context'])).code).toBe(0);
+    expect((await cli(['doctor'])).code).toBe(0);
+
+    await fs.writeFile(
+      stateFile,
+      `${JSON.stringify({ ...state, phase: 'implement' }, null, 2)}\n`,
+      'utf8',
+    );
+    const stale = await cli(['doctor']);
+    expect(stale.code).toBe(1);
+    expect(stale.out).toContain('contexto desactualizado');
+
+    expect((await cli(['context'])).code).toBe(0);
+    expect((await cli(['doctor'])).code).toBe(0);
   });
 
   it('trunk lock and unlock persist state', async () => {

@@ -87,7 +87,19 @@ export async function loadEngine(): Promise<EngineManifest> {
   return engine;
 }
 
-function crossValidate(engine: EngineManifest): string[] {
+export function findDuplicateIds(ids: string[]): string[] {
+  const seen = new Set<string>();
+  const duplicates = new Set<string>();
+  for (const id of ids) {
+    if (seen.has(id)) {
+      duplicates.add(id);
+    }
+    seen.add(id);
+  }
+  return [...duplicates].sort();
+}
+
+export function crossValidate(engine: EngineManifest): string[] {
   const errors: string[] = [];
   if (engine.roles.length !== ENGINE_COUNTS.roles) {
     errors.push(`deben existir ${ENGINE_COUNTS.roles} roles`);
@@ -98,8 +110,16 @@ function crossValidate(engine: EngineManifest): string[] {
   if (engine.labels.length !== ENGINE_COUNTS.labels) {
     errors.push(`deben existir ${ENGINE_COUNTS.labels} etiquetas`);
   }
+  for (const id of findDuplicateIds(engine.roles.map((role) => role.id))) {
+    errors.push(`rol duplicado: ${id}`);
+  }
+  for (const id of findDuplicateIds(engine.commands.map((command) => command.id))) {
+    errors.push(`comando duplicado: ${id}`);
+  }
+  for (const label of findDuplicateIds(engine.labels)) {
+    errors.push(`etiqueta duplicada: ${label}`);
+  }
   const roleIds = new Set(engine.roles.map((role) => role.id));
-  const commandIds = new Set(engine.commands.map((command) => command.id));
   for (const command of engine.commands) {
     if (!roleIds.has(command.role)) {
       errors.push(`commands "${command.id}".role "${command.role}" no existe`);
@@ -108,9 +128,6 @@ function crossValidate(engine: EngineManifest): string[] {
       if (!roleIds.has(coRole)) {
         errors.push(`commands "${command.id}".co_roles "${coRole}" no existe`);
       }
-    }
-    if (!commandIds.has(command.id)) {
-      errors.push(`comando duplicado: ${command.id}`);
     }
   }
   for (const role of engine.roles) {

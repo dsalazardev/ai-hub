@@ -3,14 +3,15 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readAiHubRc } from '../paths.js';
 import { ENGINE_COUNTS, ENGINE_LANES, ENGINE_SKILLS_DIR } from '../engine/engine.js';
+import { scanCoupling, scanLegacyArtifacts } from '../engine/gates.js';
 import {
   checkInventory,
   loadManifestContext,
   type ProjectManifest,
 } from '../manifest/manifest.js';
 import type { EngineManifest } from '../engine/engine.js';
-import { readLock } from '../sync/lock.js';
-import { runSync } from '../sync/sync.js';
+import { checkLock, runSync } from '../sync/sync.js';
+import { CONTEXT_RELATIVE, contextHash } from './context.js';
 import { TARGETS, TOOL_IDS, isToolId } from '../sync/targets.js';
 import { sourceCheckout } from './source.js';
 import type { CliContext } from './types.js';
@@ -54,55 +55,6 @@ async function exists(file: string): Promise<boolean> {
     () => true,
     () => false,
   );
-}
-
-async function scanLegacyPrefix(dirs: string[], needles: string[]): Promise<string[]> {
-  const findings: string[] = [];
-  const walk = async (dir: string): Promise<void> => {
-    const entries = await fs.readdir(dir, { withFileTypes: true }).catch(() => []);
-    for (const entry of entries) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        await walk(full);
-        continue;
-      }
-      if (!entry.isFile() || !/\.(md|yaml|yml|json)$/.test(entry.name)) {
-        continue;
-      }
-      const text = await fs.readFile(full, 'utf8').catch(() => '');
-      if (needles.some((needle) => text.includes(needle))) {
-        findings.push(full);
-      }
-    }
-  };
-  for (const dir of dirs) {
-    if (await exists(dir)) {
-      await walk(dir);
-    }
-  }
-  return findings;
-}
-
-async function scanCoupling(dir: string, terms: string[]): Promise<string[]> {
-  const findings: string[] = [];
-  const entries = await fs.readdir(dir, { withFileTypes: true }).catch(() => []);
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      findings.push(...(await scanCoupling(full, terms)));
-      continue;
-    }
-    if (!entry.isFile() || !/\.(ts|js|mjs)$/.test(entry.name)) {
-      continue;
-    }
-    const text = (await fs.readFile(full, 'utf8')).toLowerCase();
-    for (const term of terms) {
-      if (text.includes(term)) {
-        findings.push(`${full} contiene "${term}"`);
-      }
-    }
-  }
-  return findings;
 }
 
 export async function diagnose(ctx: CliContext): Promise<DoctorReport> {
@@ -205,19 +157,6 @@ export async function diagnose(ctx: CliContext): Promise<DoctorReport> {
           (await exists(path.join(ctx.root, 'core', 'skills', 'shared'))),
         'core/agents + core/presets + core/skills',
       );
-      const legacy = await scanLegacyPrefix(
-        [
-          path.join(ctx.root, 'core', 'presets'),
-          path.join(ctx.root, 'core', 'skills'),
-          path.join(ctx.root, 'skills'),
-        ],
-        ['/opsx', 'opsx:'],
-      );
-      add(
-        'engine:no-legacy-prefix',
-        legacy.length === 0,
-        legacy.length === 0 ? 'sin /opsx en presets ni skills' : legacy.slice(0, 5).join('; '),
-      );
     } else {
       const missingHooks: string[] = [];
       for (const target of manifest.targets) {
@@ -232,6 +171,17 @@ export async function diagnose(ctx: CliContext): Promise<DoctorReport> {
       add('hooks', missingHooks.length === 0, missingHooks.length === 0 ? 'superficies presentes' : missingHooks.join(', '));
     }
 
+    const legacy = await scanLegacyArtifacts(ctx.root);
+    add(
+      'engine:no-legacy-prefix',
+      legacy.length === 0,
+      legacy.length === 0
+        ? source.isSource
+          ? 'sin artefactos OpenSpec en el catálogo publicado'
+          : 'sin artefactos OpenSpec en catálogo y destinos'
+        : legacy.slice(0, 5).join('; '),
+    );
+
     try {
       const inventory = await checkInventory(ctx.root);
       add(
@@ -243,13 +193,43 @@ export async function diagnose(ctx: CliContext): Promise<DoctorReport> {
       add('inventory', false, error instanceof Error ? error.message : String(error));
     }
 
-    if (!source.isSource) {
+    if (source.isSource) {
       try {
-        const lock = await readLock(ctx.root);
+        const content = await fs.readFile(path.join(ctx.root, CONTEXT_RELATIVE), 'utf8').catch(() => null);
+        if (content === null) {
+          add('context', false, `${CONTEXT_RELATIVE} no existe; ejecuta ai-hub context`);
+        } else {
+          const match = /<!-- context-hash: ([a-f0-9]{64}) -->/.exec(content);
+          if (match === null) {
+            add('context', false, 'falta <!-- context-hash -->; ejecuta ai-hub context');
+          } else {
+            const expected = await contextHash(ctx.root);
+            add(
+              'context',
+              match[1] === expected,
+              match[1] === expected ? 'contexto fresco' : 'contexto desactualizado; ejecuta ai-hub context',
+            );
+          }
+        }
+      } catch (error) {
+        add('context', false, error instanceof Error ? error.message : String(error));
+      }
+    } else {
+      add('context', true, 'no aplica en instalación');
+    }
+
+    if (source.isSource) {
+      add('lock', true, 'no aplica en el checkout del motor');
+      add('drift', true, 'no aplica en el checkout del motor');
+    } else {
+      try {
+        const result = await checkLock(ctx.root);
         add(
           'lock',
-          lock !== null && lock.version === 2,
-          lock === null ? 'sync.lock.json no existe' : `versión ${lock.version}, ${Object.keys(lock.files).length} destinos`,
+          result.ok,
+          result.ok
+            ? `versión 2, ${result.actualCount} destinos, sources OK`
+            : `esperados ${result.expectedCount} / actuales ${result.actualCount}; faltan ${result.missing.length}, sobran ${result.extra.length}, difieren ${result.different.length}, sources inválidas ${result.invalidSources.length}${result.error !== null ? `; ${result.error}` : ''}`,
         );
       } catch (error) {
         add('lock', false, error instanceof Error ? error.message : String(error));
@@ -290,12 +270,14 @@ export async function diagnose(ctx: CliContext): Promise<DoctorReport> {
   }
 
   const coupling = await couplingRules();
-  if (await exists(path.join(ctx.root, 'core', 'src'))) {
-    const findings = await scanCoupling(path.join(ctx.root, 'core', 'src'), coupling.terms);
+  if (source.isSource) {
+    const findings = await scanCoupling(ctx.root, coupling.terms);
     add(
       'engine:no-coupling',
       findings.length === 0,
-      findings.length === 0 ? 'sin términos de dominio en core/src' : findings.slice(0, 5).join('; '),
+      findings.length === 0
+        ? 'sin términos de dominio en el motor'
+        : findings.slice(0, 5).join('; '),
     );
   }
 

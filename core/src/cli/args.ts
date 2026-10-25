@@ -2,6 +2,7 @@ import type { ParsedArgs } from './types.js';
 
 const BOOLEAN_FLAGS = new Set([
   'check',
+  'check-lock',
   'dry-run',
   'confirm',
   'yes',

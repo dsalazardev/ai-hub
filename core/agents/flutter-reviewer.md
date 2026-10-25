@@ -1,6 +1,6 @@
 ---
 name: flutter-reviewer
-description: Flutter reviewer: inspects changed code for stack-specific failure modes and reports evidence without editing. NOT native Android review or Flutter build repair.
+description: 'Flutter reviewer: inspects changed code for stack-specific failure modes and reports evidence without editing. NOT native Android review or Flutter build repair.'
 role: reviewer
 tier: balanced
 skills:

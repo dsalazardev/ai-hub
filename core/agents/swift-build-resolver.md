@@ -1,6 +1,6 @@
 ---
 name: swift-build-resolver
-description: Swift iOS build resolver: reproduces a failing build and applies the minimum verified repair. NOT concurrency review or signing-policy changes.
+description: 'Swift iOS build resolver: reproduces a failing build and applies the minimum verified repair. NOT concurrency review or signing-policy changes.'
 role: build-resolver
 tier: balanced
 skills:

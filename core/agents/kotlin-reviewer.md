@@ -1,6 +1,6 @@
 ---
 name: kotlin-reviewer
-description: Kotlin Android reviewer: inspects changed code for stack-specific failure modes and reports evidence without editing. NOT Java server review or Gradle repair.
+description: 'Kotlin Android reviewer: inspects changed code for stack-specific failure modes and reports evidence without editing. NOT Java server review or Gradle repair.'
 role: reviewer
 tier: balanced
 skills:

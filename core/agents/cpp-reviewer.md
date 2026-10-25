@@ -1,6 +1,6 @@
 ---
 name: cpp-reviewer
-description: C++ reviewer: inspects changed code for stack-specific failure modes and reports evidence without editing. NOT Rust review or compiler/linker repair.
+description: 'C++ reviewer: inspects changed code for stack-specific failure modes and reports evidence without editing. NOT Rust review or compiler/linker repair.'
 role: reviewer
 tier: balanced
 skills:

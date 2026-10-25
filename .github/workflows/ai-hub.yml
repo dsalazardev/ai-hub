@@ -30,11 +30,5 @@ jobs:
       - name: Manifest inventory is current
         run: npm run manifest:check
 
-      - name: Generate copies
-        run: node core/dist/bin/ai-hub.js sync
-
-      - name: Drift is empty
-        run: npm run ai:drift
-
       - name: Doctor
         run: npm run ai:doctor

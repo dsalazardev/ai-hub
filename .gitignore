@@ -100,8 +100,15 @@ pip-log.txt
 .pi/
 .cursor/
 .specify/
+/specs/
 openspec/
-specs/
+.planning/
+.github/
+
+# Copilot: se versiona .github/workflows, no las copias generadas.
+.github/skills/
+.github/agents/
+.github/instructions/
 
 # ----------------------------------------------------------------------------
 # Otros asistentes de IA

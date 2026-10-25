@@ -1,6 +1,6 @@
 ---
 name: react-build-resolver
-description: React and Next.js build resolver: reproduces a failing build and applies the minimum verified repair. NOT UI review or broad package upgrades.
+description: 'React and Next.js build resolver: reproduces a failing build and applies the minimum verified repair. NOT UI review or broad package upgrades.'
 role: build-resolver
 tier: balanced
 skills:

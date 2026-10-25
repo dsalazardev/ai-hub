@@ -11,7 +11,13 @@ import {
   validateManifestData,
   type ProjectManifest,
 } from '../src/manifest/manifest.js';
-import { loadEngine, ENGINE_COUNTS } from '../src/engine/engine.js';
+import {
+  crossValidate,
+  findDuplicateIds,
+  loadEngine,
+  ENGINE_COUNTS,
+  type EngineManifest,
+} from '../src/engine/engine.js';
 import { resolveCommand, RoleMismatchError, UnknownSpecCommandError } from '../src/manifest/dispatch.js';
 import { advanceLabel, dryRunLane, LabelTransitionError, LABELS } from '../src/manifest/labels.js';
 import { resolvePreset, resolvePresetWith } from '../src/presets/resolve.js';
@@ -49,6 +55,39 @@ describe('engine invariants', () => {
     const derived = engine.roles.filter((role) => role.derived);
     expect(derived.map((role) => role.id).sort()).toEqual(['prompt-explorer', 'reviewer-exploration']);
     expect(derived.every((role) => role.canonical === 'orchestrator')).toBe(true);
+  });
+
+  it('detects duplicate ids in a fabricated engine', () => {
+    const ids = Array.from({ length: 16 }, (_, index) => `cmd-${index}`);
+    ids.push('cmd-0');
+    const lanes = [
+      ...Array(5).fill('assessment'),
+      ...Array(9).fill('feature'),
+      ...Array(3).fill('bug'),
+    ] as EngineManifest['commands'][number]['lane'][];
+    const roles: EngineManifest['roles'] = Array.from({ length: 8 }, (_, index) => ({
+      id: `r${index}`,
+      canonical: `r${index}`,
+      derived: false,
+      can_modify: [],
+      cannot_modify: [],
+      commands: index === 0 ? [...ids] : [],
+      gate: 'none',
+    }));
+    const commands: EngineManifest['commands'] = lanes.map((lane, index) => ({
+      id: ids[index],
+      name: `command ${index}`,
+      lane,
+      artifacts: ['artifact'],
+      exit: ['GO'],
+      role: 'r0',
+      skill: 'skill',
+    }));
+    const labels = Array.from({ length: 7 }, (_, index) => `label-${index}`);
+    const errors = crossValidate({ version: 2, roles, commands, labels, targets: ['claude'] });
+
+    expect(errors).toEqual(['comando duplicado: cmd-0']);
+    expect(findDuplicateIds(['a', 'b', 'a', 'c', 'b'])).toEqual(['a', 'b']);
   });
 });
 
@@ -144,7 +183,7 @@ describe('presets', () => {
     await expect(resolvePresetWith('cycle-a', async (id) => presets[id])).rejects.toThrow(/ciclo/);
   });
 
-  it('detects angular-express from files and dependencies', async () => {
+  it('does not auto-detect the client preset and falls back to generic-ts', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-detect-'));
     try {
       await fs.writeFile(
@@ -153,8 +192,11 @@ describe('presets', () => {
       );
       await fs.writeFile(path.join(root, 'angular.json'), '{}');
       const detection = await detectPreset(root);
-      expect(detection.id).toBe('angular-express');
+      expect(detection.id).toBe('generic-ts');
       expect(detection.ambiguous).toEqual([]);
+      expect(detection.candidates.map((candidate) => candidate.id)).not.toContain(
+        'angular-express',
+      );
     } finally {
       await fs.rm(root, { recursive: true, force: true });
     }

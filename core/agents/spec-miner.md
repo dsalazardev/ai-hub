@@ -1,6 +1,6 @@
 ---
 name: spec-miner
-description: Brownfield spec miner: extracts an anchored SDD draft from existing code under a bounded read budget. NOT feature planning or overwriting an approved spec.
+description: 'Brownfield spec miner: extracts an anchored SDD draft from existing code under a bounded read budget. NOT feature planning or overwriting an approved spec.'
 role: spec-miner
 tier: heavy
 ---
