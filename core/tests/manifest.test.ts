@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import {
   buildInventory,
   checkInventory,
+  inventoryPath,
   EXPECTED_COUNTS,
   loadManifest,
   validateManifestData,
@@ -124,6 +125,16 @@ describe('project manifest v2', () => {
     const inventory = buildInventory(context.manifest, context.engine);
     expect(inventory.counts).toMatchObject({ roles: 8, commands: 17, labels: 7, targets: 5 });
     expect(inventory.preset).toEqual({ id: 'generic-ts', version: 1 });
+  });
+
+  it('places the inventory in core/ for the engine and in .ai-hub/ for a consumer', async () => {
+    const consumer = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-inventory-'));
+    try {
+      expect(inventoryPath(REPO_ROOT)).toBe(path.join(REPO_ROOT, 'core', 'manifest.json'));
+      expect(inventoryPath(consumer)).toBe(path.join(consumer, '.ai-hub', 'manifest.json'));
+    } finally {
+      await fs.rm(consumer, { recursive: true, force: true });
+    }
   });
 
   it('detects a stale manifest.json', async () => {

@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { PACKAGE_NAME } from '../package-info.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -194,7 +195,12 @@ export async function validateManifestData(
 }
 
 export function inventoryPath(root: string): string {
-  return path.join(root, INVENTORY_RELATIVE);
+  // En el checkout del motor el inventario vive en core/ porque ese es el paquete que se publica.
+  // En un proyecto consumidor pertenece a .ai-hub/, junto al arnes instalado.
+  const engineMarker = path.join(root, 'core', 'src', 'paths.ts');
+  return existsSync(engineMarker)
+    ? path.join(root, INVENTORY_RELATIVE)
+    : path.join(root, '.ai-hub', 'manifest.json');
 }
 
 export interface ManifestInventory {

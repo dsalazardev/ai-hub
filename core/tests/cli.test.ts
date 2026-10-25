@@ -271,7 +271,7 @@ describe('sync, drift and doctor', () => {
     await seeded();
     await cli(['sync']);
     expect((await cli(['context'])).code).toBe(0);
-    await fs.writeFile(path.join(root, 'core', 'manifest.json'), '{}\n');
+    await fs.writeFile(path.join(root, '.ai-hub', 'manifest.json'), '{}\n');
     const result = await cli(['doctor']);
     expect(result.code).toBe(1);
     expect(result.out).toContain('manifest.json desactualizado');
@@ -408,6 +408,8 @@ describe('memory, context and trunk', () => {
     );
     await fs.writeFile(path.join(coreDir, 'src', 'paths.ts'), 'export {};\n');
     await fs.writeFile(path.join(coreDir, 'dist', 'bin', 'ai-hub.js'), '');
+    // El fixture pasa a ser un checkout del motor: el inventario se escribe en core/.
+    await writeInventory(root);
     const stateFile = path.join(root, '.planning/state.json');
     const state = {
       version: 1,
