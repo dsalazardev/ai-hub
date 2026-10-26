@@ -1113,9 +1113,9 @@
     "core/skills/shared/worktrees/SKILL.md": "7be7835eeb1c755aa67dbd63c09e9b0e1947553a61d68314c09249fa34d16e8f",
     "core/skills/shared/worktrees/evals/README.md": "4b22046437b27a92501381f0c15f9b6a6fb7095edeff36463c12d3cd73cce66d",
     "core/skills/shared/worktrees/evals/cases.yaml": "7815dda7c513af2a70b66dc897292dee19a986f5db37dd4d13cc5a6f6502bcd9",
-    "manifest.yaml": "bf5d7b89556558c1804ac11f9344907ea304f457286d69b33447ed882fdfa3e8",
+    "manifest.yaml": "4d962fdcdf491d0f7061917cc5e3dead56bdf04e86422485bc4499ba93869b5d",
     "mcp-manifest.yaml": "a9ed00138de3c2d2632ccbb5b87915f9cdfbde6050303a8354fd6479ce5065c6",
-    "rules/core.md": "539cad7bd27c7a6f822a2b768906000fa8a059d9675927db68ea7ab509679446",
+    "rules/engine-core.md": "539cad7bd27c7a6f822a2b768906000fa8a059d9675927db68ea7ab509679446",
     "rules/skill-quality/skill-behavior-rubric.md": "4c10897382f70ca9850a74deb6e3ec155bfefd8e8b2a378f3dc6aa95d912a7ec",
     "rules/skill-quality/skill-harden-rubric.md": "b3ff9131faa33c7b96982fe8cc902be88b41c706a700ed0a74b07d35533005a2",
     "rules/skill-quality/skill-migration-brief.md": "f270376125e55a1b21822270806f04560c50ca62b515d34fb473ae6bb58ac298",
@@ -1262,9 +1262,9 @@
       "sha256": "eb36709a7d30360505dcf92307d603ebdd2ae74351ba20f8a2dc2029b2941f0b",
       "source": "core/agents/vue-reviewer.md"
     },
-    ".claude/rules/core.md": {
+    ".claude/rules/engine-core.md": {
       "sha256": "d938c79eb02b12bb46964143c14169b54caad0f39b7652c2149285fa61f5aa4f",
-      "source": "rules/core.md"
+      "source": "rules/engine-core.md"
     },
     ".claude/rules/preflight.md": {
       "sha256": "1eb18a29e75aa9a8cd72ac86714f4a574a570e4960ad76486d77bf2ac62fc864",
@@ -5703,9 +5703,9 @@
       "sha256": "0bc8d1c6f253ea24c6056998c47ab8ee138be2801de5d45246ec57375e65cb8e",
       "source": "core/skills/shared/coolify/SKILL.md"
     },
-    ".cursor/rules/core.mdc": {
+    ".cursor/rules/engine-core.mdc": {
       "sha256": "e431ffe18081d6b658ab048d9c7c07ca0cf6e2e38fc86837437919f88a35a9f1",
-      "source": "rules/core.md"
+      "source": "rules/engine-core.md"
     },
     ".cursor/rules/cost-tracking.mdc": {
       "sha256": "9ed4beb3027e6d4e7e49c935add85dedfdaeceef199d214c90cfaeef6f66e546",
@@ -6520,9 +6520,9 @@
       "sha256": "e4beb30a32f63661669c6e9397ea0369f87533903409b62e20859b5a956c5c9c",
       "source": "core/agents/vue-reviewer.md"
     },
-    ".github/instructions/core.instructions.md": {
+    ".github/instructions/engine-core.instructions.md": {
       "sha256": "3b6cc3d109a8a384f8e2c9e521f81d4a8c913b09e3d161b556eccbaf34946608",
-      "source": "rules/core.md"
+      "source": "rules/engine-core.md"
     },
     ".github/instructions/preflight.instructions.md": {
       "sha256": "647f1f29a48a99b529b30bfaa2c747f9ef1bdbc794c4d2955f3f792a2534edad",
@@ -10989,9 +10989,9 @@
       "sha256": "e4beb30a32f63661669c6e9397ea0369f87533903409b62e20859b5a956c5c9c",
       "source": "core/agents/vue-reviewer.md"
     },
-    ".opencode/rules/core.md": {
+    ".opencode/rules/engine-core.md": {
       "sha256": "d938c79eb02b12bb46964143c14169b54caad0f39b7652c2149285fa61f5aa4f",
-      "source": "rules/core.md"
+      "source": "rules/engine-core.md"
     },
     ".opencode/rules/preflight.md": {
       "sha256": "1eb18a29e75aa9a8cd72ac86714f4a574a570e4960ad76486d77bf2ac62fc864",
@@ -15454,9 +15454,9 @@
       "sha256": "e4beb30a32f63661669c6e9397ea0369f87533903409b62e20859b5a956c5c9c",
       "source": "core/agents/vue-reviewer.md"
     },
-    ".pi/prompts/core.md": {
+    ".pi/prompts/engine-core.md": {
       "sha256": "d938c79eb02b12bb46964143c14169b54caad0f39b7652c2149285fa61f5aa4f",
-      "source": "rules/core.md"
+      "source": "rules/engine-core.md"
     },
     ".pi/prompts/preflight.md": {
       "sha256": "1eb18a29e75aa9a8cd72ac86714f4a574a570e4960ad76486d77bf2ac62fc864",

@@ -16,51 +16,51 @@ No se modificÃ³ `manifest.yaml` ni `rules/core.md`: la actualizaciÃ³n del manifi
 
 ---
 
-## Baseline de `ai-hub doctor` — cambio replica-ai-hub-engine
+## Baseline de `ai-hub doctor` ï¿½ cambio replica-ai-hub-engine
 
 Ejecutado el 2026-10-24 sobre `C:\Users\USUARIO\OneDrive\Escritorio\ARCHIVOS\DESARROLLO\ai-hub`.
 
-| Comprobación | Resultado |
+| Comprobaciï¿½n | Resultado |
 |---|---|
 | Directorio resuelto | `...\DESARROLLO\ai-hub` (fuente `manifest-root`; el nombre de carpeta es `ai-hub`) |
-| Manifiesto | v2 válido, 8 roles / 17 comandos / 7 etiquetas / 4 destinos |
+| Manifiesto | v2 vï¿½lido, 8 roles / 17 comandos / 7 etiquetas / 4 destinos |
 | Carriles | assessment 5/5, feature 9/9, bug 3/3 |
 | Roles ? agentes | 8 resueltos (6 archivos + 2 derivados del orquestador) |
 | Skills por comando | 17/17; assessment 5/5; bug 3/3 |
 | Inventario | `core/manifest.json` actualizado |
 | Lock | v2 con 347 destinos |
-| Deriva | faltan 0 · desactualizados 0 · editados 0 · obsoletos 0 · enlaces 0 |
+| Deriva | faltan 0 ï¿½ desactualizados 0 ï¿½ editados 0 ï¿½ obsoletos 0 ï¿½ enlaces 0 |
 | `.ai-hubrc.json` | ausente (opcional) |
-| Salida | `Resultado: sano` (código 0) |
+| Salida | `Resultado: sano` (cï¿½digo 0) |
 
-Notas de la migración:
+Notas de la migraciï¿½n:
 
-- Antes de ampliar destinos había 239 copias; al añadir Cursor y las reglas de OpenCode/Pi el lock pasó a 347. La segunda ejecución escribió 109 archivos nuevos y `sync --check` quedó en 0.
+- Antes de ampliar destinos habï¿½a 239 copias; al aï¿½adir Cursor y las reglas de OpenCode/Pi el lock pasï¿½ a 347. La segunda ejecuciï¿½n escribiï¿½ 109 archivos nuevos y `sync --check` quedï¿½ en 0.
 - `sync.lock.json` registra 347/347 hashes coincidentes (verificado con SHA-256 archivo por archivo).
-- El plan de diseño hablaba de 95 destinos y la tarea 2.6 de 95/95; el número real creció al declarar los cuatro destinos.
-- No quedan piezas ausentes para este cambio. `init --hooks` sigue siendo trabajo posterior, como declara el diseño.
+- El plan de diseï¿½o hablaba de 95 destinos y la tarea 2.6 de 95/95; el nï¿½mero real creciï¿½ al declarar los cuatro destinos.
+- No quedan piezas ausentes para este cambio. `init --hooks` sigue siendo trabajo posterior, como declara el diseï¿½o.
 
 ---
 
-## Inventario de acoplamiento — generalize-ai-hub-engine (tarea 1.1)
+## Inventario de acoplamiento ï¿½ generalize-ai-hub-engine (tarea 1.1)
 
 Barrido `rg -n "openspec|OpenSpec" core/src bootstrap harness agents rules orchestrator manifest.yaml`:
 
-| Categoría | Ubicaciones | Decisión |
+| Categorï¿½a | Ubicaciones | Decisiï¿½n |
 |---|---|---|
-| Código de runtime | `core/src/state.ts`, `core/src/context.ts:54`, `core/src/harness/ledger.ts:132,146`, `core/src/cli/legacy.ts:43`, `core/src/sync/sync.ts:69-70` | Eliminar o mover a `.planning/` |
+| Cï¿½digo de runtime | `core/src/state.ts`, `core/src/context.ts:54`, `core/src/harness/ledger.ts:132,146`, `core/src/cli/legacy.ts:43`, `core/src/sync/sync.ts:69-70` | Eliminar o mover a `.planning/` |
 | Manifiesto y skills | `manifest.yaml` (9 mapeos `skill: openspec-*`, `shared_skills`, publish), `skills/shared/openspec-*` (6) | Reemplazar por 9 skills `speckit-*` y borrar las 6 |
 | Bootstrap | `bootstrap/verify.sh` (secciones 8 y 9), `bootstrap/openspec-upgrade.mjs` | Purgar OpenSpec; validar `.specify/`, skills y `manifest:check` |
-| Documentación de runtime | `rules/core.md`, `orchestrator/PROMPT.md`, `orchestrator/workflow.md`, `orchestrator/delegation-rules.md`, `agents/*.md` | Reescribir a Spec Kit |
-| Contenido de dominio | `manifest.yaml` (agentes, referencias, reglas Doligestión), `harness/rules/05-no-dolibarrdal-inheritance.sh` | Mover a `presets/angular-express/` |
+| Documentaciï¿½n de runtime | `rules/core.md`, `orchestrator/PROMPT.md`, `orchestrator/workflow.md`, `orchestrator/delegation-rules.md`, `agents/*.md` | Reescribir a Spec Kit |
+| Contenido de dominio | `manifest.yaml` (agentes, referencias, reglas Doligestiï¿½n), `harness/rules/05-no-dolibarrdal-inheritance.sh` | Mover a `presets/angular-express/` |
 
-No se encontraron referencias a OpenSpec en `core/engine` porque ese módulo aún no existe. El `openspec/` del repositorio de autoría se conserva como histórico y no se lee en runtime.
+No se encontraron referencias a OpenSpec en `core/engine` porque ese mï¿½dulo aï¿½n no existe. El `openspec/` del repositorio de autorï¿½a se conserva como histï¿½rico y no se lee en runtime.
 
 ---
 
-## Verificación de generalize-ai-hub-engine
+## Verificaciï¿½n de generalize-ai-hub-engine
 
-| Comprobación | Resultado |
+| Comprobaciï¿½n | Resultado |
 |---|---|
 | `npm --prefix core test` | 143 passed, 1 skipped (symlinks en Windows) |
 | `npm run manifest:check` | OK |
@@ -70,12 +70,12 @@ No se encontraron referencias a OpenSpec en `core/engine` porque ese módulo aún 
 | `npm pack --dry-run` | incluye `dist/`, `schema/`, `manifest.json`, `engine/`, `presets/`, `agents/`, `skills/`; sin tests |
 | `rg openspec core/src core/skills core/presets` | 0 coincidencias |
 | `rg /opsx core/presets core/skills skills` | 0 coincidencias (solo literales del test) |
-| Términos de dominio en `core/src`, `core/engine`, `core/agents`, `core/skills` | 0 coincidencias |
-| Migración del repo actual | `manifest.yaml` v2, `.ai-hub/` scaffolded, `.planning/state.json` activo |
+| Tï¿½rminos de dominio en `core/src`, `core/engine`, `core/agents`, `core/skills` | 0 coincidencias |
+| Migraciï¿½n del repo actual | `manifest.yaml` v2, `.ai-hub/` scaffolded, `.planning/state.json` activo |
 
 Las copias generadas antiguas de `openspec-*` y `opsx-*` en `.claude/`, `.opencode/`, `.pi/` y `.cursor/` se eliminaron manualmente; `sync` ya no las produce.
 
-Limitación de entorno: `bash` de WSL no está disponible; `bootstrap/verify.sh` se ejecutó con Git Bash (`C:\Program Files\Git\bin\bash.exe`) y pasó.
+Limitaciï¿½n de entorno: `bash` de WSL no estï¿½ disponible; `bootstrap/verify.sh` se ejecutï¿½ con Git Bash (`C:\Program Files\Git\bin\bash.exe`) y pasï¿½.
 
 ---
 
@@ -487,3 +487,20 @@ Barridos:
 
 Rutas ordenadas: `.specify/assessments/sanitize-ai-hub-residuals/design.md`, `spec.md`, `tasks.md`;
 LF, sin BOM, `ruta + \n + bytes` por archivo.
+
+## 2026-10-26 - install-completo implementado
+
+- 26/26 tareas completadas; `openspec instructions apply` reporta `all_done`.
+- Suite final: 3 corridas verdes (77,8 / 73,0 / 72,1 s; 187 tests + 1 skip).
+- Modos verificados: full 4.662, preset-only 120, custom con `rule:skill-quality` 4.642, angular full 4.677, motor 4.665.
+- Tarball: 1.296 entradas y las 4 r?bricas `rules/skill-quality/*.md`.
+- Medici?n full: 5.767 archivos, 46.402.682 B, 21,5 s cold / 6,2 s warm; el presupuesto de 60 s pasa.
+- CI local: build 5,4 s + manifest 1,3 s + suite 73,0 s + smoke 35,6 s = 115,3 s; timeout 30 min.
+- `doctor` verde en motor y en instalaciones full/preset/custom; `drift` y `sync --check-lock` verdes en los tres consumidores.
+
+## 2026-10-26 - install-completo archivado
+
+- Sincronizados 13 requisitos nuevos y 2 modificados en `openspec/specs/`.
+- Cambio movido a `openspec/changes/archive/2026-10-26-install-completo/`.
+- `openspec validate --specs` y `--all`: 5 specs, 0 fallos (2 warnings preexistentes de longitud).
+- `openspec list --json`: sin cambios activos.

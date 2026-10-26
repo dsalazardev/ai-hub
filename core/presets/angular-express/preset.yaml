@@ -1,8 +1,8 @@
-id: angular-express
+﻿id: angular-express
 version: 1
 extends: generic-ts
 description: Angular frontend with an Express BFF, Vitest and an optional Dolibarr-style REST backend.
-# Sin detect: preset de cliente. Sólo se elige con --preset angular-express.
+# Sin detect: preset de cliente. SÃ³lo se elige con --preset angular-express.
 stack:
   languages:
     - typescript
@@ -51,5 +51,3 @@ skills:
     - onna-architecture-bff
     - onna-architecture-common
     - onna-design-system
-mcp:
-  source: mcp-manifest.yaml

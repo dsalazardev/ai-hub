@@ -15,3 +15,9 @@
 - Se eliminaron OpenSpec y `/opsx` del runtime y de los presets; las 17 skills `speckit-*` son nativas.
 - Revisiones finales: arquitectura PASS y tests PASS (22/22 requisitos con test directo).
 - Verificación: 143 tests, manifest:check, drift, doctor, verify.sh y `openspec validate --all` en verde.
+
+## 2026-10-26 - install-completo archivado
+
+- 26/26 tareas y 4/4 artefactos completos.
+- Main specs actualizados: agent-guardrails, dev-cli, harness-memory, preset-system.
+- Archivo: `openspec/changes/archive/2026-10-26-install-completo/`.

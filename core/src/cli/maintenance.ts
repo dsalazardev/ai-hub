@@ -3,13 +3,20 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createBackup, listBackups, purgeGenerated, restoreBackup } from '../backup/snapshots.js';
 import { readAiHubRc } from '../paths.js';
-import { loadManifestContext, writeInventory } from '../manifest/manifest.js';
+import { loadManifestContext, writeInventory, type ProjectManifest } from '../manifest/manifest.js';
 import { findPresetAsset } from '../presets/resolve.js';
-import { ENGINE_AGENTS, readScaffold, SCAFFOLD_RELATIVE } from '../presets/materialize.js';
+import {
+  ENGINE_AGENTS,
+  materializeAgent,
+  materializeSkill,
+  readScaffold,
+  SCAFFOLD_RELATIVE,
+} from '../presets/materialize.js';
 import { ENGINE_SKILLS_DIR } from '../engine/engine.js';
+import { catalogSeal, hasFullDimension } from '../catalog.js';
 import { readLock } from '../sync/lock.js';
 import { runSync } from '../sync/sync.js';
-import { cliVersion, writeManifest } from './onboarding.js';
+import { cliVersion, cmdInstall, writeManifest } from './onboarding.js';
 import { splitItem } from './items.js';
 import type { CliContext, ParsedArgs } from './types.js';
 
@@ -18,6 +25,15 @@ async function exists(file: string): Promise<boolean> {
     () => true,
     () => false,
   );
+}
+
+function markCustom(manifest: ProjectManifest, dimension: 'skills' | 'agents' | 'rules'): void {
+  manifest[dimension].selection = 'custom';
+  if (hasFullDimension(manifest)) {
+    manifest.catalog = catalogSeal(manifest);
+  } else {
+    delete manifest.catalog;
+  }
 }
 
 export async function cmdList(args: ParsedArgs, ctx: CliContext): Promise<number> {
@@ -29,11 +45,18 @@ export async function cmdList(args: ParsedArgs, ctx: CliContext): Promise<number
     return 1;
   }
   const { manifest, engine, preset } = context;
+  const mode = manifest.skills.selection ?? 'preset';
   const data = {
     project: manifest.project,
     preset: { id: preset.id, version: preset.version, chain: preset.chain },
     targets: manifest.targets,
+    selection: {
+      skills: manifest.skills.selection ?? 'preset',
+      agents: manifest.agents.selection ?? 'preset',
+      rules: manifest.rules.selection ?? 'preset',
+    },
     commands: engine.commands.map((command) => ({ id: command.id, lane: command.lane, role: command.role })),
+    nativeSkills: engine.commands.map((command) => command.skill),
     skills: manifest.skills.publish,
     agents: manifest.agents.publish,
     rules: manifest.rules.publish,
@@ -45,10 +68,15 @@ export async function cmdList(args: ParsedArgs, ctx: CliContext): Promise<number
   ctx.io.out(`project: ${manifest.project.id} (${manifest.project.name})`);
   ctx.io.out(`preset: ${preset.id}@${preset.version} [${preset.chain.join(' -> ')}]`);
   ctx.io.out(`targets: ${manifest.targets.join(', ')}`);
+  ctx.io.out(
+    `selection: skills=${data.selection.skills} agents=${data.selection.agents} rules=${data.selection.rules}`,
+  );
   ctx.io.out(`commands (${data.commands.length}): ${data.commands.map((command) => command.id).join(', ')}`);
-  ctx.io.out(`skills (${data.skills.length}): ${data.skills.join(', ') || 'solo las 17 del motor'}`);
+  ctx.io.out(`skills: 17 nativas + ${data.skills.length} de proyecto (${mode})`);
   ctx.io.out(`agents (${data.agents.length}): ${data.agents.join(', ')}`);
-  ctx.io.out(`rules (${data.rules.length}): ${data.rules.join(', ')}`);
+  ctx.io.out(
+    `rules: ${data.rules.length + 1} universales (${data.rules.length} materializadas + preflight)`,
+  );
   return 0;
 }
 
@@ -56,6 +84,10 @@ export async function cmdAdd(args: ParsedArgs, ctx: CliContext): Promise<number>
   const parsed = splitItem(args);
   if (!parsed.id) {
     ctx.io.err('uso: ai-hub add <skill|agent> <id>');
+    return 2;
+  }
+  if (parsed.kind === 'rule') {
+    ctx.io.err('las reglas universales se seleccionan con --exclude rule:<id> en init; no se añaden con add');
     return 2;
   }
   let context;
@@ -69,9 +101,18 @@ export async function cmdAdd(args: ParsedArgs, ctx: CliContext): Promise<number>
   const id = parsed.id;
   const engineSkill = context.engine.commands.some((command) => command.skill === id);
   const catalogSkill = await exists(path.join(ENGINE_SKILLS_DIR, id, 'SKILL.md'));
+  const catalogAgent = await exists(path.join(ENGINE_AGENTS, `${id}.md`));
   const kind =
     parsed.kind ??
-    (preset.skills.includes(id) || engineSkill || catalogSkill ? 'skill' : 'agent');
+    (preset.skills.includes(id) || engineSkill || catalogSkill
+      ? 'skill'
+      : catalogAgent || preset.agents.includes(id)
+        ? 'agent'
+        : null);
+  if (kind === null) {
+    ctx.io.err(`no existe "${id}" en el preset ${preset.id} ni en el catálogo del motor`);
+    return 1;
+  }
 
   if (kind === 'skill') {
     if (engineSkill) {
@@ -91,29 +132,35 @@ export async function cmdAdd(args: ParsedArgs, ctx: CliContext): Promise<number>
       ctx.io.out(JSON.stringify({ dryRun: true, action: 'add', kind, id, destination }, null, 2));
       return 0;
     }
-    if (!(await exists(destination))) {
-      await fs.cp(source, destination, { recursive: true });
-    }
+    await materializeSkill(
+      ctx.root,
+      id,
+      source,
+      fromPreset ? `@preset/${preset.id}/skills/${id}` : `@engine/skills/shared/${id}`,
+    );
     manifest.skills.publish = [...new Set([...manifest.skills.publish, id])];
   } else {
-    if (!preset.agents.includes(id)) {
-      ctx.io.err(`el agente "${id}" no pertenece al preset ${preset.id}`);
-      return 1;
-    }
     const fromPreset = await findPresetAsset(preset.chain, `agents/${id}.md`);
     const source = fromPreset ?? path.join(ENGINE_AGENTS, `${id}.md`);
+    if (!(await exists(source))) {
+      ctx.io.err(`no existe el agente "${id}" en el catálogo ${ENGINE_AGENTS}`);
+      return 1;
+    }
     const destination = path.join(ctx.root, manifest.agents.source, `${id}.md`);
     if (args.flags['dry-run']) {
       ctx.io.out(JSON.stringify({ dryRun: true, action: 'add', kind, id, destination }, null, 2));
       return 0;
     }
-    if (!(await exists(destination))) {
-      await fs.mkdir(path.dirname(destination), { recursive: true });
-      await fs.copyFile(source, destination);
-    }
+    await materializeAgent(
+      ctx.root,
+      id,
+      source,
+      fromPreset ? `@preset/${preset.id}/agents/${id}.md` : `@engine/agents/${id}.md`,
+    );
     manifest.agents.publish = [...new Set([...manifest.agents.publish, id])];
   }
 
+  markCustom(manifest, kind === 'agent' ? 'agents' : 'skills');
   await writeManifest(ctx.root, manifest);
   const sync = await runSync(ctx.root, { check: false });
   await writeInventory(ctx.root);
@@ -124,7 +171,7 @@ export async function cmdAdd(args: ParsedArgs, ctx: CliContext): Promise<number>
 export async function cmdUninstall(args: ParsedArgs, ctx: CliContext): Promise<number> {
   const parsed = splitItem(args);
   if (!parsed.id) {
-    ctx.io.err('uso: ai-hub uninstall <skill|agent> <id>');
+    ctx.io.err('uso: ai-hub uninstall <skill|agent|rule> <id>');
     return 2;
   }
   let context;
@@ -136,9 +183,21 @@ export async function cmdUninstall(args: ParsedArgs, ctx: CliContext): Promise<n
   }
   const { manifest } = context;
   const id = parsed.id;
-  const kind = parsed.kind ?? (manifest.skills.publish.includes(id) ? 'skill' : 'agent');
+  const kind =
+    parsed.kind ??
+    (manifest.skills.publish.includes(id)
+      ? 'skill'
+      : manifest.agents.publish.includes(id)
+        ? 'agent'
+        : manifest.rules.publish.includes(id) || id === 'skill-quality'
+          ? 'rule'
+          : 'agent');
   if (kind === 'skill' && context.engine.commands.some((command) => command.skill === id)) {
     ctx.io.err(`"${id}" es una skill del motor y no se puede desinstalar`);
+    return 1;
+  }
+  if (kind === 'rule' && (id === 'core' || id === 'preflight')) {
+    ctx.io.err(`la regla base "${id}" no se puede desinstalar`);
     return 1;
   }
   if (args.flags['dry-run']) {
@@ -149,9 +208,21 @@ export async function cmdUninstall(args: ParsedArgs, ctx: CliContext): Promise<n
   if (kind === 'skill') {
     manifest.skills.publish = manifest.skills.publish.filter((skill) => skill !== id);
     await removeOwned(ctx.root, path.join(manifest.skills.source, id), true);
-  } else {
+    markCustom(manifest, 'skills');
+  } else if (kind === 'agent') {
     manifest.agents.publish = manifest.agents.publish.filter((agent) => agent !== id);
     await removeOwned(ctx.root, path.join(manifest.agents.source, `${id}.md`), false);
+    markCustom(manifest, 'agents');
+  } else {
+    const removed =
+      id === 'skill-quality'
+        ? manifest.rules.publish.filter((rule) => rule.startsWith('skill-quality/'))
+        : manifest.rules.publish.filter((rule) => rule === id);
+    manifest.rules.publish = manifest.rules.publish.filter((rule) => !removed.includes(rule));
+    for (const rule of removed) {
+      await removeOwned(ctx.root, path.join(manifest.rules.source, `${rule}.md`), false);
+    }
+    markCustom(manifest, 'rules');
   }
   await writeManifest(ctx.root, manifest);
   const sync = await runSync(ctx.root, { check: false });
@@ -166,9 +237,10 @@ async function removeOwned(root: string, relative: string, directory: boolean): 
     return;
   }
   const record = await readScaffold(root);
+  const relativePosix = relative.split(path.sep).join('/');
   if (directory) {
     const files = record.files;
-    const prefix = `${relative.split(path.sep).join('/')}/`;
+    const prefix = `${relativePosix}/`;
     const owned = Object.entries(files).filter(([name]) => name.startsWith(prefix));
     if (owned.length === 0) {
       const marker = await fs.readFile(path.join(absolute, 'SKILL.md'), 'utf8').catch(() => '');
@@ -180,7 +252,8 @@ async function removeOwned(root: string, relative: string, directory: boolean): 
     return;
   }
   const text = await fs.readFile(absolute, 'utf8').catch(() => null);
-  if (text === null || text.includes('GENERADO por ai-hub')) {
+  const owned = record.files[relativePosix] !== undefined;
+  if (text === null || owned || text.includes('GENERADO por ai-hub')) {
     await fs.rm(absolute, { force: true });
   }
 }
@@ -273,6 +346,29 @@ export async function cmdUpgrade(args: ParsedArgs, ctx: CliContext): Promise<num
       ctx.io.err('npm install falló; revisa la salida anterior');
       return 1;
     }
+  }
+  let context;
+  try {
+    context = await loadManifestContext(ctx.root);
+  } catch (error) {
+    ctx.io.err((error as Error).message);
+    return 1;
+  }
+  const refreshFull =
+    Boolean(args.flags.full) ||
+    (hasFullDimension(context.manifest) && !args.flags['preset-only']);
+  if (refreshFull) {
+    const code = await cmdInstall(
+      {
+        positionals: [],
+        flags: args.flags.full ? { full: true } : {},
+      },
+      ctx,
+    );
+    if (code === 0) {
+      ctx.io.out('upgrade: dimensiones full actualizadas y sello refrescado');
+    }
+    return code;
   }
   const result = await runSync(ctx.root, { check: false });
   ctx.io.out(`upgrade: ${result.written.length} archivos regenerados`);

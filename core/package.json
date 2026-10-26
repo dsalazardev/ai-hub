@@ -1,6 +1,6 @@
 {
   "name": "@dsalazardev/ai-hub-cli",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "author": "Daner Alejandro Salazar Colorado",
   "license": "MIT",
   "type": "module",
@@ -31,6 +31,7 @@
     "manifest.json",
     "engine",
     "presets",
+    "rules",
     "agents",
     "skills",
     "LICENSE",

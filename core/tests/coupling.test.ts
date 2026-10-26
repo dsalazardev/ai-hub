@@ -72,7 +72,7 @@ describe('engine coupling gate', () => {
   });
 
   it('documents Spec Kit as the only active methodology', async () => {
-    for (const file of ['AGENTS.md', 'README.md', 'rules/core.md']) {
+    for (const file of ['AGENTS.md', 'README.md', 'rules/engine-core.md']) {
       const text = await fs.readFile(path.join(REPO_ROOT, file), 'utf8');
       expect(text).toContain('Spec Kit');
       expect(text).not.toContain('/opsx');

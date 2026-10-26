@@ -197,7 +197,11 @@ async function renderRules(root: string, config: SyncConfig, out: RenderedFiles)
     const isCore = area === 'core';
     for (const [tool, target] of Object.entries(config.rules.targets)) {
       if (target.shape === 'mdc') {
-        putRendered(out, `${target.path}/${area}.mdc`, {
+        const preferred = `${target.path}/${area}.mdc`;
+        const destination = out.has(preferred)
+          ? `${target.path}/rule-${area}.mdc`
+          : preferred;
+        putRendered(out, destination, {
           content: withMarker(
             frontmatter({
               description: isCore ? 'Core project rules' : `Rules for ${area}`,

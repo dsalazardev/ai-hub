@@ -5,6 +5,7 @@ import {
   resumeLedger,
   type LedgerEvent,
 } from '../harness/memory/ledger.js';
+import { isEngineCheckout } from '../source-checkout.js';
 import { flagList, flagString } from './args.js';
 import type { CliContext, ParsedArgs } from './types.js';
 
@@ -18,6 +19,10 @@ function numberFlag(args: ParsedArgs, name: string): number | null {
 }
 
 export async function cmdMemory(args: ParsedArgs, ctx: CliContext): Promise<number> {
+  if (!(await isEngineCheckout(ctx.root))) {
+    ctx.io.out('memory: no aplica en instalación');
+    return 0;
+  }
   const sub = args.positionals[0] ?? 'list';
   if (sub === 'add') {
     const sessionId = flagString(args, 'session') ?? process.env.AI_HUB_SESSION ?? 'local';

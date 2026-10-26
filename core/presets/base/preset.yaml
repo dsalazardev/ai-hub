@@ -1,4 +1,4 @@
-id: base
+﻿id: base
 version: 1
 description: Minimal harness for any repository, regardless of language or framework.
 detect:
@@ -23,5 +23,3 @@ agents:
   publish: []
 skills:
   publish: []
-mcp:
-  source: mcp-manifest.yaml

@@ -124,8 +124,8 @@ async function cmdCheck(_args: ParsedArgs, ctx: CliContext): Promise<number> {
 
 export const COMMANDS: Record<string, CommandSpec> = {
   init: { summary: 'Detecta el stack, elige preset y aplica un plan reproducible', handler: cmdInit },
-  install: { summary: 'Materializa el preset y sincroniza los destinos', handler: cmdInstall },
-  add: { summary: 'Añade una skill o un agente del preset', handler: cmdAdd },
+  install: { summary: 'Materializa el catálogo o el preset según la selección y sincroniza', handler: cmdInstall },
+  add: { summary: 'Añade una skill o cualquier agente del catálogo', handler: cmdAdd },
   sync: { summary: 'Proyecta las fuentes a los destinos; --check informa deriva', handler: cmdSync },
   drift: { summary: 'Informa deriva de hash sin escribir', handler: cmdDrift },
   list: { summary: 'Lista preset, targets, comandos, skills y agentes', handler: cmdList },
@@ -133,7 +133,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
   check: { summary: 'Alias de doctor', handler: cmdCheck },
   backups: { summary: 'Lista los snapshots disponibles', handler: cmdBackups },
   restore: { summary: 'Restaura un snapshot', handler: cmdRestore },
-  uninstall: { summary: 'Elimina una skill o agente añadido', handler: cmdUninstall },
+  uninstall: { summary: 'Elimina una skill, agente o regla añadida', handler: cmdUninstall },
   purge: { summary: 'Elimina el arnés tras crear un snapshot', handler: cmdPurge },
   upgrade: { summary: 'Actualiza el paquete y re-sincroniza', handler: cmdUpgrade },
   repair: { summary: 'Reaplica solo lo que falta o está roto', handler: cmdRepair },
@@ -158,6 +158,8 @@ export function printHelp(io: CliIO): void {
     io.out(`  ${name.padEnd(10)} ${COMMANDS[name].summary}`);
   }
   io.out('');
+  io.out('add agent acepta cualquier agente del catálogo, no solo los del preset.');
+  io.out('Publicación: prepublishOnly ejecuta build, manifest:build y npm test (unit + integración).');
   io.out('Compatibilidad: verify, judge (fuera del catálogo).');
 }
 

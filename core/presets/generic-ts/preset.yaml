@@ -1,4 +1,4 @@
-id: generic-ts
+﻿id: generic-ts
 version: 1
 extends: base
 description: TypeScript repository with npm-compatible scripts and a standard test runner.
@@ -42,5 +42,3 @@ agents:
     - explorer-domain
 skills:
   publish: []
-mcp:
-  source: mcp-manifest.yaml

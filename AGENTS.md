@@ -155,11 +155,13 @@ Cualquier cambio posterior invalida la aprobación. Un hash que no coincide se r
 
 Un `.ai-hubrc.json` v1 se lee y se migra; una fuente explícita que no contiene `manifest.yaml` falla en vez de continuar.
 
+MCP es del consumidor: `mcp-manifest.yaml` en la raíz es la única fuente. Los presets no declaran `mcp.source`; sin ese archivo, `doctor` reporta `MCP: no configurado` y no se generan `.mcp.json`, `.cursor/mcp.json` ni `.vscode/mcp.json`.
+
 ---
 
-## 7. Persistencia obligatoria
+## 7. Persistencia obligatoria (solo taller)
 
-El chat no es un almacén. Todo estado va a `.planning/`:
+`.planning/` pertenece al checkout de desarrollo. Una instalación no lo crea; `init --migrate` sale 2 y `memory`/`context` salen 0 con `no aplica en instalación`. El chat no es un almacén. En el taller, todo estado va a `.planning/`:
 
 | Archivo | Contenido |
 |---|---|

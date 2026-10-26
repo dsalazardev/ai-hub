@@ -1,58 +1,52 @@
-# Sesión actual — `sanitize-ai-hub-residuals` en puerta humana
+# Estado de sesión — install-completo
 
-**Estado:** implementado y verificado el 2026-10-25; pendiente únicamente la publicación del
-`iid + hash` de la puerta humana (`T7.8`). No se ha archivado.
+- Fecha: 2026-10-26
+- Cambio: `install-completo` **archivado**
+- Fase: archivado
+- Progreso tracked: **26/26 tareas** y **4/4 artefactos**
+- Repo: `C:\Users\USUARIO\OneDrive\Escritorio\ARCHIVOS\DESARROLLO\ai-hub`
+- Archivo: `openspec/changes/archive/2026-10-26-install-completo/`
 
-## Alcance cerrado
+## Resultado
 
-- `origin: ai-hub` presente en **las 174 skills publicadas** (`manifest.yaml` → `skills.publish`).
-  Las 17 `speckit-*` no publicadas siguen sin el campo, por diseño.
-- `origin: ai-hub` = 0 en `core/skills`.
-- `rules/skill-quality/` con las 4 rúbricas; `rules/skill-quality/` inexistente; los 4 ids del manifiesto
-  apuntan al namespace nuevo.
-- `agents/ai-hub` y `prompts/ai-hub` viven en `archive/upstream/ai-hub/` (14 archivos + README).
-- Gate nuevo `core/tests/brand.test.ts`: marca, paridad de verbos, aridad de `add` y `origin`.
-- Créditos intactos: `core/skills/shared/design/THIRD_PARTY.md` y
-  `core/skills/shared/design/engine/LICENSE` (Leonxlnx, MIT) sin cambios; `NOTICE.md` conserva a
-  Daner Alejandro Salazar Colorado como titular upstream y a Daner Alejandro Salazar Colorado como autor de ai-hub.
+La instalación completa está implementada y verificada:
 
-## Verificación final (2026-10-25)
+- `init --yes` entrega 191 skills, 35 agentes, 6 reglas universales, 5 reglas materializadas en `.ai-hub/rules` y 4.662 destinos.
+- `--preset-only` entrega 0 skills de proyecto, 6 agentes, 2 reglas y 120 destinos.
+- `--exclude rule:skill-quality` entrega catálogo completo, 2 reglas y 4.642 destinos; skills/agents permanecen `full` y solo rules es `custom`.
+- `angular-express` full entrega 9 reglas y 4.677 destinos sin duplicar `core`.
+- El motor conserva 4.665 entradas de lock; `sync --check-lock` reporta “no aplica” en el checkout.
+- `doctor` verde en motor y en instalaciones full/preset-only/custom; `drift` y `sync --check-lock` verdes en los tres consumidores.
 
-```text
-npm run manifest:build        exit 0
-npm run build                 exit 0
-npm run manifest:check        exit 0
-npm run ai:test               exit 0 — 150 passed | 1 skipped (11 archivos)
-ai-hub doctor                 exit 0 — "Resultado: sano" (22 checks)
-npm run ai:typecheck          exit 0
-git grep marca (6 rutas)      0 coincidencias
-git grep ai-hub Spec-Kit/@dsalazardev   0 coincidencias
+## Evidencia
+
+- Suite: 3 corridas consecutivas exit 0 (77,8 / 73,0 / 72,1 s; 187 tests + 1 skip).
+- `prepublishOnly`: exit 0; build + manifest:build + suite.
+- Tarball: 1.296 entradas y las 4 rutas `rules/skill-quality/*.md`.
+- Medición full: 5.767 archivos, 46.402.682 B, 21,5 s cold / 6,2 s warm.
+- CI local: 115,3 s; `timeout-minutes: 30`.
+- `openspec validate "install-completo" --strict`: válido.
+- `git add -n -f openspec/changes/install-completo`: lista proposal, design, tasks, `.openspec.yaml` y los 4 specs; sin `-f` sale 1 por `.gitignore`.
+
+## Pendiente
+
+1. Revisión humana del diff y del sello 0.2.0.
+2. Publicar 0.2.0 solo tras CI y prueba en copia temporal; no se publica en esta sesión.
+
+El cambio ya está archivado; los main specs de `agent-guardrails`, `dev-cli`, `harness-memory` y `preset-system` incluyen los 13 requisitos nuevos y los 2 modificados.
+
+## Archivos clave
+
+- `core/src/catalog.ts`, `core/src/cli/onboarding.ts`, `core/src/cli/maintenance.ts`, `core/src/cli/doctor.ts`.
+- `core/src/engine/gates.ts`, `core/src/presets/materialize.ts`, `core/src/sync/sync.ts`.
+- `core/vitest.config.ts`, `core/tests/install-generic.test.ts`, `core/tests/install-angular.test.ts`, `core/tests/selection.test.ts`.
+- `core/rules/skill-quality/`, `core/scripts/measure-install.mjs`.
+- `README.md`, `AGENTS.md`, `CHANGELOG.md`, `manifest.yaml`.
+
+## Comando para retomar
+
+```powershell
+npm run ai:build
+npm run ai:test
+openspec instructions apply --change "install-completo" --json
 ```
-
-Gate demostrado en rojo con dos sondas temporales (token de marca y `ai-hub sello`) y en verde
-tras retirarlas. Las sondas no dejaron archivos.
-
-## Decisiones y desviaciones
-
-1. **`.planning/history.md` no se modifica.** REQ-06 y el encargo lo declaran inmutable y su
-   SHA-256 está en el conjunto de T0.1 que T7.6 verifica; escribir en él rompería esa comprobación.
-   El cierre se registra aquí y en `.planning/findings.md`.
-2. **El invariante de `origin` es "todas las publicadas" (174), no el 171 del plan.** El árbol
-   ganó 3 skills publicadas (`gitlab-auth`, `gitlab-workflow`, `planning-with-files`); se les añadió
-   el campo en vez de fijar un número obsoleto.
-3. **Barrido de paridad más estricto que el plan.** Además de los verbos, se corrigieron 30 usos
-   de "ai-hub" como adjetivo (`ai-hub voice`, `ai-hub ships`, `ai-hub preflight`…) para que ninguna
-   mención `ai-hub <palabra>` pueda leerse como un comando inexistente.
-4. **T7.8 abierto.** El remoto es GitHub (`dsalazardev/ai-hub`) y no hay issue asociada; no se
-   inventa un `iid`.
-
-## SHA-256 del conjunto aprobable
-
-`939A6559422804CCDE9A1D42AC0E7417222D1598366E166EF77DCAD2BDF0C81F`
-
-Canonicalización de `AGENTS.md §5`: rutas relativas ordenadas (`spec.md`, `design.md`, `tasks.md`),
-separador `/`, contenido normalizado a LF, sin BOM; por archivo `ruta + "\n" + bytes`.
-
-## Siguiente paso
-
-Publicar `iid + hash` y pedir aprobación humana; después mover a `ai::in-dev`.

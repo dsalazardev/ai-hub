@@ -9,6 +9,7 @@ import { ENGINE_COUNTS, ENGINE_SKILLS_DIR, loadEngine, type EngineManifest } fro
 import { frontmatterString, splitFrontmatter } from '../frontmatter.js';
 import { resolvePreset, type ResolvedPreset } from '../presets/resolve.js';
 import type { PresetDangerPattern } from '../presets/schema.js';
+import type { SelectionMode } from '../catalog.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SCHEMA_PATH = path.join(__dirname, '..', '..', 'schema', 'manifest.schema.json');
@@ -33,9 +34,10 @@ export interface ProjectManifest {
     optOuts: string[];
     dangerPatterns?: PresetDangerPattern[];
   };
-  skills: { source: string; publish: string[] };
-  agents: { source: string; publish: string[] };
-  rules: { source: string; publish: string[] };
+  skills: { source: string; publish: string[]; selection?: SelectionMode };
+  agents: { source: string; publish: string[]; selection?: SelectionMode };
+  rules: { source: string; publish: string[]; selection?: SelectionMode };
+  catalog?: { version: string; hash: string };
   mcp?: { source: string };
 }
 
@@ -213,6 +215,8 @@ export interface ManifestInventory {
   commands: Array<{ id: string; lane: string; role: string; skill: string }>;
   labels: string[];
   targets: string[];
+  selection?: { skills: SelectionMode; agents: SelectionMode; rules: SelectionMode };
+  catalog?: { version: string; hash: string } | null;
   agents: string[];
   skills: string[];
   rules: string[];
@@ -246,6 +250,18 @@ export function buildInventory(manifest: ProjectManifest, engine: EngineManifest
     commands,
     labels,
     targets: [...manifest.targets].sort(),
+    ...(manifest.skills.selection !== undefined ||
+    manifest.agents.selection !== undefined ||
+    manifest.rules.selection !== undefined
+      ? {
+          selection: {
+            skills: manifest.skills.selection ?? 'preset',
+            agents: manifest.agents.selection ?? 'preset',
+            rules: manifest.rules.selection ?? 'preset',
+          },
+        }
+      : {}),
+    ...(manifest.catalog !== undefined ? { catalog: manifest.catalog } : {}),
     agents,
     skills,
     rules,

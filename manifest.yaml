@@ -220,6 +220,7 @@ skills:
     - webhooks
     - wordpress
     - worktrees
+  selection: full
 
 agents:
   source: core/agents
@@ -259,15 +260,21 @@ agents:
     - swift-reviewer
     - typescript-reviewer
     - vue-reviewer
+  selection: full
 
 rules:
   source: rules
   publish:
-    - core
+    - engine-core
     - skill-quality/skill-rubric
     - skill-quality/skill-harden-rubric
     - skill-quality/skill-behavior-rubric
     - skill-quality/skill-migration-brief
+  selection: custom
+
+catalog:
+  version: 0.2.0
+  hash: f30e2590a4eb078ea520873661b5f10fb3cf9171d1422438c35aafd722abbb23
 
 mcp:
   source: mcp-manifest.yaml

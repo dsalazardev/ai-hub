@@ -61,27 +61,35 @@ interface ScannedFile {
   text: string;
 }
 
+let sourcesPromise: Promise<ScannedFile[]> | null = null;
+
 async function publishedSources(): Promise<ScannedFile[]> {
-  const found: ScannedFile[] = [];
-  for (const tree of SCAN_TREES) {
-    for (const file of await walk(path.join(REPO_ROOT, ...tree.split('/')))) {
-      if (!TEXT_FILE.test(file)) {
-        continue;
+  if (sourcesPromise !== null) {
+    return sourcesPromise;
+  }
+  sourcesPromise = (async () => {
+    const found: ScannedFile[] = [];
+    for (const tree of SCAN_TREES) {
+      for (const file of await walk(path.join(REPO_ROOT, ...tree.split('/')))) {
+        if (!TEXT_FILE.test(file)) {
+          continue;
+        }
+        const rel = toPosix(path.relative(REPO_ROOT, file));
+        if (isExcluded(rel)) {
+          continue;
+        }
+        found.push({ rel, text: await fs.readFile(file, 'utf8') });
       }
-      const rel = toPosix(path.relative(REPO_ROOT, file));
+    }
+    for (const rel of SCAN_ROOT_FILES) {
       if (isExcluded(rel)) {
         continue;
       }
-      found.push({ rel, text: await fs.readFile(file, 'utf8') });
+      found.push({ rel, text: await fs.readFile(path.join(REPO_ROOT, ...rel.split('/')), 'utf8') });
     }
-  }
-  for (const rel of SCAN_ROOT_FILES) {
-    if (isExcluded(rel)) {
-      continue;
-    }
-    found.push({ rel, text: await fs.readFile(path.join(REPO_ROOT, ...rel.split('/')), 'utf8') });
-  }
-  return found;
+    return found;
+  })();
+  return sourcesPromise;
 }
 
 async function publishedSkillIds(manifestText: string): Promise<string[]> {

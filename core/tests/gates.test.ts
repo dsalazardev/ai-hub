@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { resetCatalogIndex } from '../src/catalog.js';
 import { scanCoupling, scanLegacyArtifacts } from '../src/engine/gates.js';
 
 const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url));
@@ -19,19 +20,15 @@ describe('legacy artifact gate', () => {
     expect(await scanLegacyArtifacts(REPO_ROOT)).toEqual([]);
   }, 20000);
 
-  it('detects legacy names and content in the motor and generated destinations', async () => {
+  it('detects legacy names and content in generated destinations', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-legacy-'));
     try {
-      await write(root, 'core/presets/foo/legacy.md', 'run /opsx apply\n');
-      await write(root, 'core/agents/legacy.md', 'Requires openspec CLI\n');
       await write(root, '.claude/commands/opsx-explore.md', '# command\n');
       await write(root, '.opencode/skills/openspec-explore/SKILL.md', '# skill\n');
 
       const findings = await scanLegacyArtifacts(root);
       expect(findings).toEqual(
         expect.arrayContaining([
-          expect.stringContaining('core/presets/foo/legacy.md'),
-          expect.stringContaining('core/agents/legacy.md'),
           expect.stringContaining('.claude/commands/opsx-explore.md'),
           expect.stringContaining('.opencode/skills/openspec-explore'),
         ]),
@@ -51,6 +48,43 @@ describe('legacy artifact gate', () => {
       expect(await scanLegacyArtifacts(root)).toEqual([]);
     } finally {
       await fs.rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it('scans the installed catalog through the shared index and ignores consumer core files', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-legacy-installed-'));
+    const fake = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-legacy-catalog-'));
+    const previous = process.env.AI_HUB_CATALOG_INDEX_FILE;
+    try {
+      const skillFile = path.join(fake, 'SKILL.md');
+      await fs.writeFile(skillFile, 'run /opsx apply\n', 'utf8');
+      const indexFile = path.join(root, 'catalog-index.json');
+      await fs.writeFile(
+        indexFile,
+        JSON.stringify({
+          skills: ['openspec-fake'],
+          agents: [],
+          skillFiles: { 'openspec-fake': [skillFile] },
+          ruleFiles: {},
+          walkCount: 1,
+        }),
+        'utf8',
+      );
+      await write(root, 'core/presets/foo/legacy.md', 'run /opsx apply\n');
+      process.env.AI_HUB_CATALOG_INDEX_FILE = indexFile;
+      resetCatalogIndex();
+      const findings = await scanLegacyArtifacts(root);
+      expect(findings.join('\n')).toContain('openspec-fake');
+      expect(findings.join('\n')).not.toContain('core/presets/');
+    } finally {
+      if (previous === undefined) {
+        delete process.env.AI_HUB_CATALOG_INDEX_FILE;
+      } else {
+        process.env.AI_HUB_CATALOG_INDEX_FILE = previous;
+      }
+      resetCatalogIndex();
+      await fs.rm(root, { recursive: true, force: true });
+      await fs.rm(fake, { recursive: true, force: true });
     }
   });
 

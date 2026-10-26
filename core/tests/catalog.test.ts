@@ -73,7 +73,7 @@ describe('real catalog', () => {
       '.pi/agents/spec-author.md',
       '.github/agents/spec-author.md',
       '.cursor/rules/speckit-plan.mdc',
-      '.claude/rules/core.md',
+      '.claude/rules/engine-core.md',
     ]) {
       expect(rendered.has(sample)).toBe(true);
     }

@@ -1,7 +1,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { readAiHubRc } from '../paths.js';
+import { auditSelection } from '../catalog.js';
 import { ENGINE_COUNTS, ENGINE_LANES, ENGINE_SKILLS_DIR } from '../engine/engine.js';
 import { scanCoupling, scanLegacyArtifacts } from '../engine/gates.js';
 import {
@@ -10,6 +12,7 @@ import {
   type ProjectManifest,
 } from '../manifest/manifest.js';
 import type { EngineManifest } from '../engine/engine.js';
+import type { ResolvedPreset } from '../presets/resolve.js';
 import { checkLock, runSync } from '../sync/sync.js';
 import { CONTEXT_RELATIVE, contextHash } from './context.js';
 import { TARGETS, TOOL_IDS, isToolId } from '../sync/targets.js';
@@ -57,6 +60,47 @@ async function exists(file: string): Promise<boolean> {
   );
 }
 
+function gitOutput(root: string, args: string[]): { status: number; text: string } {
+  const result = spawnSync('git', args, {
+    cwd: root,
+    encoding: 'utf8',
+    shell: false,
+  });
+  return {
+    status: result.status ?? 1,
+    text: `${result.stdout ?? ''}${result.stderr ?? ''}`.trim(),
+  };
+}
+
+function versionedDestinations(root: string): { applicable: boolean; tracked: string[] } {
+  const inside = gitOutput(root, ['rev-parse', '--is-inside-work-tree']);
+  if (inside.status !== 0 || inside.text !== 'true') {
+    return { applicable: false, tracked: [] };
+  }
+  const listed = gitOutput(root, [
+    'ls-files',
+    '--',
+    '.claude',
+    '.opencode',
+    '.pi',
+    '.cursor',
+    '.github/skills',
+    '.github/agents',
+    '.github/instructions',
+    '.mcp.json',
+    '.cursor/mcp.json',
+    '.vscode/mcp.json',
+    'opencode.json',
+  ]);
+  if (listed.status !== 0) {
+    return { applicable: false, tracked: [] };
+  }
+  return {
+    applicable: true,
+    tracked: listed.text.split(/\r?\n/).map((line) => line.trim()).filter((line) => line !== ''),
+  };
+}
+
 export async function diagnose(ctx: CliContext): Promise<DoctorReport> {
   const checks: DoctorCheck[] = [];
   const add = (id: string, ok: boolean, detail: string): void => {
@@ -66,16 +110,18 @@ export async function diagnose(ctx: CliContext): Promise<DoctorReport> {
 
   let manifest: ProjectManifest | null = null;
   let engine: EngineManifest | null = null;
+  let preset: ResolvedPreset | null = null;
   try {
     const context = await loadManifestContext(ctx.root);
     manifest = context.manifest;
     engine = context.engine;
+    preset = context.preset;
     add('manifest', true, `manifest.yaml válido (proyecto ${manifest.project.id})`);
   } catch (error) {
     add('manifest', false, error instanceof Error ? error.message : String(error));
   }
 
-  if (manifest && engine) {
+  if (manifest && engine && preset) {
     add('preset', true, `${manifest.preset.id}@${manifest.preset.version} (${manifest.preset.source})`);
     add(
       'engine:roles',
@@ -120,25 +166,70 @@ export async function diagnose(ctx: CliContext): Promise<DoctorReport> {
         : `opt-outs activos: ${manifest.policy.optOuts.join(', ')}`,
     );
 
-    const missingSkills: string[] = [];
+    const missingEngineSkills: string[] = [];
     for (const command of engine.commands) {
       if (!(await exists(path.join(ENGINE_SKILLS_DIR, command.skill, 'SKILL.md')))) {
-        missingSkills.push(`${command.id} -> ${command.skill}`);
+        missingEngineSkills.push(`${command.id} -> ${command.skill}`);
       }
     }
-    for (const skill of manifest.skills.publish) {
-      if (!(await exists(path.join(ctx.root, manifest.skills.source, skill, 'SKILL.md')))) {
-        missingSkills.push(`${skill} -> ${manifest.skills.source}`);
-      }
-    }
+    const audit = await auditSelection(ctx.root, manifest, preset, engine);
+    const missingProjectSkills = audit.missing
+      .filter((item) => item.startsWith('skill:'))
+      .map((item) => item.slice('skill:'.length));
     add(
       'skills',
-      missingSkills.length === 0,
-      missingSkills.length === 0 ? '17 skills nativas + extras' : missingSkills.join(', '),
+      missingEngineSkills.length === 0 && missingProjectSkills.length === 0,
+      missingEngineSkills.length === 0 && missingProjectSkills.length === 0
+        ? `17 nativas + ${manifest.skills.publish.length} de proyecto (${audit.modes.skills})`
+        : [...missingEngineSkills, ...missingProjectSkills.map((id) => `${id} -> ${manifest.skills.source}`)].join(', '),
     );
+    const missingAgents = audit.missing
+      .filter((item) => item.startsWith('agent:'))
+      .map((item) => item.slice('agent:'.length));
+    add(
+      'agents',
+      missingAgents.length === 0,
+      missingAgents.length === 0
+        ? `${manifest.agents.publish.length} agentes (${audit.modes.agents})`
+        : `faltan: ${missingAgents.join(', ')}`,
+    );
+    const missingRules = audit.missing
+      .filter((item) => item.startsWith('rule:'))
+      .map((item) => item.slice('rule:'.length));
+    add(
+      'rules',
+      missingRules.length === 0,
+      missingRules.length === 0
+        ? `${manifest.rules.publish.length + 1} reglas universales (${audit.modes.rules})`
+        : `faltan: ${missingRules.join(', ')}`,
+    );
+    const primaryError =
+      audit.errors.find((error) => error.includes('publish editado')) ?? audit.errors[0];
+    add(
+      'completeness',
+      audit.errors.length === 0,
+      audit.errors.length === 0
+        ? `skills=${audit.modes.skills} agents=${audit.modes.agents} rules=${audit.modes.rules}`
+        : primaryError,
+    );
+    if (Object.values(audit.modes).includes('full')) {
+      add(
+        'full',
+        true,
+        audit.warnings.length > 0 ? audit.warnings.join('; ') : 'catálogo al día',
+      );
+    }
+    if (!manifest.mcp) {
+      add('mcp', true, 'MCP: no configurado');
+    } else {
+      const direct = path.join(ctx.root, manifest.mcp.source);
+      const project = path.join(ctx.root, '.ai-hub', path.basename(manifest.mcp.source));
+      const present = (await exists(direct)) || (await exists(project));
+      add('mcp', present, present ? `MCP configurado (${manifest.mcp.source})` : `MCP: falta ${manifest.mcp.source}`);
+    }
 
     if (source.isSource) {
-      const required = ['dist', 'schema', 'manifest.json', 'engine', 'presets', 'agents', 'skills'];
+      const required = ['dist', 'schema', 'manifest.json', 'engine', 'presets', 'rules', 'agents', 'skills'];
       const missing = required.filter((entry) => !source.files.includes(entry));
       add(
         'package:files',
@@ -266,6 +357,19 @@ export async function diagnose(ctx: CliContext): Promise<DoctorReport> {
       'worktrees:ignored',
       ignored,
       ignored ? '.worktrees/ ignorado' : 'añade .worktrees/ a .gitignore',
+    );
+  }
+
+  const versioning = versionedDestinations(ctx.root);
+  if (!versioning.applicable) {
+    add('versionado', true, 'no aplica (sin repositorio git)');
+  } else if (versioning.tracked.length === 0) {
+    add('versionado', true, 'sin destinos generados versionados');
+  } else {
+    add(
+      'versionado',
+      true,
+      `aviso: destinos generados versionados: ${versioning.tracked.slice(0, 5).join(', ')}${versioning.tracked.length > 5 ? ` (+${versioning.tracked.length - 5})` : ''}`,
     );
   }
 

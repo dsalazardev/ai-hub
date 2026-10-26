@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { mapLimit } from '../concurrency.js';
 import { isEngineCheckout } from '../source-checkout.js';
 import type { SyncConfig } from './config.js';
 import { loadSyncConfig, resolveSourcePath } from './config.js';
@@ -81,16 +82,17 @@ export async function runSync(root: string, options: SyncOptions): Promise<SyncR
     await fs.rm(path.join(root, rel), { force: true });
     result.removed.push(rel);
   }
-  for (const [rel, file] of sortedEntries(rendered)) {
+  const written = await mapLimit(sortedEntries(rendered), 24, async ([rel, file]) => {
     const abs = path.join(root, rel);
     const current = await readCopy(abs);
     if (current === file.content) {
-      continue;
+      return null;
     }
     await fs.mkdir(path.dirname(abs), { recursive: true });
     await fs.writeFile(abs, file.content, 'utf8');
-    result.written.push(rel);
-  }
+    return rel;
+  });
+  result.written.push(...written.filter((rel): rel is string => rel !== null));
   await writeLock(root, nextLock);
   return result;
 }
@@ -102,24 +104,24 @@ function sourceDescription(source: string): string {
 }
 
 async function checkCopies(root: string, rendered: RenderedFiles, previous: SyncLock | null): Promise<string[]> {
-  const problems: string[] = [];
-  for (const [rel, file] of sortedEntries(rendered)) {
+  const problems = await mapLimit(sortedEntries(rendered), 24, async ([rel, file]) => {
     const current = await readCopy(path.join(root, rel));
     if (current === null) {
-      problems.push(`falta ${rel} (${sourceDescription(file.source)})`);
-    } else if (current !== file.content) {
-      const registered = previous?.files[rel];
-      if (registered && sha256(current) !== registered.sha256) {
-        const hint = file.source.startsWith('@engine/')
-          ? 'viene del motor; actualiza el paquete'
-          : `edita la fuente: ${file.source}`;
-        problems.push(`editado a mano: ${rel} (${hint}; luego ejecuta ai-hub sync)`);
-      } else {
-        problems.push(`desactualizado: ${rel} (${sourceDescription(file.source)})`);
-      }
+      return `falta ${rel} (${sourceDescription(file.source)})`;
     }
-  }
-  return problems;
+    if (current === file.content) {
+      return null;
+    }
+    const registered = previous?.files[rel];
+    if (registered && sha256(current) !== registered.sha256) {
+      const hint = file.source.startsWith('@engine/')
+        ? 'viene del motor; actualiza el paquete'
+        : `edita la fuente: ${file.source}`;
+      return `editado a mano: ${rel} (${hint}; luego ejecuta ai-hub sync)`;
+    }
+    return `desactualizado: ${rel} (${sourceDescription(file.source)})`;
+  });
+  return problems.filter((problem): problem is string => problem !== null);
 }
 
 export async function buildLock(root: string, rendered: RenderedFiles): Promise<SyncLock> {

@@ -1,4 +1,4 @@
-id: python
+﻿id: python
 version: 1
 extends: base
 description: Python project with pytest, mypy and ruff.
@@ -43,5 +43,3 @@ agents:
     - explorer-domain
 skills:
   publish: []
-mcp:
-  source: mcp-manifest.yaml

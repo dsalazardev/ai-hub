@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { loadManifestContext } from '../manifest/manifest.js';
 import { readLedger, resumeLedger } from '../harness/memory/ledger.js';
+import { isEngineCheckout } from '../source-checkout.js';
 import type { CliContext, ParsedArgs } from './types.js';
 
 export const CONTEXT_RELATIVE = '.planning/context-next.md';
@@ -72,6 +73,10 @@ export async function buildContext(root: string): Promise<string> {
 }
 
 export async function cmdContext(_args: ParsedArgs, ctx: CliContext): Promise<number> {
+  if (!(await isEngineCheckout(ctx.root))) {
+    ctx.io.out('context: no aplica en instalación');
+    return 0;
+  }
   try {
     await buildContext(ctx.root);
     ctx.io.out(`[OK]    Contexto generado: ${CONTEXT_RELATIVE}`);
