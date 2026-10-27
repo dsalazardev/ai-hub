@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { isEngineCheckout } from '../source-checkout.js';
-import { ENGINE_AGENTS_DIR, catalogIndex } from '../catalog.js';
+import { ENGINE_AGENTS_DIR, ENGINE_RULES_DIR, catalogIndex } from '../catalog.js';
 import { ENGINE_SKILLS_DIR } from './engine.js';
 
 const LEGACY_SOURCE_DIRS = ['core/presets', 'core/skills', 'core/agents'];
@@ -152,4 +152,114 @@ export async function scanCoupling(root: string, terms: string[]): Promise<strin
     );
   }
   return findings.sort();
+}
+
+/** Prefijos que Spec Kit reserva en los directorios de comandos de cada destino. */
+export const SPECKIT_RESERVED_PREFIXES = ['speckit-', 'speckit.'] as const;
+
+function reservedName(name: string): boolean {
+  return SPECKIT_RESERVED_PREFIXES.some((prefix) => name.startsWith(prefix));
+}
+
+/**
+ * Gate del catálogo publicado: ninguna skill, agente o regla puede proyectarse con un nombre
+ * del espacio reservado de Spec Kit (`speckit-*` / `speckit.*`).
+ */
+export async function scanReservedNamespace(
+  dirs: { skills: string; agents: string; rules: string } = {
+    skills: ENGINE_SKILLS_DIR,
+    agents: ENGINE_AGENTS_DIR,
+    rules: ENGINE_RULES_DIR,
+  },
+): Promise<string[]> {
+  const findings: string[] = [];
+  for (const entry of await fs.readdir(dirs.skills, { withFileTypes: true }).catch(() => [])) {
+    if (entry.isDirectory() && reservedName(entry.name)) {
+      findings.push(`skills/shared/${entry.name} (espacio reservado de Spec Kit)`);
+    }
+  }
+  for (const [kind, dir] of [['agents', dirs.agents], ['rules', dirs.rules]] as const) {
+    for (const name of await listNames(dir)) {
+      if (reservedName(path.basename(name))) {
+        findings.push(`${kind}/${name} (espacio reservado de Spec Kit)`);
+      }
+    }
+  }
+  return findings.sort();
+}
+
+async function listNames(dir: string, prefix = ''): Promise<string[]> {
+  const names: string[] = [];
+  for (const entry of await fs.readdir(dir, { withFileTypes: true }).catch(() => [])) {
+    const rel = prefix === '' ? entry.name : `${prefix}/${entry.name}`;
+    if (entry.isDirectory()) {
+      names.push(...(await listNames(path.join(dir, entry.name), rel)));
+    } else if (entry.isFile()) {
+      names.push(rel);
+    }
+  }
+  return names;
+}
+
+/** Estados retirados que solo existían como estado de salida: se marcan en cualquier contexto. */
+const RETIRED_ALWAYS = ['ROOT_CAUSE', 'NEEDS_DATA'];
+/** Estados retirados que también son palabras corrientes: se marcan solo usados como estado. */
+const RETIRED_IN_STATE_CONTEXT = ['FIXED', 'RESOLVED', 'OPEN', 'DRAFT', 'READY'];
+const STATE_CONTEXT = /\b(estados?|exit|exits|termina(n)? en|ends? in|outcome|veredicto|verdict)\b/i;
+
+function retiredInLine(line: string): string[] {
+  const found: string[] = [];
+  const words = new Set(line.split(/[^A-Za-z0-9_-]+/));
+  for (const token of RETIRED_ALWAYS) {
+    if (words.has(token)) {
+      found.push(token);
+    }
+  }
+  for (const token of RETIRED_IN_STATE_CONTEXT) {
+    const quoted = line.includes(`\`${token}\``);
+    const inContext = STATE_CONTEXT.test(line) && words.has(token);
+    if (quoted || inContext) {
+      found.push(token);
+    }
+  }
+  return found;
+}
+
+/** Archivos que el gate revisa en el checkout del motor: motor, documentación y catálogo publicado. */
+async function retiredStateFiles(root: string): Promise<string[]> {
+  const files = [
+    path.join(root, 'core', 'engine', 'engine.yaml'),
+    path.join(root, 'AGENTS.md'),
+    path.join(root, 'README.md'),
+    path.join(root, 'core', 'README.md'),
+  ];
+  for (const dir of ['core/rules', 'core/agents', 'core/skills/shared']) {
+    for (const rel of await listNames(path.join(root, ...dir.split('/')))) {
+      if (TEXT_FILE.test(rel)) {
+        files.push(path.join(root, ...dir.split('/'), ...rel.split('/')));
+      }
+    }
+  }
+  return files;
+}
+
+/**
+ * Gate del vocabulario de estados retirado (`ROOT_CAUSE`, `FIXED`, `READY`…): devuelve
+ * `ruta:línea vocabulario obsoleto "TOKEN"` relativo a `root`.
+ */
+export async function scanRetiredStates(files: string[] | undefined, root: string): Promise<string[]> {
+  const findings: string[] = [];
+  for (const file of files ?? (await retiredStateFiles(root))) {
+    const text = await fs.readFile(file, 'utf8').catch(() => null);
+    if (text === null) {
+      continue;
+    }
+    const rel = path.relative(root, file).split(path.sep).join('/');
+    text.split(/\r?\n/).forEach((line, index) => {
+      for (const token of retiredInLine(line)) {
+        findings.push(`${rel}:${index + 1} vocabulario obsoleto "${token}"`);
+      }
+    });
+  }
+  return findings;
 }

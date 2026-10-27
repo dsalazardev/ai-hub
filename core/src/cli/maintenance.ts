@@ -9,11 +9,11 @@ import {
   ENGINE_AGENTS,
   materializeAgent,
   materializeSkill,
-  readScaffold,
+  removeOwned,
   SCAFFOLD_RELATIVE,
 } from '../presets/materialize.js';
 import { ENGINE_SKILLS_DIR } from '../engine/engine.js';
-import { catalogSeal, hasFullDimension } from '../catalog.js';
+import { catalogIndex, catalogSeal, hasFullDimension } from '../catalog.js';
 import { readLock } from '../sync/lock.js';
 import { runSync } from '../sync/sync.js';
 import { cliVersion, cmdInstall, writeManifest } from './onboarding.js';
@@ -25,6 +25,11 @@ async function exists(file: string): Promise<boolean> {
     () => true,
     () => false,
   );
+}
+
+/** Nombres del espacio de Spec Kit: sus comandos no se añaden ni se desinstalan desde ai-hub. */
+function isSpeckitCommandName(id: string): boolean {
+  return id.startsWith('speckit-') || id.startsWith('speckit.');
 }
 
 function markCustom(manifest: ProjectManifest, dimension: 'skills' | 'agents' | 'rules'): void {
@@ -56,7 +61,7 @@ export async function cmdList(args: ParsedArgs, ctx: CliContext): Promise<number
       rules: manifest.rules.selection ?? 'preset',
     },
     commands: engine.commands.map((command) => ({ id: command.id, lane: command.lane, role: command.role })),
-    nativeSkills: engine.commands.map((command) => command.skill),
+    speckitCommands: engine.commands.map((command) => command.speckit),
     skills: manifest.skills.publish,
     agents: manifest.agents.publish,
     rules: manifest.rules.publish,
@@ -72,7 +77,7 @@ export async function cmdList(args: ParsedArgs, ctx: CliContext): Promise<number
     `selection: skills=${data.selection.skills} agents=${data.selection.agents} rules=${data.selection.rules}`,
   );
   ctx.io.out(`commands (${data.commands.length}): ${data.commands.map((command) => command.id).join(', ')}`);
-  ctx.io.out(`skills: 17 nativas + ${data.skills.length} de proyecto (${mode})`);
+  ctx.io.out(`skills: ${data.skills.length} de proyecto (${mode}) + ${data.speckitCommands.length} comandos Spec Kit`);
   ctx.io.out(`agents (${data.agents.length}): ${data.agents.join(', ')}`);
   ctx.io.out(
     `rules: ${data.rules.length + 1} universales (${data.rules.length} materializadas + preflight)`,
@@ -99,12 +104,15 @@ export async function cmdAdd(args: ParsedArgs, ctx: CliContext): Promise<number>
   }
   const { manifest, preset } = context;
   const id = parsed.id;
-  const engineSkill = context.engine.commands.some((command) => command.skill === id);
-  const catalogSkill = await exists(path.join(ENGINE_SKILLS_DIR, id, 'SKILL.md'));
+  if (isSpeckitCommandName(id)) {
+    ctx.io.err(`"${id}" lo provee Spec Kit; ai-hub no añade ni desinstala sus comandos`);
+    return 1;
+  }
+  const catalogSkill = (await catalogIndex()).skills.includes(id);
   const catalogAgent = await exists(path.join(ENGINE_AGENTS, `${id}.md`));
   const kind =
     parsed.kind ??
-    (preset.skills.includes(id) || engineSkill || catalogSkill
+    (preset.skills.includes(id) || catalogSkill
       ? 'skill'
       : catalogAgent || preset.agents.includes(id)
         ? 'agent'
@@ -115,13 +123,14 @@ export async function cmdAdd(args: ParsedArgs, ctx: CliContext): Promise<number>
   }
 
   if (kind === 'skill') {
-    if (engineSkill) {
-      ctx.io.out(`"${id}" ya forma parte de las 17 skills del motor`);
-      return 0;
-    }
     const fromPreset = preset.skills.includes(id)
       ? await findPresetAsset(preset.chain, `skills/${id}`)
       : null;
+    if (fromPreset === null && !catalogSkill) {
+      // Una skill con `runtime: false` sigue en el paquete pero no es instalable.
+      ctx.io.err(`la skill "${id}" no pertenece al catálogo instalable (no existe o declara runtime: false)`);
+      return 1;
+    }
     const source = fromPreset ?? path.join(ENGINE_SKILLS_DIR, id);
     if (!(await exists(path.join(source, 'SKILL.md')))) {
       ctx.io.err(`no existe la skill "${id}" en ${preset.id} ni en el catálogo del motor`);
@@ -192,8 +201,8 @@ export async function cmdUninstall(args: ParsedArgs, ctx: CliContext): Promise<n
         : manifest.rules.publish.includes(id) || id === 'skill-quality'
           ? 'rule'
           : 'agent');
-  if (kind === 'skill' && context.engine.commands.some((command) => command.skill === id)) {
-    ctx.io.err(`"${id}" es una skill del motor y no se puede desinstalar`);
+  if (isSpeckitCommandName(id)) {
+    ctx.io.err(`"${id}" lo provee Spec Kit; ai-hub no añade ni desinstala sus comandos`);
     return 1;
   }
   if (kind === 'rule' && (id === 'core' || id === 'preflight')) {
@@ -229,33 +238,6 @@ export async function cmdUninstall(args: ParsedArgs, ctx: CliContext): Promise<n
   await writeInventory(ctx.root);
   ctx.io.out(`uninstall: ${kind} "${id}" · ${sync.removed.length} archivos eliminados`);
   return 0;
-}
-
-async function removeOwned(root: string, relative: string, directory: boolean): Promise<void> {
-  const absolute = path.join(root, relative);
-  if (!(await exists(absolute))) {
-    return;
-  }
-  const record = await readScaffold(root);
-  const relativePosix = relative.split(path.sep).join('/');
-  if (directory) {
-    const files = record.files;
-    const prefix = `${relativePosix}/`;
-    const owned = Object.entries(files).filter(([name]) => name.startsWith(prefix));
-    if (owned.length === 0) {
-      const marker = await fs.readFile(path.join(absolute, 'SKILL.md'), 'utf8').catch(() => '');
-      if (!marker.includes('GENERADO por ai-hub')) {
-        return;
-      }
-    }
-    await fs.rm(absolute, { recursive: true, force: true });
-    return;
-  }
-  const text = await fs.readFile(absolute, 'utf8').catch(() => null);
-  const owned = record.files[relativePosix] !== undefined;
-  if (text === null || owned || text.includes('GENERADO por ai-hub')) {
-    await fs.rm(absolute, { force: true });
-  }
 }
 
 export async function cmdBackups(args: ParsedArgs, ctx: CliContext): Promise<number> {

@@ -5,6 +5,8 @@ import path from 'node:path';
 import { runCli } from '../src/cli/run.js';
 import { resolveAiHubDir } from '../src/paths.js';
 import type { CliIO } from '../src/cli/types.js';
+import { fakeRunner } from './speckit-fake.js';
+import { MEASURED } from './measured.js';
 
 let root: string;
 
@@ -15,7 +17,7 @@ function capture(): { io: CliIO; out: string[] } {
 
 async function cli(argv: string[]): Promise<{ code: number; out: string }> {
   const sink = capture();
-  const code = await runCli(argv, { cwd: root, io: sink.io });
+  const code = await runCli(argv, { cwd: root, io: sink.io, exec: fakeRunner().run });
   return { code, out: sink.out.join('\n') };
 }
 
@@ -28,17 +30,19 @@ afterEach(async () => {
 });
 
 describe('full generic-ts installation', () => {
-  it('installs 191 skills, 35 agents, 6 rules and 4.662 destinations', async () => {
+  // Timeout propio: una instalación full real tarda ~60 s (init medido en 59,6 s; 68,2 s con el montaje del
+  // test en el equipo del dueño). El resto del proyecto integration conserva 60 s.
+  it('installs the measured project skills, 35 agents, 6 rules and the measured destinations (timeout 180 s)', { timeout: 180_000 }, async () => {
     await fs.writeFile(
       path.join(root, 'package.json'),
       JSON.stringify({ name: 'demo', devDependencies: { typescript: '^5.0.0' } }),
     );
     const result = await cli(['init', '--yes']);
     expect(result.code).toBe(0);
-    expect(result.out).toContain('191 skills');
+    expect(result.out).toContain(`${MEASURED.projectSkills} skills de proyecto + 17 comandos Spec Kit`);
     expect(result.out).toContain('35 agentes');
     expect(result.out).toContain('6 reglas');
-    expect(result.out).toContain('4662 destinos');
+    expect(result.out).toContain(`${MEASURED.lock.full} destinos`);
 
     const rc = JSON.parse(await fs.readFile(path.join(root, '.ai-hubrc.json'), 'utf8'));
     expect(rc).toMatchObject({ version: 2, preset: 'generic-ts', guardMode: 'shadow' });
@@ -62,18 +66,22 @@ describe('full generic-ts installation', () => {
       (await fs.readdir(path.join(root, '.ai-hub', 'skills'), { withFileTypes: true })).filter(
         (entry) => entry.isDirectory(),
       ),
-    ).toHaveLength(174);
+    ).toHaveLength(MEASURED.projectSkills);
     expect(
       (await fs.readdir(path.join(root, '.ai-hub', 'agents'))).filter((file) => file.endsWith('.md')),
     ).toHaveLength(35);
 
     const lock = JSON.parse(await fs.readFile(path.join(root, 'sync.lock.json'), 'utf8'));
-    expect(Object.keys(lock.files)).toHaveLength(4662);
+    expect(Object.keys(lock.files)).toHaveLength(MEASURED.lock.full);
     const manifest = await fs.readFile(path.join(root, 'manifest.yaml'), 'utf8');
     expect(manifest).toContain('selection: full');
     expect(manifest).toContain('catalog:');
     expect(manifest).not.toContain('mcp:');
     await expect(fs.access(path.join(root, '.mcp.json'))).rejects.toThrow();
+
+    const doctor = await cli(['doctor']);
+    expect(doctor.out).toContain(`skills: ${MEASURED.projectSkills} skills de proyecto + 17 comandos Spec Kit (full)`);
+    expect(doctor.out).not.toMatch(/174|nativas/);
 
     const listed = JSON.parse((await cli(['list', '--json'])).out);
     expect(listed.selection).toEqual({ skills: 'full', agents: 'full', rules: 'full' });

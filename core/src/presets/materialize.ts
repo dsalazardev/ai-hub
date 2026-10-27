@@ -308,3 +308,34 @@ export async function materializeCatalog(
   await writeScaffold(root, record);
   return result;
 }
+
+/**
+ * Borra un activo materializado solo si lo escribió ai-hub (registro de scaffold o marcador);
+ * un archivo del proyecto se conserva.
+ */
+export async function removeOwned(root: string, relative: string, directory: boolean): Promise<void> {
+  const absolute = path.join(root, relative);
+  if (!(await exists(absolute))) {
+    return;
+  }
+  const record = await readScaffold(root);
+  const relativePosix = relative.split(path.sep).join('/');
+  if (directory) {
+    const files = record.files;
+    const prefix = `${relativePosix}/`;
+    const owned = Object.entries(files).filter(([name]) => name.startsWith(prefix));
+    if (owned.length === 0) {
+      const marker = await fs.readFile(path.join(absolute, 'SKILL.md'), 'utf8').catch(() => '');
+      if (!marker.includes('GENERADO por ai-hub')) {
+        return;
+      }
+    }
+    await fs.rm(absolute, { recursive: true, force: true });
+    return;
+  }
+  const text = await fs.readFile(absolute, 'utf8').catch(() => null);
+  const owned = record.files[relativePosix] !== undefined;
+  if (text === null || owned || text.includes('GENERADO por ai-hub')) {
+    await fs.rm(absolute, { force: true });
+  }
+}

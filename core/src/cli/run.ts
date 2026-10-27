@@ -23,6 +23,7 @@ import { cliVersion } from './onboarding.js';
 import { sourceCheckout } from './source.js';
 import type { CliContext, CliIO, CommandHandler, ParsedArgs } from './types.js';
 import { processIO } from './types.js';
+import { defaultRunner, type ProcessRunner } from '../speckit/runner.js';
 
 interface CommandSpec {
   summary: string;
@@ -163,13 +164,17 @@ export function printHelp(io: CliIO): void {
   io.out('Compatibilidad: verify, judge (fuera del catálogo).');
 }
 
-export async function createContext(cwd: string, io: CliIO): Promise<CliContext> {
+export async function createContext(
+  cwd: string,
+  io: CliIO,
+  exec: ProcessRunner = defaultRunner,
+): Promise<CliContext> {
   try {
     const location = resolveAiHubDir(cwd);
-    return { cwd, root: location.dir, source: location.source, io };
+    return { cwd, root: location.dir, source: location.source, io, exec };
   } catch (error) {
     if (error instanceof AiHubDirNotFoundError) {
-      return { cwd, root: cwd, source: null, io };
+      return { cwd, root: cwd, source: null, io, exec };
     }
     throw error;
   }
@@ -178,13 +183,14 @@ export async function createContext(cwd: string, io: CliIO): Promise<CliContext>
 export interface RunCliOptions {
   cwd?: string;
   io?: CliIO;
+  exec?: ProcessRunner;
 }
 
 export async function runCli(argv: string[], options: RunCliOptions = {}): Promise<number> {
   const io = options.io ?? processIO;
   const cwd = options.cwd ?? process.cwd();
   const [command, ...rest] = argv;
-  const ctx = await createContext(cwd, io);
+  const ctx = await createContext(cwd, io, options.exec);
 
   if (!command) {
     printHelp(io);

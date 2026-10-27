@@ -5,11 +5,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Ajv } from 'ajv';
 import { parse } from 'yaml';
-import { ENGINE_COUNTS, ENGINE_SKILLS_DIR, loadEngine, type EngineManifest } from '../engine/engine.js';
+import { ENGINE_COUNTS, loadEngine, type EngineManifest } from '../engine/engine.js';
 import { frontmatterString, splitFrontmatter } from '../frontmatter.js';
 import { resolvePreset, type ResolvedPreset } from '../presets/resolve.js';
 import type { PresetDangerPattern } from '../presets/schema.js';
 import type { SelectionMode } from '../catalog.js';
+import { validateProjectSpeckit, type ProjectSpeckit } from '../speckit/settings.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SCHEMA_PATH = path.join(__dirname, '..', '..', 'schema', 'manifest.schema.json');
@@ -39,6 +40,7 @@ export interface ProjectManifest {
   rules: { source: string; publish: string[]; selection?: SelectionMode };
   catalog?: { version: string; hash: string };
   mcp?: { source: string };
+  speckit?: ProjectSpeckit;
 }
 
 export class ManifestError extends Error {
@@ -114,6 +116,18 @@ export async function validateManifestData(
   data: unknown,
   root: string = process.cwd(),
 ): Promise<LoadedManifest> {
+  if (typeof data === 'object' && data !== null && 'speckit' in data) {
+    // Los campos del motor se explican antes del schema, que solo diría "additional property".
+    const record = data as { speckit: unknown; targets?: unknown };
+    const targets = Array.isArray(record.targets)
+      ? record.targets.filter((item): item is string => typeof item === 'string')
+      : [];
+    const block = record.speckit;
+    const speckitErrors = validateProjectSpeckit(block, targets, await loadEngine());
+    if (speckitErrors.length > 0) {
+      throw new ManifestError(speckitErrors);
+    }
+  }
   const validate = await validator();
   if (!validate(data)) {
     throw new ManifestError(
@@ -150,13 +164,6 @@ export async function validateManifestData(
     skillFiles.add(file);
     if (!(await exists(file))) {
       errors.push(`skills.publish "${skill}" no existe en ${manifest.skills.source}`);
-    }
-  }
-  for (const skill of new Set(engine.commands.map((command) => command.skill))) {
-    const file = path.join(ENGINE_SKILLS_DIR, skill, 'SKILL.md');
-    skillFiles.add(file);
-    if (!(await exists(file))) {
-      errors.push(`skill del motor "${skill}" no existe en ${ENGINE_SKILLS_DIR}`);
     }
   }
   for (const file of skillFiles) {
@@ -212,7 +219,7 @@ export interface ManifestInventory {
   preset: { id: string; version: number };
   engine: { roles: number; commands: number; labels: number };
   roles: string[];
-  commands: Array<{ id: string; lane: string; role: string; skill: string }>;
+  commands: Array<{ id: string; lane: string; role: string; speckit: string }>;
   labels: string[];
   targets: string[];
   selection?: { skills: SelectionMode; agents: SelectionMode; rules: SelectionMode };
@@ -235,9 +242,9 @@ export function buildInventory(manifest: ProjectManifest, engine: EngineManifest
   const roles = engine.roles.map((role) => role.id).sort();
   const commands = [...engine.commands]
     .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
-    .map((command) => ({ id: command.id, lane: command.lane, role: command.role, skill: command.skill }));
+    .map((command) => ({ id: command.id, lane: command.lane, role: command.role, speckit: command.speckit }));
   const labels = [...engine.labels].sort();
-  const skills = [...new Set([...engine.commands.map((command) => command.skill), ...manifest.skills.publish])].sort();
+  const skills = [...new Set(manifest.skills.publish)].sort();
   const agents = [...manifest.agents.publish].sort();
   const rules = [...manifest.rules.publish].sort();
   return {

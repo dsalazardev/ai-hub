@@ -6,6 +6,18 @@ export type SkillShape = 'dir' | 'file';
 export type RuleShape = 'md' | 'mdc' | 'instructions';
 export type HookKind = 'markdown' | 'cursor-mdc' | 'copilot-instructions';
 
+/**
+ * Integración de Spec Kit que sirve a un destino. `commandsDir` es donde Spec Kit escribe
+ * sus comandos y delimita el espacio de nombres reservado `speckit-*` / `speckit.*`.
+ * `skill-dir` escribe `<dir>/speckit-plan/SKILL.md`; `command-file` escribe `<dir>/speckit.plan.md`.
+ */
+export interface SpeckitTarget {
+  integration: string;
+  separator: '-' | '.';
+  commandsDir: string;
+  layout: 'skill-dir' | 'command-file';
+}
+
 export interface ToolTargets {
   skills: string;
   agents: string | null;
@@ -14,6 +26,8 @@ export interface ToolTargets {
   skillShape: SkillShape;
   ruleShape: RuleShape;
   hookKind: HookKind;
+  /** `null`: el destino no recibe Spec Kit (Copilot). */
+  speckit: SpeckitTarget | null;
 }
 
 /**
@@ -29,6 +43,7 @@ export const TARGETS: Record<ToolId, ToolTargets> = {
     skillShape: 'dir',
     ruleShape: 'md',
     hookKind: 'markdown',
+    speckit: { integration: 'claude', separator: '-', commandsDir: '.claude/skills', layout: 'skill-dir' },
   },
   opencode: {
     skills: '.opencode/skills',
@@ -38,6 +53,7 @@ export const TARGETS: Record<ToolId, ToolTargets> = {
     skillShape: 'dir',
     ruleShape: 'md',
     hookKind: 'markdown',
+    speckit: { integration: 'opencode', separator: '.', commandsDir: '.opencode/commands', layout: 'command-file' },
   },
   pi: {
     skills: '.pi/skills',
@@ -47,6 +63,7 @@ export const TARGETS: Record<ToolId, ToolTargets> = {
     skillShape: 'dir',
     ruleShape: 'md',
     hookKind: 'markdown',
+    speckit: { integration: 'pi', separator: '.', commandsDir: '.pi/prompts', layout: 'command-file' },
   },
   cursor: {
     skills: '.cursor/rules',
@@ -56,6 +73,7 @@ export const TARGETS: Record<ToolId, ToolTargets> = {
     skillShape: 'file',
     ruleShape: 'mdc',
     hookKind: 'cursor-mdc',
+    speckit: { integration: 'cursor-agent', separator: '-', commandsDir: '.cursor/skills', layout: 'skill-dir' },
   },
   copilot: {
     skills: '.github/skills',
@@ -65,6 +83,7 @@ export const TARGETS: Record<ToolId, ToolTargets> = {
     skillShape: 'dir',
     ruleShape: 'instructions',
     hookKind: 'copilot-instructions',
+    speckit: null,
   },
 };
 

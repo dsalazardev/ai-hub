@@ -3,7 +3,6 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ENGINE_SKILLS_DIR } from '../src/engine/engine.js';
 import { frontmatterString, splitFrontmatter } from '../src/frontmatter.js';
 import { loadManifestContext } from '../src/manifest/manifest.js';
 import { loadSyncConfig } from '../src/sync/config.js';
@@ -13,14 +12,13 @@ import { seedFixture } from './fixtures.js';
 const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url));
 
 describe('real catalog', () => {
-  it('validates 35 agents and 191 skills', async () => {
+  it('validates 35 agents, 163 project skills and 17 Spec Kit commands', async () => {
     const context = await loadManifestContext(REPO_ROOT);
-    const engineSkills = [...new Set(context.engine.commands.map((command) => command.skill))];
+    const speckitCommands = [...new Set(context.engine.commands.map((command) => command.speckit))];
 
     expect(context.manifest.agents.publish).toHaveLength(35);
-    expect(context.manifest.skills.publish).toHaveLength(174);
-    expect(engineSkills).toHaveLength(17);
-    expect(context.manifest.skills.publish.length + engineSkills.length).toBe(191);
+    expect(context.manifest.skills.publish).toHaveLength(163);
+    expect(speckitCommands).toHaveLength(17);
 
     for (const agent of context.manifest.agents.publish) {
       const file = path.join(REPO_ROOT, context.manifest.agents.source, `${agent}.md`);
@@ -35,11 +33,6 @@ describe('real catalog', () => {
       expect(frontmatterString(data, 'name', file)).toBe(skill);
     }
 
-    for (const skill of engineSkills) {
-      const file = path.join(ENGINE_SKILLS_DIR, skill, 'SKILL.md');
-      const { data } = splitFrontmatter(await fs.readFile(file, 'utf8'), file);
-      expect(frontmatterString(data, 'name', file)).toBe(skill);
-    }
   });
 
   it('renders the real catalog with a sample per target', async () => {
@@ -50,7 +43,7 @@ describe('real catalog', () => {
         ...config.skills,
         sources: config.skills.sources.map((source) => ({
           ...source,
-          publish: source.publish.filter((id) => id === 'speckit-plan' || id === 'code-review'),
+          publish: source.publish.filter((id) => id === 'code-review'),
         })),
       },
       agents: {
@@ -72,7 +65,8 @@ describe('real catalog', () => {
       '.opencode/agents/spec-author.md',
       '.pi/agents/spec-author.md',
       '.github/agents/spec-author.md',
-      '.cursor/rules/speckit-plan.mdc',
+      '.cursor/rules/code-review.mdc',
+      '.claude/rules/ai-hub-speckit.md',
       '.claude/rules/engine-core.md',
     ]) {
       expect(rendered.has(sample)).toBe(true);

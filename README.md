@@ -9,6 +9,8 @@
 
 ## Inicio rápido
 
+Requisitos en el repositorio consumidor: Node.js >= 22, [uv](https://docs.astral.sh/uv/getting-started/installation/) con `uvx` en el PATH y un `bash` que ejecute (en Windows, Git Bash; el lanzador de WSL sin distribución no sirve). `init --yes` instala también Spec Kit (`specify-cli` 1.2.3 con las extensiones `bug` y `assess`) y una instalación completa tarda **unos 60 s** (59,6 s medidos con `generic-ts`). Sin `uv` o sin `bash`, `init --yes` sale con código 2 antes de escribir nada y dice qué falta; `--no-speckit` instala sin Spec Kit y deja el arnés degradado hasta un `install` posterior.
+
 ```bash
 # 1. Desde el checkout de ai-hub, compila el motor
 npm ci --prefix core
@@ -32,37 +34,34 @@ Para el mínimo de 0.1.x: `init --preset-only --yes`. Para el catálogo completo
 
 `init` detecta el preset desde `package.json`, `angular.json`, `pyproject.toml` o `requirements.txt`. Si dos presets empatan, exige `--preset <id>`. El plan tiene un hash SHA-256 determinista.
 
-### Contrato de instalación (0.2.0)
+### Contrato de instalación (0.3.0)
 
-Una instalación nueva usa `full` por defecto: 191 skills (17 del motor + 174 de catálogo), 35 agentes, las 6 reglas universales y las reglas propias del preset. Con `generic-ts` produce 4.662 destinos; con `angular-express`, 4.677.
+Una instalación nueva usa `full` por defecto: **163 skills de proyecto + 17 comandos Spec Kit**, 35 agentes, las 6 reglas universales, las reglas propias del preset y la regla generada `ai-hub-speckit`. Los 17 comandos los provee Spec Kit en cuatro destinos; AI-Hub no proyecta sus cuerpos.
 
-- `--preset-only`: 0 skills de proyecto, 6 agentes, 2 reglas base y 120 destinos. Es el comportamiento mínimo de 0.1.x.
-- `--exclude skill:<id>,agent:<id>,rule:<id>`: selección `custom`. `--exclude rule:skill-quality` mantiene el catálogo completo y deja 2 reglas: 4.642 destinos.
+Cifras medidas en copias temporales con el CLI compilado y `uvx` real (`core/tests/fixtures/install-counts.json`):
+
+| Instalación | Destinos en `sync.lock.json` |
+|---|---:|
+| `init --yes` (`generic-ts`, full) | 4.407 |
+| `init --yes --preset-only` | 40 |
+| `init --yes --exclude rule:skill-quality` | 4.387 |
+| `init --yes --preset angular-express` | 4.422 |
+
+- Spec Kit se instala en `claude`, `opencode`, `pi` y `cursor` (`cursor-agent`). **Copilot queda excluido de Spec Kit**: recibe agentes, reglas y la regla `ai-hub-speckit`, y `doctor` lo informa como `copilot: sin Spec Kit`.
+- `--preset-only`: 0 skills de proyecto, 6 agentes y 2 reglas base, más los 17 comandos Spec Kit.
+- `--exclude skill:<id>,agent:<id>,rule:<id>`: selección `custom`.
 - `full` es dinámico: `doctor` compara contra el catálogo instalado y `upgrade` incorpora activos nuevos. Un catálogo actualizado avisa con exit 0; un `publish` editado falla con exit 1.
-- `add agent` acepta cualquier agente del catálogo, no solo los del preset.
+- Las 11 skills de la tercera cadena SDD llevan `runtime: false`: siguen en el paquete pero no se instalan.
 - MCP es del consumidor: si existe `mcp-manifest.yaml` en la raíz se proyectan `.mcp.json`, `.cursor/mcp.json` y `.vscode/mcp.json`; si no, `doctor` dice `MCP: no configurado`.
 - `.planning/` es del checkout de desarrollo. La instalación no lo crea; `memory` y `context` reportan `no aplica en instalación`.
-- Los destinos generados no se versionan; `.ai-hub/` y `sync.lock.json` sí. `init` escribe las reglas de `.gitignore` y `doctor` avisa si detecta un destino versionado.
-- Un manifest existente sin `selection` se lee como `preset`; un CLI 0.1.x no lee un manifest 0.2. Actualiza el CLI antes de migrar.
-- El `full` es dinámico: si el CLI instalado añade activos, `doctor` avisa con exit 0 y `upgrade` los incorpora. Un `publish` editado a mano falla con exit 1.
-- `0.2.0` no se publica desde esta sesión; el release requiere el gate de CI y una prueba en copia temporal.
+- `.ai-hub/`, `sync.lock.json`, `.specify/` y `specs/` se versionan; los destinos generados no, e `install` los regenera en un clon nuevo.
+- Migración desde 0.2.x: `install` añade el bloque `speckit`, ejecuta Spec Kit, transfiere la propiedad de los comandos sin borrar los archivos de Spec Kit y retira las copias antiguas (Copilot incluido) y las skills `runtime: false`.
 
 ### Empaquetado y medición
 
-Las 4 rúbricas viajan en `core/rules/skill-quality/` porque `core/package.json.files` incluye `rules`. La copia de `rules/skill-quality/` del taller se mantiene para el mantenimiento y un test SHA-256 exige que ambas sean idénticas. `npm pack --dry-run` desde `core` reporta 1.296 entradas y las 4 rutas `rules/skill-quality/*.md`.
+Las 4 rúbricas viajan en `core/rules/skill-quality/` porque `core/package.json.files` incluye `rules`; un test SHA-256 exige que la copia del taller sea idéntica. `npm pack --dry-run` desde `core` reporta 1.295 entradas y ningún `skills/shared/speckit-*`.
 
-No hay `postinstall`: la instalación sólo escribe cuando se ejecuta `init`/`install`. `prepublishOnly` ejecuta `build`, `manifest:build` y `npm test` (proyectos `unit` e `integration`).
-
-Medición reproducible con `node core/scripts/measure-install.mjs` (Windows 11, Node 22, SSD; la primera corrida en frío del sistema puede ser más lenta):
-
-| Modo | Destinos | Archivos | Bytes | Cold | Warm |
-|---|---:|---:|---:|---:|---:|
-| `generic-ts` `full` | 4.662 | 5.767 | 46.402.682 | 21,5 s | 6,2 s |
-| `generic-ts` `preset-only` | 120 | 134 | 216.712 | 1,5 s | 0,6 s |
-| `generic-ts` `custom` con `rule:skill-quality` | 4.642 | 5.743 | 46.231.594 | 19,6 s | 4,3 s |
-| `angular-express` `full` | 4.677 | 5.836 | 46.674.081 | 16,1 s | 4,5 s |
-
-Los destinos no incluyen MCP si el consumidor no aporta `mcp-manifest.yaml`; el motor conserva sus 4.665 entradas de lock.
+No hay `postinstall`: la instalación sólo escribe cuando se ejecuta `init`/`install`. `prepublishOnly` ejecuta `build`, `manifest:build` y `npm test` (proyectos `unit` e `integration`), que incluye pruebas con Spec Kit real: la máquina que publica necesita `uv` y `bash`. Los tests de git se omiten, nombrando el binario, si `git` no se puede ejecutar.
 
 ---
 
@@ -138,13 +137,13 @@ Un preset puede extender otro (`angular-express` → `generic-ts` → `base`). L
 - **Feature SDD (9)** — `constitution`, `specify`, `clarify`, `plan`, `checklist`, `tasks`, `analyze`, `implement`, `converge`.
 - **Bug Fix (3)** — `bug-assess`, `bug-fix`, `bug-test`.
 
-Las 17 skills son nativas (`speckit-*`). No hay comandos ni estado de OpenSpec en el runtime; el `openspec/` del repositorio de autoría es histórico.
+Los 17 comandos los provee Spec Kit (`specify-cli` 1.2.3 fijado por el paquete, extensiones `bug` y `assess`), instalado por `init` con `uvx`. `engine.yaml` los identifica con su id canónico (`speckit.plan`, `speckit.bug.assess`); la invocación se deriva por destino (`/speckit-plan` en Claude y Cursor, `/speckit.plan` en OpenCode y Pi). No hay comandos ni estado de OpenSpec en el runtime; el `openspec/` del repositorio de autoría es histórico.
 
 ### Etiquetas GitLab
 
 `ai::todo`, `ai::in-spec`, `ai::spec-ready`, `ai::in-dev`, `ai::in-review`, `ai::done`, `ai::blocked`.
 
-`ai::spec-ready` se aprueba con el SHA-256 de `spec.md + plan.md + tasks.md`; ningún agente se autoaprueba.
+`ai::spec-ready` se aprueba con el SHA-256 de `specs/<feature>/{plan,spec,tasks}.md` (rutas relativas a la raíz; contrato y vector de prueba en `AGENTS.md` §5); ningún agente se autoaprueba ni mueve una etiqueta.
 
 ---
 
@@ -175,15 +174,15 @@ El reaper de worktrees solo elimina un worktree propio, limpio e integrado, y ex
 
 ## Targets
 
-| Target | Skills | Agentes | Reglas | Superficie |
-|---|---|---|---|---|
-| Claude | `.claude/skills` | `.claude/agents` | `.claude/rules` | `.claude/rules/preflight.md` |
-| OpenCode | `.opencode/skills` | `.opencode/agents` | `.opencode/rules` | `.opencode/rules/preflight.md` |
-| Pi | `.pi/skills` | `.pi/agents` | `.pi/prompts` | `.pi/prompts/preflight.md` |
-| Cursor | `.cursor/rules/*.mdc` | — | `.cursor/rules/*.mdc` | `.cursor/rules/preflight.mdc` |
-| Copilot | `.github/skills` | `.github/agents` | `.github/instructions` | `.github/instructions/preflight.instructions.md` |
+| Target | Skills | Agentes | Reglas | Superficie | Spec Kit |
+|---|---|---|---|---|---|
+| Claude | `.claude/skills` | `.claude/agents` | `.claude/rules` | `.claude/rules/preflight.md` | `claude` en `.claude/skills` |
+| OpenCode | `.opencode/skills` | `.opencode/agents` | `.opencode/rules` | `.opencode/rules/preflight.md` | `opencode` en `.opencode/commands` |
+| Pi | `.pi/skills` | `.pi/agents` | `.pi/prompts` | `.pi/prompts/preflight.md` | `pi` en `.pi/prompts` |
+| Cursor | `.cursor/rules/*.mdc` | — | `.cursor/rules/*.mdc` | `.cursor/rules/preflight.mdc` | `cursor-agent` en `.cursor/skills` |
+| Copilot | `.github/skills` | `.github/agents` | `.github/instructions` | `.github/instructions/preflight.instructions.md` | — (excluido) |
 
-Añadir un target es una fila en `core/src/sync/targets.ts` y un id en `core/engine/engine.yaml`.
+Añadir un target es una fila en `core/src/sync/targets.ts` y un id en `core/engine/engine.yaml`. Los comandos `speckit-*` / `speckit.*` dentro del directorio de Spec Kit de cada destino pertenecen a Spec Kit; `sync` nunca los escribe ni los borra.
 
 ---
 

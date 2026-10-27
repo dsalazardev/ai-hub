@@ -3,7 +3,8 @@ name: analyze
 description: "Use when constitution, spec, plan and tasks all exist and you want them cross-read against each other before any code is written — the ai-hub Spec-Kit pre-implementation gate. Reports coverage gaps, contradictions, duplication, ambiguity and scope drift; edits nothing. NOT the task breakdown (that is `tasks`), NOT the coding (that is `implement`), NOT the post-code test gate (that is `verify`), NOT resolving ambiguity (that is `clarify`)."
 tags: [sdd, analyze, consistency]
 recommends: [implement]
-profiles: [core, full]
+profiles: [full]
+runtime: false
 origin: ai-hub
 ---
 

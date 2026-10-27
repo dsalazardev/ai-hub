@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "AiHubEngineV2",
   "type": "object",
-  "required": ["version", "roles", "commands", "labels", "targets"],
+  "required": ["version", "roles", "commands", "exit_effects", "labels", "targets", "speckit"],
   "additionalProperties": false,
   "properties": {
     "version": { "const": 2 },
@@ -32,7 +32,7 @@
       "maxItems": 17,
       "items": {
         "type": "object",
-        "required": ["id", "name", "lane", "artifacts", "exit", "role", "skill"],
+        "required": ["id", "name", "lane", "artifacts", "exit", "role", "speckit"],
         "additionalProperties": false,
         "properties": {
           "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
@@ -42,9 +42,13 @@
           "exit": { "type": "array", "minItems": 1, "items": { "type": "string" } },
           "role": { "type": "string", "minLength": 1 },
           "co_roles": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
-          "skill": { "type": "string", "pattern": "^speckit-" }
+          "speckit": { "type": "string", "pattern": "^speckit[.][a-z]+([.][a-z]+)?$" }
         }
       }
+    },
+    "exit_effects": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "minLength": 1 }
     },
     "labels": {
       "type": "array",
@@ -68,6 +72,21 @@
       "minItems": 5,
       "uniqueItems": true,
       "items": { "enum": ["claude", "opencode", "pi", "cursor", "copilot"] }
+    },
+    "speckit": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "package": { "type": "string", "minLength": 1 },
+        "pin": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "supported": { "type": "string", "minLength": 1 },
+        "excludeNewer": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        "script": { "enum": ["sh", "ps"] },
+        "extensions": {
+          "type": "object",
+          "additionalProperties": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" }
+        }
+      }
     }
   }
 }

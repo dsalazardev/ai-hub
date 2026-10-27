@@ -1,0 +1,21 @@
+{
+  "description": "Cifras medidas en copias temporales con el CLI compilado (node dist/bin/ai-hub.js init --yes [...]) y uvx real; no se calculan a mano.",
+  "measuredAt": "2026-10-26",
+  "package": "0.3.0",
+  "commands": {
+    "full": "init --yes",
+    "presetOnly": "init --yes --preset-only",
+    "customNoRubrics": "init --yes --exclude rule:skill-quality",
+    "angularExpress": "init --yes --preset angular-express"
+  },
+  "lock": {
+    "full": 4407,
+    "presetOnly": 40,
+    "customNoRubrics": 4387,
+    "angularExpress": 4422
+  },
+  "projectSkills": 163,
+  "angularProjectSkills": 170,
+  "agents": 35,
+  "speckitCommands": 17
+}

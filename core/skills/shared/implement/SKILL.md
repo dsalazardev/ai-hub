@@ -3,7 +3,8 @@ name: implement
 description: "Use when an approved plan and task list exist and it is time to turn them into working, tested code — the SDD phase after `analyze` and before `verify`. Enforces TDD: a failing test comes before the code that makes it pass, one task at a time, appended to a progress ledger that survives compaction. Delegates test tooling to the stack skill and fans disjoint tasks out via `parallel`. NOT spec writing (that is `specify`), NOT planning (that is `plan`), NOT the final lint/test/audit gate (that is `verify`)."
 tags: [sdd, implement, code]
 recommends: [verify]
-profiles: [core, full]
+profiles: [full]
+runtime: false
 origin: ai-hub
 ---
 

@@ -19,6 +19,14 @@ jobs:
           cache: npm
           cache-dependency-path: core/package-lock.json
 
+      # La suite y el smoke ejecutan Spec Kit real con uvx (specify-cli fijado por el paquete).
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Spec Kit prerequisites (uvx and an executable bash)
+        run: |
+          uvx --version
+          bash -c 'echo ok'
+
       - name: Install
         run: npm ci --prefix core
 

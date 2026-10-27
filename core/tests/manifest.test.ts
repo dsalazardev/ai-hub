@@ -38,15 +38,18 @@ describe('engine invariants', () => {
     expect(engine.targets).toHaveLength(5);
   });
 
-  it('maps every command to a speckit-* skill with artifacts and terminal states', async () => {
+  it('maps every command to a Spec Kit id with artifacts and terminal states', async () => {
     const engine = await loadEngine();
     for (const command of engine.commands) {
-      expect(command.skill).toMatch(/^speckit-/);
+      expect(command.speckit).toMatch(/^speckit\./);
       expect(command.artifacts.length).toBeGreaterThan(0);
       expect(command.exit.length).toBeGreaterThan(0);
     }
-    const assessment = engine.commands.filter((command) => command.lane === 'assessment');
-    expect(assessment.every((command) => command.exit.includes('GO'))).toBe(true);
+    expect(engine.commands.find((command) => command.id === 'assess-decide')?.exit).toEqual([
+      'GO',
+      'NEEDS_CLARIFICATION',
+      'KILL',
+    ]);
     expect(engine.commands.find((command) => command.id === 'converge')?.exit).toContain('CONVERGED');
     expect(engine.commands.find((command) => command.id === 'bug-test')?.exit).toContain('VERIFIED');
   });
@@ -82,10 +85,25 @@ describe('engine invariants', () => {
       artifacts: ['artifact'],
       exit: ['GO'],
       role: 'r0',
-      skill: 'skill',
+      speckit: `speckit.cmd${index}`,
     }));
     const labels = Array.from({ length: 7 }, (_, index) => `label-${index}`);
-    const errors = crossValidate({ version: 2, roles, commands, labels, targets: ['claude'] });
+    const errors = crossValidate({
+      version: 2,
+      roles,
+      commands,
+      exit_effects: { GO: 'mantiene ai::in-spec' },
+      labels,
+      targets: ['claude'],
+      speckit: {
+        package: 'specify-cli',
+        pin: '1.2.3',
+        supported: '>=1.2.3 <1.3.0',
+        excludeNewer: '2000-01-01',
+        script: 'sh',
+        extensions: { assess: '1.0.1', bug: '1.0.1' },
+      },
+    });
 
     expect(errors).toEqual(['comando duplicado: cmd-0']);
     expect(findDuplicateIds(['a', 'b', 'a', 'c', 'b'])).toEqual(['a', 'b']);

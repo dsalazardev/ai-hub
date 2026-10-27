@@ -1,5 +1,48 @@
 # Changelog
 
+## 0.3.0 — integración de Spec Kit (2026-10-27)
+
+### Ruptura
+
+- **BREAKING — cuerpos `speckit-*`:** AI-Hub deja de poseer y proyectar los cuerpos de las 17 skills `speckit-*`; los 17 directorios `skills/shared/speckit-*` salen del paquete. Spec Kit (`specify-cli` 1.2.3 con las extensiones `bug` y `assess` 1.0.1) provee los 17 comandos en cada destino y es el único dueño de `.specify/**`, `specs/**` y sus comandos. `engine.yaml` conserva 17 comandos, 8 roles y 7 etiquetas; cada comando apunta a su id canónico (`speckit.plan`, `speckit.bug.assess`).
+- **BREAKING — vocabulario de estados:** los estados de salida se normalizan a la salida de Spec Kit en mayúsculas (`GO`/`NEEDS_CLARIFICATION`/`KILL`, `VALID`/`NEEDS_REPRODUCTION`/`INVALID`, `APPLIED`/`PARTIAL`/`NOT_APPLIED`, `VERIFIED`/`PARTIAL`/`FAILED`, `CONVERGED`/`NEEDS_WORK`, y `DONE`/`BLOCKED` para los comandos sin veredicto). El vocabulario propio de 0.2.x queda retirado y lo rechaza el gate `engine:retired-states`. `KILL` e `INVALID` solo proponen `ai::done`: lo propone `hermes-control` y lo confirma un humano.
+- **BREAKING — Copilot sin Spec Kit:** Spec Kit se instala en `claude`, `opencode`, `pi` y `cursor` (`cursor-agent`). Copilot recibe agentes, reglas y la regla `ai-hub-speckit`, pero no los comandos; `doctor` lo informa como `copilot: sin Spec Kit`. Las copias 0.2.x de `.github/skills/speckit-*` se retiran al migrar.
+- Las 11 skills de la tercera cadena SDD (`specify`, `clarify`, `plan`, `tasks`, `analyze`, `implement`, `sdd`, `sdd-init`, `verify`, `review`, `ship`) llevan `runtime: false`: siguen en el paquete, pero no se instalan, materializan ni proyectan. El catálogo instalable pasa de 174 a 163 skills de proyecto.
+- `init` e `install` requieren `uv` (`uvx`) y, con `script: sh`, un `bash` que ejecute. Sin ellos, o sin red ni caché para la versión fijada, salen con código 2 antes de escribir. `--no-speckit` instala sin Spec Kit y deja el arnés degradado (`doctor` 1) hasta un `install` sin la bandera.
+
+### Añadido
+
+- Instalación de Spec Kit con `uvx --from specify-cli==1.2.3 --exclude-newer <excludeNewer>`: `specify init` no interactivo con la integración por defecto y `--extension bug --extension assess`, y `integration install` + `integration use` por cada destino adicional; nunca `extension add --force`. El plan de `init` incluye la intención de Spec Kit en el hash y el entorno (uv, caché, shell) fuera.
+- `excludeNewer: 2026-10-27` es la fecha de publicación de 0.3.0, declarada una sola vez en `engine/engine.yaml`. Moverla es una decisión de release, nunca automática.
+- Propiedad única por archivo: `sync` no escribe ni borra rutas de Spec Kit, suelta del lock las entradas 0.2.x que pasan a Spec Kit sin borrar el archivo y poda los directorios que quedan vacíos.
+- `doctor`: `speckit:managed`, `installed`, `version`, `shell`, `integrations`, `extensions`, `integrity`, `collision`, `constitution`, `versioning` y `speckit:targets` (informativo). Ninguno ejecuta Python ni `uvx`; en el checkout del motor informan `no aplica`.
+- Regla generada `ai-hub-speckit` en los 5 destinos: roles, invocación por destino, tabla estado → etiqueta, rutas canónicas y sello.
+- Contrato de `hermes-control` en `AGENTS.md` §5: tabla de estados y sello con rutas relativas a la raíz (`specs/<feature>/{spec,plan,tasks}.md`), con vector de prueba e implementación de referencia en `src/speckit/seal.ts`.
+- `memory resume` y `context` leen la feature de Spec Kit (`specs/<feature>/tasks.md`) sin copiar su contenido a `.planning/`.
+- Backup de `.specify/memory/**` y de la configuración de `.specify/` antes de ejecutar Spec Kit.
+
+### Cifras medidas
+
+Medidas en copias temporales con el CLI compilado y `uvx` real (`tests/fixtures/install-counts.json`); la fórmula del plan las reproduce:
+
+| Instalación | Destinos en `sync.lock.json` |
+|---|---|
+| `init --yes` (`generic-ts`, full) | 4.407 |
+| `init --yes --preset-only` | 40 |
+| `init --yes --exclude rule:skill-quality` | 4.387 |
+| `init --yes --preset angular-express` | 4.422 |
+
+`full` instala 163 skills de proyecto + 17 comandos Spec Kit, 35 agentes y 6 reglas universales.
+
+### Empaquetado
+
+- `core/package.json` en `0.3.0`; `npm pack --dry-run` sin ningún `skills/shared/speckit-*`.
+- No se publica en npm desde esta sesión; el release queda condicionado al gate de CI y a una prueba en copia temporal.
+
+### Rollback
+
+- Volver a 0.2.x del paquete y `ai-hub restore <id>` con el backup que `install` crea antes de ejecutar Spec Kit.
+
 ## 0.2.0 — install completo
 
 ### Ruptura

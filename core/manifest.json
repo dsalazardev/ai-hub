@@ -29,103 +29,103 @@
       "id": "analyze",
       "lane": "feature",
       "role": "spec-author",
-      "skill": "speckit-analyze"
+      "speckit": "speckit.analyze"
     },
     {
       "id": "assess-decide",
       "lane": "assessment",
       "role": "spec-explorer",
-      "skill": "speckit-assess-decide"
+      "speckit": "speckit.assess.decide"
     },
     {
       "id": "assess-define",
       "lane": "assessment",
       "role": "spec-explorer",
-      "skill": "speckit-assess-define"
+      "speckit": "speckit.assess.define"
     },
     {
       "id": "assess-intake",
       "lane": "assessment",
       "role": "spec-explorer",
-      "skill": "speckit-assess-intake"
+      "speckit": "speckit.assess.intake"
     },
     {
       "id": "assess-research",
       "lane": "assessment",
       "role": "spec-explorer",
-      "skill": "speckit-assess-research"
+      "speckit": "speckit.assess.research"
     },
     {
       "id": "assess-shape",
       "lane": "assessment",
       "role": "spec-explorer",
-      "skill": "speckit-assess-shape"
+      "speckit": "speckit.assess.shape"
     },
     {
       "id": "bug-assess",
       "lane": "bug",
       "role": "reviewer-architecture",
-      "skill": "speckit-bug-assess"
+      "speckit": "speckit.bug.assess"
     },
     {
       "id": "bug-fix",
       "lane": "bug",
       "role": "implementer-backend",
-      "skill": "speckit-bug-fix"
+      "speckit": "speckit.bug.fix"
     },
     {
       "id": "bug-test",
       "lane": "bug",
       "role": "reviewer-tests",
-      "skill": "speckit-bug-test"
+      "speckit": "speckit.bug.test"
     },
     {
       "id": "checklist",
       "lane": "feature",
       "role": "spec-author",
-      "skill": "speckit-checklist"
+      "speckit": "speckit.checklist"
     },
     {
       "id": "clarify",
       "lane": "feature",
       "role": "spec-author",
-      "skill": "speckit-clarify"
+      "speckit": "speckit.clarify"
     },
     {
       "id": "constitution",
       "lane": "feature",
       "role": "spec-author",
-      "skill": "speckit-constitution"
+      "speckit": "speckit.constitution"
     },
     {
       "id": "converge",
       "lane": "feature",
       "role": "reviewer-architecture",
-      "skill": "speckit-converge"
+      "speckit": "speckit.converge"
     },
     {
       "id": "implement",
       "lane": "feature",
       "role": "implementer-frontend",
-      "skill": "speckit-implement"
+      "speckit": "speckit.implement"
     },
     {
       "id": "plan",
       "lane": "feature",
       "role": "spec-author",
-      "skill": "speckit-plan"
+      "speckit": "speckit.plan"
     },
     {
       "id": "specify",
       "lane": "feature",
       "role": "spec-author",
-      "skill": "speckit-specify"
+      "speckit": "speckit.specify"
     },
     {
       "id": "tasks",
       "lane": "feature",
       "role": "spec-author",
-      "skill": "speckit-tasks"
+      "speckit": "speckit.tasks"
     }
   ],
   "labels": [
@@ -150,8 +150,8 @@
     "rules": "custom"
   },
   "catalog": {
-    "version": "0.2.0",
-    "hash": "f30e2590a4eb078ea520873661b5f10fb3cf9171d1422438c35aafd722abbb23"
+    "version": "0.3.0",
+    "hash": "9605441252114d0ccd1e03a433420d7645618f8956c71bd16634d35e8b427f66"
   },
   "agents": [
     "cpp-build-resolver",
@@ -195,7 +195,6 @@
     "accessibility",
     "agent-eval",
     "agent-safety",
-    "analyze",
     "angular",
     "api-connector-builder",
     "api-design",
@@ -208,7 +207,6 @@
     "building-agents",
     "chatbot",
     "chrome-extension",
-    "clarify",
     "clickhouse-analytics",
     "cloudflare",
     "code-review",
@@ -272,7 +270,6 @@
     "htmx",
     "huggingface",
     "idea-refinement",
-    "implement",
     "init",
     "java",
     "knowledge-ops",
@@ -300,7 +297,6 @@
     "performance",
     "phoenix",
     "php",
-    "plan",
     "planetscale",
     "planning-with-files",
     "postgresdb",
@@ -316,39 +312,17 @@
     "render",
     "replicate",
     "research-ops",
-    "review",
     "ruby",
     "runpod",
     "rust",
     "scaling",
-    "sdd",
-    "sdd-init",
     "secure-coding",
     "security-scan",
-    "ship",
     "shopify",
     "simplify-code",
     "skill-scout",
     "solid-js",
     "source-grounded-development",
-    "specify",
-    "speckit-analyze",
-    "speckit-assess-decide",
-    "speckit-assess-define",
-    "speckit-assess-intake",
-    "speckit-assess-research",
-    "speckit-assess-shape",
-    "speckit-bug-assess",
-    "speckit-bug-fix",
-    "speckit-bug-test",
-    "speckit-checklist",
-    "speckit-clarify",
-    "speckit-constitution",
-    "speckit-converge",
-    "speckit-implement",
-    "speckit-plan",
-    "speckit-specify",
-    "speckit-tasks",
     "spreadsheet-ops",
     "spring-boot",
     "sql",
@@ -358,7 +332,6 @@
     "supabase",
     "svelte",
     "swift-ios",
-    "tasks",
     "tauri",
     "technical-writing",
     "testing-go",
@@ -376,7 +349,6 @@
     "variant-explorer",
     "vector-db",
     "vercel",
-    "verify",
     "vllm",
     "vue-nuxt",
     "webhooks",
@@ -396,7 +368,7 @@
     "labels": 7,
     "targets": 5,
     "agents": 35,
-    "skills": 191,
+    "skills": 163,
     "rules": 5
   }
 }

@@ -3,7 +3,8 @@ name: clarify
 description: "Use when a spec exists and must be de-risked before planning — hunt its ambiguities, unstated assumptions and edge cases, ask the few build-changing questions, bake the answers back into the spec. The ai-hub Spec-Kit gate between `specify` (writes the spec) and `plan` (designs the build). NOT the cross-artifact consistency check (that is `analyze`)."
 tags: [sdd, clarify, questions]
 recommends: [plan]
-profiles: [core, full]
+profiles: [full]
+runtime: false
 origin: ai-hub
 ---
 

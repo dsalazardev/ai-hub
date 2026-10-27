@@ -113,87 +113,87 @@ commands:
     name: /speckit-assess-intake
     lane: assessment
     artifacts: [intake.md]
-    exit: [GO, KILL, NEEDS_CLARIFICATION]
+    exit: [DONE, BLOCKED]
     role: spec-explorer
-    skill: speckit-assess-intake
+    speckit: speckit.assess.intake
   - id: assess-research
     name: /speckit-assess-research
     lane: assessment
     artifacts: [research.md]
-    exit: [GO, KILL, NEEDS_CLARIFICATION]
+    exit: [DONE, BLOCKED]
     role: spec-explorer
-    skill: speckit-assess-research
+    speckit: speckit.assess.research
   - id: assess-define
     name: /speckit-assess-define
     lane: assessment
     artifacts: [problem.md]
-    exit: [GO, KILL, NEEDS_CLARIFICATION]
+    exit: [DONE, BLOCKED]
     role: spec-explorer
-    skill: speckit-assess-define
+    speckit: speckit.assess.define
   - id: assess-shape
     name: /speckit-assess-shape
     lane: assessment
     artifacts: [concept.md]
-    exit: [GO, KILL, NEEDS_CLARIFICATION]
+    exit: [DONE, BLOCKED]
     role: spec-explorer
-    skill: speckit-assess-shape
+    speckit: speckit.assess.shape
   - id: assess-decide
     name: /speckit-assess-decide
     lane: assessment
     artifacts: [decision.md]
-    exit: [GO, KILL, NEEDS_CLARIFICATION]
+    exit: [GO, NEEDS_CLARIFICATION, KILL]
     role: spec-explorer
-    skill: speckit-assess-decide
+    speckit: speckit.assess.decide
 
   - id: constitution
     name: /speckit.constitution
     lane: feature
     artifacts: [constitution.md]
-    exit: [CREATED, UPDATED]
+    exit: [DONE, BLOCKED]
     role: spec-author
-    skill: speckit-constitution
+    speckit: speckit.constitution
   - id: specify
     name: /speckit.specify
     lane: feature
     artifacts: [spec.md]
-    exit: [DRAFT, READY]
+    exit: [DONE, BLOCKED]
     role: spec-author
-    skill: speckit-specify
+    speckit: speckit.specify
   - id: clarify
     name: /speckit.clarify
     lane: feature
     artifacts: [spec.md]
-    exit: [RESOLVED, OPEN]
+    exit: [DONE, BLOCKED]
     role: spec-author
-    skill: speckit-clarify
+    speckit: speckit.clarify
   - id: plan
     name: /speckit.plan
     lane: feature
     artifacts: [plan.md]
-    exit: [READY]
+    exit: [DONE, BLOCKED]
     role: spec-author
-    skill: speckit-plan
+    speckit: speckit.plan
   - id: checklist
     name: /speckit.checklist
     lane: feature
     artifacts: [checklist.md]
-    exit: [PASS, NEEDS_FIX]
+    exit: [DONE, BLOCKED]
     role: spec-author
-    skill: speckit-checklist
+    speckit: speckit.checklist
   - id: tasks
     name: /speckit.tasks
     lane: feature
     artifacts: [tasks.md]
-    exit: [READY]
+    exit: [DONE, BLOCKED]
     role: spec-author
-    skill: speckit-tasks
+    speckit: speckit.tasks
   - id: analyze
     name: /speckit.analyze
     lane: feature
     artifacts: [analysis.md]
-    exit: [PASS, NEEDS_FIX]
+    exit: [DONE, BLOCKED]
     role: spec-author
-    skill: speckit-analyze
+    speckit: speckit.analyze
   - id: implement
     name: /speckit.implement
     lane: feature
@@ -201,37 +201,57 @@ commands:
     exit: [DONE, BLOCKED]
     role: implementer-frontend
     co_roles: [implementer-backend]
-    skill: speckit-implement
+    speckit: speckit.implement
   - id: converge
     name: /speckit.converge
     lane: feature
     artifacts: [convergence.md]
     exit: [CONVERGED, NEEDS_WORK]
     role: reviewer-architecture
-    skill: speckit-converge
+    speckit: speckit.converge
 
   - id: bug-assess
     name: /speckit-bug-assess
     lane: bug
     artifacts: [assessment.md]
-    exit: [ROOT_CAUSE, NEEDS_DATA]
+    exit: [VALID, NEEDS_REPRODUCTION, INVALID]
     role: reviewer-architecture
-    skill: speckit-bug-assess
+    speckit: speckit.bug.assess
   - id: bug-fix
     name: /speckit-bug-fix
     lane: bug
     artifacts: [fix.md]
-    exit: [FIXED, BLOCKED]
+    exit: [APPLIED, PARTIAL, NOT_APPLIED]
     role: implementer-backend
     co_roles: [implementer-frontend]
-    skill: speckit-bug-fix
+    speckit: speckit.bug.fix
   - id: bug-test
     name: /speckit-bug-test
     lane: bug
     artifacts: [test.md]
     exit: [VERIFIED, PARTIAL, FAILED]
     role: reviewer-tests
-    skill: speckit-bug-test
+    speckit: speckit.bug.test
+
+# Efecto de cada estado de salida sobre las etiquetas ai::* (tabla única, design D2.6).
+# Ningún agente mueve una etiqueta: hermes-control aplica o propone el cambio y un humano confirma
+# las propuestas de cierre (KILL, INVALID).
+exit_effects:
+  GO: mantiene ai::in-spec; Spec-Author empieza la autoría de la feature
+  NEEDS_CLARIFICATION: mantiene ai::in-spec; se repite la etapa indicada
+  KILL: propone ai::done; hermes-control propone el cierre y un humano lo confirma
+  DONE: sin cambio de etiqueta; el artefacto declarado existe y el carril continúa
+  BLOCKED: ai::blocked con motivo y evidencia
+  CONVERGED: ai::in-review
+  NEEDS_WORK: mantiene ai::in-dev; las tareas pendientes se añaden a tasks.md
+  VALID: sin cambio de etiqueta; el bug pasa a bug-fix
+  NEEDS_REPRODUCTION: ai::blocked; faltan datos para reproducir
+  INVALID: propone ai::done; hermes-control propone el cierre y un humano lo confirma
+  APPLIED: ai::in-review
+  PARTIAL: mantiene ai::in-dev
+  NOT_APPLIED: ai::blocked con motivo y evidencia
+  VERIFIED: ai::done a través de la revisión
+  FAILED: ai::blocked con motivo y evidencia
 
 labels:
   - ai::todo
@@ -248,3 +268,17 @@ targets:
   - pi
   - cursor
   - copilot
+
+# Spec Kit: dependencia de runtime fijada por el paquete. Un proyecto solo puede
+# restringirla desde el bloque `speckit` de manifest.yaml, nunca ampliarla.
+speckit:
+  package: specify-cli
+  pin: 1.2.3
+  supported: '>=1.2.3 <1.3.0'
+  # Fecha --exclude-newer de uvx: valor provisional; se fija el día de la publicación de 0.3.0.
+  # Moverla es una decisión de release, nunca automática. Es la única copia de esta fecha.
+  excludeNewer: '2026-10-27'
+  script: sh
+  extensions:
+    assess: 1.0.1
+    bug: 1.0.1

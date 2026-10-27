@@ -3,7 +3,8 @@ name: sdd
 description: "Use when you want a disciplined, spec-driven path from a feature idea to shipped, verified software — the SDD dispatcher and front door, in any language. States the method, reads the user's register from 02-DOCS, and routes to the right phase: constitution -> specify -> clarify -> plan -> tasks -> analyze -> implement -> verify -> review -> ship, with debug / worktrees / parallel on demand. Use it to start a feature, to govern the whole flow, or when unsure which phase you are in. NOT a single phase itself (it dispatches), NOT the workspace harness (that is `harness`), NOT a stack build skill."
 tags: [sdd, spec, workflow, plan]
 recommends: [sdd-init, constitution, specify]
-profiles: [core, full]
+profiles: [full]
+runtime: false
 origin: ai-hub
 ---
 

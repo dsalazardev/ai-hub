@@ -504,3 +504,9 @@ LF, sin BOM, `ruta + \n + bytes` por archivo.
 - Cambio movido a `openspec/changes/archive/2026-10-26-install-completo/`.
 - `openspec validate --specs` y `--all`: 5 specs, 0 fallos (2 warnings preexistentes de longitud).
 - `openspec list --json`: sin cambios activos.
+
+## 2026-10-26 — speckit-integration: ruta de la constitución en el diagrama de Lucid
+
+- Fuente en conflicto: diagrama Lucid "AI-HUB" (id 939ef9b0-8a9c-425e-8a1a-7529e9232550, v15872) nombra `.specify/constitution.md`.
+- Verificado: Spec Kit 1.2.3 escribe la constitución en `.specify/memory/constitution.md` (instantánea `core/tests/fixtures/speckit-1.2.3/dot.specify/memory/`).
+- Resolución por precedencia (AGENTS.md §1): `AGENTS.md` §3 y la regla `ai-hub-speckit` usan `.specify/memory/constitution.md`. El diagrama queda pendiente de corrección por su autor; no se resuelve en silencio.

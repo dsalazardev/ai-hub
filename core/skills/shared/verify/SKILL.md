@@ -3,7 +3,8 @@ name: verify
 description: "Use when implementation is finished and about to be called done or merged — the ai-hub Spec-Kit evidence gate: runs the stack's scripts/verify.sh (lint, type, test, audit), walks every task done-check and acceptance criterion, records a dated verdict. NOT judging the diff by eye (that is `review`, spec-less `code-review`), NOT diagnosis (that is `debug`)."
 tags: [sdd, verify, test]
 recommends: [review]
-profiles: [core, full]
+profiles: [full]
+runtime: false
 origin: ai-hub
 ---
 

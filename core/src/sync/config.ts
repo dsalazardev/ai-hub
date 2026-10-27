@@ -93,8 +93,9 @@ export async function loadSyncConfig(root: string): Promise<SyncConfig> {
     ruleTargets[tool] = { path: spec.rules, shape: spec.ruleShape };
   }
 
-  const engineSkills = [...new Set(engine.commands.map((command) => command.skill))].sort();
-  const sources: SkillSource[] = [{ source: ENGINE_SKILLS_SOURCE, publish: engineSkills }];
+  // Los 17 comandos los provee Spec Kit en cada destino; AI-Hub no proyecta sus cuerpos.
+  void engine;
+  const sources: SkillSource[] = [];
   if (manifest.skills.publish.length > 0) {
     sources.push({ source: manifest.skills.source, publish: manifest.skills.publish });
   }

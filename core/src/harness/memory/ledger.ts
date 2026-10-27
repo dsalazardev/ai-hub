@@ -164,6 +164,48 @@ export interface ResumeSummary {
   phase: string;
   tasks: { total: number; done: number };
   state: ProjectState | null;
+  /** Feature de Spec Kit activa y de dónde salió: `state` (versionado) o `local` (.specify/feature.json). */
+  feature: { dir: string; source: 'state' | 'local'; pending: number } | null;
+}
+
+const FEATURE_PREFIX = 'specs/';
+
+/**
+ * Feature de Spec Kit: la nombra `.planning/state.json` (`activeChange: specs/<feature>`) o,
+ * si no, el puntero local `.specify/feature.json`. Solo se referencia la ruta; nunca se copia
+ * el contenido de la feature a `.planning/`.
+ */
+async function activeFeature(root: string, state: ProjectState | null): Promise<{ dir: string; source: 'state' | 'local' } | null> {
+  if (state?.activeChange?.startsWith(FEATURE_PREFIX)) {
+    return { dir: state.activeChange.replace(/\/+$/, ''), source: 'state' };
+  }
+  if (state?.activeChange) {
+    return null;
+  }
+  const raw = await fs.readFile(path.join(root, '.specify', 'feature.json'), 'utf8').catch(() => null);
+  if (raw === null) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(raw) as { feature_directory?: unknown };
+    return typeof parsed.feature_directory === 'string' && parsed.feature_directory.startsWith(FEATURE_PREFIX)
+      ? { dir: parsed.feature_directory.replace(/\/+$/, ''), source: 'local' }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+async function countTasks(root: string, dir: string): Promise<{ total: number; done: number } | null> {
+  const text = await fs.readFile(path.join(root, ...dir.split('/'), 'tasks.md'), 'utf8').catch(() => null);
+  if (text === null) {
+    return null;
+  }
+  const lines = text.split(/\r?\n/);
+  return {
+    total: lines.filter((line) => /^\s*-\s*\[[ xX]\]/.test(line)).length,
+    done: lines.filter((line) => /^\s*-\s*\[[xX]\]/.test(line)).length,
+  };
 }
 
 export async function resumeLedger(root: string): Promise<ResumeSummary> {
@@ -177,11 +219,15 @@ export async function resumeLedger(root: string): Promise<ResumeSummary> {
       throw error;
     }
   }
+  const feature = await activeFeature(root, state);
+  const featureTasks = feature === null ? null : await countTasks(root, feature.dir);
+  const tasks = featureTasks ?? state?.tasks ?? { total: 0, done: 0 };
   return {
     last,
-    activeChange: state?.activeChange ?? null,
+    activeChange: state?.activeChange ?? feature?.dir ?? null,
     phase: state?.phase ?? 'idle',
-    tasks: state?.tasks ?? { total: 0, done: 0 },
+    tasks,
     state,
+    feature: feature === null ? null : { ...feature, pending: tasks.total - tasks.done },
   };
 }

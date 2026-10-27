@@ -3,7 +3,8 @@ name: ship
 description: "Use when a verified, review-approved branch has to land — the close of the ai-hub Spec-Kit chain: safety checks, then three landing options (merge, PR, park/discard), authorship always Daner Alejandro Salazar Colorado and never an AI trailer. NOT running the gates (that is `verify`), NOT reading the diff for defects (that is `review`), NOT shipping to a server (that is `deployment`)."
 tags: [sdd, ship, release, pr]
 recommends: []
-profiles: [core, full]
+profiles: [full]
+runtime: false
 origin: ai-hub
 ---
 

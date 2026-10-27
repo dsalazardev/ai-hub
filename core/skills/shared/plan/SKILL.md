@@ -3,7 +3,8 @@ name: plan
 description: "Use when an approved, clarified spec must become a technical blueprint before any code — the SDD phase between clarify and tasks: architecture, contracts, data flow, testing strategy, sequencing and risks, at structure altitude, never framework syntax. NOT the what/why spec (that is `specify`), NOT the ambiguity sweep (that is `clarify`), NOT the task breakdown (that is `tasks`), NOT the code (that is `implement`)."
 tags: [sdd, plan, design]
 recommends: [tasks]
-profiles: [core, full]
+profiles: [full]
+runtime: false
 origin: ai-hub
 ---
 

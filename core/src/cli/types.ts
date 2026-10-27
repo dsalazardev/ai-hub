@@ -1,4 +1,5 @@
 import type { AiHubSource } from '../paths.js';
+import type { ProcessRunner } from '../speckit/runner.js';
 
 export interface CliIO {
   out(message: string): void;
@@ -10,6 +11,8 @@ export interface CliContext {
   root: string;
   source: AiHubSource | null;
   io: CliIO;
+  /** Ejecutor de procesos externos (uvx, bash); los tests lo sustituyen. */
+  exec: ProcessRunner;
 }
 
 export interface ParsedArgs {

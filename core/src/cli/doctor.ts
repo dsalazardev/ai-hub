@@ -4,8 +4,8 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { readAiHubRc } from '../paths.js';
 import { auditSelection } from '../catalog.js';
-import { ENGINE_COUNTS, ENGINE_LANES, ENGINE_SKILLS_DIR } from '../engine/engine.js';
-import { scanCoupling, scanLegacyArtifacts } from '../engine/gates.js';
+import { ENGINE_COUNTS, ENGINE_LANES } from '../engine/engine.js';
+import { scanCoupling, scanLegacyArtifacts, scanReservedNamespace, scanRetiredStates } from '../engine/gates.js';
 import {
   checkInventory,
   loadManifestContext,
@@ -17,6 +17,7 @@ import { checkLock, runSync } from '../sync/sync.js';
 import { CONTEXT_RELATIVE, contextHash } from './context.js';
 import { TARGETS, TOOL_IDS, isToolId } from '../sync/targets.js';
 import { sourceCheckout } from './source.js';
+import { speckitDoctorChecks, speckitNotApplicable } from '../speckit/doctor.js';
 import type { CliContext } from './types.js';
 
 export interface DoctorCheck {
@@ -166,22 +167,16 @@ export async function diagnose(ctx: CliContext): Promise<DoctorReport> {
         : `opt-outs activos: ${manifest.policy.optOuts.join(', ')}`,
     );
 
-    const missingEngineSkills: string[] = [];
-    for (const command of engine.commands) {
-      if (!(await exists(path.join(ENGINE_SKILLS_DIR, command.skill, 'SKILL.md')))) {
-        missingEngineSkills.push(`${command.id} -> ${command.skill}`);
-      }
-    }
     const audit = await auditSelection(ctx.root, manifest, preset, engine);
     const missingProjectSkills = audit.missing
       .filter((item) => item.startsWith('skill:'))
       .map((item) => item.slice('skill:'.length));
     add(
       'skills',
-      missingEngineSkills.length === 0 && missingProjectSkills.length === 0,
-      missingEngineSkills.length === 0 && missingProjectSkills.length === 0
-        ? `17 nativas + ${manifest.skills.publish.length} de proyecto (${audit.modes.skills})`
-        : [...missingEngineSkills, ...missingProjectSkills.map((id) => `${id} -> ${manifest.skills.source}`)].join(', '),
+      missingProjectSkills.length === 0,
+      missingProjectSkills.length === 0
+        ? `${manifest.skills.publish.length} skills de proyecto + ${engine.commands.length} comandos Spec Kit (${audit.modes.skills})`
+        : missingProjectSkills.map((id) => `${id} -> ${manifest.skills.source}`).join(', '),
     );
     const missingAgents = audit.missing
       .filter((item) => item.startsWith('agent:'))
@@ -228,6 +223,13 @@ export async function diagnose(ctx: CliContext): Promise<DoctorReport> {
       add('mcp', present, present ? `MCP configurado (${manifest.mcp.source})` : `MCP: falta ${manifest.mcp.source}`);
     }
 
+    const speckitChecks = source.isSource
+      ? speckitNotApplicable()
+      : await speckitDoctorChecks(ctx.root, manifest, engine, ctx.exec);
+    for (const check of speckitChecks) {
+      add(check.id, check.ok, check.detail);
+    }
+
     if (source.isSource) {
       const required = ['dist', 'schema', 'manifest.json', 'engine', 'presets', 'rules', 'agents', 'skills'];
       const missing = required.filter((entry) => !source.files.includes(entry));
@@ -261,6 +263,15 @@ export async function diagnose(ctx: CliContext): Promise<DoctorReport> {
       }
       add('hooks', missingHooks.length === 0, missingHooks.length === 0 ? 'superficies presentes' : missingHooks.join(', '));
     }
+
+    const reserved = await scanReservedNamespace();
+    add(
+      'catalog:reserved-namespace',
+      reserved.length === 0,
+      reserved.length === 0
+        ? 'ningún activo del catálogo usa el espacio speckit-*/speckit.* de Spec Kit'
+        : reserved.slice(0, 5).join('; ') + (reserved.length > 5 ? ` (+${reserved.length - 5})` : ''),
+    );
 
     const legacy = await scanLegacyArtifacts(ctx.root);
     add(
@@ -375,6 +386,15 @@ export async function diagnose(ctx: CliContext): Promise<DoctorReport> {
 
   const coupling = await couplingRules();
   if (source.isSource) {
+    const retired = await scanRetiredStates(undefined, ctx.root);
+    add(
+      'engine:retired-states',
+      retired.length === 0,
+      retired.length === 0
+        ? 'sin vocabulario de estados retirado (ROOT_CAUSE, FIXED, READY…)'
+        : retired.slice(0, 5).join('; ') + (retired.length > 5 ? ` (+${retired.length - 5})` : ''),
+    );
+
     const findings = await scanCoupling(ctx.root, coupling.terms);
     add(
       'engine:no-coupling',

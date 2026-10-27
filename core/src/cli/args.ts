@@ -15,6 +15,7 @@ const BOOLEAN_FLAGS = new Set([
   'prune',
   'auto',
   'migrate',
+  'no-speckit',
 ]);
 
 export function parseArgs(argv: string[]): ParsedArgs {

@@ -147,6 +147,16 @@
       "properties": {
         "source": { "type": "string", "minLength": 1 }
       }
+    },
+    "speckit": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "managed": { "type": "boolean" },
+        "version": { "type": "string", "minLength": 1 },
+        "script": { "enum": ["sh", "ps"] },
+        "defaultTarget": { "type": "string", "minLength": 1 }
+      }
     }
   }
 }

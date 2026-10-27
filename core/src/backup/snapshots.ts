@@ -52,6 +52,12 @@ async function walkRelative(root: string, relative: string): Promise<string[]> {
   return files;
 }
 
+const SPECKIT_CONFIG_FILES = [
+  '.specify/init-options.json',
+  '.specify/integration.json',
+  '.specify/extensions.yml',
+];
+
 async function managedFiles(root: string): Promise<string[]> {
   const files = new Set<string>([
     'sync.lock.json',
@@ -64,6 +70,13 @@ async function managedFiles(root: string): Promise<string[]> {
     files.add(rel);
   }
   for (const rel of await walkRelative(root, '.ai-hub')) {
+    files.add(rel);
+  }
+  // Estado de Spec Kit que un nuevo `specify init` podría tocar: constitución y configuración.
+  for (const rel of await walkRelative(root, '.specify/memory')) {
+    files.add(rel);
+  }
+  for (const rel of SPECKIT_CONFIG_FILES) {
     files.add(rel);
   }
   const result: string[] = [];

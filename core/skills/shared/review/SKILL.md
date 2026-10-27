@@ -3,7 +3,8 @@ name: review
 description: "Use when a green diff needs adversarial judgment in the ai-hub Spec-Kit chain, between verify and ship — give a review keyed to the spec/plan/constitution in 02-DOCS/wiki/sdd/, or receive one and verify each comment before agreeing. NOT running lint/type/tests (that is `verify`), NOT the spec-less standalone pass (that is `code-review`), NOT merging (that is `ship`)."
 tags: [sdd, review, code-review]
 recommends: [ship]
-profiles: [core, full]
+profiles: [full]
+runtime: false
 origin: ai-hub
 ---
 

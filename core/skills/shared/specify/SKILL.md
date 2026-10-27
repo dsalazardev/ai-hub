@@ -3,7 +3,8 @@ name: specify
 description: "Use when a feature, change, or product idea is still fuzzy and must become an approved WHAT/WHY spec before any planning or code — the brainstorming front door of SDD. Turns a one-line intent into problem, goals, users, scope, behaviour and acceptance criteria, via frontier-round dialogue and 2-3 approaches with a recommendation, carrying zero implementation detail. Fires whenever someone jumps to HOW before WHAT is agreed, in any language. NOT the technical plan (that is `plan`), NOT the de-risking ambiguity sweep (that is `clarify`), NOT project-wide principles (that is `constitution`)."
 tags: [sdd, spec, requirements]
 recommends: [clarify, plan]
-profiles: [core, full]
+profiles: [full]
+runtime: false
 origin: ai-hub
 ---
 

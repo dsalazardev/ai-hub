@@ -50,7 +50,6 @@ skills:
     - accessibility
     - agent-eval
     - agent-safety
-    - analyze
     - angular
     - api-connector-builder
     - api-design
@@ -63,7 +62,6 @@ skills:
     - building-agents
     - chatbot
     - chrome-extension
-    - clarify
     - clickhouse-analytics
     - cloudflare
     - codebase-onboarding
@@ -127,7 +125,6 @@ skills:
     - htmx
     - huggingface
     - idea-refinement
-    - implement
     - init
     - java
     - knowledge-ops
@@ -155,7 +152,6 @@ skills:
     - performance
     - phoenix
     - php
-    - plan
     - planetscale
     - planning-with-files
     - postgresdb
@@ -171,22 +167,17 @@ skills:
     - render
     - replicate
     - research-ops
-    - review
     - ruby
     - runpod
     - rust
     - scaling
-    - sdd
-    - sdd-init
     - secure-coding
     - security-scan
-    - ship
     - shopify
     - simplify-code
     - skill-scout
     - solid-js
     - source-grounded-development
-    - specify
     - spreadsheet-ops
     - spring-boot
     - sql
@@ -196,7 +187,6 @@ skills:
     - supabase
     - svelte
     - swift-ios
-    - tasks
     - tauri
     - technical-writing
     - testing-go
@@ -214,7 +204,6 @@ skills:
     - variant-explorer
     - vector-db
     - vercel
-    - verify
     - vllm
     - vue-nuxt
     - webhooks
@@ -273,8 +262,8 @@ rules:
   selection: custom
 
 catalog:
-  version: 0.2.0
-  hash: f30e2590a4eb078ea520873661b5f10fb3cf9171d1422438c35aafd722abbb23
+  version: 0.3.0
+  hash: 9605441252114d0ccd1e03a433420d7645618f8956c71bd16634d35e8b427f66
 
 mcp:
   source: mcp-manifest.yaml

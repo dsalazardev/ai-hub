@@ -8,6 +8,7 @@ import {
   materializeCatalog,
   materializePreset,
   materializeUniversalRules,
+  removeOwned,
 } from '../presets/materialize.js';
 import { resolvePreset, type ResolvedPreset } from '../presets/resolve.js';
 import { listPresetIds } from '../presets/schema.js';
@@ -28,7 +29,15 @@ import {
   listCatalogSkills,
   type SelectionMode,
 } from '../catalog.js';
-import { loadEngine } from '../engine/engine.js';
+import { loadEngine, type EngineManifest } from '../engine/engine.js';
+import {
+  probeEnvironment,
+  runSpeckitSequence,
+  speckitPreflight,
+  type SpeckitEnvironment,
+} from '../speckit/commands.js';
+import { effectiveSpeckit, type ProjectSpeckit, type SpeckitSettings } from '../speckit/settings.js';
+import { checkExtensions, checkIntegrations, readSpeckitState } from '../speckit/state.js';
 import { flagList, flagString } from './args.js';
 import type { CliContext, ParsedArgs } from './types.js';
 
@@ -57,12 +66,108 @@ export interface Plan extends AssetPlan {
   preset: string;
   targets: string[];
   skillCount: number;
+  speckitCommands: number;
   agentCount: number;
   ruleCount: number;
   mcp: boolean;
   migrate: boolean;
   write: string[];
+  speckit: SpeckitPlan;
   hash: string;
+}
+
+/** Intención de Spec Kit dentro del hash del plan; el entorno (uv, shell) queda fuera. */
+export interface SpeckitPlan {
+  managed: boolean;
+  package: string;
+  version: string;
+  excludeNewer: string;
+  script: string;
+  defaultIntegration: string | null;
+  integrations: string[];
+  extensions: Record<string, string>;
+}
+
+function speckitPlan(settings: SpeckitSettings): SpeckitPlan {
+  return {
+    managed: settings.managed,
+    package: settings.package,
+    version: settings.version,
+    excludeNewer: settings.excludeNewer,
+    script: settings.script,
+    defaultIntegration: settings.defaultIntegration,
+    integrations: settings.integrations,
+    extensions: settings.extensions,
+  };
+}
+
+/** Bloque `speckit` a escribir: conserva las restricciones del proyecto y fija `managed`. */
+function speckitBlock(existing: ProjectSpeckit | undefined, managed: boolean): ProjectSpeckit {
+  return { ...(existing ?? {}), managed };
+}
+
+function speckitSettingsFor(
+  targets: string[],
+  block: ProjectSpeckit,
+  engine: EngineManifest,
+): SpeckitSettings {
+  return effectiveSpeckit({ targets, speckit: block }, engine);
+}
+
+async function environmentFor(
+  settings: SpeckitSettings,
+  ctx: CliContext,
+): Promise<SpeckitEnvironment | { skipped: string }> {
+  if (!settings.managed) {
+    return { skipped: 'Spec Kit no gestionado (--no-speckit)' };
+  }
+  return probeEnvironment(settings, ctx.exec, ctx.root);
+}
+
+/** Preflight de Spec Kit; devuelve `false` y explica el motivo si hay que salir con 2. */
+async function preflightOrReport(settings: SpeckitSettings, ctx: CliContext): Promise<boolean> {
+  const preflight = await speckitPreflight(settings, ctx.exec, ctx.root);
+  if (!preflight.ok) {
+    ctx.io.err('preflight de Spec Kit fallido; no se escribió nada:');
+    for (const problem of preflight.problems) {
+      ctx.io.err(`  - ${problem}`);
+    }
+  }
+  return preflight.ok;
+}
+
+/** Ejecuta la secuencia de Spec Kit; devuelve `false` y explica cómo restaurar si falla. */
+async function installSpeckit(
+  settings: SpeckitSettings,
+  ctx: CliContext,
+  backupId: string | null,
+): Promise<boolean> {
+  const result = await runSpeckitSequence(settings, ctx.exec, ctx.root);
+  const problems: string[] = [];
+  if (!result.ok) {
+    problems.push(result.failure ?? 'fallo desconocido');
+  } else {
+    // Paso 9d: la secuencia solo cuenta si deja las integraciones y extensiones esperadas.
+    const state = await readSpeckitState(ctx.root);
+    problems.push(...checkIntegrations(settings, state), ...(await checkExtensions(ctx.root, settings, state)));
+  }
+  if (problems.length > 0) {
+    ctx.io.err('Spec Kit no quedó instalado como se esperaba:');
+    for (const problem of problems) {
+      ctx.io.err(`  - ${problem}`);
+    }
+    if (backupId !== null) {
+      ctx.io.err(`restaura el estado previo con: ai-hub restore ${backupId}`);
+    }
+    return false;
+  }
+  return true;
+}
+
+function speckitSummary(settings: SpeckitSettings): string {
+  return settings.managed
+    ? `Spec Kit ${settings.version} · script ${settings.script} · integraciones ${settings.integrations.join(', ')}`
+    : 'Spec Kit no gestionado (--no-speckit): el arnés queda degradado; ejecuta ai-hub install para activarlo';
 }
 
 function projectId(root: string): string {
@@ -144,13 +249,14 @@ async function buildSelection(
   const hasExclusions =
     exclusions.skills.size > 0 || exclusions.agents.size > 0 || exclusions.rules.size > 0;
   if (existing && !fullFlag && !presetOnly && !hasExclusions) {
+    const retired = new Set(await retiredCatalogSkills(existing.skills.publish));
     return {
       modes: {
         skills: existing.skills.selection ?? 'preset',
         agents: existing.agents.selection ?? 'preset',
         rules: existing.rules.selection ?? 'preset',
       },
-      skills: [...existing.skills.publish],
+      skills: existing.skills.publish.filter((id) => !retired.has(id)),
       agents: [...existing.agents.publish],
       rules: [...existing.rules.publish],
     };
@@ -204,6 +310,7 @@ function manifestFromSelection(
   guardMode: 'shadow' | 'enforce',
   includeMcp: boolean,
   selection: SelectionSpec,
+  speckit: ProjectSpeckit,
 ): ProjectManifest {
   const manifest: ProjectManifest = {
     version: 2,
@@ -229,6 +336,7 @@ function manifestFromSelection(
     agents: { source: '.ai-hub/agents', publish: selection.agents, selection: selection.modes.agents },
     rules: { source: '.ai-hub/rules', publish: selection.rules, selection: selection.modes.rules },
     ...(includeMcp ? { mcp: { source: 'mcp-manifest.yaml' } } : {}),
+    speckit,
   };
   if (hasFullDimension(manifest)) {
     manifest.catalog = catalogSeal(manifest);
@@ -281,8 +389,9 @@ async function buildAssetPlan(
   includeMcp: boolean,
 ): Promise<AssetPlan> {
   const index = await catalogIndex();
-  const engineSkills = engine.commands.map((command) => command.skill);
-  const allSkills = [...new Set([...engineSkills, ...selection.skills])];
+  // Los 17 comandos los proyecta Spec Kit; AI-Hub solo proyecta las skills de proyecto.
+  void engine;
+  const allSkills = [...new Set(selection.skills)];
   const projectSkillFiles = selection.skills.reduce(
     (total, id) => total + (index.skillFiles[id]?.length ?? 0),
     0,
@@ -298,7 +407,7 @@ async function buildAssetPlan(
     if (target.agents) {
       destinations += selection.agents.length;
     }
-    destinations += selection.rules.length + 1; // reglas materializadas + preflight
+    destinations += selection.rules.length + 2; // reglas materializadas + preflight + regla de enlace de Spec Kit
   }
   if (includeMcp) {
     destinations += 3;
@@ -447,7 +556,14 @@ export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number
   }
   const includeMcp = await exists(path.join(ctx.root, 'mcp-manifest.yaml'));
   const assets = await buildAssetPlan(spec, engine, selection.targets, includeMcp);
+  const speckit = speckitBlock(existing?.speckit, !args.flags['no-speckit']);
+  const speckitSettings = speckitSettingsFor(selection.targets, speckit, engine);
+  // El taller nunca ejecuta Spec Kit: su .specify/ es del mantenedor.
+  const runSpeckit = speckitSettings.managed && !sourceCheckout;
   const write: string[] = [RC_NAME, 'manifest.yaml', '.gitignore', '.ai-hub/'];
+  if (runSpeckit) {
+    write.push('.specify/');
+  }
   if (selection.migrate) {
     write.push('.planning/state.json');
   }
@@ -457,26 +573,34 @@ export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number
     preset: selection.preset.id,
     targets: selection.targets,
     ...assets,
-    skillCount: 17 + spec.skills.length,
+    skillCount: spec.skills.length,
+    speckitCommands: engine.commands.length,
     agentCount: spec.agents.length,
     ruleCount: spec.rules.length + 1,
     mcp: includeMcp,
     migrate: selection.migrate,
     write,
+    speckit: speckitPlan(speckitSettings),
   };
   const plan: Plan = { ...planBody, hash: sha256(JSON.stringify(planBody)) };
 
   if (!args.flags.yes || args.flags['dry-run']) {
-    ctx.io.out(JSON.stringify(plan, null, 2));
+    const environment = await environmentFor(speckitSettings, ctx);
+    ctx.io.out(JSON.stringify({ ...plan, environment }, null, 2));
     if (!args.flags['dry-run']) {
       ctx.io.out('Nada escrito. Repite con --yes para aplicar este plan.');
     }
     return 0;
   }
 
-  if (existing) {
-    await createBackup(ctx.root, 'init');
+  if (runSpeckit && !(await preflightOrReport(speckitSettings, ctx))) {
+    return 2;
   }
+  // Backup restaurable antes de que Spec Kit toque un proyecto existente (constitución incluida).
+  const backupId =
+    existing || (await exists(path.join(ctx.root, '.specify')))
+      ? (await createBackup(ctx.root, 'init')).id
+      : null;
   const materialized = await materializeSelection(ctx.root, selection.preset, spec);
   const manifest = manifestFromSelection(
     id,
@@ -486,9 +610,13 @@ export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number
     rc.guardMode ?? 'shadow',
     includeMcp,
     spec,
+    speckit,
   );
   await writeManifest(ctx.root, manifest);
   await writeInventory(ctx.root);
+  if (runSpeckit && !(await installSpeckit(speckitSettings, ctx, backupId))) {
+    return 1;
+  }
   const sync = await runSync(ctx.root, { check: false });
   const existingRc = readAiHubRc(ctx.cwd);
   if (!existingRc || existingRc.version === 1 || args.flags.force) {
@@ -514,11 +642,12 @@ export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number
     ctx.io.out(`hooks: ${hook.installed ? 'post-merge instalado' : hook.reason}`);
   }
   ctx.io.out(
-    `init: ${selection.preset.id} · skills=${spec.modes.skills} agents=${spec.modes.agents} rules=${spec.modes.rules} · ${spec.skills.length + 17} skills · ${spec.agents.length} agentes · ${spec.rules.length + 1} reglas · ${assets.destinations} destinos · ${sync.written.length} sincronizados · ${materialized.written.length} nuevos, ${materialized.kept.length} conservados, ${materialized.collisions.length} colisiones`,
+    `init: ${selection.preset.id} · skills=${spec.modes.skills} agents=${spec.modes.agents} rules=${spec.modes.rules} · ${spec.skills.length} skills de proyecto + ${engine.commands.length} comandos Spec Kit · ${spec.agents.length} agentes · ${spec.rules.length + 1} reglas · ${assets.destinations} destinos · ${sync.written.length} sincronizados · ${materialized.written.length} nuevos, ${materialized.kept.length} conservados, ${materialized.collisions.length} colisiones`,
   );
   if (materialized.collisions.length > 0) {
     ctx.io.err(`colisiones (no se sobrescribieron): ${materialized.collisions.join(', ')}`);
   }
+  ctx.io.out(speckitSummary(speckitSettings));
   ctx.io.out(`plan: ${plan.hash}`);
   return 0;
 }
@@ -578,12 +707,19 @@ async function selectionForInstall(
       : modes.rules === 'preset'
         ? expectedRuleIds('preset', preset)
         : [...manifest.rules.publish];
+  const retired = new Set(await retiredCatalogSkills(skills));
   return {
     modes,
-    skills: [...new Set(skills.filter((id) => !exclusions.skills.has(id)))].sort(),
+    skills: [...new Set(skills.filter((id) => !exclusions.skills.has(id) && !retired.has(id)))].sort(),
     agents: [...new Set(agents.filter((id) => !exclusions.agents.has(id)))].sort(),
     rules: [...new Set(filterRules(rulesBase, exclusions.rules))].sort(),
   };
+}
+
+/** Ids de `ids` que el catálogo publica con `runtime: false` (no instalables). */
+async function retiredCatalogSkills(ids: string[]): Promise<string[]> {
+  const retired = new Set((await catalogIndex()).retiredSkills);
+  return ids.filter((id) => retired.has(id));
 }
 
 export async function cmdInstall(args: ParsedArgs, ctx: CliContext): Promise<number> {
@@ -602,6 +738,10 @@ export async function cmdInstall(args: ParsedArgs, ctx: CliContext): Promise<num
     return 2;
   }
   const includeMcp = await exists(path.join(ctx.root, 'mcp-manifest.yaml'));
+  // install sin --no-speckit reactiva Spec Kit en un arnés degradado; con la bandera lo mantiene apagado.
+  const speckit = speckitBlock(context.manifest.speckit, !args.flags['no-speckit']);
+  const speckitSettings = speckitSettingsFor(context.manifest.targets, speckit, context.engine);
+  const runSpeckit = speckitSettings.managed && !(await isEngineCheckout(ctx.root));
   if (args.flags['dry-run']) {
     const assets = await buildAssetPlan(spec, context.engine, context.manifest.targets, includeMcp);
     ctx.io.out(
@@ -616,6 +756,7 @@ export async function cmdInstall(args: ParsedArgs, ctx: CliContext): Promise<num
           agents: spec.agents.length,
           rules: spec.rules.length + 1,
           destinations: assets.destinations,
+          speckit: speckitPlan(speckitSettings),
         },
         null,
         2,
@@ -623,7 +764,16 @@ export async function cmdInstall(args: ParsedArgs, ctx: CliContext): Promise<num
     );
     return 0;
   }
+  if (runSpeckit && !(await preflightOrReport(speckitSettings, ctx))) {
+    return 2;
+  }
+  const backupId = runSpeckit ? (await createBackup(ctx.root, 'install')).id : null;
   const materialized = await materializeSelection(ctx.root, context.preset, spec);
+  // Migración: las skills `runtime: false` salen de .ai-hub/ si las escribió ai-hub;
+  // sync retira después sus copias de los destinos.
+  for (const id of await retiredCatalogSkills(context.manifest.skills.publish)) {
+    await removeOwned(ctx.root, path.join(context.manifest.skills.source, id), true);
+  }
   const next: ProjectManifest = {
     ...context.manifest,
     skills: { ...context.manifest.skills, publish: spec.skills, selection: spec.modes.skills },
@@ -640,7 +790,11 @@ export async function cmdInstall(args: ParsedArgs, ctx: CliContext): Promise<num
   } else {
     delete next.catalog;
   }
+  next.speckit = speckit;
   await writeManifest(ctx.root, next);
+  if (runSpeckit && !(await installSpeckit(speckitSettings, ctx, backupId))) {
+    return 1;
+  }
   const sync = await runSync(ctx.root, { check: false });
   await writeInventory(ctx.root);
   await ensureProjectIgnores(ctx.root);
@@ -649,11 +803,12 @@ export async function cmdInstall(args: ParsedArgs, ctx: CliContext): Promise<num
     ctx.io.out(`hooks: ${hook.installed ? 'post-merge instalado' : hook.reason}`);
   }
   ctx.io.out(
-    `install: skills=${spec.modes.skills} agents=${spec.modes.agents} rules=${spec.modes.rules} · ${spec.skills.length + 17} skills · ${spec.agents.length} agentes · ${spec.rules.length + 1} reglas · ${materialized.written.length} nuevos · ${materialized.kept.length} conservados · ${sync.written.length} sincronizados`,
+    `install: skills=${spec.modes.skills} agents=${spec.modes.agents} rules=${spec.modes.rules} · ${spec.skills.length} skills de proyecto + ${context.engine.commands.length} comandos Spec Kit · ${spec.agents.length} agentes · ${spec.rules.length + 1} reglas · ${materialized.written.length} nuevos · ${materialized.kept.length} conservados · ${sync.written.length} sincronizados`,
   );
   if (!Object.values(spec.modes).includes('full')) {
     ctx.io.out('full: no aplica; usa install --full para expandir el catálogo');
   }
+  ctx.io.out(speckitSummary(speckitSettings));
   return 0;
 }
 

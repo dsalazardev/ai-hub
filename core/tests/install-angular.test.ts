@@ -4,6 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { runCli } from '../src/cli/run.js';
 import type { CliIO } from '../src/cli/types.js';
+import { fakeRunner } from './speckit-fake.js';
+import { MEASURED } from './measured.js';
 
 let root: string;
 
@@ -14,7 +16,7 @@ function capture(): { io: CliIO; out: string[] } {
 
 async function cli(argv: string[]): Promise<{ code: number; out: string }> {
   const sink = capture();
-  const code = await runCli(argv, { cwd: root, io: sink.io });
+  const code = await runCli(argv, { cwd: root, io: sink.io, exec: fakeRunner().run });
   return { code, out: sink.out.join('\n') };
 }
 
@@ -27,7 +29,8 @@ afterEach(async () => {
 });
 
 describe('full angular-express installation', () => {
-  it('installs 9 rules and 4.677 destinations without duplicating core', async () => {
+  // Timeout propio: la instalación full con angular-express midió 70,2 s en el equipo del dueño.
+  it('installs 9 rules and the measured destinations without duplicating core (timeout 180 s)', { timeout: 180_000 }, async () => {
     await fs.writeFile(
       path.join(root, 'package.json'),
       JSON.stringify({ name: 'demo', dependencies: { '@angular/core': '^18' } }),
@@ -36,7 +39,7 @@ describe('full angular-express installation', () => {
     const result = await cli(['init', '--preset', 'angular-express', '--yes']);
     expect(result.code).toBe(0);
     expect(result.out).toContain('9 reglas');
-    expect(result.out).toContain('4677 destinos');
+    expect(result.out).toContain(`${MEASURED.lock.angularExpress} destinos`);
 
     await expect(
       fs.access(path.join(root, '.ai-hub', 'skills', 'angular-developer', 'SKILL.md')),
@@ -49,6 +52,6 @@ describe('full angular-express installation', () => {
     expect(materialized.filter((entry) => entry.endsWith('.md'))).toHaveLength(8);
 
     const lock = JSON.parse(await fs.readFile(path.join(root, 'sync.lock.json'), 'utf8'));
-    expect(Object.keys(lock.files)).toHaveLength(4677);
+    expect(Object.keys(lock.files)).toHaveLength(MEASURED.lock.angularExpress);
   });
 });

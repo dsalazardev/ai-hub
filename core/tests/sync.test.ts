@@ -39,9 +39,10 @@ afterEach(async () => {
 });
 
 describe('runSync: writing', () => {
-  it('projects engine skills and project content to five targets, then checks clean', async () => {
+  it('projects the binding rule and project content to five targets, then checks clean', async () => {
     const result = await runSync(root, { check: false });
-    expect(result.written).toContain('.claude/skills/speckit-plan/SKILL.md');
+    expect(result.written).toContain('.claude/rules/ai-hub-speckit.md');
+    expect(result.written).not.toContain('.claude/skills/speckit-plan/SKILL.md');
     expect(result.written).toContain('.claude/agents/spec-author.md');
     expect(result.written).toContain('.claude/rules/core.md');
     expect(result.written).toContain('.claude/rules/preflight.md');
@@ -102,7 +103,7 @@ describe('runSync: writing', () => {
 
   it('explains engine sources without exposing the package path', async () => {
     await runSync(root, { check: false });
-    await fs.rm(path.join(root, '.claude/skills/speckit-plan/SKILL.md'));
+    await fs.rm(path.join(root, '.claude/rules/ai-hub-speckit.md'));
     const result = await runSync(root, { check: true });
     expect(result.problems.join('\n')).toContain('viene del motor; actualiza el paquete');
   });
@@ -145,10 +146,10 @@ describe('runSync: writing', () => {
     expect(await read('.cursor/rules/core.mdc')).toContain('alwaysApply: true');
     expect(await read('.github/instructions/core.instructions.md')).toContain('applyTo: "**"');
     expect(await read('.claude/rules/core.md')).toContain('# Fixture core rules');
-    expect(await read('.github/skills/speckit-plan/SKILL.md')).toContain('speckit-plan');
-    expect(await read('.opencode/skills/speckit-plan/SKILL.md')).toContain('speckit-plan');
-    expect(await read('.pi/skills/speckit-plan/SKILL.md')).toContain('speckit-plan');
-    expect(await read('.cursor/rules/speckit-plan.mdc')).toContain('speckit-plan');
+    expect(await read('.cursor/rules/ai-hub-speckit.mdc')).toContain('alwaysApply: true');
+    expect(await read('.github/instructions/ai-hub-speckit.instructions.md')).toContain('applyTo: "**"');
+    expect(await read('.pi/prompts/ai-hub-speckit.md')).toContain('`/speckit.plan`');
+    await expect(fs.access(path.join(root, '.github/skills/speckit-plan/SKILL.md'))).rejects.toThrow();
   });
 
   it('writes MCP configuration per client', async () => {
@@ -263,12 +264,12 @@ describe('checkLock', () => {
   it('reports a clean fixture with the category breakdown', async () => {
     const result = await checkLock(root);
     expect(result.ok).toBe(true);
-    expect(result.expectedCount).toBe(123);
-    expect(result.actualCount).toBe(123);
+    expect(result.expectedCount).toBe(43);
+    expect(result.actualCount).toBe(43);
     expect(result.breakdown).toEqual({
-      skills: 85,
+      skills: 0,
       agents: 24,
-      rules: 5,
+      rules: 10,
       preflight: 5,
       mcp: 4,
       other: 0,
@@ -344,7 +345,7 @@ describe('normalization, spaces and collisions', () => {
     await seedFixture(spaced);
     try {
       const result = await runSync(spaced, { check: false });
-      expect(result.written).toContain('.claude/skills/speckit-plan/SKILL.md');
+      expect(result.written).toContain('.claude/rules/ai-hub-speckit.md');
       expect((await runSync(spaced, { check: true })).problems).toEqual([]);
     } finally {
       await fs.rm(base, { recursive: true, force: true });

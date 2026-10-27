@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { ENGINE_SKILLS_DIR, type EngineManifest } from './engine/engine.js';
 import { PACKAGE_VERSION } from './package-info.js';
 import { sha256 } from './sync/lock.js';
+import { splitFrontmatter } from './frontmatter.js';
 import type { ProjectManifest } from './manifest/manifest.js';
 import type { ResolvedPreset } from './presets/resolve.js';
 
@@ -34,6 +35,8 @@ export interface SelectionScope {
 
 export interface CatalogIndex {
   skills: string[];
+  /** Skills del paquete que declaran `runtime: false`: siguen publicadas pero no son instalables. */
+  retiredSkills: string[];
   agents: string[];
   skillFiles: Record<string, string[]>;
   ruleFiles: Record<string, string[]>;
@@ -60,16 +63,46 @@ async function walk(dir: string): Promise<string[]> {
   return files.sort();
 }
 
-async function buildCatalogIndex(): Promise<CatalogIndex> {
-  walkCount += 1;
-  const entries = await fs.readdir(ENGINE_SKILLS_DIR, { withFileTypes: true }).catch(() => []);
+/** `true` si el frontmatter de la skill declara `runtime: false` (no instalable). */
+async function isRuntimeSkill(skillDir: string): Promise<boolean> {
+  const text = await fs.readFile(path.join(skillDir, 'SKILL.md'), 'utf8').catch(() => null);
+  if (text === null) {
+    return true;
+  }
+  try {
+    return splitFrontmatter(text, skillDir).data.runtime !== false;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Índice de las skills instalables de un directorio de catálogo. Las skills con
+ * `runtime: false` siguen en el paquete pero no se listan, materializan ni proyectan.
+ */
+export async function buildCatalogIndexFrom(
+  skillsDir: string,
+): Promise<Pick<CatalogIndex, 'skills' | 'skillFiles' | 'retiredSkills'>> {
+  const entries = await fs.readdir(skillsDir, { withFileTypes: true }).catch(() => []);
   const skillFiles: Record<string, string[]> = {};
-  for (const entry of entries) {
+  const retiredSkills: string[] = [];
+  for (const entry of entries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))) {
     if (!entry.isDirectory()) {
       continue;
     }
-    skillFiles[entry.name] = await walk(path.join(ENGINE_SKILLS_DIR, entry.name));
+    const dir = path.join(skillsDir, entry.name);
+    if (!(await isRuntimeSkill(dir))) {
+      retiredSkills.push(entry.name);
+      continue;
+    }
+    skillFiles[entry.name] = await walk(dir);
   }
+  return { skills: Object.keys(skillFiles).sort(), skillFiles, retiredSkills: retiredSkills.sort() };
+}
+
+async function buildCatalogIndex(): Promise<CatalogIndex> {
+  walkCount += 1;
+  const { skillFiles, retiredSkills } = await buildCatalogIndexFrom(ENGINE_SKILLS_DIR);
   const ruleFiles: Record<string, string[]> = {};
   for (const id of RUBRIC_RULE_IDS) {
     const file = path.join(ENGINE_RULES_DIR, `${id}.md`);
@@ -82,6 +115,7 @@ async function buildCatalogIndex(): Promise<CatalogIndex> {
       .filter((file) => file.endsWith('.md'))
       .map((file) => path.basename(file, '.md'))
       .sort(),
+    retiredSkills,
     skillFiles,
     ruleFiles,
     walkCount,
@@ -103,6 +137,7 @@ async function readIndexFile(file: string): Promise<CatalogIndex | null> {
     }
     return {
       skills: parsed.skills,
+      retiredSkills: Array.isArray(parsed.retiredSkills) ? parsed.retiredSkills : [],
       agents: parsed.agents,
       skillFiles: parsed.skillFiles,
       ruleFiles: parsed.ruleFiles,
@@ -150,11 +185,10 @@ export function resetCatalogIndex(): void {
   walkCount = 0;
 }
 
-/** Skills de catálogo: todas las del paquete menos las 17 del motor. */
+/** Skills instalables del catálogo; los 17 comandos los provee Spec Kit, no el catálogo. */
 export async function listCatalogSkills(engine: EngineManifest): Promise<string[]> {
-  const index = await catalogIndex();
-  const engineSkills = new Set(engine.commands.map((command) => command.skill));
-  return index.skills.filter((skill) => !engineSkills.has(skill));
+  void engine;
+  return (await catalogIndex()).skills;
 }
 
 /** Agentes de catálogo publicados en el paquete. */

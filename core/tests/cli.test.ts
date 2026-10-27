@@ -9,6 +9,9 @@ import { writeInventory } from '../src/manifest/manifest.js';
 import { listBackups } from '../src/backup/snapshots.js';
 import type { CliIO } from '../src/cli/types.js';
 import { seedFixture } from './fixtures.js';
+import { gitUnavailable, runGit } from './git.js';
+import { fakeRunner } from './speckit-fake.js';
+import { MEASURED } from './measured.js';
 
 let root: string;
 
@@ -20,7 +23,7 @@ function capture(): { io: CliIO; out: string[]; err: string[] } {
 
 async function cli(argv: string[]): Promise<{ code: number; out: string; err: string }> {
   const sink = capture();
-  const code = await runCli(argv, { cwd: root, io: sink.io });
+  const code = await runCli(argv, { cwd: root, io: sink.io, exec: fakeRunner().run });
   return { code, out: sink.out.join('\n'), err: sink.err.join('\n') };
 }
 
@@ -111,32 +114,33 @@ describe('init', () => {
     const full = JSON.parse((await cli(['init', '--dry-run'])).out);
     expect(full).toMatchObject({
       selection: 'full',
-      skillCount: 191,
+      skillCount: MEASURED.projectSkills,
+      speckitCommands: MEASURED.speckitCommands,
       agentCount: 35,
       ruleCount: 6,
-      destinations: 4662,
+      destinations: MEASURED.lock.full,
     });
     expect(full.selections).toEqual({ skills: 'full', agents: 'full', rules: 'full' });
-    expect(full.files).toBeGreaterThan(4662);
+    expect(full.files).toBeGreaterThan(MEASURED.lock.full);
     expect(full.bytes).toBeGreaterThan(0);
     expect(full.hash).toMatch(/^[a-f0-9]{64}$/);
     const presetOnly = JSON.parse((await cli(['init', '--dry-run', '--preset-only'])).out);
     expect(presetOnly).toMatchObject({
       selection: 'preset',
-      skillCount: 17,
+      skillCount: 0,
       agentCount: 6,
       ruleCount: 2,
-      destinations: 120,
+      destinations: MEASURED.lock.presetOnly,
     });
     const custom = JSON.parse(
       (await cli(['init', '--dry-run', '--exclude', 'rule:skill-quality'])).out,
     );
     expect(custom).toMatchObject({
       selection: 'custom',
-      skillCount: 191,
+      skillCount: MEASURED.projectSkills,
       agentCount: 35,
       ruleCount: 2,
-      destinations: 4642,
+      destinations: MEASURED.lock.customNoRubrics,
     });
     expect(custom.selections).toEqual({ skills: 'full', agents: 'full', rules: 'custom' });
     expect(custom.hash).not.toBe(full.hash);
@@ -153,8 +157,9 @@ describe('init', () => {
     expect(singleRule).toMatchObject({
       selections: { skills: 'full', agents: 'full', rules: 'custom' },
       ruleCount: 5,
-      destinations: 4657,
     });
+    // Una rúbrica menos son 5 destinos menos (una regla por destino) respecto a la cifra medida.
+    expect(singleRule.destinations).toBe(MEASURED.lock.full - 5);
     const mixed = JSON.parse(
       (
         await cli([
@@ -165,14 +170,18 @@ describe('init', () => {
         ])
       ).out,
     );
-    expect(mixed).toMatchObject({ selection: 'custom', skillCount: 190, agentCount: 34 });
-    expect(mixed.skills).toHaveLength(173);
+    expect(mixed).toMatchObject({
+      selection: 'custom',
+      skillCount: MEASURED.projectSkills - 1,
+      agentCount: 34,
+    });
+    expect(mixed.skills).toHaveLength(MEASURED.projectSkills - 1);
     expect(mixed.agents).toHaveLength(34);
     expect(mixed.ruleCount).toBe(6);
     const angular = JSON.parse(
       (await cli(['init', '--dry-run', '--preset', 'angular-express'])).out,
     );
-    expect(angular).toMatchObject({ selection: 'full', ruleCount: 9, destinations: 4677 });
+    expect(angular).toMatchObject({ selection: 'full', ruleCount: 9, destinations: MEASURED.lock.angularExpress });
     expect(angular.selections).toEqual({ skills: 'full', agents: 'full', rules: 'full' });
     expect((await cli(['init', '--dry-run', '--exclude', 'rule:core'])).code).toBe(2);
     expect((await cli(['init', '--dry-run', '--exclude', 'rule:preflight'])).code).toBe(2);
@@ -190,11 +199,12 @@ describe('init', () => {
     await expect(fs.access(path.join(root, '.ai-hub', 'rules', 'python.md'))).resolves.toBeUndefined();
     const expansion = JSON.parse((await cli(['install', '--full', '--dry-run'])).out);
     expect(expansion).toMatchObject({
-      skills: 174,
+      skills: MEASURED.projectSkills,
       agents: 35,
       rules: 7,
-      destinations: 4667,
     });
+    // El preset python suma una regla propia: 5 destinos sobre la cifra full medida.
+    expect(expansion.destinations).toBe(MEASURED.lock.full + 5);
   });
 
   it('applies the base preset in an empty repository', async () => {
@@ -352,11 +362,14 @@ describe('sync, drift and doctor', () => {
     expect((await cli(['doctor'])).out).toContain('MCP configurado');
   });
 
-  it('warns without failing when generated destinations are tracked in git', async () => {
+  it('warns without failing when generated destinations are tracked in git', async ({ skip }) => {
+    const gitReason = gitUnavailable();
+    if (gitReason !== null) {
+      skip(gitReason);
+    }
     await fs.writeFile(path.join(root, 'package.json'), JSON.stringify({ name: 'demo' }));
     expect((await cli(['init', '--preset-only', '--yes'])).code).toBe(0);
-    const git = (args: string[]) =>
-      spawnSync('git', args, { cwd: root, encoding: 'utf8', shell: false });
+    const git = (args: string[]) => runGit(args, root);
     expect(git(['init']).status).toBe(0);
     expect(git(['add', '-f', '.claude/agents/spec-author.md']).status).toBe(0);
     const doctor = await cli(['doctor']);
@@ -364,11 +377,14 @@ describe('sync, drift and doctor', () => {
     expect(doctor.out).toContain('aviso: destinos generados versionados');
   });
 
-  it('does not warn when generated destinations are ignored', async () => {
+  it('does not warn when generated destinations are ignored', async ({ skip }) => {
+    const gitReason = gitUnavailable();
+    if (gitReason !== null) {
+      skip(gitReason);
+    }
     await fs.writeFile(path.join(root, 'package.json'), JSON.stringify({ name: 'demo' }));
     expect((await cli(['init', '--preset-only', '--yes'])).code).toBe(0);
-    const git = (args: string[]) =>
-      spawnSync('git', args, { cwd: root, encoding: 'utf8', shell: false });
+    const git = (args: string[]) => runGit(args, root);
     expect(git(['init']).status).toBe(0);
     expect(git(['add', '.gitignore', '.ai-hub']).status).toBe(0);
     const doctor = await cli(['doctor']);
@@ -503,7 +519,7 @@ describe('add, list and uninstall', () => {
     await seeded();
     const result = await cli(['uninstall', 'skill', 'speckit-plan']);
     expect(result.code).toBe(1);
-    expect(result.err).toContain('motor');
+    expect(result.err).toContain('lo provee Spec Kit');
   });
 
   it('uninstall updates the manifest and keeps doctor green', async () => {

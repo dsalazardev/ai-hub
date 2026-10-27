@@ -84,6 +84,14 @@ El consumidor no es un usuario local: es una **fábrica de software autónoma**,
 
 Salidas terminales: **GO / KILL / NEEDS_CLARIFICATION**, **CONVERGED / NEEDS_WORK**, **VERIFIED / PARTIAL / FAILED**.
 
+**Spec Kit ejecuta los 17 comandos; AI-Hub no posee sus cuerpos.** En el consumidor, `ai-hub init` y `ai-hub install` instalan `specify-cli` fijado por el paquete (1.2.3, `bug` y `assess` 1.0.1, `--exclude-newer` como decisión de release) con `uvx`, nunca con `uv tool install`, en la raíz junto a `.ai-hub/`. Spec Kit posee `.specify/**`, `specs/**` y sus comandos en `.claude/skills`, `.opencode/commands`, `.pi/prompts` y `.cursor/skills`; `sync` no escribe ni borra esas rutas. **Copilot no recibe Spec Kit**: recibe agentes, reglas y la regla de enlace, y sus comandos se ejecutan en otro destino o por la CLI.
+
+**Notación canónica:** `engine.yaml` identifica cada comando con su id de Spec Kit en notación con punto (`speckit.plan`, `speckit.assess.intake`, `speckit.bug.fix`). La invocación se deriva con el separador del destino: `/speckit-bug-assess` en Claude y Cursor, `/speckit.bug.assess` en OpenCode y Pi. La regla generada `ai-hub-speckit` proyecta en cada destino el rol de cada comando, su invocación, la tabla de estados de §5, las rutas canónicas y el sello.
+
+**Rutas canónicas** (relativas a la raíz): `.specify/memory/constitution.md`, `.specify/assessments/<slug>/{intake,research,problem,concept,decision}.md`, `specs/<feature>/{spec,plan,tasks}.md` (Spec Kit crea `<feature>` como `NNN-slug`; no existe `.specify/specs/`) y `.specify/bugs/<slug>/{assessment,fix,test}.md`.
+
+Sin `uv`, sin red y sin caché, o sin `bash` para `script: sh`, `init` sale 2 antes de escribir. `--no-speckit` deja el arnés **degradado** (`doctor` sale 1) hasta que un `ai-hub install` sin la bandera lo reactiva.
+
 OpenSpec no forma parte del runtime. El directorio `openspec/` de este repositorio es un archivo histórico de cambios y no se lee, escribe ni proyecta.
 
 ---
@@ -118,16 +126,46 @@ OpenSpec no forma parte del runtime. El directorio `openspec/` de este repositor
 
 `ai::spec-ready` nunca se auto-aprueba.
 
-1. `Spec-Author` termina `spec.md`, `plan.md` y `tasks.md`.
+1. `Spec-Author` termina `specs/<feature>/spec.md`, `plan.md` y `tasks.md`.
 2. El publisher calcula el SHA-256 del conjunto aprobable.
 3. Publica y notifica con `iid + hash`.
 4. Un humano autorizado aprueba.
 5. `hermes-control` revalida identidad, issue, estado y hash.
 6. Solo entonces se mueve a `ai::in-dev`.
 
-**Canonicalización:** rutas relativas ordenadas, separador `/`, contenido normalizado a LF, sin BOM; por archivo `ruta + "\n" + bytes`; SHA-256 sobre la secuencia.
+**Canonicalización:** los tres archivos `specs/<feature>/plan.md`, `specs/<feature>/spec.md` y `specs/<feature>/tasks.md`, con rutas **relativas a la raíz del repositorio**, ordenadas, separador `/`; contenido normalizado a LF y sin BOM; por archivo `ruta + "\n" + bytes`; SHA-256 sobre la secuencia. Si falta alguno de los tres, la feature no se puede sellar. Renombrar la carpeta de la feature cambia el hash. Implementación de referencia: `core/src/speckit/seal.ts`.
+
+**Vector de prueba.** Con `specs/001-demo/spec.md` = `# Demo\n`, `specs/001-demo/plan.md` = `# Plan\n` y `specs/001-demo/tasks.md` = `- [ ] T001 Demo\n`:
+
+```text
+seal-vector: 35a81eb3b064c4df23d8be843cc498284884366681c4afd7d16368cab0ddc15b
+```
 
 Cualquier cambio posterior invalida la aprobación. Un hash que no coincide se rechaza (fail-closed).
+
+### Contrato de estados y etiquetas para `hermes-control`
+
+Cada comando termina en un estado normalizado desde la salida de Spec Kit (en mayúsculas; `likely valid, needs reproduction` es `NEEDS_REPRODUCTION`; un comando sin veredicto de Spec Kit termina en `DONE` si su artefacto existe o en `BLOCKED`). `hermes-control` aplica el efecto; **ningún agente mueve una etiqueta**. `KILL` (assess-decide) e `INVALID` (bug-assess) solo **proponen** `ai::done`: la propuesta la hace `hermes-control` y la confirma un humano autorizado. Se mantienen las 7 etiquetas; no se crea ninguna.
+
+| Estado | Efecto sobre la etiqueta |
+|---|---|
+| `DONE` | sin cambio de etiqueta; el artefacto declarado existe y el carril continúa |
+| `BLOCKED` | ai::blocked con motivo y evidencia |
+| `GO` | mantiene ai::in-spec; Spec-Author empieza la autoría de la feature |
+| `NEEDS_CLARIFICATION` | mantiene ai::in-spec; se repite la etapa indicada |
+| `KILL` | propone ai::done; hermes-control propone el cierre y un humano lo confirma |
+| `CONVERGED` | ai::in-review |
+| `NEEDS_WORK` | mantiene ai::in-dev; las tareas pendientes se añaden a tasks.md |
+| `VALID` | sin cambio de etiqueta; el bug pasa a bug-fix |
+| `NEEDS_REPRODUCTION` | ai::blocked; faltan datos para reproducir |
+| `INVALID` | propone ai::done; hermes-control propone el cierre y un humano lo confirma |
+| `APPLIED` | ai::in-review |
+| `PARTIAL` | mantiene ai::in-dev |
+| `NOT_APPLIED` | ai::blocked con motivo y evidencia |
+| `VERIFIED` | ai::done a través de la revisión |
+| `FAILED` | ai::blocked con motivo y evidencia |
+
+La tabla se genera desde `exit_effects` de `core/engine/engine.yaml`; un test exige que coincidan. Los estados retirados (los que usaban los cuerpos propios de 0.2.x) los rechaza el gate `engine:retired-states`.
 
 ---
 

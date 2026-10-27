@@ -5,6 +5,8 @@ import { parse, stringify } from 'yaml';
 import { frontmatterString, splitFrontmatter } from '../frontmatter.js';
 import { resolveSourcePath, type SyncConfig } from './config.js';
 import { TARGETS } from './targets.js';
+import { loadEngine } from '../engine/engine.js';
+import { BINDING_MARKER_SOURCE, BINDING_RULE_ID, BINDING_SOURCE, bindingRule } from '../speckit/binding.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -28,8 +30,40 @@ export async function renderAll(root: string, config: SyncConfig): Promise<Rende
   await renderAgents(root, config, out);
   await renderRules(root, config, out);
   await renderPreflight(root, config, out);
+  await renderSpeckitBinding(config, out);
   await renderMcp(root, config, out);
   return out;
+}
+
+/** Regla de enlace con Spec Kit, generada desde engine.yaml en cada destino declarado. */
+async function renderSpeckitBinding(config: SyncConfig, out: RenderedFiles): Promise<void> {
+  const engine = await loadEngine();
+  for (const tool of config.tools) {
+    const spec = TARGETS[tool];
+    const body = bindingRule(engine, tool);
+    const file = { source: BINDING_SOURCE, markerSource: BINDING_MARKER_SOURCE };
+    if (spec.ruleShape === 'mdc') {
+      putRendered(out, `${spec.rules}/${BINDING_RULE_ID}.mdc`, {
+        ...file,
+        content: withMarker(
+          frontmatter({ description: 'Spec Kit: roles, estados y etiquetas', alwaysApply: true }) + body,
+          BINDING_MARKER_SOURCE,
+        ),
+      });
+      continue;
+    }
+    if (spec.ruleShape === 'instructions') {
+      putRendered(out, `${spec.rules}/${BINDING_RULE_ID}.instructions.md`, {
+        ...file,
+        content: withMarker(frontmatter({ applyTo: '**' }) + body, BINDING_MARKER_SOURCE),
+      });
+      continue;
+    }
+    putRendered(out, `${spec.rules}/${BINDING_RULE_ID}.md`, {
+      ...file,
+      content: withMarker(body, BINDING_MARKER_SOURCE),
+    });
+  }
 }
 
 async function renderPreflight(root: string, config: SyncConfig, out: RenderedFiles): Promise<void> {

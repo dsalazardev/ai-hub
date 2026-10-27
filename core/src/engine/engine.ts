@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Ajv } from 'ajv';
 import { parse } from 'yaml';
+import { satisfiesRange } from '../speckit/version.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ENGINE_PATH = path.join(__dirname, '..', '..', 'engine', 'engine.yaml');
@@ -33,16 +34,38 @@ export interface EngineCommand {
   exit: string[];
   role: string;
   co_roles?: string[];
-  skill: string;
+  /** Id canónico del comando en Spec Kit, en notación con punto (`speckit.bug.assess`). */
+  speckit: string;
 }
+
+export type SpeckitScript = 'sh' | 'ps';
+
+/** Dependencia de Spec Kit fijada por el paquete; un proyecto solo puede restringirla. */
+export interface EngineSpeckit {
+  package: string;
+  pin: string;
+  supported: string;
+  excludeNewer: string;
+  script: SpeckitScript;
+  extensions: Record<string, string>;
+}
+
+/** Extensiones de Spec Kit que proveen los 8 comandos de assessment y bug fix. */
+export const REQUIRED_SPECKIT_EXTENSIONS = ['assess', 'bug'] as const;
 
 export interface EngineManifest {
   version: 2;
   roles: EngineRole[];
   commands: EngineCommand[];
+  /** Efecto de cada estado de salida sobre las etiquetas; tabla única proyectada en la regla de enlace. */
+  exit_effects: Record<string, string>;
   labels: string[];
   targets: string[];
+  speckit: EngineSpeckit;
 }
+
+/** Estados de salida que el vocabulario normalizado de Spec Kit retiró. */
+export const RETIRED_EXIT_STATES = ['ROOT_CAUSE', 'NEEDS_DATA', 'FIXED', 'RESOLVED', 'OPEN', 'DRAFT', 'READY'] as const;
 
 export class EngineError extends Error {
   readonly errors: string[];
@@ -145,6 +168,56 @@ export function crossValidate(engine: EngineManifest): string[] {
     if (actual !== count) {
       errors.push(`lane "${lane}" debe tener ${count} comandos (tiene ${actual})`);
     }
+  }
+  for (const id of findDuplicateIds(engine.commands.map((command) => command.speckit))) {
+    errors.push(`id de Spec Kit duplicado: ${id}`);
+  }
+  const retired = new Set<string>(RETIRED_EXIT_STATES);
+  const states = new Set<string>();
+  for (const command of engine.commands) {
+    for (const state of command.exit) {
+      states.add(state);
+      if (retired.has(state)) {
+        errors.push(`commands "${command.id}".exit usa el estado retirado ${state}`);
+      }
+    }
+  }
+  const effects = engine.exit_effects ?? {};
+  for (const state of [...states].sort()) {
+    if (!(state in effects)) {
+      errors.push(`exit_effects no define el efecto de ${state}`);
+    }
+  }
+  for (const state of Object.keys(effects).sort()) {
+    if (!states.has(state)) {
+      errors.push(`exit_effects.${state} no corresponde a ningún estado de salida`);
+    }
+  }
+  errors.push(...validateEngineSpeckit(engine.speckit));
+  return errors;
+}
+
+function validateEngineSpeckit(speckit: EngineSpeckit | undefined): string[] {
+  if (speckit === undefined) {
+    return ['falta el bloque speckit'];
+  }
+  const errors: string[] = [];
+  for (const field of ['package', 'pin', 'supported', 'excludeNewer', 'script'] as const) {
+    if (typeof speckit[field] !== 'string' || speckit[field] === '') {
+      errors.push(`falta speckit.${field}`);
+    }
+  }
+  for (const extension of REQUIRED_SPECKIT_EXTENSIONS) {
+    if (typeof speckit.extensions?.[extension] !== 'string') {
+      errors.push(`falta speckit.extensions.${extension}`);
+    }
+  }
+  if (
+    typeof speckit.pin === 'string' &&
+    typeof speckit.supported === 'string' &&
+    !satisfiesRange(speckit.pin, speckit.supported)
+  ) {
+    errors.push(`speckit.pin ${speckit.pin} está fuera de speckit.supported "${speckit.supported}"`);
   }
   return errors;
 }

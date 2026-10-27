@@ -4,6 +4,7 @@ import { mapLimit } from '../concurrency.js';
 import { isEngineCheckout } from '../source-checkout.js';
 import type { SyncConfig } from './config.js';
 import { loadSyncConfig, resolveSourcePath } from './config.js';
+import { ownedBySpeckit, readSpeckitState, speckitOwnedPaths } from '../speckit/state.js';
 import { normalize, renderAll, type RenderedFile, type RenderedFiles } from './render.js';
 import {
   GENERATOR_VERSION,
@@ -35,6 +36,17 @@ export class SyncSourceError extends Error {
   }
 }
 
+export class SpeckitOwnershipError extends Error {
+  constructor(readonly paths: string[]) {
+    super(
+      `colisión de propiedad con Spec Kit: ${paths.join(', ')}\n` +
+        'Esas rutas pertenecen a Spec Kit (sus manifiestos de integración, sus extensiones o el espacio speckit-*/speckit.*); ' +
+        'ai-hub no las escribe. No se escribió ningún archivo ni el lock.',
+    );
+    this.name = 'SpeckitOwnershipError';
+  }
+}
+
 export class SyncSourceCheckoutError extends Error {
   constructor(readonly root: string) {
     super(
@@ -58,17 +70,30 @@ export async function runSync(root: string, options: SyncOptions): Promise<SyncR
   const previous = await readLock(root);
   const result: SyncResult = { written: [], removed: [], problems: [] };
 
+  // Un dueño por archivo: lo que reclama Spec Kit no se escribe ni se borra desde aquí.
+  const speckitPresent = (await readSpeckitState(root)).present;
+  const owned = await speckitOwnedPaths(root, config.tools);
+  const isSpeckit = (rel: string): boolean => ownedBySpeckit(rel, owned, config.tools, speckitPresent);
+  const collisions = [...rendered.keys()].filter(isSpeckit).sort();
+  if (collisions.length > 0) {
+    if (options.check) {
+      result.problems.push(...collisions.map((rel) => `colisión con Spec Kit: ${rel}`));
+      return result;
+    }
+    throw new SpeckitOwnershipError(collisions);
+  }
+
   const symlinks = await findSymlinks(root, config, rendered);
-  const obsolete = previous
-    ? Object.keys(previous.files)
-        .filter((rel) => !rendered.has(rel))
-        .sort()
-    : [];
+  const previousEntries = previous ? Object.keys(previous.files).filter((rel) => !rendered.has(rel)) : [];
+  // Entradas que pasaron a Spec Kit: se sueltan del lock sin tocar el archivo de su nuevo dueño.
+  const transferred = previousEntries.filter(isSpeckit).sort();
+  const obsolete = previousEntries.filter((rel) => !isSpeckit(rel)).sort();
 
   if (options.check) {
     result.problems.push(...(await checkCopies(root, rendered, previous)));
     result.problems.push(...symlinks.map((rel) => `enlace simbólico no permitido: ${rel}`));
     result.problems.push(...obsolete.map((rel) => `destino obsoleto: ${rel}`));
+    result.problems.push(...transferred.map((rel) => `propiedad transferida a Spec Kit (ejecuta ai-hub sync): ${rel}`));
     return result;
   }
 
@@ -81,6 +106,10 @@ export async function runSync(root: string, options: SyncOptions): Promise<SyncR
   for (const rel of obsolete) {
     await fs.rm(path.join(root, rel), { force: true });
     result.removed.push(rel);
+  }
+  // Un destino obsoleto no deja su carpeta vacía (p. ej. `.github/skills/speckit-plan/` tras 0.2.x).
+  for (const dir of [...new Set(obsolete.map((rel) => path.posix.dirname(rel)))].sort((a, b) => b.length - a.length)) {
+    await pruneEmptyDirs(root, dir);
   }
   const written = await mapLimit(sortedEntries(rendered), 24, async ([rel, file]) => {
     const abs = path.join(root, rel);
@@ -185,6 +214,9 @@ export interface LockCheckResult {
 function categoryOf(source: string): LockCategory {
   if (source === '@engine/engine/preflight.md' || source === 'engine/preflight.md') {
     return 'preflight';
+  }
+  if (source === '@engine/engine/engine.yaml') {
+    return 'rules';
   }
   if (source.startsWith('@engine/skills/') || source.includes('/skills/')) {
     return 'skills';
@@ -330,6 +362,20 @@ async function collectSymlinks(root: string, relDir: string, found: Set<string>)
     } else if (entry.isDirectory()) {
       await collectSymlinks(root, rel, found);
     }
+  }
+}
+
+/** Borra `rel` y sus padres mientras estén vacíos, sin salir de `root`. */
+async function pruneEmptyDirs(root: string, rel: string): Promise<void> {
+  let current = rel;
+  while (current !== '.' && current !== '' && !current.startsWith('..')) {
+    const abs = path.join(root, current);
+    const entries = await fs.readdir(abs).catch(() => null);
+    if (entries === null || entries.length > 0) {
+      return;
+    }
+    await fs.rmdir(abs).catch(() => undefined);
+    current = path.posix.dirname(current);
   }
 }
 

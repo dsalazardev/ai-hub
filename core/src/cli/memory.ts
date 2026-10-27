@@ -89,6 +89,12 @@ export async function cmdMemory(args: ParsedArgs, ctx: CliContext): Promise<numb
     ctx.io.out(`cambio activo: ${summary.activeChange ?? 'ninguno'}`);
     ctx.io.out(`fase: ${summary.phase}`);
     ctx.io.out(`tareas: ${summary.tasks.done}/${summary.tasks.total}`);
+    if (summary.feature !== null) {
+      ctx.io.out(
+        `feature Spec Kit: ${summary.feature.dir} · ${summary.feature.pending} pendientes` +
+          (summary.feature.source === 'local' ? ' (puntero local .specify/feature.json, no versionado)' : ''),
+      );
+    }
     ctx.io.out(
       last === null
         ? 'ledger: sin eventos'

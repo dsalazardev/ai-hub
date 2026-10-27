@@ -1,6 +1,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { stringify } from 'yaml';
+import { loadEngine } from '../src/engine/engine.js';
+import { speckitSequence } from '../src/speckit/commands.js';
+import { effectiveSpeckit } from '../src/speckit/settings.js';
+import { fakeRunner } from './speckit-fake.js';
 
 export const AGENT_IDS = [
   'spec-author',
@@ -10,6 +14,8 @@ export const AGENT_IDS = [
   'reviewer-tests',
   'explorer-domain',
 ];
+
+export const FIXTURE_TARGETS = ['claude', 'opencode', 'pi', 'cursor', 'copilot'];
 
 export const MCP_FIXTURE = `required_mcps:
   - id: demo
@@ -31,7 +37,7 @@ export function fixtureManifest(): string {
       typecheck: 'npx tsc --noEmit',
     },
     paths: { source: ['src'], tests: ['tests'], docs: ['docs'] },
-    targets: ['claude', 'opencode', 'pi', 'cursor', 'copilot'],
+    targets: FIXTURE_TARGETS,
     policy: {
       trunk: 'auto',
       guardMode: 'shadow',
@@ -43,6 +49,15 @@ export function fixtureManifest(): string {
     rules: { source: '.ai-hub/rules', publish: ['core'] },
     mcp: { source: 'mcp-manifest.yaml' },
   });
+}
+
+/** Reproduce sobre `root` la instalación de Spec Kit 1.2.3 para los destinos dados (sin uvx real). */
+export async function seedSpeckit(root: string, targets: string[] = FIXTURE_TARGETS): Promise<void> {
+  const settings = effectiveSpeckit({ targets }, await loadEngine());
+  const fake = fakeRunner();
+  for (const step of speckitSequence(settings)) {
+    await fake.run('uvx', step, { cwd: root });
+  }
 }
 
 export async function seedFixture(root: string): Promise<void> {
@@ -69,4 +84,5 @@ export async function seedFixture(root: string): Promise<void> {
     );
   }
   await fs.mkdir(path.join(root, '.ai-hub', 'skills'), { recursive: true });
+  await seedSpeckit(root);
 }
