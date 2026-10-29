@@ -3,45 +3,69 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { crossValidate, loadEngine, type EngineManifest } from '../src/engine/engine.js';
+import { uvxPrefix } from '../src/speckit/commands.js';
 import { TARGETS, TOOL_IDS } from '../src/sync/targets.js';
 import {
   effectiveSpeckit,
   validateProjectSpeckit,
 } from '../src/speckit/settings.js';
-import { satisfiesRange } from '../src/speckit/version.js';
+import { rangeBounds, requireRangeBounds, satisfiesRange } from '../src/speckit/version.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SNAPSHOT = path.join(__dirname, 'fixtures', 'speckit-1.2.3', 'dot.specify');
 
 describe('speckit engine data (1.1, 1.2)', () => {
-  it('declares the pin, range, date, script and extensions', async () => {
+  it('declares the package, supported range, script and extensions', async () => {
     const engine = await loadEngine();
     expect(engine.speckit).toEqual({
       package: 'specify-cli',
-      pin: '1.2.3',
       supported: '>=1.2.3 <1.3.0',
-      excludeNewer: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
       script: 'sh',
       extensions: { assess: '1.0.1', bug: '1.0.1' },
     });
-    expect(satisfiesRange(engine.speckit.pin, engine.speckit.supported)).toBe(true);
   });
 
-  it('rejects engine data without bug or without excludeNewer', async () => {
+  it('rejects engine data without bug and rejects retired fields naming them', async () => {
     const engine = await loadEngine();
     const withoutBug = structuredClone(engine) as EngineManifest;
     delete (withoutBug.speckit.extensions as Record<string, string>).bug;
     expect(crossValidate(withoutBug).join('\n')).toContain('speckit.extensions.bug');
-    const withoutDate = structuredClone(engine) as EngineManifest;
-    (withoutDate.speckit as { excludeNewer?: string }).excludeNewer = undefined;
-    expect(crossValidate(withoutDate).join('\n')).toContain('speckit.excludeNewer');
+    const retiredValues: Record<string, string> = { pin: '1.2.3', excludeNewer: '2026-10-27' };
+    for (const field of ['pin', 'excludeNewer'] as const) {
+      const retired = structuredClone(engine) as EngineManifest;
+      (retired.speckit as unknown as Record<string, string>)[field] = retiredValues[field];
+      const errors = crossValidate(retired).join('\n');
+      expect(errors).toContain(`speckit.${field}`);
+      expect(errors).toContain('retirado');
+    }
   });
 
-  it('keeps the date as a single constant in engine.yaml', async () => {
-    const raw = await fs.readFile(path.join(__dirname, '..', 'engine', 'engine.yaml'), 'utf8');
-    const { excludeNewer } = (await loadEngine()).speckit;
-    expect(raw.split(excludeNewer)).toHaveLength(2);
-    expect(raw).toMatch(/se fija el día de la publicación de 0\.3\.0/);
+  it('derives the range bounds once and rejects a malformed supported range', async () => {
+    const engine = await loadEngine();
+    expect(rangeBounds(engine.speckit.supported)).toEqual({ min: '1.2.3', max: '1.3.0' });
+    expect(rangeBounds('>=1.2.3 <1.3.0')).toEqual({ min: '1.2.3', max: '1.3.0' });
+    expect(rangeBounds('1.2.3')).toBeNull();
+    expect(rangeBounds('>=1.2.3')).toBeNull();
+    expect(() => requireRangeBounds('1.2.3')).toThrow('rango de versiones malformado');
+    const malformed = structuredClone(engine) as EngineManifest;
+    malformed.speckit.supported = '1.2.3';
+    expect(crossValidate(malformed).join('\n')).toContain('speckit.supported');
+  });
+});
+
+describe('uvx prefix (1.3)', () => {
+  it('uses the supported range and never an exact pin or a date', async () => {
+    const engine = await loadEngine();
+    const prefix = uvxPrefix(effectiveSpeckit({ targets: ['claude'] }, engine));
+    expect(prefix).toEqual(['--from', 'specify-cli>=1.2.3,<1.3.0', 'specify']);
+    expect(prefix.join(' ')).not.toContain('==');
+    expect(prefix.join(' ')).not.toContain('--exclude-newer');
+  });
+
+  it('uses the exact version when the project declares one (design D6)', async () => {
+    const engine = await loadEngine();
+    const settings = effectiveSpeckit({ targets: ['claude'], speckit: { version: '1.2.4' } }, engine);
+    expect(uvxPrefix(settings)).toEqual(['--from', 'specify-cli==1.2.4', 'specify']);
   });
 });
 
@@ -85,13 +109,13 @@ describe('target registry (1.3)', () => {
 describe('project speckit block (1.4)', () => {
   const targets = ['claude', 'opencode', 'pi', 'cursor', 'copilot'];
 
-  it('uses the package pin when the block is missing', async () => {
+  it('uses the package range when the block is missing', async () => {
     const engine = await loadEngine();
     const effective = effectiveSpeckit({ targets }, engine);
     expect(effective).toMatchObject({
       managed: true,
-      version: '1.2.3',
-      excludeNewer: engine.speckit.excludeNewer,
+      version: null,
+      supported: '>=1.2.3 <1.3.0',
       script: 'sh',
       defaultTarget: 'claude',
       defaultIntegration: 'claude',
@@ -114,12 +138,17 @@ describe('project speckit block (1.4)', () => {
     expect(errors).toContain('>=1.2.3 <1.3.0');
   });
 
-  it('rejects engine-owned fields', async () => {
+  it('rejects engine-owned fields and retired fields', async () => {
     const engine = await loadEngine();
-    for (const field of ['extensions', 'excludeNewer', 'integrations']) {
+    for (const field of ['extensions', 'integrations'] as const) {
       const errors = validateProjectSpeckit({ [field]: 'x' }, targets, engine).join('\n');
       expect(errors).toContain(`speckit.${field}`);
       expect(errors).toContain('pertenece al motor');
+    }
+    for (const field of ['pin', 'excludeNewer'] as const) {
+      const errors = validateProjectSpeckit({ [field]: 'x' }, targets, engine).join('\n');
+      expect(errors).toContain(`speckit.${field}`);
+      expect(errors).toContain('retirado');
     }
   });
 

@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.4.0 — Spec Kit por rango soportado y tres scripts siempre (2026-10-29)
+
+### Ruptura
+
+- **BREAKING — pin → rango:** el bloque `speckit` de `engine.yaml` ya no declara `pin` ni `excludeNewer`: `supported` (`>=1.2.3 <1.3.0`) es la única fuente de versión y toda resolución de `uvx` usa `--from specify-cli>=1.2.3,<1.3.0`, tomando la última estable dentro del rango (hoy 1.2.5). Sin rango, `uvx` resuelve una dev (`1.2.1.dev0`); con el rango, una major nueva queda excluida hasta que el motor lo amplíe en un release revisado. Los datos de motor que aún declaren `pin` o `excludeNewer` fallan al cargar nombrando el campo retirado.
+- **BREAKING — `excludeNewer` eliminado:** con versión flotante, una fecha de resolución no acota nada coherente (una instalación de febrero con fecha de octubre resuelve distinto que una de noviembre con la misma fecha). Sale del bloque `speckit`, de `SpeckitSettings`, del plan y de los mensajes del preflight; la mención de la entrada 0.3.1 queda como historial publicado que describía el comportamiento vigente entonces. El preflight offline nombra el rango: «no se pudo resolver el rango soportado de specify-cli (>=1.2.3 <1.3.0) con uvx…».
+- `speckit:version` valida por rango con `satisfiesRange(instalada, supported)`: una instalación con 1.2.5 pasa a estar sana (antes fallaba contra el pin exacto) y `1.3.0` o `1.2.1.dev0` siguen fallando, nombrando la instalada y el rango. `speckit:managed` informa el rango en lugar del pin.
+- El hash del plan lleva la versión RESUELTA: capturada del stdout del sondeo (`uvx … --version`) en dry-run y de `init-options.speckit_version` tras instalar; sin resolución, el plan nombra el rango y el hash no depende de las herramientas de la máquina. Dos máquinas que resuelven 1.2.4 y 1.2.5 el mismo día dan hashes distintos: aceptado por diseño.
+- `speckit.version` declarada por el proyecto sigue válida sólo dentro del rango y se instala exacta (`==<declarada>`); sin bloque `speckit`, el rango manda.
+
+### Añadido
+
+- Tres directorios de scripts siempre: una sola invocación de `init`/`install` corre internamente un `specify init` por tipo de script (los dos no elegidos primero y el elegido al final) y deja `.specify/scripts/{bash,powershell,python}` con 6 archivos cada uno y un manifiesto de integridad de 24 entradas. Los directorios de los tipos no elegidos existen pero nadie los invoca: comportamiento esperado, no un fallo. `doctor` no exige los tres: un proyecto viejo cuyo manifiesto declara sólo `scripts/bash` sigue sano.
+
+### Cifras medidas
+
+Las cifras de destinos no cambian respecto a 0.3.1 — los tres init internos escriben sólo en `.specify/`, que Spec Kit posee y `sync` nunca toca:
+
+| Instalación | Destinos en `sync.lock.json` |
+|---|---|
+| `init --yes` (`generic-ts`, full) | 4.407 |
+| `init --yes --preset-only` | 40 |
+| `init --yes --exclude rule:skill-quality` | 4.387 |
+| `init --yes --preset angular-express` | 4.422 |
+
+`full` instala 163 skills de proyecto + 17 comandos Spec Kit, 35 agentes y 6 reglas universales.
+
+### Empaquetado
+
+- `core/package.json` en `0.4.0`. No se publica en npm desde esta sesión; el release queda condicionado a la revisión del diff.
+
 ## 0.3.1 — resolución autónoma del shell de Spec Kit (2026-10-28)
 
 ### Añadido

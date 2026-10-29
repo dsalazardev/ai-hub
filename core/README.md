@@ -32,15 +32,20 @@ Spec Kit.
 ## Spec Kit
 
 Spec Kit ejecuta los 17 comandos de la metodología; AI-Hub define roles, estados y
-etiquetas. El paquete fija la versión de `specify-cli`, la de las extensiones y una
-fecha `--exclude-newer` para las dependencias de `uvx`. Esa fecha se mueve solo en un
-release, nunca automáticamente. `manifest.yaml` puede restringir la versión dentro del rango
-soportado (`speckit.version`), elegir el script (`speckit.script: sh | ps`) y la integración
-por defecto (`speckit.defaultTarget`), pero no ampliar la versión ni cambiar las extensiones.
+etiquetas. El paquete declara el rango soportado de `specify-cli` (`supported`, única
+fuente: toda resolución usa el rango y toma la última estable dentro de él, sin pin exacto
+ni fecha de resolución) y fija la versión de las extensiones. `manifest.yaml` puede
+restringir la versión dentro del rango (`speckit.version`, que se instala exacta), elegir
+el script (`speckit.script: sh | ps`) y la integración por defecto
+(`speckit.defaultTarget`), pero no ampliar el rango ni cambiar las extensiones.
 
+- Una instalación deja `.specify/scripts/{bash,powershell,python}` con seis archivos cada
+  uno: la secuencia interna corre un `specify init` por tipo de script y deja el elegido
+  al final. Los directorios de los tipos no elegidos existen pero nadie los invoca: es el
+  comportamiento esperado, no un fallo.
 - Spec Kit se instala en `claude`, `opencode`, `pi` y `cursor` (`cursor-agent`). **Copilot
   no recibe Spec Kit**: recibe agentes, reglas y la regla `ai-hub-speckit`.
-- Sin `uv`, sin red y sin caché para la versión fijada, o sin `bash` con `script: sh`,
+- Sin `uv`, sin red y sin caché para el rango soportado, o sin `bash` con `script: sh`,
   `init` sale con código 2 **antes de escribir nada** y dice qué falta.
 - `init --no-speckit` instala sin Spec Kit y deja el arnés **degradado** (`doctor` sale 1).
   Un `ai-hub install` posterior sin la bandera lo reactiva.
@@ -94,7 +99,7 @@ ejecuta Python ni `uvx`. En el checkout del motor todos informan `no aplica`.
 |---|---|---|
 | `speckit:managed` | `speckit.managed` no es `false`; un arnés con `--no-speckit` es **degradado** y `doctor` sale 1 | `ai-hub install` (sin `--no-speckit`) |
 | `speckit:installed` | Existe `.specify/init-options.json` | `ai-hub install` |
-| `speckit:version` | `speckit_version` coincide con la versión fijada (o la que restrinja `speckit.version`) | `ai-hub install` |
+| `speckit:version` | `speckit_version` cae dentro del rango soportado (o es exactamente la que restringe `speckit.version`) | `ai-hub install` |
 | `speckit:script` | El script declarado en el manifest coincide con el instalado en `.specify/init-options.json` (`sh`/`ps`) | `ai-hub install` |
 | `speckit:shell` | El shell del script declarado ejecuta `echo ok` (`bash` para `sh`, PowerShell para `ps`) | Instalar Git Bash/bash, o declarar `speckit.script: ps` |
 | `speckit:integrations` | `.specify/integration.json` tiene exactamente las integraciones de los destinos con Spec Kit, sin `copilot`, y la integración por defecto declarada | `ai-hub install`; si aparece `copilot`, `specify integration uninstall copilot` |

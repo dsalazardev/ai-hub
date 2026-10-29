@@ -3,19 +3,30 @@ import { existsSync } from 'node:fs';
 import { TARGETS } from '../sync/targets.js';
 import { succeeded, type ProcessRunner } from './runner.js';
 import type { SpeckitSettings } from './settings.js';
+import { parseSpecifyVersion, uvxRange } from './version.js';
 
-/** Argumentos de `uvx` que fijan el paquete y la fecha de resolución. */
+/**
+ * Argumentos de `uvx` que fijan el paquete: el rango soportado como única fuente,
+ * o la versión exacta cuando el proyecto la declara (design D6). Nunca una fecha de resolución.
+ */
 export function uvxPrefix(settings: SpeckitSettings): string[] {
-  return ['--from', `${settings.package}==${settings.version}`, '--exclude-newer', settings.excludeNewer, 'specify'];
+  const requirement =
+    settings.version === null
+      ? `${settings.package}${uvxRange(settings.supported)}`
+      : `${settings.package}==${settings.version}`;
+  return ['--from', requirement, 'specify'];
 }
 
 /**
- * Secuencia de instalación (design D3, paso 9). Cada elemento son los argumentos de `uvx`.
- * Nunca incluye `extension add --force`: borra la extensión de la integración anterior.
+ * Secuencia de instalación (design D1, D3). Cada elemento son los argumentos de `uvx`.
+ * Antepone un `specify init` por cada script no elegido y deja el elegido al final: los init
+ * se acumulan sin pisarse, así una sola invocación del usuario deja los tres directorios y
+ * `init-options.json` registra el script elegido. Nunca incluye `extension add --force`.
  * `integration use` registra de forma aditiva las extensiones ya instaladas.
  */
 export function speckitSequence(settings: SpeckitSettings): string[][] {
-  if (settings.defaultIntegration === null) {
+  const defaultIntegration = settings.defaultIntegration;
+  if (defaultIntegration === null) {
     return [];
   }
   const prefix = uvxPrefix(settings);
@@ -23,27 +34,29 @@ export function speckitSequence(settings: SpeckitSettings): string[][] {
     .sort()
     .reverse()
     .flatMap((id) => ['--extension', id]);
-  const steps: string[][] = [
-    [
-      ...prefix,
-      'init',
-      '.',
-      '--here',
-      '--force',
-      '--non-interactive',
-      '--integration',
-      settings.defaultIntegration,
-      '--script',
-      settings.script,
-      ...extensions,
-    ],
+  const initFor = (script: 'sh' | 'ps' | 'py'): string[] => [
+    ...prefix,
+    'init',
+    '.',
+    '--here',
+    '--force',
+    '--non-interactive',
+    '--integration',
+    defaultIntegration,
+    '--script',
+    script,
+    ...extensions,
   ];
+  const steps: string[][] = (['sh', 'ps', 'py'] as const)
+    .filter((script) => script !== settings.script)
+    .map((script) => initFor(script));
+  steps.push(initFor(settings.script));
   for (const integration of settings.integrations.slice(1)) {
     steps.push([...prefix, 'integration', 'install', integration, '--script', settings.script]);
     steps.push([...prefix, 'integration', 'use', integration]);
   }
   if (settings.integrations.length > 1) {
-    steps.push([...prefix, 'integration', 'use', settings.defaultIntegration]);
+    steps.push([...prefix, 'integration', 'use', defaultIntegration]);
   }
   return steps;
 }
@@ -51,6 +64,8 @@ export function speckitSequence(settings: SpeckitSettings): string[][] {
 export interface SpeckitEnvironment {
   uvx: 'found' | 'missing';
   cached: 'yes' | 'no' | 'unknown';
+  /** Versión que `uvx` resuelve dentro del rango; null si no se pudo resolver. */
+  version: string | null;
   shell: 'found' | 'missing';
   shellCommand: string;
 }
@@ -152,14 +167,19 @@ export async function probeEnvironment(
 ): Promise<SpeckitEnvironment> {
   const uvx = await uvxAvailable(runner, cwd);
   let cached: SpeckitEnvironment['cached'] = 'unknown';
+  let version: string | null = null;
   if (uvx) {
     const offline = await runner('uvx', ['--offline', ...uvxPrefix(settings), '--version'], { cwd, timeoutMs: 60_000 });
     cached = succeeded(offline) ? 'yes' : 'no';
+    // La versión resuelta es la del sondeo real: caché si la hay, red si no.
+    const probe = cached === 'yes' ? offline : await runner('uvx', [...uvxPrefix(settings), '--version'], { cwd });
+    version = succeeded(probe) ? parseSpecifyVersion(probe.stdout) : null;
   }
   const shell = await probeShell(settings, runner, cwd);
   return {
     uvx: uvx ? 'found' : 'missing',
     cached,
+    version,
     shell: shell.ok ? 'found' : 'missing',
     shellCommand: shell.command,
   };
@@ -168,6 +188,8 @@ export async function probeEnvironment(
 export interface PreflightResult {
   ok: boolean;
   problems: string[];
+  /** Versión que `uvx` resolvió dentro del rango; null si no se pudo resolver. */
+  version: string | null;
 }
 
 /**
@@ -187,16 +209,17 @@ export async function speckitPreflight(
       'uv no está disponible (uvx no está en el PATH). Instálalo: https://docs.astral.sh/uv/getting-started/installation/ ' +
         '— o repite con --no-speckit para instalar sin Spec Kit (el arnés quedará degradado).',
     );
-    return { ok: false, problems };
+    return { ok: false, problems, version: null };
   }
   const resolved = await runner('uvx', [...uvxPrefix(settings), '--version'], { cwd });
   if (!succeeded(resolved)) {
     problems.push(
-      `no se pudo resolver ${settings.package}==${settings.version} con uvx: sin red y sin caché, o la versión no existe. ` +
-        'Ejecuta una vez con red (uvx descarga y cachea la versión fijada) o usa --no-speckit.' +
+      `no se pudo resolver el rango soportado de ${settings.package} (${settings.supported}) con uvx: sin red y sin caché, o el rango no tiene ninguna versión estable. ` +
+        'Ejecuta una vez con red (uvx descarga y cachea la última versión del rango) o usa --no-speckit.' +
         (resolved.stderr.trim() !== '' ? `\n${resolved.stderr.trim().split(/\r?\n/).slice(-3).join('\n')}` : ''),
     );
   }
+  const version = succeeded(resolved) ? parseSpecifyVersion(resolved.stdout) : null;
   const shell = await probeShell(settings, runner, cwd);
   if (!shell.ok) {
     problems.push(
@@ -208,7 +231,7 @@ export async function speckitPreflight(
             `Alternativa sin bash: ai-hub ${command} --script ps.`,
     );
   }
-  return { ok: problems.length === 0, problems };
+  return { ok: problems.length === 0, problems, version };
 }
 
 export interface SpeckitRunResult {

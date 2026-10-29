@@ -29,12 +29,14 @@ export interface FakeOptions {
   missing?: Array<'uvx' | 'bash' | 'pwsh' | 'powershell'>;
   /** `bash` existe pero no ejecuta (lanzador de WSL sin distribución). */
   brokenBash?: boolean;
-  /** Sin red y sin caché: la versión fijada no se resuelve. */
+  /** Sin red y sin caché: el rango soportado no se resuelve. */
   offline?: boolean;
   /** Integraciones cuyo `integration use` se omite (sonda de la verificación 9d). */
   skipUse?: string[];
   /** Se invoca justo antes de reproducir `specify init` (para observar el orden respecto a sync). */
   onSpecifyInit?: (root: string) => Promise<void>;
+  /** Versión que el fake responde a `specify --version` (por defecto, la última dentro del rango). */
+  resolveVersion?: string;
 }
 
 export interface FakeRunner {
@@ -130,50 +132,74 @@ async function installCore(root: string, integration: string): Promise<void> {
   }
 }
 
-type FakeScript = 'sh' | 'ps';
+type FakeScript = 'sh' | 'ps' | 'py';
+
+/** Versión que el fake resuelve dentro del rango soportado (la última publicada, como uvx). */
+export const FAKE_VERSION = '1.2.5';
+
+const SCRIPT_DIRS: Record<FakeScript, string> = { sh: 'bash', ps: 'powershell', py: 'python' };
+const SCRIPT_EXTS: Record<FakeScript, string> = { sh: '.sh', ps: '.ps1', py: '.py' };
 
 function scriptOf(args: string[]): FakeScript {
-  return args[args.indexOf('--script') + 1] === 'ps' ? 'ps' : 'sh';
+  const value = args[args.indexOf('--script') + 1];
+  return value === 'ps' ? 'ps' : value === 'py' ? 'py' : 'sh';
 }
 
 /**
- * Efecto de `--script` sobre `.specify/`: el campo `script` de init-options.json, el directorio
- * de scripts del tipo elegido y las rutas del manifest de integridad. La instantánea grabada es
- * de una instalación bash; `ps` es una aproximación con los mismos scripts renombrados a `.ps1`
- * (contenido idéntico, hash conservado).
+ * Efecto de `--script` sobre `.specify/`: el campo `script` de init-options.json y el directorio
+ * de scripts del tipo elegido. Los init se ACUMULAN (evidencia medida): cada tipo añade su
+ * directorio sin borrar los demás, y el manifiesto de integridad se reconstruye desde los
+ * directorios que existen en disco. La instantánea grabada es de una instalación bash;
+ * `ps` y `py` son aproximaciones con los mismos scripts renombrados (hash conservado).
  */
 async function applyScript(root: string, script: FakeScript): Promise<void> {
   const optionsFile = path.join(root, '.specify', 'init-options.json');
   const options = await readJson<Record<string, unknown>>(optionsFile);
   options.script = script;
   await fs.writeFile(optionsFile, `${JSON.stringify(options, null, 2)}\n`, 'utf8');
-  const bashDir = path.join(root, '.specify', 'scripts', 'bash');
-  const psDir = path.join(root, '.specify', 'scripts', 'powershell');
-  if (script === 'ps') {
-    await fs.rm(psDir, { recursive: true, force: true });
-    await fs.mkdir(psDir, { recursive: true });
+  const scriptsDir = path.join(root, '.specify', 'scripts');
+  const bashDir = path.join(scriptsDir, 'bash');
+  if (script !== 'sh') {
+    const targetDir = path.join(scriptsDir, SCRIPT_DIRS[script]);
+    await fs.mkdir(targetDir, { recursive: true });
     for (const file of await fs.readdir(bashDir)) {
-      await fs.copyFile(path.join(bashDir, file), path.join(psDir, file.replace(/\.sh$/, '.ps1')));
+      await fs.copyFile(path.join(bashDir, file), path.join(targetDir, file.replace(/\.sh$/, SCRIPT_EXTS[script])));
     }
-    await fs.rm(bashDir, { recursive: true, force: true });
-    const manifestFile = path.join(root, '.specify', 'integrations', 'speckit.manifest.json');
-    const manifest = await readJson<{ files: Record<string, string> }>(manifestFile);
-    const files: Record<string, string> = {};
-    for (const [rel, hash] of Object.entries(manifest.files)) {
-      files[
-        rel.startsWith('.specify/scripts/bash/')
-          ? rel.replace(/^\.specify\/scripts\/bash\//, '.specify/scripts/powershell/').replace(/\.sh$/, '.ps1')
-          : rel
-      ] = hash;
-    }
-    manifest.files = files;
-    await fs.writeFile(manifestFile, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
-  } else {
-    await fs.rm(psDir, { recursive: true, force: true });
   }
+  // El manifiesto declara lo que hay en disco: 6 entradas por directorio existente.
+  const manifestFile = path.join(root, '.specify', 'integrations', 'speckit.manifest.json');
+  const manifest = await readJson<{ files: Record<string, string> }>(manifestFile);
+  const files: Record<string, string> = {};
+  const bashHashes: Record<string, string> = {};
+  for (const [rel, hash] of Object.entries(manifest.files)) {
+    const bashMatch = /^\.specify\/scripts\/bash\/(.+)$/.exec(rel);
+    if (bashMatch !== null) {
+      bashHashes[bashMatch[1]] = hash;
+      files[rel] = hash;
+    } else if (!rel.startsWith('.specify/scripts/')) {
+      files[rel] = hash;
+    }
+  }
+  for (const dir of await fs.readdir(scriptsDir, { withFileTypes: true })) {
+    if (!dir.isDirectory()) {
+      continue;
+    }
+    for (const file of await fs.readdir(path.join(scriptsDir, dir.name))) {
+      const rel = `.specify/scripts/${dir.name}/${file}`;
+      if (files[rel] !== undefined) {
+        continue;
+      }
+      const hash = bashHashes[file.replace(/\.(ps1|py)$/, '.sh')];
+      if (hash !== undefined) {
+        files[rel] = hash;
+      }
+    }
+  }
+  manifest.files = files;
+  await fs.writeFile(manifestFile, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
 }
 
-async function specifyInit(root: string, integration: string, script: FakeScript): Promise<void> {
+async function specifyInit(root: string, integration: string, script: FakeScript, version: string): Promise<void> {
   for (const rel of await listSnapshot('.specify')) {
     if (rel.startsWith('.specify/integrations/') && !rel.endsWith('/speckit.manifest.json')) {
       continue;
@@ -194,6 +220,11 @@ async function specifyInit(root: string, integration: string, script: FakeScript
   }
   await fs.writeFile(registryFile, `${JSON.stringify(registry, null, 2)}\n`, 'utf8');
   await registerExtensions(root, integration);
+  // La versión registrada es la que el sondeo resolvió, no la de la instantánea.
+  const optionsFile = path.join(root, '.specify', 'init-options.json');
+  const options = await readJson<Record<string, unknown>>(optionsFile);
+  options.speckit_version = version;
+  await fs.writeFile(optionsFile, `${JSON.stringify(options, null, 2)}\n`, 'utf8');
   await applyScript(root, script);
 }
 
@@ -209,7 +240,7 @@ function notFound(command: string): RunResult {
   return { status: null, stdout: '', stderr: '', error: `spawn ${command} ENOENT` };
 }
 
-/** Runner que reproduce sobre `cwd` el efecto de cada invocación de Spec Kit 1.2.3. */
+/** Runner que reproduce sobre `cwd` el efecto de cada invocación de Spec Kit, resolviendo la última versión del rango. */
 export function fakeRunner(options: FakeOptions = {}): FakeRunner {
   const calls: string[][] = [];
   const missing = new Set(options.missing ?? []);
@@ -239,13 +270,14 @@ export function fakeRunner(options: FakeOptions = {}): FakeRunner {
     }
     const sub = args.slice(at + 1);
     const root = runOptions.cwd;
+    const version = options.resolveVersion ?? FAKE_VERSION;
     if (sub[0] === '--version') {
-      return ok('specify 1.2.3\n');
+      return ok(`specify ${version}\n`);
     }
     if (sub[0] === 'init') {
       await options.onSpecifyInit?.(root);
       const integration = sub[sub.indexOf('--integration') + 1];
-      await specifyInit(root, integration, scriptOf(sub));
+      await specifyInit(root, integration, scriptOf(sub), version);
       return ok('Project ready.\n');
     }
     if (sub[0] === 'integration' && sub[1] === 'install') {

@@ -2,22 +2,25 @@ import type { EngineManifest, SpeckitScript } from '../engine/engine.js';
 import { TARGETS, isToolId, type ToolId } from '../sync/targets.js';
 import { satisfiesRange } from './version.js';
 
-/** Bloque `speckit` de manifest.yaml: solo restringe lo que fija el paquete. */
+/** Bloque `speckit` de manifest.yaml: solo restringe lo que declara el paquete. */
 export interface ProjectSpeckit {
   managed?: boolean;
+  /** Restricción exacta declarada por el proyecto; debe caer dentro del rango soportado. */
   version?: string;
   script?: SpeckitScript;
   defaultTarget?: string;
 }
 
-/** Campos que pertenecen al motor y que un proyecto no puede redefinir. */
-export const ENGINE_OWNED_SPECKIT_FIELDS = ['extensions', 'excludeNewer', 'integrations', 'package', 'pin', 'supported'] as const;
+/** Campos que el bloque `speckit` de manifest.yaml admite; cualquier otro pertenece al motor o está retirado. */
+const PROJECT_SPECKIT_FIELDS = ['managed', 'version', 'script', 'defaultTarget'] as const;
 
 export interface SpeckitSettings {
   managed: boolean;
   package: string;
-  version: string;
-  excludeNewer: string;
+  /** Restricción exacta declarada por el proyecto; null → manda el rango `supported` (design D6). */
+  version: string | null;
+  /** Rango soportado declarado por el paquete; única fuente de versión (design D2). */
+  supported: string;
   script: SpeckitScript;
   /** Destinos declarados que reciben Spec Kit; el de por defecto va primero. */
   targets: ToolId[];
@@ -56,8 +59,8 @@ export function effectiveSpeckit(
   return {
     managed: block.managed !== false,
     package: engine.speckit.package,
-    version: block.version ?? engine.speckit.pin,
-    excludeNewer: engine.speckit.excludeNewer,
+    version: block.version ?? null,
+    supported: engine.speckit.supported,
     script: block.script ?? engine.speckit.script,
     targets,
     defaultTarget,
@@ -89,9 +92,10 @@ export function validateProjectSpeckit(
     return ['speckit debe ser un objeto'];
   }
   const errors: string[] = [];
-  for (const field of ENGINE_OWNED_SPECKIT_FIELDS) {
-    if (field in block) {
-      errors.push(`speckit.${field} pertenece al motor; el proyecto no puede redefinirlo`);
+  // Los campos fuera de la lista pertenecen al motor o están retirados; el nombre sale del dato.
+  for (const field of Object.keys(block)) {
+    if (!(PROJECT_SPECKIT_FIELDS as readonly string[]).includes(field)) {
+      errors.push(`speckit.${field} pertenece al motor o está retirado; el proyecto no puede redefinirlo`);
     }
   }
   if (block.version !== undefined) {

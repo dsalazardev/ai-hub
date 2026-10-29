@@ -531,3 +531,21 @@ El probe probó `bash` del PATH (falla) y resolvió la primera ruta estándar de
 - `openspec validate --specs` y `--all`: 5 specs + 1 cambio, 0 fallos (warnings preexistentes de longitud de descripción).
 - `openspec list --json`: sin cambios activos.
 - Release 0.3.1 sigue sin publicar y sin commit; pendiente de revisión humana del diff.
+
+---
+
+## Sonda manual del cambio speckit-latest (6.2)
+
+Ejecutada el 2026-10-29 sobre un consumidor temporal nuevo: `C:\Users\USUARIO\AppData\Local\Temp\opencode\scratch\speckit-latest-probe\consumer-final` (git init + package.json con typescript; `node core/dist/bin/ai-hub.js init --yes` con dist 0.4.0).
+
+| Comprobación | Resultado |
+|---|---|
+| `init --yes` | exit 0; `Spec Kit 1.2.5 · script sh · integraciones claude, opencode, pi, cursor-agent`; plan `360a24c2…` |
+| `.specify/scripts/bash` | 6 archivos |
+| `.specify/scripts/powershell` | 6 archivos |
+| `.specify/scripts/python` | 6 archivos |
+| Manifiesto de integridad | 24 entradas (18 de scripts) |
+| `init-options.json` | `speckit_version: 1.2.5` · `script: sh` |
+| `doctor` | exit 0; `speckit:version: 1.2.5 dentro del rango >=1.2.3 <1.3.0` en [OK]; los 12 checks `speckit:*` en verde |
+
+La versión resuelta por el sondeo real (uvx, red) fue **1.2.5**, dentro del rango soportado. El plan impreso informa la resuelta, no el rango (design D5).

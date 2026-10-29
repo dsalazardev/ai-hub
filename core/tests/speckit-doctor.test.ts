@@ -88,13 +88,28 @@ describe('managed, installed and version (7.1)', () => {
     expect(line(result.out, 'speckit:installed')).toMatch(/\[FAIL\].*init-options\.json/);
   });
 
-  it('fails on a version outside the pin, naming both', async () => {
+  it('fails on a version outside the range, naming the installed one and the range', async () => {
     await editJson('.specify/init-options.json', (data) => {
       data.speckit_version = '1.2.1.dev0';
     });
-    const result = await doctor();
+    let result = await doctor();
     expect(result.code).toBe(1);
-    expect(line(result.out, 'speckit:version')).toMatch(/\[FAIL\].*1\.2\.1\.dev0.*1\.2\.3/);
+    expect(line(result.out, 'speckit:version')).toMatch(/\[FAIL\].*1\.2\.1\.dev0.*>=1\.2\.3 <1\.3\.0/);
+    await editJson('.specify/init-options.json', (data) => {
+      data.speckit_version = '1.3.0';
+    });
+    result = await doctor();
+    expect(result.code).toBe(1);
+    expect(line(result.out, 'speckit:version')).toMatch(/\[FAIL\].*1\.3\.0.*>=1\.2\.3 <1\.3\.0/);
+  });
+
+  it('passes with the latest resolved version inside the range', async () => {
+    await editJson('.specify/init-options.json', (data) => {
+      data.speckit_version = '1.2.5';
+    });
+    const result = await doctor();
+    expect(result.code).toBe(0);
+    expect(line(result.out, 'speckit:version')).toMatch(/\[OK\].*1\.2\.5.*>=1\.2\.3 <1\.3\.0/);
   });
 });
 
@@ -202,6 +217,28 @@ describe('integrity (7.4)', () => {
     const failed = await doctor();
     expect(failed.code).toBe(1);
     expect(line(failed.out, 'speckit:integrity')).toMatch(/\[FAIL\].*create-new-feature\.sh/);
+  });
+
+  it('never requires the three script directories: an old bash-only project stays healthy (3.3)', async () => {
+    // Proyecto instalado antes de los tres directorios: sólo bash en disco y en el manifiesto.
+    await fs.rm(path.join(root, '.specify', 'scripts', 'powershell'), { recursive: true, force: true });
+    await fs.rm(path.join(root, '.specify', 'scripts', 'python'), { recursive: true, force: true });
+    await editJson('.specify/integrations/speckit.manifest.json', (data) => {
+      const files = data.files as Record<string, string>;
+      for (const rel of Object.keys(files)) {
+        if (rel.startsWith('.specify/scripts/powershell/') || rel.startsWith('.specify/scripts/python/')) {
+          delete files[rel];
+        }
+      }
+    });
+    const manifest = JSON.parse(
+      await fs.readFile(path.join(root, '.specify', 'integrations', 'speckit.manifest.json'), 'utf8'),
+    ) as { files: Record<string, string> };
+    expect(Object.keys(manifest.files)).toHaveLength(12);
+    const result = await doctor();
+    expect(result.code, result.out).toBe(0);
+    expect(line(result.out, 'speckit:integrity')).toMatch(/\[OK\]/);
+    expect(result.out).not.toContain('[FAIL]');
   });
 });
 

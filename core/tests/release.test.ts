@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadEngine } from '../src/engine/engine.js';
 import { MEASURED } from './measured.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -27,13 +26,14 @@ async function currentSection(): Promise<{ version: string; date: string; body: 
 }
 
 describe('release 0.3.1 (9.3)', () => {
-  it('bumps the package and names the shell resolution changes', async () => {
+  it('bumps the package and names the contracts that change in 0.4.0', async () => {
     const section = await currentSection();
-    expect(section.version).toBe('0.3.1');
-    expect(section.body).toMatch(/Git for Windows/);
-    expect(section.body).toMatch(/--script <sh\|ps>/);
-    expect(section.body).toContain('speckit:script');
-    expect(section.body).toContain('resuelto fuera del PATH');
+    expect(section.version).toBe('0.4.0');
+    expect(section.body).toMatch(/pin → rango/);
+    expect(section.body).toMatch(/excludeNewer.*eliminado/);
+    expect(section.body).toContain('satisfiesRange');
+    expect(section.body).toContain('versión RESUELTA');
+    expect(section.body).toMatch(/tres directorios de scripts siempre/i);
   });
 
   it('publishes the measured figures, not computed ones', async () => {
@@ -42,15 +42,6 @@ describe('release 0.3.1 (9.3)', () => {
       expect(body).toContain(`| ${thousands(value)} |`);
     }
     expect(body).toContain(`${MEASURED.projectSkills} skills de proyecto + ${MEASURED.speckitCommands} comandos Spec Kit`);
-  });
-});
-
-describe('--exclude-newer is a release decision (1.2)', () => {
-  it('is not later than the release date and is justified in the changelog', async () => {
-    const engine = await loadEngine();
-    const { date, body } = await currentSection();
-    expect(engine.speckit.excludeNewer <= date).toBe(true);
-    expect(body).toContain(`excludeNewer: ${engine.speckit.excludeNewer}`);
   });
 });
 

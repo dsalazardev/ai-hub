@@ -34,6 +34,7 @@ import {
   probeEnvironment,
   runSpeckitSequence,
   speckitPreflight,
+  type PreflightResult,
   type SpeckitEnvironment,
 } from '../speckit/commands.js';
 import { effectiveSpeckit, type ProjectSpeckit, type SpeckitSettings } from '../speckit/settings.js';
@@ -80,20 +81,22 @@ export interface Plan extends AssetPlan {
 export interface SpeckitPlan {
   managed: boolean;
   package: string;
-  version: string;
-  excludeNewer: string;
+  /** Versión que la instalación fija: la resuelta, o el rango cuando no hay resolución (design D5). */
+  version: string | null;
+  /** Rango soportado declarado por el paquete; única fuente de versión. */
+  supported: string;
   script: string;
   defaultIntegration: string | null;
   integrations: string[];
   extensions: Record<string, string>;
 }
 
-function speckitPlan(settings: SpeckitSettings): SpeckitPlan {
+function speckitPlan(settings: SpeckitSettings, resolved: string | null): SpeckitPlan {
   return {
     managed: settings.managed,
     package: settings.package,
-    version: settings.version,
-    excludeNewer: settings.excludeNewer,
+    version: resolved,
+    supported: settings.supported,
     script: settings.script,
     defaultIntegration: settings.defaultIntegration,
     integrations: settings.integrations,
@@ -147,12 +150,15 @@ async function environmentFor(
   return probeEnvironment(settings, ctx.exec, ctx.root);
 }
 
-/** Preflight de Spec Kit; devuelve `false` y explica el motivo si hay que salir con 2. */
+/** Preflight de Spec Kit; devuelve el resultado (con la versión resuelta) o null si no corre. */
 async function preflightOrReport(
   settings: SpeckitSettings,
   ctx: CliContext,
   command: 'init' | 'install',
-): Promise<boolean> {
+): Promise<PreflightResult | null> {
+  if (!settings.managed) {
+    return null;
+  }
   const preflight = await speckitPreflight(settings, ctx.exec, ctx.root, command);
   if (!preflight.ok) {
     ctx.io.err('preflight de Spec Kit fallido; no se escribió nada:');
@@ -160,7 +166,7 @@ async function preflightOrReport(
       ctx.io.err(`  - ${problem}`);
     }
   }
-  return preflight.ok;
+  return preflight;
 }
 
 /** Ejecuta la secuencia de Spec Kit; devuelve `false` y explica cómo restaurar si falla. */
@@ -191,9 +197,9 @@ async function installSpeckit(
   return true;
 }
 
-function speckitSummary(settings: SpeckitSettings): string {
+function speckitSummary(settings: SpeckitSettings, resolved: string | null): string {
   return settings.managed
-    ? `Spec Kit ${settings.version} · script ${settings.script} · integraciones ${settings.integrations.join(', ')}`
+    ? `Spec Kit ${resolved ?? `rango ${settings.supported}`} · script ${settings.script} · integraciones ${settings.integrations.join(', ')}`
     : 'Spec Kit no gestionado (--no-speckit): el arnés queda degradado; ejecuta ai-hub install para activarlo';
 }
 
@@ -598,7 +604,7 @@ export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number
   if (selection.migrate) {
     write.push('.planning/state.json');
   }
-  const planBody: Omit<Plan, 'hash'> = {
+  const planBodyFor = (resolved: string | null): Omit<Plan, 'hash'> => ({
     command: 'init',
     project: id,
     preset: selection.preset.id,
@@ -611,12 +617,14 @@ export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number
     mcp: includeMcp,
     migrate: selection.migrate,
     write,
-    speckit: speckitPlan(speckitSettings),
-  };
-  const plan: Plan = { ...planBody, hash: sha256(JSON.stringify(planBody)) };
+    speckit: speckitPlan(speckitSettings, resolved),
+  });
 
   if (!args.flags.yes || args.flags['dry-run']) {
     const environment = await environmentFor(speckitSettings, ctx);
+    const resolved = 'version' in environment ? environment.version : null;
+    const planBody = planBodyFor(resolved);
+    const plan: Plan = { ...planBody, hash: sha256(JSON.stringify(planBody)) };
     ctx.io.out(JSON.stringify({ ...plan, environment }, null, 2));
     if (!args.flags['dry-run']) {
       ctx.io.out('Nada escrito. Repite con --yes para aplicar este plan.');
@@ -624,7 +632,8 @@ export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number
     return 0;
   }
 
-  if (runSpeckit && !(await preflightOrReport(speckitSettings, ctx, 'init'))) {
+  const preflight = runSpeckit ? await preflightOrReport(speckitSettings, ctx, 'init') : null;
+  if (preflight !== null && !preflight.ok) {
     return 2;
   }
   // Backup restaurable antes de que Spec Kit toque un proyecto existente (constitución incluida).
@@ -648,6 +657,13 @@ export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number
   if (runSpeckit && !(await installSpeckit(speckitSettings, ctx, backupId))) {
     return 1;
   }
+  // El hash describe la instalación real: la versión que quedó registrada tras instalar (design D5).
+  let resolved = preflight?.version ?? null;
+  if (runSpeckit) {
+    resolved = (await readSpeckitState(ctx.root)).initOptions?.speckit_version ?? resolved;
+  }
+  const planBody = planBodyFor(resolved);
+  const plan: Plan = { ...planBody, hash: sha256(JSON.stringify(planBody)) };
   const sync = await runSync(ctx.root, { check: false });
   const existingRc = readAiHubRc(ctx.cwd);
   if (!existingRc || existingRc.version === 1 || args.flags.force) {
@@ -678,7 +694,7 @@ export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number
   if (materialized.collisions.length > 0) {
     ctx.io.err(`colisiones (no se sobrescribieron): ${materialized.collisions.join(', ')}`);
   }
-  ctx.io.out(speckitSummary(speckitSettings));
+  ctx.io.out(speckitSummary(speckitSettings, resolved));
   ctx.io.out(`plan: ${plan.hash}`);
   return 0;
 }
@@ -779,6 +795,8 @@ export async function cmdInstall(args: ParsedArgs, ctx: CliContext): Promise<num
   const runSpeckit = speckitSettings.managed && !(await isEngineCheckout(ctx.root));
   if (args.flags['dry-run']) {
     const assets = await buildAssetPlan(spec, context.engine, context.manifest.targets, includeMcp);
+    const environment = await environmentFor(speckitSettings, ctx);
+    const resolved = 'version' in environment ? environment.version : null;
     ctx.io.out(
       JSON.stringify(
         {
@@ -791,7 +809,7 @@ export async function cmdInstall(args: ParsedArgs, ctx: CliContext): Promise<num
           agents: spec.agents.length,
           rules: spec.rules.length + 1,
           destinations: assets.destinations,
-          speckit: speckitPlan(speckitSettings),
+          speckit: speckitPlan(speckitSettings, resolved),
         },
         null,
         2,
@@ -799,7 +817,8 @@ export async function cmdInstall(args: ParsedArgs, ctx: CliContext): Promise<num
     );
     return 0;
   }
-  if (runSpeckit && !(await preflightOrReport(speckitSettings, ctx, 'install'))) {
+  const preflight = runSpeckit ? await preflightOrReport(speckitSettings, ctx, 'install') : null;
+  if (preflight !== null && !preflight.ok) {
     return 2;
   }
   const backupId = runSpeckit ? (await createBackup(ctx.root, 'install')).id : null;
@@ -830,6 +849,11 @@ export async function cmdInstall(args: ParsedArgs, ctx: CliContext): Promise<num
   if (runSpeckit && !(await installSpeckit(speckitSettings, ctx, backupId))) {
     return 1;
   }
+  // El resumen informa la versión que quedó registrada, no la declarada (design D5).
+  let resolved = preflight?.version ?? null;
+  if (runSpeckit) {
+    resolved = (await readSpeckitState(ctx.root)).initOptions?.speckit_version ?? resolved;
+  }
   const sync = await runSync(ctx.root, { check: false });
   await writeInventory(ctx.root);
   await ensureProjectIgnores(ctx.root);
@@ -843,7 +867,7 @@ export async function cmdInstall(args: ParsedArgs, ctx: CliContext): Promise<num
   if (!Object.values(spec.modes).includes('full')) {
     ctx.io.out('full: no aplica; usa install --full para expandir el catálogo');
   }
-  ctx.io.out(speckitSummary(speckitSettings));
+  ctx.io.out(speckitSummary(speckitSettings, resolved));
   return 0;
 }
 

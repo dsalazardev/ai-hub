@@ -1,5 +1,5 @@
 /**
- * Comparación mínima de versiones `x.y.z` para validar el pin de Spec Kit.
+ * Comparación mínima de versiones `x.y.z` para validar el rango soportado de Spec Kit.
  * Una versión con sufijo (por ejemplo `1.2.1.dev0`) no se considera estable y no satisface ningún rango.
  */
 export function parseVersion(version: string): [number, number, number] | null {
@@ -17,6 +17,63 @@ export function compareVersions(left: [number, number, number], right: [number, 
     }
   }
   return 0;
+}
+
+/** Extremos declarados de un rango: `>=1.2.3 <1.3.0` → `{ min: '1.2.3', max: '1.3.0' }`. */
+export interface RangeBounds {
+  min: string;
+  max: string;
+}
+
+const RANGE_COMPARATOR = /^(>=|>|<=|<)\s*(\d+\.\d+\.\d+)$/;
+
+/**
+ * Deriva los extremos de un rango soportado. Exige un mínimo (`>=` o `>`) y un máximo
+ * (`<` o `<=`) estables; devuelve null si el rango está malformado o incompleto.
+ */
+export function rangeBounds(range: string): RangeBounds | null {
+  const parts = range.trim().split(/\s+/).filter((item) => item !== '');
+  let min: string | null = null;
+  let max: string | null = null;
+  for (const part of parts) {
+    const match = RANGE_COMPARATOR.exec(part);
+    if (match === null) {
+      return null;
+    }
+    if (match[1] === '>=' || match[1] === '>') {
+      if (min !== null) {
+        return null;
+      }
+      min = match[2];
+    } else {
+      if (max !== null) {
+        return null;
+      }
+      max = match[2];
+    }
+  }
+  return min === null || max === null ? null : { min, max };
+}
+
+/** Igual que `rangeBounds`, pero lanza con un mensaje claro cuando el rango está malformado. */
+export function requireRangeBounds(range: string): RangeBounds {
+  const bounds = rangeBounds(range);
+  if (bounds === null) {
+    throw new Error(`rango de versiones malformado: "${range}" (se esperaba ">=x.y.z <a.b.c")`);
+  }
+  return bounds;
+}
+
+/** Rango en la notación de uvx/pip: `>=1.2.3 <1.3.0` → `>=1.2.3,<1.3.0`. */
+export function uvxRange(range: string): string {
+  requireRangeBounds(range);
+  return range.trim().split(/\s+/).join(',');
+}
+
+/** Extrae la versión estable del stdout de `specify --version` (`specify 1.2.5`). */
+export function parseSpecifyVersion(stdout: string): string | null {
+  const match = /(\d+\.\d+\.\d+)/.exec(stdout);
+  return match === null ? null : match[1];
 }
 
 /** Evalúa un rango de comparadores separados por espacios: `>=1.2.3 <1.3.0`. */

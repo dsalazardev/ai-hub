@@ -3,9 +3,9 @@
 - Proyecto: ai-hub (AI Hub)
 - Preset: generic-ts@1 [base -> generic-ts]
 - Targets: claude, opencode, pi, cursor, copilot
-- Cambio activo: ninguno
-- Fase: idle
-- Tareas: 0/0
+- Cambio activo: speckit-latest
+- Fase: archived
+- Tareas: 17/17
 
 ## Comandos Spec Kit
 
@@ -33,14 +33,15 @@ ai::todo · ai::in-spec · ai::spec-ready · ai::in-dev · ai::in-review · ai::
 
 ## Últimos eventos del ledger
 
-- 2026-10-25T02:31:19.020Z end implementer
-- 2026-10-25T02:34:04.123Z end archive
 - 2026-10-29T02:55:00.000Z end implementer
 - 2026-10-29T03:40:00.000Z end archive
+- 2026-10-29T07:30:00.000Z update apply
+- 2026-10-29T10:45:00.000Z end apply
+- 2026-10-29T11:15:00.000Z end archive
 
 ## Reglas de la sesión
 
 - Escribe el estado en `.planning/`, nunca en el chat.
 - No implementes sin spec aprobada por un humano.
 - Trabaja en rama o worktree; no en una trunk cerrada.
-<!-- context-hash: 6504a1d727b8ecc5792ccd8b91d2b1d68aed7980f93ede399ed725d0d4e6a5fa -->
+<!-- context-hash: 79a335c0410e054e264f453d401e52e28af071c97ff039e3c37bc92dd43151a1 -->

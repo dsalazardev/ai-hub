@@ -77,7 +77,7 @@ export function bindingRule(engine: EngineManifest, tool: ToolId): string {
     return lines.join('\n');
   }
   lines.push(
-    `Spec Kit (\`${engine.speckit.package}\` ${engine.speckit.pin}) ejecuta los ${engine.commands.length} comandos.`,
+    `Spec Kit (\`${engine.speckit.package}\` ${engine.speckit.supported}) ejecuta los ${engine.commands.length} comandos.`,
     'AI-Hub define qué rol invoca cada uno, cómo se interpreta su salida y qué etiqueta se aplica.',
     '',
     '## Comandos',

@@ -7,8 +7,9 @@ import { runCli } from '../src/cli/run.js';
 import type { CliIO } from '../src/cli/types.js';
 import { scanReservedNamespace } from '../src/engine/gates.js';
 import { loadEngine } from '../src/engine/engine.js';
-import { speckitSequence } from '../src/speckit/commands.js';
+import { speckitSequence, uvxPrefix } from '../src/speckit/commands.js';
 import { effectiveSpeckit } from '../src/speckit/settings.js';
+import { satisfiesRange } from '../src/speckit/version.js';
 import { inReservedNamespace, speckitOwnedPaths } from '../src/speckit/state.js';
 import { fakeRunner, type FakeRunner } from './speckit-fake.js';
 
@@ -51,13 +52,31 @@ afterEach(async () => {
   await fs.rm(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 });
 
-describe('installation sequence (3.2)', () => {
-  it('builds the exact uvx argv in order without extension add --force', async () => {
+describe('installation sequence (3.1, 3.2)', () => {
+  it('builds the exact uvx argv in order: three inits, chosen last, no extension add --force', async () => {
     const engine = await loadEngine();
     const settings = effectiveSpeckit({ targets: ['claude', 'opencode', 'pi', 'cursor', 'copilot'] }, engine);
-    const prefix = ['--from', 'specify-cli==1.2.3', '--exclude-newer', engine.speckit.excludeNewer, 'specify'];
+    const prefix = uvxPrefix(settings);
+    const initFor = (script: string): string[] => [
+      ...prefix,
+      'init',
+      '.',
+      '--here',
+      '--force',
+      '--non-interactive',
+      '--integration',
+      'claude',
+      '--script',
+      script,
+      '--extension',
+      'bug',
+      '--extension',
+      'assess',
+    ];
     expect(speckitSequence(settings)).toEqual([
-      [...prefix, 'init', '.', '--here', '--force', '--non-interactive', '--integration', 'claude', '--script', 'sh', '--extension', 'bug', '--extension', 'assess'],
+      initFor('ps'),
+      initFor('py'),
+      initFor('sh'),
       [...prefix, 'integration', 'install', 'opencode', '--script', 'sh'],
       [...prefix, 'integration', 'use', 'opencode'],
       [...prefix, 'integration', 'install', 'pi', '--script', 'sh'],
@@ -69,20 +88,34 @@ describe('installation sequence (3.2)', () => {
     const flat = speckitSequence(settings).map((step) => step.join(' ')).join('\n');
     expect(flat).not.toMatch(/extension add/);
     expect(flat).not.toMatch(/copilot/);
+    expect(flat).not.toMatch(/--exclude-newer/);
+    const psSettings = effectiveSpeckit({ targets: ['claude'], speckit: { script: 'ps' } }, engine);
+    expect(
+      speckitSequence(psSettings)
+        .filter((step) => step.includes('init'))
+        .map((step) => step[step.indexOf('--script') + 1]),
+    ).toEqual(['sh', 'py', 'ps']);
   });
 
   it('leaves bug and assess in the four Spec Kit targets and nothing in Copilot', async () => {
     const result = await cli(['init', '--yes', '--preset-only']);
     expect(result.code, result.out).toBe(0);
-    expect(result.fake.specifyCalls().filter((call) => !call.includes('--version')).map((call) => call.slice(6, 9).join(' '))).toEqual([
-      'init . --here',
-      'integration install opencode',
-      'integration use opencode',
-      'integration install pi',
-      'integration use pi',
-      'integration install cursor-agent',
-      'integration use cursor-agent',
-      'integration use claude',
+    const calls = result.fake.specifyCalls().filter((call) => !call.includes('--version'));
+    const inits = calls.filter((call) => call.includes('init'));
+    expect(inits.map((call) => call[call.indexOf('--script') + 1])).toEqual(['ps', 'py', 'sh']);
+    for (const call of inits) {
+      expect(call[call.indexOf('--integration') + 1]).toBe('claude');
+      expect(call).toContain('--extension');
+    }
+    const afterInit = calls.filter((call) => !call.includes('init'));
+    expect(afterInit.map((call) => call.slice(call.indexOf('specify') + 1, call.indexOf('specify') + 3).join(' '))).toEqual([
+      'integration install',
+      'integration use',
+      'integration install',
+      'integration use',
+      'integration install',
+      'integration use',
+      'integration use',
     ]);
     for (const rel of [
       '.claude/skills/speckit-bug-assess/SKILL.md',
@@ -98,6 +131,30 @@ describe('installation sequence (3.2)', () => {
     const integration = JSON.parse(await read('.specify/integration.json'));
     expect(integration.installed_integrations).toEqual(['claude', 'opencode', 'pi', 'cursor-agent']);
     expect(integration.default_integration).toBe('claude');
+  });
+
+  it('accumulates bash, powershell and python with 6 files each and a 24-file integrity manifest', async () => {
+    const result = await cli(['init', '--yes', '--preset-only']);
+    expect(result.code, result.out).toBe(0);
+    const bases = ['check-prerequisites', 'common', 'create-new-feature', 'resolve-template', 'setup-plan', 'setup-tasks'];
+    for (const [dir, ext] of [
+      ['bash', '.sh'],
+      ['powershell', '.ps1'],
+      ['python', '.py'],
+    ] as const) {
+      const files = (await fs.readdir(path.join(root, '.specify', 'scripts', dir))).sort();
+      expect(files, dir).toEqual(bases.map((base) => `${base}${ext}`));
+    }
+    const manifest = JSON.parse(await read('.specify/integrations/speckit.manifest.json')) as {
+      files: Record<string, string>;
+    };
+    expect(Object.keys(manifest.files)).toHaveLength(24);
+    expect(Object.keys(manifest.files).filter((rel) => rel.startsWith('.specify/scripts/'))).toHaveLength(18);
+    const options = JSON.parse(await read('.specify/init-options.json')) as Record<string, string>;
+    expect(options.script).toBe('sh');
+    expect(satisfiesRange(options.speckit_version, '>=1.2.3 <1.3.0')).toBe(true);
+    // El plan impreso informa la versión resuelta, no el rango (design D5).
+    expect(result.out).toContain(`Spec Kit ${options.speckit_version} · script sh`);
   });
 });
 
@@ -289,7 +346,7 @@ describe('--script flag (3.1, 3.2, 3.3)', () => {
   it('uses the flag over the engine default and persists it in the manifest', async () => {
     const result = await cli(['init', '--yes', '--preset-only', '--script', 'ps']);
     expect(result.code, result.out).toBe(0);
-    const initCall = result.fake.specifyCalls().find((call) => call.includes('init'));
+    const initCall = result.fake.specifyCalls().filter((call) => call.includes('init')).at(-1);
     expect(initCall?.[initCall.indexOf('--script') + 1]).toBe('ps');
     const manifest = parse(await read('manifest.yaml')) as Record<string, unknown>;
     expect((manifest.speckit as Record<string, unknown>).script).toBe('ps');
@@ -299,7 +356,7 @@ describe('--script flag (3.1, 3.2, 3.3)', () => {
     expect((await cli(['init', '--yes', '--preset-only', '--script', 'ps'])).code).toBe(0);
     const second = await cli(['install']);
     expect(second.code, second.out).toBe(0);
-    const initCall = second.fake.specifyCalls().find((call) => call.includes('init'));
+    const initCall = second.fake.specifyCalls().filter((call) => call.includes('init')).at(-1);
     expect(initCall?.[initCall.indexOf('--script') + 1]).toBe('ps');
     const manifest = parse(await read('manifest.yaml')) as Record<string, unknown>;
     expect((manifest.speckit as Record<string, unknown>).script).toBe('ps');
@@ -309,7 +366,7 @@ describe('--script flag (3.1, 3.2, 3.3)', () => {
     expect((await cli(['init', '--yes', '--preset-only', '--script', 'ps'])).code).toBe(0);
     const back = await cli(['install', '--script', 'sh']);
     expect(back.code, back.out).toBe(0);
-    const initCall = back.fake.specifyCalls().find((call) => call.includes('init'));
+    const initCall = back.fake.specifyCalls().filter((call) => call.includes('init')).at(-1);
     expect(initCall?.[initCall.indexOf('--script') + 1]).toBe('sh');
     const manifest = parse(await read('manifest.yaml')) as Record<string, unknown>;
     expect((manifest.speckit as Record<string, unknown>).script).toBe('sh');
@@ -337,7 +394,7 @@ describe('--script flag (3.1, 3.2, 3.3)', () => {
 });
 
 describe('script change reinstalls Spec Kit (3.4)', () => {
-  it('install --script ps over an sh installation rewrites init-options and the scripts dir', async () => {
+  it('install --script ps over an sh installation rewrites init-options and keeps every scripts dir', async () => {
     expect((await cli(['init', '--yes', '--preset-only'])).code).toBe(0);
     expect((JSON.parse(await read('.specify/init-options.json')) as Record<string, unknown>).script).toBe('sh');
     expect(await present('.specify/scripts/bash/check-prerequisites.sh')).toBe(true);
@@ -345,7 +402,8 @@ describe('script change reinstalls Spec Kit (3.4)', () => {
     expect(result.code, result.out).toBe(0);
     expect((JSON.parse(await read('.specify/init-options.json')) as Record<string, unknown>).script).toBe('ps');
     expect(await present('.specify/scripts/powershell/check-prerequisites.ps1')).toBe(true);
-    expect(await present('.specify/scripts/bash/check-prerequisites.sh')).toBe(false);
+    // Los directorios se acumulan (evidencia medida): bash sigue en disco aunque el elegido sea ps.
+    expect(await present('.specify/scripts/bash/check-prerequisites.sh')).toBe(true);
     const doctor = await cli(['doctor']);
     expect(doctor.code, doctor.out).toBe(0);
   });

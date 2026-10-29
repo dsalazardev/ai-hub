@@ -6,6 +6,7 @@ import { readLock } from '../sync/lock.js';
 import { probeShell, type ShellProbe } from './commands.js';
 import type { ProcessRunner } from './runner.js';
 import { effectiveSpeckit } from './settings.js';
+import { satisfiesRange } from './version.js';
 import {
   checkExtensions,
   checkIntegrations,
@@ -90,7 +91,7 @@ export async function speckitDoctorChecks(
     }
     return checks;
   }
-  add('speckit:managed', true, `gestionado: ${settings.package} ${settings.version} vía uvx`);
+  add('speckit:managed', true, `gestionado: ${settings.package} ${settings.supported} vía uvx`);
 
   const state = await readSpeckitState(root);
   add(
@@ -99,13 +100,15 @@ export async function speckitDoctorChecks(
     state.initOptions !== null ? '.specify/init-options.json presente' : 'falta .specify/init-options.json; ejecuta ai-hub install',
   );
 
+  // speckit:version (design D4): la instalada debe caer dentro del rango soportado.
   const installed = state.initOptions?.speckit_version;
+  const inRange = installed !== undefined && satisfiesRange(installed, settings.supported);
   add(
     'speckit:version',
-    installed === settings.version,
-    installed === settings.version
-      ? `${installed}`
-      : `instalada ${installed ?? '(ninguna)'}; se esperaba ${settings.version}; ejecuta ai-hub install`,
+    inRange,
+    inRange
+      ? `${installed} dentro del rango ${settings.supported}`
+      : `instalada ${installed ?? '(ninguna)'}; se admite el rango ${settings.supported}; ejecuta ai-hub install`,
   );
 
   // speckit:script (design D7): el manifest y la instalación deben declarar el mismo script.

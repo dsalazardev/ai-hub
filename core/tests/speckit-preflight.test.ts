@@ -6,6 +6,7 @@ import { parse } from 'yaml';
 import { runCli } from '../src/cli/run.js';
 import { loadEngine } from '../src/engine/engine.js';
 import type { CliIO } from '../src/cli/types.js';
+import { satisfiesRange } from '../src/speckit/version.js';
 import { fakeRunner, type FakeOptions, type FakeRunner } from './speckit-fake.js';
 
 let root: string;
@@ -40,43 +41,60 @@ afterEach(async () => {
   await fs.rm(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 });
 
-describe('plan (2.2)', () => {
-  it('hashes the speckit intent and reports the environment outside the hash', async () => {
+describe('plan (2.2, 4.1)', () => {
+  it('hashes the resolved version, names the range when nothing resolves, and keeps the environment outside the hash', async () => {
+    const engine = await loadEngine();
     const withTools = JSON.parse((await cli(['init', '--dry-run'])).out);
     const without = JSON.parse(
       (await cli(['init', '--dry-run'], fakeRunner({ missing: ['uvx', 'bash'] }))).out,
     );
-    expect(withTools.speckit).toEqual({
+    expect(withTools.speckit).toMatchObject({
       managed: true,
       package: 'specify-cli',
-      version: '1.2.3',
-      excludeNewer: (await loadEngine()).speckit.excludeNewer,
+      supported: '>=1.2.3 <1.3.0',
       script: 'sh',
       defaultIntegration: 'claude',
       integrations: ['claude', 'opencode', 'pi', 'cursor-agent'],
       extensions: { assess: '1.0.1', bug: '1.0.1' },
     });
+    expect(satisfiesRange(withTools.speckit.version, engine.speckit.supported)).toBe(true);
     expect(withTools.environment).toMatchObject({ uvx: 'found', shell: 'found' });
-    expect(without.environment).toMatchObject({ uvx: 'missing', shell: 'missing' });
-    expect(withTools.hash).toBe(without.hash);
+    expect(withTools.environment.version).toBe(withTools.speckit.version);
+    // Sin herramientas no hay resolución: el plan nombra el rango y el hash no depende de la máquina.
+    expect(without.speckit.version).toBeNull();
+    expect(without.speckit.supported).toBe('>=1.2.3 <1.3.0');
+    expect(without.environment).toMatchObject({ uvx: 'missing', shell: 'missing', version: null });
     expect(await entries()).toEqual(['package.json']);
   });
 
-  it('changes the hash when script or targets change', async () => {
-    const base = JSON.parse((await cli(['init', '--dry-run'])).out).hash;
+  it('ignores the shell in the hash but follows the resolved version', async () => {
+    const withBash = JSON.parse((await cli(['init', '--dry-run'])).out);
+    const withoutBash = JSON.parse((await cli(['init', '--dry-run'], fakeRunner({ missing: ['bash'] }))).out);
+    expect(withoutBash.hash).toBe(withBash.hash);
+    const unresolved = JSON.parse((await cli(['init', '--dry-run'], fakeRunner({ missing: ['uvx'] }))).out);
+    const unresolvedAgain = JSON.parse((await cli(['init', '--dry-run'], fakeRunner({ missing: ['uvx'] }))).out);
+    expect(unresolved.hash).toBe(unresolvedAgain.hash);
+    expect(unresolved.hash).not.toBe(withBash.hash);
+  });
+
+  it('changes the hash when the resolved version, script or targets change', async () => {
+    const base = JSON.parse((await cli(['init', '--dry-run'])).out);
     const fewer = JSON.parse((await cli(['init', '--dry-run', '--targets', 'claude,pi'])).out);
-    expect(fewer.hash).not.toBe(base);
+    expect(fewer.hash).not.toBe(base.hash);
     expect(fewer.speckit.integrations).toEqual(['claude', 'pi']);
     const noSpeckit = JSON.parse((await cli(['init', '--dry-run', '--no-speckit'])).out);
-    expect(noSpeckit.hash).not.toBe(base);
+    expect(noSpeckit.hash).not.toBe(base.hash);
     expect(noSpeckit.speckit.managed).toBe(false);
+    const otherVersion = JSON.parse((await cli(['init', '--dry-run'], fakeRunner({ resolveVersion: '1.2.4' }))).out);
+    expect(otherVersion.speckit.version).not.toBe(base.speckit.version);
+    expect(otherVersion.hash).not.toBe(base.hash);
   });
 });
 
 describe('preflight (2.3, 2.4)', () => {
   const failing: Array<[string, FakeOptions, RegExp]> = [
     ['missing uv', { missing: ['uvx'] }, /uv no está disponible[\s\S]*--no-speckit/],
-    ['offline without cache', { offline: true }, /no se pudo resolver specify-cli==1\.2\.3[\s\S]*sin red/],
+    ['offline without cache', { offline: true }, /no se pudo resolver el rango soportado de specify-cli \(>=1\.2\.3 <1\.3\.0\)[\s\S]*sin red/],
     ['missing bash', { missing: ['bash'] }, /probados: bash[\s\S]*Git for Windows[\s\S]*ai-hub init --script ps/],
     ['broken bash launcher', { brokenBash: true }, /probados: bash/],
   ];

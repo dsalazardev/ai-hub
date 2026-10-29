@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Ajv } from 'ajv';
 import { parse } from 'yaml';
-import { satisfiesRange } from '../speckit/version.js';
+import { rangeBounds } from '../speckit/version.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ENGINE_PATH = path.join(__dirname, '..', '..', 'engine', 'engine.yaml');
@@ -40,12 +40,11 @@ export interface EngineCommand {
 
 export type SpeckitScript = 'sh' | 'ps';
 
-/** Dependencia de Spec Kit fijada por el paquete; un proyecto solo puede restringirla. */
+/** Dependencia de Spec Kit declarada por el paquete; un proyecto solo puede restringirla. */
 export interface EngineSpeckit {
   package: string;
-  pin: string;
+  /** Rango soportado; única fuente de versión: la resolución toma la última estable dentro de él. */
   supported: string;
-  excludeNewer: string;
   script: SpeckitScript;
   extensions: Record<string, string>;
 }
@@ -197,12 +196,21 @@ export function crossValidate(engine: EngineManifest): string[] {
   return errors;
 }
 
+/** Campos que el bloque `speckit` del motor admite; cualquier otro (un pin exacto, una fecha de resolución) está retirado o es desconocido. */
+const ENGINE_SPECKIT_FIELDS = ['package', 'supported', 'script', 'extensions'] as const;
+
 function validateEngineSpeckit(speckit: EngineSpeckit | undefined): string[] {
   if (speckit === undefined) {
     return ['falta el bloque speckit'];
   }
   const errors: string[] = [];
-  for (const field of ['package', 'pin', 'supported', 'excludeNewer', 'script'] as const) {
+  const record = speckit as unknown as Record<string, unknown>;
+  for (const field of Object.keys(record)) {
+    if (!(ENGINE_SPECKIT_FIELDS as readonly string[]).includes(field)) {
+      errors.push(`speckit.${field} está retirado o no pertenece al motor; la versión se resuelve desde speckit.supported`);
+    }
+  }
+  for (const field of ['package', 'supported', 'script'] as const) {
     if (typeof speckit[field] !== 'string' || speckit[field] === '') {
       errors.push(`falta speckit.${field}`);
     }
@@ -212,12 +220,8 @@ function validateEngineSpeckit(speckit: EngineSpeckit | undefined): string[] {
       errors.push(`falta speckit.extensions.${extension}`);
     }
   }
-  if (
-    typeof speckit.pin === 'string' &&
-    typeof speckit.supported === 'string' &&
-    !satisfiesRange(speckit.pin, speckit.supported)
-  ) {
-    errors.push(`speckit.pin ${speckit.pin} está fuera de speckit.supported "${speckit.supported}"`);
+  if (typeof speckit.supported === 'string' && rangeBounds(speckit.supported) === null) {
+    errors.push(`speckit.supported "${speckit.supported}" no es un rango válido (se esperaba ">=x.y.z <a.b.c")`);
   }
   return errors;
 }

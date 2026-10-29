@@ -97,9 +97,7 @@ describe('engine invariants', () => {
       targets: ['claude'],
       speckit: {
         package: 'specify-cli',
-        pin: '1.2.3',
         supported: '>=1.2.3 <1.3.0',
-        excludeNewer: '2000-01-01',
         script: 'sh',
         extensions: { assess: '1.0.1', bug: '1.0.1' },
       },

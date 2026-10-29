@@ -8,6 +8,7 @@ import { loadEngine } from '../src/engine/engine.js';
 import { probeShell, uvxPrefix } from '../src/speckit/commands.js';
 import { defaultRunner } from '../src/speckit/runner.js';
 import { effectiveSpeckit } from '../src/speckit/settings.js';
+import { parseSpecifyVersion, satisfiesRange } from '../src/speckit/version.js';
 import { gitUnavailable, runGit } from './git.js';
 
 /**
@@ -75,7 +76,13 @@ describe('real runner (2.1)', () => {
     const settings = effectiveSpeckit({ targets: ['claude'] }, engine);
     const version = await defaultRunner('uvx', [...uvxPrefix(settings), '--version'], { cwd: root });
     expect(version.status, version.stderr).toBe(0);
-    expect(version.stdout).toContain('1.2.3');
+    // Dinámica: la versión resuelta cambia con PyPI; el contrato es que caiga dentro del rango soportado.
+    const resolved = parseSpecifyVersion(version.stdout);
+    expect(resolved, `stdout del sondeo sin versión estable: ${version.stdout}`).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(
+      satisfiesRange(resolved!, engine.speckit.supported),
+      `${resolved} debe caer dentro de ${engine.speckit.supported}`,
+    ).toBe(true);
     const shell = await probeShell(settings, defaultRunner, root);
     expect(shell.ok).toBe(true);
     expect(shell.tried[0]).toBe('bash');
@@ -93,7 +100,10 @@ describe('real preflight (2.3)', () => {
     try {
       const result = await cli(['init', '--yes', '--preset-only']);
       expect(result.code).toBe(2);
-      expect(result.out).toContain('no se pudo resolver specify-cli==1.2.3');
+      const engine = await loadEngine();
+      expect(result.out).toContain(
+        `no se pudo resolver el rango soportado de specify-cli (${engine.speckit.supported}) con uvx`,
+      );
       expect((await fs.readdir(root)).sort()).toEqual(['package.json']);
     } finally {
       await fs.rm(empty, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
@@ -107,13 +117,24 @@ async function readText(rel: string): Promise<string> {
 
 describe('real installation (3.2, 4.4)', () => {
   it(
-    'installs Spec Kit 1.2.3 in four targets, none in Copilot, and survives a Spec Kit upgrade without drift',
+    'installs the resolved Spec Kit version in four targets, none in Copilot, and survives a Spec Kit upgrade without drift',
     { timeout: 300_000 },
     async () => {
+      // La versión se captura del sondeo ANTES de instalar: init-options debe registrar la misma.
+      const engine = await loadEngine();
+      const settings = effectiveSpeckit({ targets: ['claude'] }, engine);
+      const probe = await defaultRunner('uvx', [...uvxPrefix(settings), '--version'], { cwd: root });
+      expect(probe.status, probe.stderr).toBe(0);
+      const resolved = parseSpecifyVersion(probe.stdout);
+      expect(resolved, `stdout del sondeo sin versión estable: ${probe.stdout}`).toMatch(/^\d+\.\d+\.\d+$/);
+      expect(
+        satisfiesRange(resolved!, engine.speckit.supported),
+        `${resolved} debe caer dentro de ${engine.speckit.supported}`,
+      ).toBe(true);
       const result = await cli(['init', '--yes', '--preset-only']);
       expect(result.code, result.out).toBe(0);
       const options = JSON.parse(await readText('.specify/init-options.json'));
-      expect(options).toMatchObject({ speckit_version: '1.2.3', script: 'sh' });
+      expect(options).toMatchObject({ speckit_version: resolved, script: 'sh' });
       const integration = JSON.parse(await readText('.specify/integration.json'));
       expect(integration.installed_integrations).toEqual(['claude', 'opencode', 'pi', 'cursor-agent']);
       expect(integration.default_integration).toBe('claude');
@@ -132,8 +153,6 @@ describe('real installation (3.2, 4.4)', () => {
       const github = await fs.readdir(path.join(root, '.github', 'skills')).catch(() => []);
       expect(github.filter((name) => name.startsWith('speckit'))).toEqual([]);
 
-      const engine = await loadEngine();
-      const settings = effectiveSpeckit({ targets: ['claude'] }, engine);
       const upgrade = await defaultRunner('uvx', [...uvxPrefix(settings), 'integration', 'upgrade', 'claude'], {
         cwd: root,
       });
