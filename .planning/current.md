@@ -1,52 +1,36 @@
-# Estado de sesión — install-completo
+# Estado de sesión — shell-resolution
 
-- Fecha: 2026-10-26
-- Cambio: `install-completo` **archivado**
-- Fase: archivado
-- Progreso tracked: **26/26 tareas** y **4/4 artefactos**
+- Fecha: 2026-10-28
+- Cambio activo: `shell-resolution`
+- Fase: implementado (11/11 tareas; pendiente de revisión humana y archivo)
 - Repo: `C:\Users\USUARIO\OneDrive\Escritorio\ARCHIVOS\DESARROLLO\ai-hub`
-- Archivo: `openspec/changes/archive/2026-10-26-install-completo/`
+- Anterior: `install-completo` archivado en `openspec/changes/archive/2026-10-26-install-completo/`
 
-## Resultado
+## Resultado de la implementación
 
-La instalación completa está implementada y verificada:
+Aplicado con `/opsx-apply` en 4 lotes, con sondas rojas vistas antes de cada cambio (evidencia en `.planning/impl_shell.md`):
 
-- `init --yes` entrega 191 skills, 35 agentes, 6 reglas universales, 5 reglas materializadas en `.ai-hub/rules` y 4.662 destinos.
-- `--preset-only` entrega 0 skills de proyecto, 6 agentes, 2 reglas y 120 destinos.
-- `--exclude rule:skill-quality` entrega catálogo completo, 2 reglas y 4.642 destinos; skills/agents permanecen `full` y solo rules es `custom`.
-- `angular-express` full entrega 9 reglas y 4.677 destinos sin duplicar `core`.
-- El motor conserva 4.665 entradas de lock; `sync --check-lock` reporta “no aplica” en el checkout.
-- `doctor` verde en motor y en instalaciones full/preset-only/custom; `drift` y `sync --check-lock` verdes en los tres consumidores.
+- `shellCandidates` + `gitBashCandidates`: PATH primero, luego rutas estándar de Git for Windows en `win32`; `probeShell` devuelve `tried` y filtra rutas inexistentes.
+- Preflight reescrito: comandos probados, Git for Windows, bandera exacta (`ai-hub init|install --script ps`); sin `manifest.yaml`.
+- `doctor`: nuevo check `speckit:script` (doceavo) detecta desvío manifest/instalación; `speckit:shell` nombra la ruta absoluta fuera del PATH; fila nueva en `core/README.md`.
+- `--script <sh|ps>` en `init`/`install`: validación temprana (exit 2), precedencia bandera > manifest > motor, persistencia en `speckit.script`, hash del plan sigue a la bandera, cambio de script reinstala Spec Kit.
+- Sonda manual en consumidor temporal: `shellCommand` pasa de `bash` (missing) a `C:\Program Files\Git\bin\bash.exe` (found).
+- Release 0.3.1: `core/package.json` + lock + `CHANGELOG.md` (cifras medidas sin cambio, `excludeNewer` quieto).
 
-## Evidencia
+## Verificación final
 
-- Suite: 3 corridas consecutivas exit 0 (77,8 / 73,0 / 72,1 s; 187 tests + 1 skip).
-- `prepublishOnly`: exit 0; build + manifest:build + suite.
-- Tarball: 1.296 entradas y las 4 rutas `rules/skill-quality/*.md`.
-- Medición full: 5.767 archivos, 46.402.682 B, 21,5 s cold / 6,2 s warm.
-- CI local: 115,3 s; `timeout-minutes: 30`.
-- `openspec validate "install-completo" --strict`: válido.
-- `git add -n -f openspec/changes/install-completo`: lista proposal, design, tasks, `.openspec.yaml` y los 4 specs; sin `-f` sale 1 por `.gitignore`.
+- `npm run build`: exit 0. `npm run ai:typecheck`: exit 0.
+- `npm test` (core): 27 archivos, 285 pasados, 1 omitido, exit 0.
+- `doctor` en el taller: sano (11 `speckit:*` en "no aplica").
 
 ## Pendiente
 
-1. Revisión humana del diff y del sello 0.2.0.
-2. Publicar 0.2.0 solo tras CI y prueba en copia temporal; no se publica en esta sesión.
-
-El cambio ya está archivado; los main specs de `agent-guardrails`, `dev-cli`, `harness-memory` y `preset-system` incluyen los 13 requisitos nuevos y los 2 modificados.
-
-## Archivos clave
-
-- `core/src/catalog.ts`, `core/src/cli/onboarding.ts`, `core/src/cli/maintenance.ts`, `core/src/cli/doctor.ts`.
-- `core/src/engine/gates.ts`, `core/src/presets/materialize.ts`, `core/src/sync/sync.ts`.
-- `core/vitest.config.ts`, `core/tests/install-generic.test.ts`, `core/tests/install-angular.test.ts`, `core/tests/selection.test.ts`.
-- `core/rules/skill-quality/`, `core/scripts/measure-install.mjs`.
-- `README.md`, `AGENTS.md`, `CHANGELOG.md`, `manifest.yaml`.
+1. Revisión humana del diff completo (todo sin commit).
+2. Publicar 0.3.1 fuera de esta sesión.
+3. Archivar con `/opsx-archive` cuando la revisión lo apruebe.
 
 ## Comando para retomar
 
 ```powershell
-npm run ai:build
-npm run ai:test
-openspec instructions apply --change "install-completo" --json
+openspec instructions apply --change "shell-resolution" --json
 ```

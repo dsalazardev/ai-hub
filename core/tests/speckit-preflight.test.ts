@@ -77,8 +77,8 @@ describe('preflight (2.3, 2.4)', () => {
   const failing: Array<[string, FakeOptions, RegExp]> = [
     ['missing uv', { missing: ['uvx'] }, /uv no está disponible[\s\S]*--no-speckit/],
     ['offline without cache', { offline: true }, /no se pudo resolver specify-cli==1\.2\.3[\s\S]*sin red/],
-    ['missing bash', { missing: ['bash'] }, /bash no está disponible[\s\S]*Git Bash[\s\S]*speckit\.script: ps/],
-    ['broken bash launcher', { brokenBash: true }, /bash no está disponible/],
+    ['missing bash', { missing: ['bash'] }, /probados: bash[\s\S]*Git for Windows[\s\S]*ai-hub init --script ps/],
+    ['broken bash launcher', { brokenBash: true }, /probados: bash/],
   ];
   for (const [name, options, message] of failing) {
     it(`exits 2 without writing: ${name}`, async () => {
@@ -100,6 +100,23 @@ describe('preflight (2.3, 2.4)', () => {
     const result = await cli(['install'], fakeRunner({ missing: ['bash'] }));
     expect(result.fake.calls.some((call) => call[0] === 'pwsh')).toBe(true);
     expect(result.fake.calls.some((call) => call[0] === 'bash')).toBe(false);
+  });
+
+  it('offers the exact flag and never a missing manifest when no shell runs', async () => {
+    const result = await cli(['init', '--yes', '--preset-only'], fakeRunner({ missing: ['bash'] }));
+    expect(result.code).toBe(2);
+    expect(result.out).toMatch(/probados: bash/);
+    expect(result.out).toContain('Git for Windows');
+    expect(result.out).toContain('ai-hub init --script ps');
+    expect(result.out).not.toContain('manifest.yaml');
+    expect(await entries()).toEqual(['package.json']);
+  });
+
+  it('offers ai-hub install --script ps when the preflight comes from install', async () => {
+    await cli(['init', '--yes', '--preset-only', '--no-speckit']);
+    const result = await cli(['install'], fakeRunner({ missing: ['bash'] }));
+    expect(result.code).toBe(2);
+    expect(result.out).toContain('ai-hub install --script ps');
   });
 });
 

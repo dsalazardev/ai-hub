@@ -62,7 +62,7 @@ describe('healthy installation', () => {
     const result = await doctor();
     expect(result.out).not.toContain('[FAIL]');
     expect(result.code).toBe(0);
-    for (const id of ['managed', 'installed', 'version', 'shell', 'integrations', 'extensions', 'integrity', 'collision', 'constitution']) {
+    for (const id of ['managed', 'installed', 'version', 'script', 'shell', 'integrations', 'extensions', 'integrity', 'collision', 'constitution']) {
       expect(result.out).toContain(`speckit:${id}:`);
     }
     expect(result.out).toContain('copilot: sin Spec Kit');
@@ -102,6 +102,34 @@ describe('shell (7.2)', () => {
   it('fails without bash and with a broken bash launcher', async () => {
     expect(line((await doctor({ missing: ['bash'] })).out, 'speckit:shell')).toMatch(/\[FAIL\].*bash/);
     expect(line((await doctor({ brokenBash: true })).out, 'speckit:shell')).toMatch(/\[FAIL\]/);
+  });
+
+  it('names the absolute shell resolved outside the PATH', async () => {
+    const { speckitShellDetail } = await import('../src/speckit/doctor.js');
+    const gitBash = 'C:\\Program Files\\Git\\bin\\bash.exe';
+    const absolute = speckitShellDetail({ ok: true, command: gitBash, tried: ['bash', gitBash] }, 'sh');
+    expect(absolute).toContain('resuelto fuera del PATH');
+    expect(absolute).toContain(gitBash);
+    const fromPath = speckitShellDetail({ ok: true, command: 'bash', tried: ['bash'] }, 'sh');
+    expect(fromPath).toBe('bash ejecuta los scripts sh');
+  });
+});
+
+describe('script drift (speckit:script)', () => {
+  it('fails naming both values when the manifest script differs from the installed one', async () => {
+    const manifestFile = path.join(root, 'manifest.yaml');
+    const manifest = parse(await fs.readFile(manifestFile, 'utf8')) as Record<string, unknown>;
+    manifest.speckit = { managed: true, script: 'ps' };
+    await fs.writeFile(manifestFile, stringify(manifest));
+    const result = await doctor();
+    expect(result.code).toBe(1);
+    expect(line(result.out, 'speckit:script')).toMatch(/\[FAIL\].*ps.*sh/);
+  });
+
+  it('passes when manifest and installation agree', async () => {
+    const result = await doctor();
+    expect(result.code).toBe(0);
+    expect(line(result.out, 'speckit:script')).toMatch(/\[OK\]/);
   });
 });
 

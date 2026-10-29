@@ -510,3 +510,24 @@ LF, sin BOM, `ruta + \n + bytes` por archivo.
 - Fuente en conflicto: diagrama Lucid "AI-HUB" (id 939ef9b0-8a9c-425e-8a1a-7529e9232550, v15872) nombra `.specify/constitution.md`.
 - Verificado: Spec Kit 1.2.3 escribe la constitución en `.specify/memory/constitution.md` (instantánea `core/tests/fixtures/speckit-1.2.3/dot.specify/memory/`).
 - Resolución por precedencia (AGENTS.md §1): `AGENTS.md` §3 y la regla `ai-hub-speckit` usan `.specify/memory/constitution.md`. El diagrama queda pendiente de corrección por su autor; no se resuelve en silencio.
+
+## 2026-10-28 — shell-resolution: sonda manual 4.1 (resolución de shell en Windows)
+
+Máquina: Windows con `bash` del PATH apuntando al lanzador de WSL sin distribución (`C:\Users\USUARIO\AppData\Local\Microsoft\WindowsApps\bash.exe`, falla con `execvpe`) y Git for Windows en `C:\Program Files\Git\bin\bash.exe`.
+
+Consumidor temporal: `C:\Users\USUARIO\AppData\Local\Temp\opencode\ai-shell-probe` (sólo `package.json`), comando `node core/dist/bin/ai-hub.js init --dry-run`.
+
+| Momento | `environment.shell` | `environment.shellCommand` |
+|---|---|---|
+| ANTES (dist 0.3.0 sin candidatos) | `missing` | `bash` |
+| DESPUÉS (dist reconstruido con `shellCandidates` + `gitBashCandidates`) | `found` | `C:\Program Files\Git\bin\bash.exe` |
+
+El probe probó `bash` del PATH (falla) y resolvió la primera ruta estándar de Git for Windows; `exit=0` en ambas corridas. Evidencia de las sondas rojas de los lotes 1-3 en `.planning/impl_shell.md`.
+
+## 2026-10-28 — shell-resolution archivado
+
+- Sincronizados 2 requisitos modificados (preflight con comandos probados y bandera exacta; doctor con doce checks y `speckit:script`) y 2 añadidos (`Spec Kit shell resolution is autonomous`, `Script type is selectable at init and install`) en `openspec/specs/dev-cli/spec.md`.
+- Cambio movido a `openspec/changes/archive/2026-10-28-shell-resolution/`.
+- `openspec validate --specs` y `--all`: 5 specs + 1 cambio, 0 fallos (warnings preexistentes de longitud de descripción).
+- `openspec list --json`: sin cambios activos.
+- Release 0.3.1 sigue sin publicar y sin commit; pendiente de revisión humana del diff.

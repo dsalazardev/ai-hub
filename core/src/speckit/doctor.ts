@@ -1,8 +1,9 @@
 import { spawnSync } from 'node:child_process';
-import type { EngineManifest } from '../engine/engine.js';
+import path from 'node:path';
+import type { EngineManifest, SpeckitScript } from '../engine/engine.js';
 import type { ProjectManifest } from '../manifest/manifest.js';
 import { readLock } from '../sync/lock.js';
-import { probeShell } from './commands.js';
+import { probeShell, type ShellProbe } from './commands.js';
 import type { ProcessRunner } from './runner.js';
 import { effectiveSpeckit } from './settings.js';
 import {
@@ -26,6 +27,7 @@ export const SPECKIT_CHECK_IDS = [
   'speckit:managed',
   'speckit:installed',
   'speckit:version',
+  'speckit:script',
   'speckit:shell',
   'speckit:integrations',
   'speckit:extensions',
@@ -40,6 +42,18 @@ const VERSIONED_STATE = ['.specify/memory/constitution.md', '.specify/init-optio
 
 function list(items: string[], limit = 5): string {
   return items.slice(0, limit).join('; ') + (items.length > limit ? ` (+${items.length - limit})` : '');
+}
+
+/** Detalle del check `speckit:shell`: distingue el shell resuelto fuera del PATH del que está en el PATH. */
+export function speckitShellDetail(probe: ShellProbe, script: SpeckitScript): string {
+  if (probe.ok) {
+    return path.isAbsolute(probe.command)
+      ? `${probe.command} (resuelto fuera del PATH) ejecuta los scripts ${script}`
+      : `${probe.command} ejecuta los scripts ${script}`;
+  }
+  return script === 'ps'
+    ? `PowerShell no ejecuta (probados: ${probe.tried.join(', ')}); instala PowerShell, o ejecuta ai-hub install --script sh`
+    : `bash no está disponible o no ejecuta (probados: ${probe.tried.join(', ')}); en Windows instala Git for Windows, o ejecuta ai-hub install --script ps`;
 }
 
 function gitIgnored(root: string, rel: string): boolean | null {
@@ -94,16 +108,20 @@ export async function speckitDoctorChecks(
       : `instalada ${installed ?? '(ninguna)'}; se esperaba ${settings.version}; ejecuta ai-hub install`,
   );
 
-  const shell = await probeShell(settings, runner, root);
+  // speckit:script (design D7): el manifest y la instalación deben declarar el mismo script.
+  const installedScript = state.initOptions?.script ?? null;
   add(
-    'speckit:shell',
-    shell.ok,
-    shell.ok
-      ? `${shell.command} ejecuta los scripts ${settings.script}`
-      : settings.script === 'ps'
-        ? 'PowerShell (pwsh o powershell) no está disponible para los scripts ps'
-        : 'bash no está disponible o no ejecuta; en Windows instala Git Bash, o declara speckit.script: ps',
+    'speckit:script',
+    state.initOptions === null || installedScript === settings.script,
+    state.initOptions === null
+      ? 'no aplica: falta .specify/init-options.json'
+      : installedScript === settings.script
+        ? `manifest e instalación coinciden: ${settings.script}`
+        : `desvío: manifest ${settings.script}, instalación ${installedScript}; ejecuta ai-hub install`,
   );
+
+  const shell = await probeShell(settings, runner, root);
+  add('speckit:shell', shell.ok, speckitShellDetail(shell, settings.script));
 
   const integrations = checkIntegrations(settings, state);
   add(

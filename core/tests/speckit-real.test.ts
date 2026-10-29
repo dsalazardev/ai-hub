@@ -77,7 +77,10 @@ describe('real runner (2.1)', () => {
     expect(version.status, version.stderr).toBe(0);
     expect(version.stdout).toContain('1.2.3');
     const shell = await probeShell(settings, defaultRunner, root);
-    expect(shell).toEqual({ ok: true, command: 'bash' });
+    expect(shell.ok).toBe(true);
+    expect(shell.tried[0]).toBe('bash');
+    // En Windows con el bash del PATH roto (stub de WSL) resuelve la ruta absoluta de Git Bash.
+    expect(shell.command === 'bash' || shell.command.endsWith('bash.exe')).toBe(true);
   });
 });
 
@@ -276,7 +279,8 @@ describe('failure matrix (10.2)', () => {
     };
     const noBash = await run(['init', '--yes', '--preset-only'], fakeRunner({ missing: ['bash'] }));
     expect(noBash.code).toBe(2);
-    expect(noBash.out).toContain('bash no está disponible');
+    expect(noBash.out).toContain('ningún bash ejecuta');
+    expect(noBash.out).toContain('ai-hub init --script ps');
     expect((await fs.readdir(root)).sort()).toEqual(['package.json']);
 
     expect((await run(['init', '--yes', '--preset-only', '--no-speckit'])).code).toBe(0);

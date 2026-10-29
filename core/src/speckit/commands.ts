@@ -1,3 +1,5 @@
+import path from 'node:path';
+import { existsSync } from 'node:fs';
 import { TARGETS } from '../sync/targets.js';
 import { succeeded, type ProcessRunner } from './runner.js';
 import type { SpeckitSettings } from './settings.js';
@@ -53,13 +55,64 @@ export interface SpeckitEnvironment {
   shellCommand: string;
 }
 
-function shellCandidates(settings: SpeckitSettings): Array<{ command: string; args: string[] }> {
-  return settings.script === 'ps'
-    ? [
-        { command: 'pwsh', args: ['-NoProfile', '-Command', 'echo ok'] },
-        { command: 'powershell', args: ['-NoProfile', '-Command', 'echo ok'] },
-      ]
-    : [{ command: 'bash', args: ['-c', 'echo ok'] }];
+export interface ShellCandidate {
+  command: string;
+  args: string[];
+}
+
+/**
+ * Rutas estándar de Git for Windows (design D1), construidas desde el entorno del proceso;
+ * una variable ausente omite sus candidatos. Nunca hay rutas de usuario hardcodeadas.
+ */
+export function gitBashCandidates(env: NodeJS.ProcessEnv = process.env): string[] {
+  const candidates: string[] = [];
+  const programFiles = env['ProgramFiles'];
+  const programFilesX86 = env['ProgramFiles(x86)'];
+  const localAppData = env['LOCALAPPDATA'];
+  if (programFiles !== undefined) {
+    candidates.push(path.join(programFiles, 'Git', 'bin', 'bash.exe'));
+  }
+  if (programFilesX86 !== undefined) {
+    candidates.push(path.join(programFilesX86, 'Git', 'bin', 'bash.exe'));
+  }
+  if (localAppData !== undefined) {
+    candidates.push(path.join(localAppData, 'Programs', 'Git', 'bin', 'bash.exe'));
+  }
+  if (programFiles !== undefined) {
+    candidates.push(path.join(programFiles, 'Git', 'usr', 'bin', 'bash.exe'));
+  }
+  return candidates;
+}
+
+/**
+ * Candidatos del script declarado, en orden de preferencia. Para `sh` en Windows va primero el
+ * `bash` del PATH y después las rutas estándar de Git for Windows; en Linux y macOS sólo el del PATH.
+ */
+export function shellCandidates(
+  settings: SpeckitSettings,
+  platform: NodeJS.Platform = process.platform,
+  env: NodeJS.ProcessEnv = process.env,
+): ShellCandidate[] {
+  if (settings.script === 'ps') {
+    return [
+      { command: 'pwsh', args: ['-NoProfile', '-Command', 'echo ok'] },
+      { command: 'powershell', args: ['-NoProfile', '-Command', 'echo ok'] },
+    ];
+  }
+  if (platform !== 'win32') {
+    return [{ command: 'bash', args: ['-c', 'echo ok'] }];
+  }
+  return [
+    { command: 'bash', args: ['-c', 'echo ok'] },
+    ...gitBashCandidates(env).map((command) => ({ command, args: ['-c', 'echo ok'] })),
+  ];
+}
+
+export interface ShellProbe {
+  ok: boolean;
+  command: string;
+  /** Comandos probados en orden; las rutas absolutas inexistentes no se prueban. */
+  tried: string[];
 }
 
 /**
@@ -70,15 +123,21 @@ export async function probeShell(
   settings: SpeckitSettings,
   runner: ProcessRunner,
   cwd: string,
-): Promise<{ ok: boolean; command: string }> {
-  const candidates = shellCandidates(settings);
+  platform: NodeJS.Platform = process.platform,
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<ShellProbe> {
+  const candidates = shellCandidates(settings, platform, env).filter(
+    (candidate) => !path.isAbsolute(candidate.command) || existsSync(candidate.command),
+  );
+  const tried: string[] = [];
   for (const candidate of candidates) {
+    tried.push(candidate.command);
     const result = await runner(candidate.command, candidate.args, { cwd, timeoutMs: 30_000 });
     if (succeeded(result) && result.stdout.trim() === 'ok') {
-      return { ok: true, command: candidate.command };
+      return { ok: true, command: candidate.command, tried };
     }
   }
-  return { ok: false, command: candidates[0].command };
+  return { ok: false, command: candidates[0]?.command ?? 'bash', tried };
 }
 
 async function uvxAvailable(runner: ProcessRunner, cwd: string): Promise<boolean> {
@@ -114,11 +173,13 @@ export interface PreflightResult {
 /**
  * Preflight (design D3, paso 6). Se ejecuta antes de escribir cualquier archivo.
  * Comprueba uv, la resolución de la versión fijada (caché o red) y el shell del script declarado.
+ * `command` nombra la bandera exacta en el mensaje; nunca se remite a un manifest que no existe.
  */
 export async function speckitPreflight(
   settings: SpeckitSettings,
   runner: ProcessRunner,
   cwd: string,
+  command: 'init' | 'install' = 'init',
 ): Promise<PreflightResult> {
   const problems: string[] = [];
   if (!(await uvxAvailable(runner, cwd))) {
@@ -140,10 +201,11 @@ export async function speckitPreflight(
   if (!shell.ok) {
     problems.push(
       settings.script === 'ps'
-        ? 'PowerShell no está disponible (pwsh o powershell) y speckit.script es ps. Instala PowerShell o usa speckit.script: sh.'
-        : 'bash no está disponible o no ejecuta `bash -c "echo ok"`, y speckit.script es sh. ' +
-            'En Windows instala Git for Windows (Git Bash) y ponlo en el PATH; el lanzador de WSL sin distribución no sirve. ' +
-            'Alternativa: declara speckit.script: ps en manifest.yaml.',
+        ? `PowerShell no ejecuta \`echo ok\` (probados: ${shell.tried.join(', ')}). ` +
+            `Instala PowerShell (pwsh o powershell). Alternativa: ai-hub ${command} --script sh.`
+        : `ningún bash ejecuta \`bash -c "echo ok"\` (probados: ${shell.tried.join(', ')}). ` +
+            'En Windows instala Git for Windows (Git Bash); el lanzador de WSL sin distribución no sirve. ' +
+            `Alternativa sin bash: ai-hub ${command} --script ps.`,
     );
   }
   return { ok: problems.length === 0, problems };

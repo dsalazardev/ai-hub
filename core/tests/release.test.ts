@@ -26,14 +26,14 @@ async function currentSection(): Promise<{ version: string; date: string; body: 
   return { version: pkg.version, date: heading[1], body: changelog.slice(start, next < 0 ? undefined : next) };
 }
 
-describe('release 0.3.0 (9.3)', () => {
-  it('bumps the package and names the three breaking changes', async () => {
+describe('release 0.3.1 (9.3)', () => {
+  it('bumps the package and names the shell resolution changes', async () => {
     const section = await currentSection();
-    expect(section.version).toBe('0.3.0');
-    expect(section.body).toMatch(/BREAKING — cuerpos `speckit-\*`/);
-    expect(section.body).toMatch(/BREAKING — vocabulario de estados/);
-    expect(section.body).toMatch(/BREAKING — Copilot sin Spec Kit/);
-    expect(section.body).toContain('runtime: false');
+    expect(section.version).toBe('0.3.1');
+    expect(section.body).toMatch(/Git for Windows/);
+    expect(section.body).toMatch(/--script <sh\|ps>/);
+    expect(section.body).toContain('speckit:script');
+    expect(section.body).toContain('resuelto fuera del PATH');
   });
 
   it('publishes the measured figures, not computed ones', async () => {

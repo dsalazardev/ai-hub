@@ -95,6 +95,7 @@ ejecuta Python ni `uvx`. En el checkout del motor todos informan `no aplica`.
 | `speckit:managed` | `speckit.managed` no es `false`; un arnés con `--no-speckit` es **degradado** y `doctor` sale 1 | `ai-hub install` (sin `--no-speckit`) |
 | `speckit:installed` | Existe `.specify/init-options.json` | `ai-hub install` |
 | `speckit:version` | `speckit_version` coincide con la versión fijada (o la que restrinja `speckit.version`) | `ai-hub install` |
+| `speckit:script` | El script declarado en el manifest coincide con el instalado en `.specify/init-options.json` (`sh`/`ps`) | `ai-hub install` |
 | `speckit:shell` | El shell del script declarado ejecuta `echo ok` (`bash` para `sh`, PowerShell para `ps`) | Instalar Git Bash/bash, o declarar `speckit.script: ps` |
 | `speckit:integrations` | `.specify/integration.json` tiene exactamente las integraciones de los destinos con Spec Kit, sin `copilot`, y la integración por defecto declarada | `ai-hub install`; si aparece `copilot`, `specify integration uninstall copilot` |
 | `speckit:targets` | Informativo: `copilot: sin Spec Kit` (recibe agentes y reglas, no comandos) | — |

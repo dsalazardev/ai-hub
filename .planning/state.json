@@ -4,12 +4,12 @@
   "preset": "generic-ts",
   "activeChange": null,
   "lane": null,
-  "phase": "archived",
+  "phase": "idle",
   "tasks": {
-    "total": 26,
-    "done": 26
+    "total": 0,
+    "done": 0
   },
   "branch": null,
   "worktree": null,
-  "updatedAt": "2026-10-26T20:35:58.964Z"
+  "updatedAt": "2026-10-29T03:40:00.000Z"
 }

@@ -29,7 +29,7 @@ import {
   listCatalogSkills,
   type SelectionMode,
 } from '../catalog.js';
-import { loadEngine, type EngineManifest } from '../engine/engine.js';
+import { loadEngine, type EngineManifest, type SpeckitScript } from '../engine/engine.js';
 import {
   probeEnvironment,
   runSpeckitSequence,
@@ -101,9 +101,32 @@ function speckitPlan(settings: SpeckitSettings): SpeckitPlan {
   };
 }
 
-/** Bloque `speckit` a escribir: conserva las restricciones del proyecto y fija `managed`. */
-function speckitBlock(existing: ProjectSpeckit | undefined, managed: boolean): ProjectSpeckit {
-  return { ...(existing ?? {}), managed };
+/** Bloque `speckit` a escribir: conserva las restricciones del proyecto y fija `managed` y el script explícito. */
+function speckitBlock(existing: ProjectSpeckit | undefined, managed: boolean, script?: SpeckitScript): ProjectSpeckit {
+  return { ...(existing ?? {}), managed, ...(script !== undefined ? { script } : {}) };
+}
+
+/**
+ * Lee `--script <sh|ps>` (design D3): valida antes de cualquier sondeo y nombra el comando concreto.
+ * Devuelve `undefined` cuando la bandera no se usó y `null` cuando es inválida (ya reportado).
+ */
+function parseScriptFlag(
+  args: ParsedArgs,
+  ctx: CliContext,
+  command: 'init' | 'install',
+): SpeckitScript | undefined | null {
+  if (!('script' in args.flags)) {
+    return undefined;
+  }
+  const value = flagString(args, 'script');
+  if (value === 'sh' || value === 'ps') {
+    return value;
+  }
+  ctx.io.err(
+    `--script acepta sh o ps${value === null ? ' y necesita un valor' : ` (recibido: ${value})`}; ` +
+      `ejecuta ai-hub ${command} --script sh o ai-hub ${command} --script ps`,
+  );
+  return null;
 }
 
 function speckitSettingsFor(
@@ -125,8 +148,12 @@ async function environmentFor(
 }
 
 /** Preflight de Spec Kit; devuelve `false` y explica el motivo si hay que salir con 2. */
-async function preflightOrReport(settings: SpeckitSettings, ctx: CliContext): Promise<boolean> {
-  const preflight = await speckitPreflight(settings, ctx.exec, ctx.root);
+async function preflightOrReport(
+  settings: SpeckitSettings,
+  ctx: CliContext,
+  command: 'init' | 'install',
+): Promise<boolean> {
+  const preflight = await speckitPreflight(settings, ctx.exec, ctx.root, command);
   if (!preflight.ok) {
     ctx.io.err('preflight de Spec Kit fallido; no se escribió nada:');
     for (const problem of preflight.problems) {
@@ -523,6 +550,10 @@ async function resolveSelection(
 }
 
 export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number> {
+  const scriptFlag = parseScriptFlag(args, ctx, 'init');
+  if (scriptFlag === null) {
+    return 2;
+  }
   const sourceCheckout = await isEngineCheckout(ctx.root);
   let selection;
   try {
@@ -556,7 +587,7 @@ export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number
   }
   const includeMcp = await exists(path.join(ctx.root, 'mcp-manifest.yaml'));
   const assets = await buildAssetPlan(spec, engine, selection.targets, includeMcp);
-  const speckit = speckitBlock(existing?.speckit, !args.flags['no-speckit']);
+  const speckit = speckitBlock(existing?.speckit, !args.flags['no-speckit'], scriptFlag);
   const speckitSettings = speckitSettingsFor(selection.targets, speckit, engine);
   // El taller nunca ejecuta Spec Kit: su .specify/ es del mantenedor.
   const runSpeckit = speckitSettings.managed && !sourceCheckout;
@@ -593,7 +624,7 @@ export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number
     return 0;
   }
 
-  if (runSpeckit && !(await preflightOrReport(speckitSettings, ctx))) {
+  if (runSpeckit && !(await preflightOrReport(speckitSettings, ctx, 'init'))) {
     return 2;
   }
   // Backup restaurable antes de que Spec Kit toque un proyecto existente (constitución incluida).
@@ -723,6 +754,10 @@ async function retiredCatalogSkills(ids: string[]): Promise<string[]> {
 }
 
 export async function cmdInstall(args: ParsedArgs, ctx: CliContext): Promise<number> {
+  const scriptFlag = parseScriptFlag(args, ctx, 'install');
+  if (scriptFlag === null) {
+    return 2;
+  }
   let context;
   try {
     context = await loadManifestContext(ctx.root);
@@ -739,7 +774,7 @@ export async function cmdInstall(args: ParsedArgs, ctx: CliContext): Promise<num
   }
   const includeMcp = await exists(path.join(ctx.root, 'mcp-manifest.yaml'));
   // install sin --no-speckit reactiva Spec Kit en un arnés degradado; con la bandera lo mantiene apagado.
-  const speckit = speckitBlock(context.manifest.speckit, !args.flags['no-speckit']);
+  const speckit = speckitBlock(context.manifest.speckit, !args.flags['no-speckit'], scriptFlag);
   const speckitSettings = speckitSettingsFor(context.manifest.targets, speckit, context.engine);
   const runSpeckit = speckitSettings.managed && !(await isEngineCheckout(ctx.root));
   if (args.flags['dry-run']) {
@@ -764,7 +799,7 @@ export async function cmdInstall(args: ParsedArgs, ctx: CliContext): Promise<num
     );
     return 0;
   }
-  if (runSpeckit && !(await preflightOrReport(speckitSettings, ctx))) {
+  if (runSpeckit && !(await preflightOrReport(speckitSettings, ctx, 'install'))) {
     return 2;
   }
   const backupId = runSpeckit ? (await createBackup(ctx.root, 'install')).id : null;

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { parse } from 'yaml';
 import { runCli } from '../src/cli/run.js';
 import type { CliIO } from '../src/cli/types.js';
 import { scanReservedNamespace } from '../src/engine/gates.js';
@@ -261,5 +262,91 @@ describe('Spec Kit commands are not managed by add/uninstall (5.2)', () => {
     const add = await cli(['add', 'skill', 'specify']);
     expect(add.code).toBe(1);
     expect(add.out).toContain('runtime: false');
+  });
+});
+
+describe('--script flag (3.1, 3.2, 3.3)', () => {
+  it('rejects values other than sh or ps with exit 2 before probing or writing', async () => {
+    for (const argv of [
+      ['init', '--yes', '--script', 'py'],
+      ['init', '--yes', '--script'],
+    ]) {
+      const result = await cli(argv);
+      expect(result.code, argv.join(' ')).toBe(2);
+      expect(result.out, argv.join(' ')).toMatch(/sh.*ps/);
+      expect(result.fake.calls, argv.join(' ')).toEqual([]);
+      expect((await fs.readdir(root)).sort()).toEqual(['package.json']);
+    }
+  });
+
+  it('rejects an invalid value from install too, naming the command', async () => {
+    expect((await cli(['init', '--yes', '--preset-only'])).code).toBe(0);
+    const result = await cli(['install', '--script', 'zsh']);
+    expect(result.code).toBe(2);
+    expect(result.out).toMatch(/ai-hub install --script sh/);
+  });
+
+  it('uses the flag over the engine default and persists it in the manifest', async () => {
+    const result = await cli(['init', '--yes', '--preset-only', '--script', 'ps']);
+    expect(result.code, result.out).toBe(0);
+    const initCall = result.fake.specifyCalls().find((call) => call.includes('init'));
+    expect(initCall?.[initCall.indexOf('--script') + 1]).toBe('ps');
+    const manifest = parse(await read('manifest.yaml')) as Record<string, unknown>;
+    expect((manifest.speckit as Record<string, unknown>).script).toBe('ps');
+  });
+
+  it('keeps the manifest script when no flag is passed', async () => {
+    expect((await cli(['init', '--yes', '--preset-only', '--script', 'ps'])).code).toBe(0);
+    const second = await cli(['install']);
+    expect(second.code, second.out).toBe(0);
+    const initCall = second.fake.specifyCalls().find((call) => call.includes('init'));
+    expect(initCall?.[initCall.indexOf('--script') + 1]).toBe('ps');
+    const manifest = parse(await read('manifest.yaml')) as Record<string, unknown>;
+    expect((manifest.speckit as Record<string, unknown>).script).toBe('ps');
+  });
+
+  it('overrides an existing manifest script with the flag', async () => {
+    expect((await cli(['init', '--yes', '--preset-only', '--script', 'ps'])).code).toBe(0);
+    const back = await cli(['install', '--script', 'sh']);
+    expect(back.code, back.out).toBe(0);
+    const initCall = back.fake.specifyCalls().find((call) => call.includes('init'));
+    expect(initCall?.[initCall.indexOf('--script') + 1]).toBe('sh');
+    const manifest = parse(await read('manifest.yaml')) as Record<string, unknown>;
+    expect((manifest.speckit as Record<string, unknown>).script).toBe('sh');
+  });
+
+  it('doctor stays green without the flag after init --script ps', async () => {
+    expect((await cli(['init', '--yes', '--preset-only', '--script', 'ps'])).code).toBe(0);
+    const result = await cli(['doctor']);
+    expect(result.code, result.out).toBe(0);
+    expect(result.out).not.toContain('[FAIL]');
+    expect(result.out).toContain('speckit:script:');
+  });
+
+  it('two dry-runs with different scripts produce different plan hashes', async () => {
+    const sh = await cli(['init', '--dry-run', '--script', 'sh']);
+    const ps = await cli(['init', '--dry-run', '--script', 'ps']);
+    expect(sh.code).toBe(0);
+    expect(ps.code).toBe(0);
+    const shPlan = JSON.parse(sh.out) as { hash: string; speckit: { script: string } };
+    const psPlan = JSON.parse(ps.out) as { hash: string; speckit: { script: string } };
+    expect(shPlan.speckit.script).toBe('sh');
+    expect(psPlan.speckit.script).toBe('ps');
+    expect(shPlan.hash).not.toBe(psPlan.hash);
+  });
+});
+
+describe('script change reinstalls Spec Kit (3.4)', () => {
+  it('install --script ps over an sh installation rewrites init-options and the scripts dir', async () => {
+    expect((await cli(['init', '--yes', '--preset-only'])).code).toBe(0);
+    expect((JSON.parse(await read('.specify/init-options.json')) as Record<string, unknown>).script).toBe('sh');
+    expect(await present('.specify/scripts/bash/check-prerequisites.sh')).toBe(true);
+    const result = await cli(['install', '--script', 'ps']);
+    expect(result.code, result.out).toBe(0);
+    expect((JSON.parse(await read('.specify/init-options.json')) as Record<string, unknown>).script).toBe('ps');
+    expect(await present('.specify/scripts/powershell/check-prerequisites.ps1')).toBe(true);
+    expect(await present('.specify/scripts/bash/check-prerequisites.sh')).toBe(false);
+    const doctor = await cli(['doctor']);
+    expect(doctor.code, doctor.out).toBe(0);
   });
 });

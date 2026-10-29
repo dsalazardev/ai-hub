@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.3.1 — resolución autónoma del shell de Spec Kit (2026-10-28)
+
+### Añadido
+
+- `shellCandidates` (`core/src/speckit/commands.ts`): para `script: sh` en Windows, el `bash` del PATH seguido de las rutas estándar de Git for Windows construidas desde `ProgramFiles`, `ProgramFiles(x86)` y `LOCALAPPDATA` (variable ausente → candidato omitido); las rutas absolutas se filtran por existencia antes de sondear. Linux y macOS quedan con el candidato único del PATH. `probeShell` devuelve además la lista de comandos probados (`tried`), con `platform` y `env` inyectables para los tests.
+- Bandera `--script <sh|ps>` en `ai-hub init` y `ai-hub install`: valida el valor antes de sondear (otro valor → exit 2 nombrando `sh` y `ps`), resuelve bandera > `speckit.script` del manifest > motor, y persiste `speckit.script` en el manifest escrito sólo cuando la bandera se usó. El hash del plan sigue a la bandera (`speckitPlan` ya incluía `script`). Cambiar el script efectivo sobre una instalación existente reinstala Spec Kit con el nuevo valor.
+- Check `speckit:script` de `doctor` (doceavo): compara `speckit.script` del manifest con el `script` de `.specify/init-options.json` y falla nombrando ambos valores; `speckit:shell` distingue ahora el shell resuelto fuera del PATH («resuelto fuera del PATH: <ruta>») del que está en el PATH.
+
+### Corregido
+
+- El mensaje de fallo del preflight de Spec Kit lista los comandos probados, nombra Git for Windows y ofrece la bandera exacta (`ai-hub init --script ps`, o `ai-hub install --script ps` cuando viene de `install`); ya no remite a `manifest.yaml`, que no existe en un proyecto nuevo.
+- En Windows con el `bash` del PATH apuntando al lanzador de WSL sin distribución, `init`/`install` resuelven solos el Git Bash instalado en ruta estándar; antes la sonda reportaba `shell: missing` y el preflight fallaba.
+
+### Cifras medidas
+
+Las cifras de destinos no cambian respecto a 0.3.0 — medidas en copias temporales con el CLI compilado y `uvx` real (`tests/fixtures/install-counts.json`); la fórmula del plan las reproduce:
+
+| Instalación | Destinos en `sync.lock.json` |
+|---|---|
+| `init --yes` (`generic-ts`, full) | 4.407 |
+| `init --yes --preset-only` | 40 |
+| `init --yes --exclude rule:skill-quality` | 4.387 |
+| `init --yes --preset angular-express` | 4.422 |
+
+`full` instala 163 skills de proyecto + 17 comandos Spec Kit, 35 agentes y 6 reglas universales.
+
+### Empaquetado
+
+- `core/package.json` en `0.3.1`. La fecha de resolución `excludeNewer: 2026-10-27` no se mueve: 0.3.1 no repinne `specify-cli`; moverla es una decisión de release, nunca automática. No se publica en npm desde esta sesión; el release queda condicionado a la revisión del diff.
+
 ## 0.3.0 — integración de Spec Kit (2026-10-27)
 
 ### Ruptura
