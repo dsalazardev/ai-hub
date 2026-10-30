@@ -3,7 +3,7 @@ name: training-data
 description: "Use when assembling or curating the corpus a fine-tune trains on — turning raw examples into the JSONL shape a trainer expects (instruction, conversational, preference-pair or binary-label), matching the data to the model's chat template, generating synthetic or distilled examples, deduplicating and decontaminating against eval sets, and quality-filtering. NOT cleaning tabular rows, nulls and dtypes (that is `data-cleaning`), NOT building a retrieval corpus of chunks and embeddings (that is `embeddings-search`), NOT running the trainer or picking hyperparameters (that is `finetuning`)."
 tags: [training-data, fine-tuning-dataset, jsonl, chat-template, preference-data, dpo, kto, synthetic-data, decontamination, dataset-curation]
 recommends: [finetuning, unsloth, huggingface, data-cleaning]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # training-data — the corpus a fine-tune actually eats

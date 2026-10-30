@@ -84,7 +84,7 @@ mongorestore --uri "mongodb://user:pass@host:27017/restore_test" ./dump
 #    e.g. Postgres:
 psql "postgres://.../restore_test" -c "SELECT count(*) FROM orders;"
 
-# 5. Drop the throwaway DB. Record the drill date in 02-DOCS/wiki/stack/coolify.md.
+# 5. Drop the throwaway DB. Record the drill date in docs/stack/coolify.md.
 ```
 
 ## Consistency caveats

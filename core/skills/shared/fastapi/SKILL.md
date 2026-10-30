@@ -3,7 +3,7 @@ name: fastapi
 description: "Use when building, reviewing, testing, securing or shipping a FastAPI / async Python service — routers, Pydantic v2 schemas, dependency injection, async SQLAlchemy 2.0, OAuth2/JWT, ASGITransport tests, production wiring. NOT language-level Python or packaging (that is `python`), NOT engine-level SQL (that is `postgresdb`), NOT framework-agnostic REST contracts (that is `api-design`)."
 tags: [python, api, async, backend, rest]
 recommends: [postgresdb, secure-coding, deployment]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # FastAPI & modern Python services
@@ -20,7 +20,7 @@ pytest 8 + pytest-asyncio 1.0+ (`asyncio_mode=auto`), ruff 0.7+, mypy 1.13+ stri
 uv 0.5+, uvicorn 0.32+ / gunicorn 23+ + uvicorn-worker 0.3+, PyJWT 2.10+, argon2-cffi 23+,
 pip-audit 2.7+, PostgreSQL 16. (All lower bounds; install the latest in each line.)
 
-> **⚠️ SDD new-feature gate — read this first.** If this skill fired on a **new, non-trivial feature or behaviour change** and there is **no approved spec + plan** under `02-DOCS/wiki/sdd/`, STOP — do **not** write feature code yet. Hand off to `../specify/SKILL.md` first: it runs brainstorm → spec → plan → tasks before any code, then routes back here once the plan is approved. Build here directly only for a genuinely one-line / low-risk change. Method: `../sdd/SKILL.md`.
+> **⚠️ SDD new-feature gate — read this first.** If this skill fired on a **new, non-trivial feature or behaviour change** and there is **no approved spec + plan** under `docs/sdd/`, STOP — do **not** write feature code yet. Hand off to `../specify/SKILL.md` first: it runs brainstorm → spec → plan → tasks before any code, then routes back here once the plan is approved. Build here directly only for a genuinely one-line / low-risk change. Method: `../sdd/SKILL.md`.
 
 Out of scope, and where it goes instead: [`django`](../django/SKILL.md) for Django; Flask / sync WSGI,
 notebooks and CLI-only scripts (no skill); language-level Python, typing and packaging →
@@ -459,11 +459,11 @@ Dockerfile and CI/CD pipeline.
 
 ## Project grounding
 
-In a project with a `02-DOCS/` layer ([`harness`](../harness/SKILL.md)), read
-`02-DOCS/wiki/stack/fastapi.md` first and stay consistent with it; create or update it with this
+In a project with a `docs/` layer ([`harness`](../harness/SKILL.md)), read
+`docs/stack/fastapi.md` first and stay consistent with it; create or update it with this
 project's real choices — auth model (JWT/OAuth2 provider, token TTLs), DB session + migration tool,
 error-envelope shape, settings/secrets approach, deployment target — bump its `Updated` date, and index
-it in `02-DOCS/wiki/index.md`. No `02-DOCS/`? Skip silently. Conventions are *recorded, not gated* —
+it in `docs/index.md`. No `docs/`? Skip silently. Conventions are *recorded, not gated* —
 never block the task on this.
 
 Verify gate: [`scripts/verify.sh`](scripts/verify.sh).

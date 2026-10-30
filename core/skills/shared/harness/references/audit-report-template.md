@@ -38,16 +38,16 @@ Workspace: `{{WORKSPACE_ROOT}}`
 > |------|----------------|----------------------|
 > | `STRIPE/test_connection.sh` | TOOLING | `01-TOOLS/STRIPE/test_connection.sh` |
 > | `STRIPE/README.md` | TOOLING (tool doc) | `01-TOOLS/STRIPE/README.md` |
-> | `RANDOM_NOTES.md` | DOCS | `02-DOCS/raw/migrated/00-TOOLS/RANDOM_NOTES.md` |
+> | `RANDOM_NOTES.md` | DOCS | `docs/raw/migrated/00-TOOLS/RANDOM_NOTES.md` |
 > | `unclassified_script.py` | AMBIGUOUS | (stays in `00-TOOLS/`) |
 >
 > Result:
 > - Total: 42 files · TOOLING: 35 · DOCS: 5 · AMBIGUOUS: 2
 > - **Deletion of `00-TOOLS/`**: requires AMBIGUOUS = 0 + second consent after migration.
 
-## 4. Documentation → `02-DOCS/` (embedded protocol)
+## 4. Documentation → `docs/` (embedded protocol)
 
-`02-DOCS/` is built following `references/wiki-protocol.md` (embedded in
+`docs/` is built following `references/wiki-protocol.md` (embedded in
 this skill, no external dependency).
 
 Sources ingested in this bootstrap:
@@ -59,11 +59,11 @@ Sources ingested in this bootstrap:
 > - `myapp-frontend/README.md`
 > - `01-TOOLS/README.md` (after creation)
 > - `01-TOOLS/<TOOL>/README.md` and `CREDENTIALS.md` per detected tool
-> - Content of `02-DOCS/raw/migrated/` (after migration)
+> - Content of `docs/raw/migrated/` (after migration)
 > - Root `CLAUDE.md` and `AGENTS.md`
 
-Resulting structure: `02-DOCS/raw/<topic>/`, `02-DOCS/wiki/<topic>/`,
-`02-DOCS/wiki/index.md`, `02-DOCS/wiki/log.md`.
+Resulting structure: `docs/raw/<topic>/`, `docs/<topic>/`,
+`docs/index.md`, `docs/log.md`.
 
 ## 5. Root files
 

@@ -3,7 +3,7 @@ name: testing-web
 description: "Use when writing or fixing frontend unit, component or custom-hook tests with Vitest or Jest plus Testing Library — rendering a component in jsdom, testing a hook in isolation, choosing between sync and async queries, silencing act warnings, mocking fetch, or migrating a Jest suite to Vitest. NOT real-browser multi-page journeys (that is `e2e-testing`), NOT pytest suites (that is `testing-py`), NOT accessibility auditing (that is `accessibility`)."
 tags: [testing, frontend, vitest, jest, testing-library, react, hooks, component-testing, jsdom]
 recommends: [e2e-testing, accessibility, testing-py, react, nextjs, debug]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # testing-web — fast, trustworthy component and hook tests

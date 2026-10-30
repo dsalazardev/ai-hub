@@ -3,7 +3,7 @@ name: deep-learning
 description: "Use when training or debugging a neural net in PyTorch — the forward/loss/backward/step loop and its silent bugs, mixed precision (AMP), AdamW/LR schedules, DDP/FSDP/ZeRO, checkpoints and seeds. NOT LoRA/QLoRA on a pretrained LLM (that is `finetuning`), NOT tabular sklearn/XGBoost (that is `machine-learning`), NOT tokenization or NLP metrics (that is `nlp`)."
 tags: [pytorch, deep-learning, neural-networks, training-loop, autograd, mixed-precision, amp, ddp, fsdp, optimizer, lr-scheduler, reproducibility, torch-compile]
 recommends: [machine-learning, finetuning, nlp, python]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # deep-learning — train a neural net in PyTorch without the silent bugs

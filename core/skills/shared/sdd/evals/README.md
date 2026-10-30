@@ -50,9 +50,9 @@ the skill — or these rubrics — needs work.
 - The headline differentiators for `sdd`: it **dispatches, it does not perform a phase**; it
   states the method ("the artifact is the contract"), reads the **register** (`technical_level`)
   and speaks in the orient voice (never skipping gates), presents the **chained phase map**, applies the **invoke
-  rule** and the **skip rules** honestly, and writes artifacts under `02-DOCS/wiki/sdd/`.
+  rule** and the **skip rules** honestly, and writes artifacts under `docs/sdd/`.
 - Key confusables to watch: "write the spec" is `specify`, not `sdd`; "set the principles" is
-  `constitution`; "open the PR" is `ship`; "build 01-TOOLS/02-DOCS" is `harness`. If the agent
+  `constitution`; "open the PR" is `ship`; "build 01-TOOLS/docs" is `harness`. If the agent
   does the phase work itself instead of routing, that's a fail even if the output looks good.
 - Because `sdd` is the front door, some phase siblings may not yet be installed. A correct
   response still routes by name and does the phase inline if the sibling is absent — it must

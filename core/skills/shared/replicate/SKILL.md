@@ -3,7 +3,7 @@ name: replicate
 description: "Use when running, packaging, deploying or scaling a model on the Replicate platform from code — blocking run versus async predictions, handling FileOutput, deployments with warm private endpoints and autoscaling, packaging with Cog, verifying webhook signatures, and cutting GPU spend. NOT crafting image prompts and parameters or picking image model families (that is `replicate-images`)."
 tags: [replicate, cog, deployments, webhooks, model-serving, gpu, ai-infra]
 recommends: [replicate-images, modal, runpod, huggingface, webhooks, cost-tracking, docker]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Replicate platform operations

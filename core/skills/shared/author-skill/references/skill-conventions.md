@@ -84,7 +84,7 @@ bash scripts/eval-lint.sh
 
 ## The Knowledge map
 
-The root `CLAUDE.md` carries a `## Knowledge map` section that indexes the 02-DOCS wiki topics — it is what every other skill reads before working in its area (the `harness` convention). When a skill produces durable artifacts, they live under `02-DOCS/wiki/<topic>/` and get a Knowledge-map row. For SDD-related artifacts the topic is `02-DOCS/wiki/sdd/`. `author-skill` writes there only when a design note is worth keeping; the executable record is always the skill's own `evals/`.
+The root `CLAUDE.md` carries a `## Knowledge map` section that indexes the docs wiki topics — it is what every other skill reads before working in its area (the `harness` convention). When a skill produces durable artifacts, they live under `docs/<topic>/` and get a Knowledge-map row. For SDD-related artifacts the topic is `docs/sdd/`. `author-skill` writes there only when a design note is worth keeping; the executable record is always the skill's own `evals/`.
 
 ## verify.sh — only for checkable artifacts
 

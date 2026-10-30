@@ -3,7 +3,7 @@ name: data-scraper
 description: "Use when data lives on a website with no usable API — listings, prices, public records — and the scrape must stay legal and not get blocked: legal gate, extraction path, durable selectors, pacing, resilience. NOT parsing bytes you already hold into fields (that is structured-extraction), NOT a documented API or key (that is api-connector-builder)."
 tags: [web-scraping, crawler, anti-bot, robots-txt, gdpr-compliance, playwright, rate-limiting]
 recommends: [api-connector-builder, structured-extraction, data-cleaning, gdpr-privacy, webhooks]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Data scraper

@@ -3,7 +3,7 @@ name: cpp
 description: "Use when writing, reviewing, modernizing, building, or debugging C++ - RAII and resource lifetime, smart-pointer ownership, move semantics and the Rule of Zero/Five, target-based CMake with FetchContent, and killing undefined behavior with ASan/UBSan/TSan plus clang-tidy. NOT borrow-checker / Result-Option / cargo memory safety (that is rust)."
 tags: [cpp, c++, modern-cpp, raii, cmake]
 recommends: [rust, secure-coding, deployment]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Modern C++
@@ -291,12 +291,12 @@ bad index is UB, not an exception.
 | Std flag | GCC/Clang `-std=c++23` (C++26: GCC `-std=c++26`, Clang `-std=c++2c`), MSVC `/std:c++23` |
 | Local gate | `./scripts/verify.sh` (run in your project root) |
 
-## Project grounding (02-DOCS)
+## Project grounding (docs)
 
-In a project with a `02-DOCS/` layer (the [`harness`](../harness/SKILL.md) Karpathy wiki), read
-`02-DOCS/wiki/stack/cpp.md` first and stay consistent with it. If it is missing or stale, write
+In a project with a `docs/` layer (the [`harness`](../harness/SKILL.md) Karpathy wiki), read
+`docs/stack/cpp.md` first and stay consistent with it. If it is missing or stale, write
 this project's real choices there — std version and compiler matrix, CMake layout and presets, the
-sanitizer/warning policy, the ownership/error conventions — index it in `02-DOCS/wiki/index.md`
+sanitizer/warning policy, the ownership/error conventions — index it in `docs/index.md`
 (the Knowledge map; root `CLAUDE.md` keeps only a pointer to it), and bump its `Updated` date in
-the same change as any convention change. No `02-DOCS/` layer? Skip silently (optionally suggest
+the same change as any convention change. No `docs/` layer? Skip silently (optionally suggest
 `harness`). Conventions are *recorded, not gated* — never block the task on this.

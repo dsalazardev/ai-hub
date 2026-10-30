@@ -46,7 +46,7 @@ What a WITH-skill answer should show that a baseline misses:
 
 - **Description first**, to the recipe: third-person `Use when…` lead, only the capabilities that
   discriminate it from its nearest sibling, a `NOT … (sibling)` boundary, valid single-line quoted
-  YAML aiming ≤ 350 chars (1024 hard limit), `origin: ai-hub`.
+  YAML aiming ≤ 350 chars (1024 hard limit), `origin: dsalazardev`.
 - **Progressive disclosure** — the smallest body that still routes (400 lines is a ceiling, not a
   target) pointing into `references/`, not an encyclopedia and not an orphaned references folder.
 - **evals authored** to the minimums, with `route_to` siblings that actually exist.

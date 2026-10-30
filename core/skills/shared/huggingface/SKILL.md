@@ -3,7 +3,7 @@ name: huggingface
 description: "Use when running open models or working on the Hugging Face platform — the Inference Providers router or InferenceClient, Hub repos via the hf CLI, a dedicated Inference Endpoint with scale-to-zero, a Gradio Space with ZeroGPU, picking an open model by task/license/size, or loading one locally with transformers. NOT serving locally on your own machine (that is `ollama`), NOT renting your own GPU box (that is `runpod`), NOT hosted creative image APIs (that is `replicate-images`), NOT fine-tuning with trl/peft (that is `finetuning`)."
 tags: [huggingface, inference-providers, transformers, model-hub, inference-endpoints, spaces, ai-infra]
 recommends: [ollama, runpod, modal, replicate, together-fireworks, fal, rag, embeddings-search, prompt-engineering, llm-pipeline, ai-media]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Hugging Face: Hub, routed/hosted inference, and transformers

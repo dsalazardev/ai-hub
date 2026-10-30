@@ -10,7 +10,7 @@ is unobvious.
 ### About the user
 - **Looks like:** "I prefer X", "I always want Y", "stop asking me Z", a working
   style you inferred from repeated corrections.
-- **Home:** `02-DOCS/wiki/harness/user-profile.md` (the living portrait).
+- **Home:** `docs/harness/user-profile.md` (the living portrait).
 - **Who writes:** this skill, directly.
 - **Verify:** the next pass reads the profile and the behaviour changes. Confirm
   the line is in the profile, not just the chat.
@@ -61,14 +61,14 @@ is unobvious.
 ### A forward choice that surfaced mid-retro
 - **Looks like:** the retro reveals you now need to *choose* something going
   forward (architecture, vendor, approach).
-- **Home:** `02-DOCS/wiki/harness/decisions.md` as a decision record.
+- **Home:** `docs/harness/decisions.md` as a decision record.
 - **Who writes:** `decision-records`. Punt cleanly — do not log a choice as a
   lesson.
 
 ### A one-off, low-stakes note
 - **Looks like:** a small observation with no recurrence risk and no class to
   kill.
-- **Home:** an append to `02-DOCS/wiki/harness/decisions.md`, or a topic note in
+- **Home:** an append to `docs/harness/decisions.md`, or a topic note in
   the wiki.
 - **Who writes:** this skill.
 - **Verify:** lightweight — the note is durable and dated. If the same note

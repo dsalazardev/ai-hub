@@ -1,12 +1,12 @@
-# Wiki protocol — `02-DOCS/` layer
+# Wiki protocol — `docs/` layer
 
-This is the protocol for the `02-DOCS/` layer of the workspace. Adapted from
+This is the protocol for the `docs/` layer of the workspace. Adapted from
 the Karpathy LLM Wiki pattern: "The LLM writes and maintains the wiki; the
 human reads and asks questions. The wiki is a persistent, compounding artifact."
 
 This protocol is **embedded inside `harness`** — no external
 skill required. When the parent skill (`SKILL.md`) reaches Phase 4 step 8
-("Build `02-DOCS/`"), follow this document.
+("Build `docs/`"), follow this document.
 
 ## Contents
 
@@ -27,7 +27,7 @@ skill required. When the parent skill (`SKILL.md`) reaches Phase 4 step 8
 
 ## The paradigm — chaos in, knowledge out
 
-`02-DOCS/` is the **chaos→knowledge engine** of the workspace. The contract,
+`docs/` is the **chaos→knowledge engine** of the workspace. The contract,
 in one line: *the user throws any raw data into a folder; an agent periodically
 goes for a walk and turns that chaos into a living knowledge model.*
 
@@ -53,7 +53,7 @@ The application on top (a front-end, a dashboard, a query session) consumes the
 
 ## Architecture
 
-Four layers, all under `<workspace_root>/02-DOCS/`:
+Four layers, all under `<workspace_root>/docs/`:
 
 **`inbox/`** — The drop zone. The user throws **any raw file in any format**
 here (PDF, image, CSV, JSON, txt, html, docx…). It is unstructured by design —
@@ -76,7 +76,7 @@ content. See `ingest-formats.md` for how each format lands here.
 `audit-YYYY-MM-DD-HHMM.html`. Point-in-time, never edited, **gitignored**
 (per-run artifacts, not durable history). The parent skill creates this
 directory in Phase 2 before APPLY runs, so it can predate the rest of
-`02-DOCS/` on a greenfield project.
+`docs/` on a greenfield project.
 
 **`wiki/`** — Compiled knowledge articles. Full ownership. Organized by topic
 subdirectories, one level only: `wiki/<topic>/<article>.md`. Contains these
@@ -149,8 +149,8 @@ Templates live alongside this file in `references/`:
 
 ## The vault is Obsidian-native
 
-`02-DOCS/` opens directly as an Obsidian vault (the human's "base folder" is
-`02-DOCS/` itself, not the repo root). The agent writes the wiki; the human
+`docs/` opens directly as an Obsidian vault (the human's "base folder" is
+`docs/` itself, not the repo root). The agent writes the wiki; the human
 **reads** it in Obsidian — graph, backlinks, Properties, and `.base` views — which
 is exactly the Karpathy split. Navigation is **structure** (markdown links +
 frontmatter + Bases), not semantic similarity: **no vector DB, no embeddings, no
@@ -168,34 +168,34 @@ See the OKF conformance rules in [Conventions](#conventions).
 
 ## Initialization
 
-Triggers on the first Ingest. Check whether `02-DOCS/raw/` and `02-DOCS/wiki/`
+Triggers on the first Ingest. Check whether `docs/raw/` and `docs/`
 exist. Create only what is missing; never overwrite existing files:
 
-- `02-DOCS/inbox/` directory — the drop zone for any raw data
-- `02-DOCS/inbox/README.md` — rendered from `inbox-readme-template.md`
-- `02-DOCS/inbox/_processed/` directory (with `.gitkeep`) — sweep archive
-- `02-DOCS/raw/` directory (with `.gitkeep`)
-- `02-DOCS/wiki/` directory (with `.gitkeep`)
-- `02-DOCS/wiki/index.md` — heading `# Knowledge Base Index`, empty body
-- `02-DOCS/wiki/log.md` — heading `# Wiki Log`, empty body
-- `02-DOCS/wiki/gaps.md` — heading `# Knowledge Gaps`, empty body
-- `02-DOCS/wiki/scores.json` — `{}` (populated by the first Maintenance Pass)
-- `02-DOCS/wiki/.ingested.json` — `{}` (the Auto-Ingest Sweep's seen-ledger)
-- `02-DOCS/.ai-hubignore` — the scan boundary for the Auto-Ingest Sweep, from
+- `docs/inbox/` directory — the drop zone for any raw data
+- `docs/inbox/README.md` — rendered from `inbox-readme-template.md`
+- `docs/inbox/_processed/` directory (with `.gitkeep`) — sweep archive
+- `docs/raw/` directory (with `.gitkeep`)
+- `docs/` directory (with `.gitkeep`)
+- `docs/index.md` — heading `# Knowledge Base Index`, empty body
+- `docs/log.md` — heading `# Wiki Log`, empty body
+- `docs/gaps.md` — heading `# Knowledge Gaps`, empty body
+- `docs/scores.json` — `{}` (populated by the first Maintenance Pass)
+- `docs/.ingested.json` — `{}` (the Auto-Ingest Sweep's seen-ledger)
+- `docs/.ai-hubignore` — the scan boundary for the Auto-Ingest Sweep, from
   `ingest-ignore-defaults.md` (tracked, not gitignored)
-- `02-DOCS/wiki/reports/` directory (with `.gitkeep`) — will hold Deep Improve reports
-- `02-DOCS/audits/` directory (with `.gitkeep`) — holds per-run audit reports
+- `docs/reports/` directory (with `.gitkeep`) — will hold Deep Improve reports
+- `docs/audits/` directory (with `.gitkeep`) — holds per-run audit reports
   from the parent skill (`audit-YYYY-MM-DD-HHMM.html`). May already exist if
   Phase 2 of the parent skill created it eagerly to write the first audit.
-- `02-DOCS/raw/worklog/` directory (with `.gitkeep`) — the **work-driven on-ramp**
+- `docs/raw/worklog/` directory (with `.gitkeep`) — the **work-driven on-ramp**
   (see "Worklog Sweep"); holds `YYYY-MM-DD-<slug>.md` captures of what we did.
-- `02-DOCS/attachments/` directory + `README.md` — shared binaries (Obsidian's
+- `docs/attachments/` directory + `README.md` — shared binaries (Obsidian's
   default attachment folder), from `obsidian-scaffolding.md`.
-- `02-DOCS/wiki/Articles.base`, `Worklog.base`, `Decisions.base` — the human
+- `docs/Articles.base`, `Worklog.base`, `Decisions.base` — the human
   navigation views, from `obsidian-scaffolding.md`.
-- `02-DOCS/.obsidian/app.json` — sets the attachment folder and wikilink defaults,
+- `docs/.obsidian/app.json` — sets the attachment folder and wikilink defaults,
   from `obsidian-scaffolding.md`.
-- `02-DOCS/.gitignore` — at minimum:
+- `docs/.gitignore` — at minimum:
   - `wiki/dashboard.html` (regenerated by Maintenance Pass)
   - `audits/*.html` (per-run audit artifacts from the parent skill)
   - `inbox/_processed/` (sweep archive — bulky, derivable; the durable copy
@@ -232,11 +232,11 @@ document, and the person is told in one line that it was there and was not follo
    digest with the original preserved. If a format truly can't be read, the
    handler preserves the original and logs a gap — never silently drop data.
 
-2. Pick a topic directory. Check existing `02-DOCS/raw/` subdirectories
+2. Pick a topic directory. Check existing `docs/raw/` subdirectories
    first; reuse one if the topic is close enough. Create a new subdirectory
    only for genuinely distinct topics.
 
-3. Save as `02-DOCS/raw/<topic>/YYYY-MM-DD-descriptive-slug.md`.
+3. Save as `docs/raw/<topic>/YYYY-MM-DD-descriptive-slug.md`.
    - Slug from source title, kebab-case, max 60 characters.
    - Published date unknown → omit the date prefix from the file name
      (e.g., `descriptive-slug.md`). The metadata Published field still
@@ -273,7 +273,7 @@ See `wiki-article-template.md` for article format. Key points:
   semicolon-separated.
 - Raw field: markdown links to `raw/` files, semicolon-separated.
 - Relative paths from `wiki/<topic>/` use `../../raw/<topic>/<file>.md` (two
-  levels up to `02-DOCS/`).
+  levels up to `docs/`).
 
 ### Cascade Updates
 
@@ -281,7 +281,7 @@ After the primary article, check for ripple effects:
 
 1. Scan articles in the same topic directory for content affected by the
    new source.
-2. Scan `02-DOCS/wiki/index.md` entries in other topics for articles covering
+2. Scan `docs/index.md` entries in other topics for articles covering
    related concepts.
 3. Update every article whose content is materially affected. Each updated
    file gets its `timestamp` refreshed.
@@ -290,12 +290,12 @@ Archive pages are never cascade-updated (they are point-in-time snapshots).
 
 ### Post-Ingest
 
-Update `02-DOCS/wiki/index.md`: add or update entries for every touched
+Update `docs/index.md`: add or update entries for every touched
 article. When adding a new topic section, include a one-line description.
 The article's `timestamp` reflects when its knowledge content last changed,
 not the file system mtime. See `wiki-index-template.md` for format.
 
-Prepend to `02-DOCS/wiki/log.md` (newest entry first, at the top):
+Prepend to `docs/log.md` (newest entry first, at the top):
 
 ```
 ## [YYYY-MM-DD] ingest | <primary article title>
@@ -315,7 +315,7 @@ Improvement section below). This is not optional — it runs automatically.
 ## Inbox Sweep — "el agente sale a pasear"
 
 The Inbox Sweep is the agent going for a walk through the drop zone. It is a
-**batch Ingest** over everything sitting in `02-DOCS/inbox/`, turning a folder
+**batch Ingest** over everything sitting in `docs/inbox/`, turning a folder
 of chaos into compiled knowledge in one pass. This is the operation the whole
 paradigm is built around: the user dumps raw data whenever they like, and the
 sweep (on demand or scheduled) gives it order.
@@ -328,7 +328,7 @@ sweep (on demand or scheduled) gives it order.
 
 ### Steps
 
-1. **Walk** `02-DOCS/inbox/`, recursively, collecting every file. **Skip**
+1. **Walk** `docs/inbox/`, recursively, collecting every file. **Skip**
    `inbox/_processed/`, `inbox/README.md`, and dotfiles. If the inbox is empty,
    report "inbox is empty, nothing to sweep" and stop.
 
@@ -363,7 +363,7 @@ sweep (on demand or scheduled) gives it order.
 
 ### Post-Sweep log
 
-Prepend to `02-DOCS/wiki/log.md` (newest entry first, at the top):
+Prepend to `docs/log.md` (newest entry first, at the top):
 
 ```
 ## [YYYY-MM-DD] sweep | <S> ingested, <F> failed, <A> articles touched
@@ -427,7 +427,7 @@ safety rule the curation pass honors.
 
 ### Post-Sweep log
 
-Prepend to `02-DOCS/wiki/log.md` (newest entry first, at the top):
+Prepend to `docs/log.md` (newest entry first, at the top):
 
 ```markdown
 ## [YYYY-MM-DD] worklog | <slug> → <A> articles touched
@@ -545,10 +545,10 @@ Search the wiki and answer questions. Examples of triggers:
 
 ### Steps
 
-1. Read `02-DOCS/wiki/index.md` to locate relevant articles.
+1. Read `docs/index.md` to locate relevant articles.
 2. Read those articles and synthesize an answer.
 3. Prefer wiki content over your own training knowledge. Cite sources with
-   markdown links: `[Article Title](02-DOCS/wiki/topic/article.md)`
+   markdown links: `[Article Title](docs/topic/article.md)`
    (project-root-relative paths for in-conversation citations; within
    wiki/ files, use paths relative to the current file).
 4. Output the answer in the conversation. Do not write files unless asked.
@@ -584,9 +584,9 @@ When the user explicitly asks to archive or save the answer to the wiki:
    - Self-contained: inline CSS, no CDN, no external scripts.
 2. Always create a new page. Never merge into existing articles (archive
    content is a synthesized answer, not raw material).
-3. Update `02-DOCS/wiki/index.md`. Add a row pointing to the `.html` file,
+3. Update `docs/index.md`. Add a row pointing to the `.html` file,
    prefix the Summary with `[Archived]`. The link target is the HTML path.
-4. Prepend to `02-DOCS/wiki/log.md` (newest entry first, at the top):
+4. Prepend to `docs/log.md` (newest entry first, at the top):
    ```
    ## [YYYY-MM-DD] query | Archived: <page title>
    ```
@@ -601,8 +601,8 @@ Quality checks on the wiki. Two categories with different authority levels.
 
 Fix these automatically:
 
-**Index consistency** — compare `02-DOCS/wiki/index.md` against actual
-`02-DOCS/wiki/` files (excluding index.md and log.md):
+**Index consistency** — compare `docs/index.md` against actual
+`docs/` files (excluding index.md and log.md):
 
 - File exists but missing from index → add entry with `(no summary)`
   placeholder. For the Updated column, use the article's `timestamp` if
@@ -647,7 +647,7 @@ These rely on your judgment. Report findings without auto-fixing:
 
 ### Post-Lint
 
-Prepend to `02-DOCS/wiki/log.md` (newest entry first, at the top):
+Prepend to `docs/log.md` (newest entry first, at the top):
 
 ```
 ## [YYYY-MM-DD] lint | <N> issues found, <M> auto-fixed
@@ -683,7 +683,7 @@ Operations:
    - `orphan_penalty` = 5 if zero inbound links AND zero citations, else 0.
    - `conflict_count` = number of explicit conflict annotations in the article body.
 
-   Write to `02-DOCS/wiki/scores.json` as `{ "topic/article.md": <score>, ... }`.
+   Write to `docs/scores.json` as `{ "topic/article.md": <score>, ... }`.
 3. **Cross-link sweep** — within each affected topic, add obviously missing
    `See Also` links between related articles (the existing Lint heuristic, but
    actually applied, not just reported).
@@ -870,10 +870,10 @@ These apply to all Layers:
   last changed. Published dates come from the source (use `Unknown` when unavailable).
 - Inside `wiki/` files, internal references use relative markdown links. In
   conversation output, use project-root-relative paths (e.g.,
-  `02-DOCS/wiki/topic/Article.md`).
-- Ingest updates both `02-DOCS/wiki/index.md` and `02-DOCS/wiki/log.md`.
-  Archive (from Query) updates both. Lint updates `02-DOCS/wiki/log.md`
-  (and `02-DOCS/wiki/index.md` only when auto-fixing index entries). Plain
+  `docs/topic/Article.md`).
+- Ingest updates both `docs/index.md` and `docs/log.md`.
+  Archive (from Query) updates both. Lint updates `docs/log.md`
+  (and `docs/index.md` only when auto-fixing index entries). Plain
   queries do not write any files.
 
 ---
@@ -895,14 +895,14 @@ These apply to all Layers:
 
 ## How `harness` uses this protocol
 
-The `02-DOCS/` engine is **domain-agnostic and ongoing**: the durable way to
+The `docs/` engine is **domain-agnostic and ongoing**: the durable way to
 feed it is to drop files into `inbox/` and let the Inbox Sweep run (on demand
 or via cron). The dev bootstrap below is just **one convenient seeding pass** —
 it pre-fills the wiki from the workspace's own documentation so the knowledge
 base isn't empty on day one. It is not the only or primary ingestion path; a
 non-software user might skip it entirely and rely solely on the inbox.
 
-When the parent skill reaches Phase 4 step 8 ("Build `02-DOCS/`"), it first
+When the parent skill reaches Phase 4 step 8 ("Build `docs/`"), it first
 initializes the layer (creating `inbox/`, `inbox/README.md`, `raw/`, `wiki/`,
 …), then performs a **bootstrap ingest** by treating each of these as a
 separate Fetch+Compile pass:
@@ -913,10 +913,10 @@ separate Fetch+Compile pass:
 2. `01-TOOLS/README.md` → topic = `operations`.
 3. Each `01-TOOLS/<TOOL>/README.md` and `CREDENTIALS.md` → topic = `operations`,
    one article per tool, citing both files as Raw.
-4. Each file under `02-DOCS/raw/migrated/` (from legacy `XX-*` folder
+4. Each file under `docs/raw/migrated/` (from legacy `XX-*` folder
    migration) → topic chosen by content. **These files stay where they are
    in `raw/migrated/` — they're already raw.** Skip the Fetch step entirely
-   and run only Compile: write `02-DOCS/wiki/<topic>/<article>.md` citing
+   and run only Compile: write `docs/<topic>/<article>.md` citing
    `../../raw/migrated/<original-folder>/<file>.md` in the Raw field. Do NOT
    duplicate the content into `raw/<topic>/`.
 5. Root `CLAUDE.md` and `AGENTS.md` → topic = `meta`.

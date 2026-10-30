@@ -4,7 +4,7 @@ description: "Use when a high-impact plan, migration or architecture claim needs
 tags: [adversarial-review, decision-quality, assumptions, risk, preflight]
 recommends: [analyze, review, code-review, decision-records, security-scan]
 profiles: [core, full]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # decision-challenge — doubt with a stopping rule
@@ -110,4 +110,4 @@ PROCEED / HOLD / STOP — reason — unlock condition.
 
 ## Orientación (siempre)
 
-Habla con la voz de `orient`: frases cortas, una idea por frase, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `02-DOCS/wiki/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a `suggest` el "¿instalo la skill que falta?".)
+Habla con la voz de `orient`: frases cortas, una idea por frase, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `docs/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a `suggest` el "¿instalo la skill que falta?".)

@@ -76,7 +76,7 @@ text = open(p).read()
 fm = text.split('---', 2)[1]
 meta = yaml.safe_load(fm)
 d = meta["description"]
-assert meta.get("origin") == "ai-hub", "missing origin: ai-hub"
+assert meta.get("origin") == "dsalazardev", "missing origin: dsalazardev"
 print("name:", meta["name"])
 print("description chars:", len(d))
 assert len(d) <= 1024, "description over 1024"

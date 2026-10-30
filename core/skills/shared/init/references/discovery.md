@@ -1,6 +1,6 @@
 # Discovery — greenfield & brownfield questionnaires (software AND non-code harnesses)
 
-Phase 2 detail. Establish two things: **the state of the ground** (greenfield vs brownfield) and **what the user wants to build or govern**. Record everything to `02-DOCS/wiki/harness/user-profile.md` as you learn it. Ask in short batches — never dump every question at once.
+Phase 2 detail. Establish two things: **the state of the ground** (greenfield vs brownfield) and **what the user wants to build or govern**. Record everything to `docs/harness/user-profile.md` as you learn it. Ask in short batches — never dump every question at once.
 
 ## First: greenfield vs brownfield (detect, then confirm)
 
@@ -11,7 +11,7 @@ Do a read-only walk of the workspace root, the way `harness` SCAN does. Ignore t
 - A subproject manifest: `package.json`, `pyproject.toml`, `pubspec.yaml`, `go.mod`, `Cargo.toml`, `Gemfile`, `composer.json`.
 - Source files, a `src/`, an `app/`.
 - Legacy numbered folders matching `^[0-9]+-[A-Z_]+$` (`00-TOOLS`, `03-NOTES`…).
-- An existing `01-TOOLS/`, `02-DOCS/`, `CLAUDE.md`, or `AGENTS.md`.
+- An existing `01-TOOLS/`, `docs/`, `CLAUDE.md`, or `AGENTS.md`.
 
 Read manifest contents to name the stack (Next.js, FastAPI, Flutter, Go, Express…). Capture `git status --short` per subproject if it's a repo; flag dirty trees rather than acting on them. Then **summarize what you found and confirm** with the user before treating it as ground truth — detection can be wrong.
 
@@ -23,7 +23,7 @@ The single most important branch. Establish the **domain** before any stack ques
 
 > "¿Lo que quieres montar es **software** (una app, una web, un backend, un agente…) o más bien una forma de **organizar y gobernar algo** que no es código — llevar una empresa o unas operaciones, una investigación, tu conocimiento personal, una operación de contenido…? Las dos cosas se montan igual de bien aquí."
 
-Record `domain: software | non-code-harness`. Both are first-class. A non-code harness uses the exact same `01-TOOLS` (connections to email, calendar, CRM, payments, docs) + `02-DOCS` (the wiki/second-brain) structure.
+Record `domain: software | non-code-harness`. Both are first-class. A non-code harness uses the exact same `01-TOOLS` (connections to email, calendar, CRM, payments, docs) + `docs` (the wiki/second-brain) structure.
 
 ---
 
@@ -70,7 +70,7 @@ Same structure, different surfaces. The "stack" here is the set of **tools the h
    - CRM / sales, support inbox.
    - Payments / billing (Stripe…), accounting.
    - Hosting / infra, if any automation runs somewhere.
-4. **What knowledge piles up?** PDFs, contracts, notes, spreadsheets, emails — the raw material that should become a queryable wiki in `02-DOCS`.
+4. **What knowledge piles up?** PDFs, contracts, notes, spreadsheets, emails — the raw material that should become a queryable wiki in `docs`.
 5. **Constraints.** Budget, data residency / privacy (especially for client data), who else touches this, compliance.
 
 ### Brownfield non-code harness
@@ -78,7 +78,7 @@ Same structure, different surfaces. The "stack" here is the set of **tools the h
 The "brownfield" of a non-code harness is an existing pile of tools and documents with no structure:
 
 1. **Inventory the tools** already in use and how they connect today (or don't).
-2. **Where does knowledge live now** and why is it hard to find — that's the `02-DOCS` job.
+2. **Where does knowledge live now** and why is it hard to find — that's the `docs` job.
 3. **What's the recurring pain** — onboarding, handoffs, lost context, manual copying between tools?
 4. **Confirm any integrations** you can detect (config files, exported credentials, `.env`-style files) — these become `01-TOOLS` folders.
 5. **Constraints & ownership** as above.

@@ -3,7 +3,7 @@ name: agent-eval
 description: "Use when measuring whether an LLM or agent system actually got better and gating merges on it: golden sets, fixing an inflated LLM-as-judge, scoring RAG (faithfulness, contextual recall) or agent trajectories (tool correctness, completion), or picking an eval framework. NOT building the agent loop, tools or RAG plumbing (that is `building-agents`)."
 tags: [evals, llm, agents, llm-as-judge, regression-gate, ai]
 recommends: [building-agents, prompt-engineering, observability]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Measure agent quality you can defend and gate on
@@ -180,7 +180,7 @@ Pick by where the eval runs and what it must do. Versions as of 2026-06 — re-v
 
 ## Project grounding
 
-If the workspace has a `02-DOCS/` harness, record the eval policy in `02-DOCS/wiki/stack/evals.md`: dataset location, scorer mix, gate baseline file, judge model, and the failure modes covered. Follow the harness [`wiki-article-template.md`](../harness/references/wiki-article-template.md) (`type: stack`) and index it in `02-DOCS/wiki/index.md`. This is **recorded, not gated** — skip silently if there is no harness.
+If the workspace has a `docs/` harness, record the eval policy in `docs/stack/evals.md`: dataset location, scorer mix, gate baseline file, judge model, and the failure modes covered. Follow the harness [`wiki-article-template.md`](../harness/references/wiki-article-template.md) (`type: stack`) and index it in `docs/index.md`. This is **recorded, not gated** — skip silently if there is no harness.
 
 ## verify.sh
 

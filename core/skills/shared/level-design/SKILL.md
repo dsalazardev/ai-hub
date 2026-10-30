@@ -4,7 +4,7 @@ description: "Use when designing a game level's space — blockout/greybox layou
 tags: [level-design, blockout, pacing, encounter, playtest]
 recommends: [game-design, godot, unity, unreal]
 profiles: [full]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Level design — space that plays before it's pretty
@@ -116,7 +116,7 @@ Reward taxonomy, secret-signposting, and risk/reward tuning → `references/guid
 - `game-design` — the systemic layer: mechanics, verbs, economy, progression, difficulty *systems*. Level design exercises those verbs in space; if the request is about the rules themselves, route there.
 - `game-storytelling` — narrative, quests, dialogue, and the meaning of environmental beats. Level design places the beat; storytelling authors it.
 - `godot` / `unity` / `unreal` — the engine tooling that *implements* a proven layout: nav meshes, occlusion, terrain/tilemap editors, lightmap/GI bakes, streaming, collision. Hand off here after the blockout plays well.
-- `harness` — the `02-DOCS` Karpathy-wiki this skill records level conventions into.
+- `harness` — the `docs` Karpathy-wiki this skill records level conventions into.
 
 ## Checklist
 
@@ -132,12 +132,12 @@ Reward taxonomy, secret-signposting, and risk/reward tuning → `references/guid
 - [ ] Played by a fresh, uncoached tester (and/or telemetry): hesitations/lost/deaths/skips logged, no dead cold-zones, no unfair death clusters, no ignored branches.
 - [ ] Secrets are breadcrumbed and reward observation; no mandatory progression hidden as a secret; best optional reward sits behind the biggest optional risk.
 
-## Project grounding (02-DOCS + CLAUDE.md)
+## Project grounding (docs + CLAUDE.md)
 
-When this skill runs in a project with a `02-DOCS/` layer (the [`harness`](../harness/SKILL.md) Karpathy wiki), record the level-design conventions there and index them from the root `CLAUDE.md`, so the next agent inherits them instead of re-deriving:
+When this skill runs in a project with a `docs/` layer (the [`harness`](../harness/SKILL.md) Karpathy wiki), record the level-design conventions there and index them from the root `CLAUDE.md`, so the next agent inherits them instead of re-deriving:
 
-1. **Find the article** `02-DOCS/wiki/stack/level-design.md`, indexed in `02-DOCS/wiki/index.md` (the Knowledge map).
+1. **Find the article** `docs/stack/level-design.md`, indexed in `docs/index.md` (the Knowledge map).
 2. **If missing or stale**, create/update it with the project's real conventions — the metrics block, the reserved interact-color, the pacing/breather cadence, the encounter-teaching pattern, and any per-level intensity graphs — then index it.
 3. **Read it first on every use** and stay consistent; when a convention changes, update the article (bump its `Updated` date) in the same change.
 
-No `02-DOCS/` layer? Skip silently (optionally suggest `harness`). Conventions are *recorded, not gated* — never block the design work on this.
+No `docs/` layer? Skip silently (optionally suggest `harness`). Conventions are *recorded, not gated* — never block the design work on this.

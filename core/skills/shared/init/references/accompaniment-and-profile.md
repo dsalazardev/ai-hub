@@ -1,6 +1,6 @@
 # Register & Profile — the first-contact question and how it persists
 
-This file holds the runtime detail behind the SKILL.md section "First contact". It defines: the first-contact question, the register it sets, the exact `02-DOCS` file formats, and the rule every downstream skill follows. (The filename is historical: the accompaniment dial it once described is retired.)
+This file holds the runtime detail behind the SKILL.md section "First contact". It defines: the first-contact question, the register it sets, the exact `docs` file formats, and the rule every downstream skill follows. (The filename is historical: the accompaniment dial it once described is retired.)
 
 ## Why this matters
 
@@ -43,9 +43,9 @@ If the person still does not understand, `orient` climbs its explanation ladder 
 
 ## Persistence format
 
-Both files live under `02-DOCS/wiki/harness/`. `init` creates this directory even on greenfield; the rest of `02-DOCS` is built by the `harness` skill.
+Both files live under `docs/harness/`. `init` creates this directory even on greenfield; the rest of `docs` is built by the `harness` skill.
 
-### `02-DOCS/wiki/harness/user-profile.md`
+### `docs/harness/user-profile.md`
 
 A living document — updated whenever the user reveals new goals, context, constraints, or changes the register. It is the single source of truth other skills read.
 
@@ -84,7 +84,7 @@ A living document — updated whenever the user reveals new goals, context, cons
 - Anything not yet answered, to revisit.
 ```
 
-### `02-DOCS/wiki/harness/decisions.md`
+### `docs/harness/decisions.md`
 
 **Append-only.** Never edit or delete an entry — if a decision is reversed, append a new entry that supersedes the old one and references it. This is the audit trail of why the project is the way it is.
 
@@ -115,8 +115,8 @@ Add (or update) a `## Knowledge map` section that links BOTH files. Create `CLAU
 ```markdown
 ## Knowledge map
 
-- [User profile](02-DOCS/wiki/harness/user-profile.md) — register (technical or analogies), goals, context, constraints. **Every skill reads this first and speaks in that register.**
-- [Decisions log](02-DOCS/wiki/harness/decisions.md) — append-only record of every significant decision and why.
+- [User profile](docs/harness/user-profile.md) — register (technical or analogies), goals, context, constraints. **Every skill reads this first and speaks in that register.**
+- [Decisions log](docs/harness/decisions.md) — append-only record of every significant decision and why.
 ```
 
-When the `harness` skill later builds the full wiki, it extends this same `## Knowledge map` with links to the rest of `02-DOCS/` — it does not replace the harness entries written here.
+When the `harness` skill later builds the full wiki, it extends this same `## Knowledge map` with links to the rest of `docs/` — it does not replace the harness entries written here.

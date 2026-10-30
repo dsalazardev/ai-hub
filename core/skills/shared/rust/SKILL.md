@@ -3,7 +3,7 @@ name: rust
 description: "Use when writing, reviewing, testing, or shipping Rust — ownership and the borrow checker (move/borrow/clone, Arc/RefCell, lifetimes), errors with Result/`?`/thiserror/anyhow, async on tokio, axum 0.8 services, cargo test, and sqlx + cargo-audit hardening. NOT the same service in Go (that is `go`), NOT a desktop webview shell (that is `tauri`)."
 tags: [rust, tokio, axum, async, backend, service]
 recommends: [go, postgresdb, secure-coding, deployment]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Idiomatic Rust services
@@ -306,14 +306,14 @@ Containerfile + CI -> [`deployment`](../deployment/SKILL.md).
 
 Format and lint are build gates, not suggestions.
 
-## Project grounding (02-DOCS)
+## Project grounding (docs)
 
-In a project with a `02-DOCS/` layer (the [`harness`](../harness/SKILL.md) wiki), the service decisions
-live in `02-DOCS/wiki/stack/rust.md`, indexed from `02-DOCS/wiki/index.md`. Read it first and stay
+In a project with a `docs/` layer (the [`harness`](../harness/SKILL.md) wiki), the service decisions
+live in `docs/stack/rust.md`, indexed from `docs/index.md`. Read it first and stay
 consistent; if it is missing or stale, write the project's real choices there — crate/workspace layout,
 runtime (tokio), HTTP framework (axum 0.8), error strategy (thiserror enum + `IntoResponse` mapping), DB
 layer (sqlx + pool), tracing and concurrency defaults — bump its `Updated` date, and index it. No
-`02-DOCS/`? Skip silently. Conventions are *recorded, not gated* — never block the task on this.
+`docs/`? Skip silently. Conventions are *recorded, not gated* — never block the task on this.
 
 [`go`](../go/SKILL.md) is the structural twin: same write/review/test/ship service shape, GC +
 goroutines + multi-return errors instead of ownership + futures + `Result`. A desktop shell around a

@@ -3,7 +3,7 @@ name: aws-essentials
 description: "Use when standing up the core AWS surface a small product needs: hardening a fresh account, a private S3 bucket, encrypted RDS Postgres, ECS Fargate vs EC2, CloudFront + OAC, or scoping an IAM policy to least privilege. NOT the CI pipeline that ships the container (that is `deployment`), NOT app-code access-control review (that is `secure-coding`)."
 tags: [aws, cloud, iam, s3, infrastructure]
 recommends: [deployment, secure-coding, dynamodb, postgresdb]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # AWS essentials — the core surface a small product needs, secured from the first command

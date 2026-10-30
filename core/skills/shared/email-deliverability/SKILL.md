@@ -3,7 +3,7 @@ name: email-deliverability
 description: "Use when mail already sent lands in spam, is rejected, or fails the Gmail/Yahoo bulk-sender checks and the fix is authentication and reputation, not the sending code: SPF/DKIM/DMARC alignment, domain warmup, spam-complaint rate, one-click unsubscribe, BIMI. NOT putting mail on the wire through a provider API (that is `email-connector`)."
 tags: [email, deliverability, spf, dkim, dmarc, bimi, sender-reputation, bulk-sender]
 recommends: [email-connector, newsletter, cold-outreach, gdpr-privacy, data-policy]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # email-deliverability — make mail authenticate and land in the inbox

@@ -3,7 +3,7 @@ name: runpod
 description: "Use when running GPU compute on RunPod and deciding between Pods (hourly, always-on) and Serverless (per-second, autoscaling) for training, fine-tuning or inference — serverless endpoints, handler workers, worker Docker templates, network volumes, timeout and worker-count tuning, cold starts, and runaway bills. NOT Python-native serverless GPU with snapshot autoscaling (that is `modal`), NOT calling hosted prebuilt model APIs (that is `replicate`), NOT pulling weights from the Hub (that is `huggingface`)."
 tags: [runpod, gpu, serverless, inference, training, cost-control, vllm, ai-infra]
 recommends: [modal, replicate, huggingface, docker, llm-pipeline, cost-tracking, ollama]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # RunPod: GPU compute, two products, one bill

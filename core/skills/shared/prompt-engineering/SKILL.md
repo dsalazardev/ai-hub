@@ -3,7 +3,7 @@ name: prompt-engineering
 description: "Use when one prompt must give the same right answer across reruns, models, and pasted-in hostile input: forcing a fixed schema, picking the few-shot set, ordering the prompt blocks, or the inline cases you run while tuning. NOT the agent loop, tools, or retrieval (that is `building-agents`), NOT a standing CI eval harness (that is `agent-eval`)."
 tags: [prompts, llm, few-shot, structured-output, evals]
 recommends: [building-agents, agent-eval, structured-extraction]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Prompt engineering: one robust prompt

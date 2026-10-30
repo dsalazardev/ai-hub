@@ -48,34 +48,57 @@ skills:
   publish:
     - ab-testing
     - accessibility
+    - ads
     - agent-eval
     - agent-safety
+    - ai-media
+    - analytics
     - angular
     - api-connector-builder
     - api-design
+    - article-writing
     - astro
     - author-skill
     - automation-flows
+    - automation-strategy
     - aws-essentials
     - backups
     - bash-scripting
+    - bookkeeping
+    - brand-identity
+    - brand-voice
     - building-agents
+    - business-intelligence
+    - calendar-scheduling
+    - case-studies
     - chatbot
     - chrome-extension
     - clickhouse-analytics
+    - client-onboarding
     - cloudflare
     - codebase-onboarding
     - code-review
+    - cold-outreach
+    - community
+    - competitor-watch
+    - compliance
     - compose-multiplatform
     - connect-tool
     - constitution
+    - content-engine
     - context-budget
     - continuous-learning
+    - contracts
     - coolify
     - cost-tracking
+    - course-builder
+    - course-storytelling
     - cpp
     - csharp-dotnet
+    - customer-support
+    - dashboard
     - data-cleaning
+    - data-policy
     - data-scraper
     - db-migrations
     - debug
@@ -88,6 +111,7 @@ skills:
     - digitalocean
     - django
     - docker
+    - document-processing
     - domains-dns
     - drizzle-orm
     - duckdb
@@ -95,17 +119,24 @@ skills:
     - e2e-testing
     - electron
     - elixir
+    - email-connector
     - email-deliverability
     - embeddings-search
     - error-handling
+    - e-signature
     - expo
+    - fable-operator
     - fal
     - fastapi
+    - finance-ops
+    - financial-model
     - finetuning
     - firebase
     - flutter
     - fly-io
+    - forecasting
     - ftd
+    - fundraising
     - game-design
     - gamedev-multiplayer
     - gamedev-pathing
@@ -114,49 +145,87 @@ skills:
     - gamedev-shipping
     - game-storytelling
     - gcp-essentials
+    - gdpr-privacy
     - github-actions
     - gitlab-auth
     - gitlab-workflow
     - git-workflow
     - go
     - godot
+    - google-workspace
+    - grants
     - harness
     - hetzner
+    - hiring
     - htmx
     - huggingface
     - idea-refinement
     - init
+    - instagram-api
+    - inventory
+    - investor-materials
+    - invoicing
+    - ip-trademark
     - java
     - knowledge-ops
     - kotlin-android
+    - kpi-framework
+    - landing-copy
     - laravel
+    - lead-gen
     - level-design
+    - linkedin-api
+    - linkedin-carousels
+    - linkedin-content
+    - linkedin-outreach
+    - linkedin-strategy
     - llm-pipeline
+    - logistics-ops
     - machine-learning
+    - make
+    - marketing
+    - market-research
+    - medium-publishing
+    - medium-strategy
+    - medium-writing
+    - meeting-notes
     - modal
     - mongodb
     - monitoring
     - mysql
+    - n8n
     - neon
     - nestjs
     - netlify
+    - newsletter
     - nextjs
     - nlp
     - no-code-app
     - nodejs
+    - notion-connector
     - observability
     - ollama
     - open-weights
     - orient
     - parallel
+    - people-ops
     - performance
     - phoenix
     - php
+    - pitch-deck
     - planetscale
     - planning-with-files
+    - podcast
     - postgresdb
+    - power-automate
+    - presentations
+    - press-kit
+    - pricing
     - prisma-orm
+    - procurement
+    - project-ops
     - prompt-engineering
+    - proposals
     - python
     - rag
     - rails
@@ -164,24 +233,40 @@ skills:
     - react
     - react-native
     - redis
+    - remotion-video
     - render
     - replicate
+    - replicate-images
+    - reporting
     - research-ops
+    - retention
+    - review-management
+    - roast-me
     - ruby
     - runpod
     - rust
+    - sales-pipeline
     - scaling
+    - scroll-film
     - secure-coding
     - security-scan
+    - seo-geo
     - shopify
+    - shortform-editing
+    - shortform-ideation
+    - shortform-packaging
+    - shortform-strategy
     - simplify-code
     - skill-scout
+    - social-publisher
     - solid-js
+    - sop-builder
     - source-grounded-development
     - spreadsheet-ops
     - spring-boot
     - sql
     - sqlite-turso
+    - stripe
     - structured-extraction
     - suggest
     - supabase
@@ -189,14 +274,17 @@ skills:
     - swift-ios
     - tauri
     - technical-writing
+    - terms-conditions
     - testing-go
     - testing-py
     - testing-web
+    - tiktok-api
     - together-fireworks
     - training-data
     - translation-l10n
     - typescript
     - ui-engineering
+    - unit-economics
     - unity
     - unreal
     - unslop
@@ -204,11 +292,21 @@ skills:
     - variant-explorer
     - vector-db
     - vercel
+    - video-shorts
+    - viral-score
     - vllm
     - vue-nuxt
     - webhooks
+    - webinar
+    - whatsapp-telegram
     - wordpress
     - worktrees
+    - youtube-api
+    - youtube-ideation
+    - youtube-packaging
+    - youtube-strategy
+    - youtube-thumbnails
+    - zapier
   selection: full
 
 agents:
@@ -262,8 +360,8 @@ rules:
   selection: custom
 
 catalog:
-  version: 0.3.0
-  hash: 9605441252114d0ccd1e03a433420d7645618f8956c71bd16634d35e8b427f66
+  version: 0.5.0
+  hash: 161e1531fb9fc3fd50919e73e26db856f2e01f11f5018927fe0115dc70a42f2b
 
 mcp:
   source: mcp-manifest.yaml

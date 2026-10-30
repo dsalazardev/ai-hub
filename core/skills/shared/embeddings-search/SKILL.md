@@ -3,7 +3,7 @@ name: embeddings-search
 description: "Use when choosing an embedding model, chunk size, or query form, when semantic search returns irrelevant results, when adding hybrid BM25+vector or a reranker, or when a retrieval change needs a number (recall@k, nDCG, MRR). NOT operating the store — index tuning, quantization (that is `vector-db`) — nor the retrieve-to-answer loop (that is `rag`)."
 tags: [embeddings, semantic-search, chunking, hybrid-search, reranking, rrf, retrieval-eval, mteb, matryoshka]
 recommends: [vector-db, rag, structured-extraction, prompt-engineering, postgresdb]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # embeddings-search — make and judge the vectors

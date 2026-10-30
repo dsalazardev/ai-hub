@@ -549,3 +549,51 @@ Ejecutada el 2026-10-29 sobre un consumidor temporal nuevo: `C:\Users\USUARIO\Ap
 | `doctor` | exit 0; `speckit:version: 1.2.5 dentro del rango >=1.2.3 <1.3.0` en [OK]; los 12 checks `speckit:*` en verde |
 
 La versión resuelta por el sondeo real (uvx, red) fue **1.2.5**, dentro del rango soportado. El plan impreso informa la resuelta, no el rango (design D5).
+
+## Hallazgo — skills no publicadas en core/skills/shared (2026-10-29, sesion refuter-panel propose)
+
+`git status` muestra ~100 directorios nuevos NO rastreados en `core/skills/shared/` (ads, ai-media, analytics, ..., zapier) que no estan en `skills.publish` del `manifest.yaml` (que sigue sin cambios vs HEAD). El `doctor` del taller por eso falla `skills:` y `completeness:` ("skills.publish incompleto: faltan ads, ..."). No es causado por refuter-panel (solo escribio en `openspec/` y `.planning/`); a las 11:15, tras archivar speckit-latest, el doctor estaba sano. No se tocaron ni se publicaron: es trabajo en curso del usuario. `openspec validate refuter-panel --strict` esta en verde y no depende de ese estado. Pendiente: decision humana (publicarlas en un cambio propio, moverlas fuera del arbol o descartarlas); la fase apply de refuter-panel debera correr con ese estado resuelto porque brand.test escanea `core/skills` completo (incluye las no publicadas) y catalog/doctor exigen coherencia fuente/publicacion.
+
+## Sondas rojas de partida — cambio catalogo-completo (2026-10-29, apply)
+
+**Sonda 1a — doctor del taller (exit 1):** `[FAIL] skills:` nombra las 98 huérfanas
+(ads -> core/skills/shared, ai-media, analytics, article-writing, automation-strategy,
+bookkeeping, brand-identity, brand-voice, ..., youtube-thumbnails, zapier) y
+`[FAIL] completeness: skills.publish incompleto: faltan ads, ... zapier` (las mismas 98).
+Resto de checks en [OK]. Es el estado que catalogo-completo arregla.
+
+**Sonda 1b — brand.test (2 fallidos / 2 pasados, exit 1):**
+- FAIL `brand gate > keeps every published source free of third-party brand residue`
+  (muestra: `core/skills/shared/brand-identity/SKILL.md:125` con `com.risco.contrast`;
+  también `ads/SKILL.md:146` con `npx @ericrisco/rsc copy check`).
+- FAIL `brand gate > marks every published skill with origin: ai-hub` (el catálogo ya no
+  cumple el origin viejo: 107 SKILL.md dicen `dsalazardev`).
+- Pasados: los 2 tests de NOTICE.md.
+
+**Censo (tarea 1.2, script fm-check.js):** untracked: 98, con problemas de frontmatter: 0.
+Orígenes en los 272 SKILL.md: `ai-hub` 165 / `dsalazardev` 107 / `risco` 0.
+
+**Desviación observada:** el doctor muestra además `[FAIL] context: contexto desactualizado;
+ejecuta ai-hub context` — no es causado por las 98 ni por este change (drift preexistente del
+taller). Se aborda en la verificación final (6.1) para dejar el doctor sano.
+
+**Sonda 2 — gate cerrado (tras publicar las 98 SIN tocar brand.test):** `npx vitest run
+tests/brand.test.ts` sigue en rojo: 2 fallidos / 2 pasados (exit 1). Mismos dos tests:
+`keeps every published source free of third-party brand residue` y `marks every published
+skill with origin: ai-hub`. Prueba que el gate estaba cerrado antes del cambio de marca;
+recién tras el cambio de origen (grupo 3) pasa a verde.
+
+**Sonda 3 — invariante de vocabulario (tras 4.4, gate extendido):** con una línea
+`02-DOCS/wiki/index.md` inyectada en `core/skills/shared/ab-testing/SKILL.md`, brand.test falla
+nominando el archivo y la línea: `core/skills/shared/ab-testing/SKILL.md:161: Sonda: leer
+02-DOCS/wiki/index.md antes de empezar.` (1 failed / 3 passed). Archivo restaurado byte a byte.
+Las variantes rsc/risco quedan cubiertas por la autoprueba del patrón (test 4) y por las sondas
+1-2, que cazaron residuo real. Tras la reescritura completa: brand.test 4/4 en verde.
+
+**Residuo extra cazado por el gate extendido (10 líneas, corregidas en el mismo cambio):** el
+patrón ampliado con `origin:\s*ai-hub\b` y `02-DOCS` (case-insensitive) encontró lo que el patrón
+viejo no veía: author-skill enseñaba `origin: ai-hub` en 7 líneas (SKILL.md, evals, references),
+knowledge-ops tenía el tag `02-docs` en minúsculas, y las reglas universales skill-quality
+llevaban 2 referencias (`origin: ai-hub` en skill-rubric.md:26 y la spec
+`02-DOCS/wiki/sdd/specs/generalization-gate.md` en skill-harden-rubric.md:61 — el gate también
+barre `rules/`). Todo reescrito al vocabulario del motor.

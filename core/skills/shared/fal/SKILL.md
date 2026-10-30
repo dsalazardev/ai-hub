@@ -3,7 +3,7 @@ name: fal
 description: "Use when calling a fal.ai endpoint by id to generate image, audio, or video from JS/Python/curl: subscribe vs submit, queue states, ED25519 webhook signature verification, per-call cost, or migrating off @fal-ai/serverless-client. NOT which model or art direction (that is ai-media); NOT the same models on another platform (that is replicate)."
 tags: [fal, fal-ai, inference, image-generation, video-generation, queue, webhooks, serverless]
 recommends: [ai-media, replicate, replicate-images, modal, webhooks]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # fal

@@ -3,7 +3,7 @@ name: spreadsheet-ops
 description: "Use when working a spreadsheet programmatically — writing or repairing a formula, generating an .xlsx with Python including charts and conditional formats, driving Google Sheets from a script, building a read-transform-write pipeline, or writing an in-sheet macro or trigger. Covers formula errors, Sheets API quota, service-account permissions, and formulas that read back blank. NOT pure dedupe or normalisation with no sheet output (that is `data-cleaning`), NOT scraping a web table into rows (that is `data-scraper`), NOT multi-app event wiring (that is `automation-flows`)."
 tags: [spreadsheet, excel, google-sheets, openpyxl, gspread, apps-script, formulas, automation]
 recommends: [data-cleaning, data-scraper, automation-flows, google-workspace, reporting, duckdb, document-processing]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # spreadsheet-ops — the spreadsheet as a programmable surface

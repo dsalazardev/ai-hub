@@ -1,6 +1,6 @@
 # Plan artifact template
 
-Copy this skeleton into `02-DOCS/wiki/sdd/plans/<slug>.md` and fill every section. The `<slug>`
+Copy this skeleton into `specs/<feature>/plan.md` and fill every section. The `<slug>`
 must match the spec's slug exactly — one plan per spec, same name. Delete the parenthetical
 guidance once a section is written; never leave an empty section (an empty section is a `tasks`
 phase that can't find its input). Keep everything at the *structure* altitude: contracts, shapes,

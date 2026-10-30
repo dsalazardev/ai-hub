@@ -4,7 +4,7 @@ description: "Use when a page or interaction is slow for one user and the fix st
 tags: [performance, core-web-vitals, lcp, inp, cls, bundle-size, profiling, react, web-vitals]
 recommends: [scaling, postgresdb, redis, nextjs, react, observability, monitoring]
 profiles: []
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Performance: make one thing fast

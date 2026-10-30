@@ -28,7 +28,7 @@ the concrete model is resolved from config.
 | **balanced** | execution | writing specs, code, tests, breaking work into tasks, interpreting check output |
 | **light** | mechanical / high-volume / exploration | scaffolding, file sweeps, scans, git plumbing, repo detection |
 
-## The profile (lives in `02-DOCS/wiki/sdd/config.yaml`)
+## The profile (lives in `.specify/config.yaml`)
 
 `sdd-init` writes this block. It is the canonical shape — keep it byte-for-byte in sync with
 the Config Shape in `../../sdd-init/SKILL.md` and the table in `../SKILL.md`.
@@ -94,7 +94,7 @@ The user owns this. They change a phase by adding it to `models.overrides` (e.g.
 
 Run this at the start of any SDD phase, after reading the user profile:
 
-1. **Read** `models` from `02-DOCS/wiki/sdd/config.yaml`. If the block is absent or
+1. **Read** `models` from `.specify/config.yaml`. If the block is absent or
    `enabled: false` → **do nothing**: honor the session model, say nothing about models.
 2. **Resolve the tier** for this phase: `models.overrides[phase]` if present, else
    `models.phases[phase]`. (`parallel` resolves a tier per unit instead — see below.)
@@ -111,7 +111,7 @@ Run this at the start of any SDD phase, after reading the user profile:
 5. **Skip routing entirely** for a one-line / trivial change, exactly as the SDD skip rule says
    for the rest of the chain. Ceremony serves shipping, not the other way around.
 6. **Record** the model actually used in the phase's result envelope (`model` field, below).
-   Log it to `02-DOCS/wiki/sdd/decisions.md` only when the choice actually mattered (e.g. you
+   Log it to `docs/sdd/decisions.md` only when the choice actually mattered (e.g. you
    overrode a tier for a hard plan) — not on every phase.
 
 ### How to announce a switch

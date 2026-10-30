@@ -3,7 +3,7 @@ name: ab-testing
 description: "Use when designing or analyzing a controlled experiment — falsifiable hypothesis, sample size from an MDE, reading significance/CI/power, CUPED, or rescuing tests that won't go significant. NOT recurring metric tracking (that is `analytics`), NOT north-star/KPI trees (that is `kpi-framework`), NOT projecting metrics forward (that is `forecasting`)."
 tags: [ab-testing, experimentation, statistics, cuped, sample-size, hypothesis-testing]
 recommends: [analytics, kpi-framework, forecasting, data-cleaning, python, reporting]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # A/B testing — design and read a defensible experiment

@@ -3,7 +3,7 @@ name: ollama
 description: "Use when running open-weight LLMs locally with Ollama — pulling and tagging models, calling the local API, picking a quantization or GGUF, writing Modelfiles, and sizing VRAM and RAM for the machine at hand. NOT remote or managed GPU serving and autoscaling (that is `runpod`), NOT downloading raw weights or datasets (that is `huggingface`), NOT retrieval pipeline design (that is `rag`)."
 tags: [ollama, local-llm, gguf, quantization, self-hosted-inference]
 recommends: [huggingface, runpod, modal, llm-pipeline, rag]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Ollama — run open-weight LLMs on one box

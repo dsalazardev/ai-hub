@@ -6,7 +6,7 @@ compatibility: Requires gitlab-auth (GITLAB_URL/GITLAB_TOKEN/GITLAB_PROJECT_PATH
 metadata:
   author: ai-hub
   version: "1.0"
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # GitLab Workflow — operación diaria contra la API v4

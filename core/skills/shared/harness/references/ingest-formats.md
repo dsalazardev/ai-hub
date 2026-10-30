@@ -3,7 +3,7 @@
 This document defines how the **Fetch** step of the wiki protocol
 (`wiki-protocol.md`) converts an arbitrary input — a PDF invoice, a phone
 photo, a bank-statement CSV, an API dump — into the markdown that lives in
-`02-DOCS/raw/`. It is the "el agente sale a pasear" engine for raw data:
+`docs/raw/`. It is the "el agente sale a pasear" engine for raw data:
 the wiki accepts **any** format, not just text.
 
 The promise: **you drop a file, the agent figures out what it is and how to

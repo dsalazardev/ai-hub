@@ -3,7 +3,7 @@ name: spring-boot
 description: "Use when building, reviewing, testing, securing or configuring a Spring Boot 4 / Framework 7 backend — controllers, services, Spring Data JPA, application.yml, SecurityFilterChain, slice tests. NOT plain modern-Java language work like records or virtual threads (that is `java`); NOT engine-level SQL schema/index/EXPLAIN (that is `postgresdb`)."
 tags: [java, spring, jpa, security, backend]
 recommends: [java, postgresdb, secure-coding, deployment]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Spring Boot backends (Boot 4 / Framework 7)
@@ -344,7 +344,7 @@ dependency for the basics.
 
 ## Project grounding
 
-If the repo has a `02-DOCS/` wiki, record stack decisions (Boot version, security posture,
-test strategy, migration tool) in `02-DOCS/wiki/stack/spring-boot.md` and link it from the
-`CLAUDE.md` Knowledge map. This is recorded, not gated — if there is no `02-DOCS/`, skip
+If the repo has a `docs/` wiki, record stack decisions (Boot version, security posture,
+test strategy, migration tool) in `docs/stack/spring-boot.md` and link it from the
+`CLAUDE.md` Knowledge map. This is recorded, not gated — if there is no `docs/`, skip
 silently; you may suggest the project harness if the user wants persistent docs.

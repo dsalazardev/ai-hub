@@ -1,6 +1,6 @@
 # Constitution template
 
-Render this into `02-DOCS/wiki/sdd/constitution.md`. Keep it to 1-2 screens. Every principle is one numbered, testable statement; link the `02-DOCS/wiki/stack/*` article or the script that enforces it rather than pasting the mechanic. Strike-and-replace on amendment — never silently edit a ratified principle.
+Render this into `.specify/memory/constitution.md`. Keep it to 1-2 screens. Every principle is one numbered, testable statement; link the `docs/stack/*` article or the script that enforces it rather than pasting the mechanic. Strike-and-replace on amendment — never silently edit a ratified principle.
 
 ---
 
@@ -19,22 +19,22 @@ version: v1.0.0
 
 > Version: v1.0.0 · Ratified: YYYY-MM-DD · Last amended: YYYY-MM-DD
 > The non-negotiable principles every ai-hub Spec-Kit phase obeys. Stack mechanics live in
-> `02-DOCS/wiki/stack/*`; this file ratifies the principle and links the detail.
+> `docs/stack/*`; this file ratifies the principle and links the detail.
 
 ## 1. Stack canon
 
 1. Primary language(s) and runtime: <e.g. TypeScript on Node 22, Python 3.12>. Pinned in
-   `<manifest>`. Detail: `02-DOCS/wiki/stack/<x>.md`.
+   `<manifest>`. Detail: `docs/stack/<x>.md`.
 2. Frameworks fixed: <e.g. Next.js App Router, FastAPI>. Changing one is a MAJOR amendment.
 3. Package manager: <e.g. pnpm / uv>. One lockfile, committed.
 
 ## 2. Quality bar
 
 4. Code is formatted and lint-clean on every commit (<formatter/linter>, zero warnings).
-   Enforced by `<pre-commit / CI step>` — detail in `02-DOCS/wiki/stack/<x>.md`.
+   Enforced by `<pre-commit / CI step>` — detail in `docs/stack/<x>.md`.
 5. Types are <strict / checked>; the type checker passes with no errors before merge.
 6. Tests gate the merge: <TDD red→green→refactor>; line coverage ≥ <N>% on changed code.
-   Test tooling: `02-DOCS/wiki/stack/<x>.md`.
+   Test tooling: `docs/stack/<x>.md`.
 
 ## 3. Conventions
 
@@ -58,7 +58,7 @@ version: v1.0.0
 ## 6. UX / accessibility floor (if there is a UI)
 
 14. Minimum accessibility bar: <e.g. WCAG 2.2 AA, keyboard-navigable, visible focus>.
-    Detail: `02-DOCS/wiki/stack/design.md`.
+    Detail: `docs/stack/design.md`.
 
 ## 7. Performance budgets (where they matter)
 
@@ -66,7 +66,7 @@ version: v1.0.0
 
 ## 8. Knowledge & decisions
 
-16. Every significant decision is appended to `02-DOCS/wiki/sdd/decisions.md` (date, options,
+16. Every significant decision is appended to `docs/sdd/decisions.md` (date, options,
     why). The constitution is the highest-order decision record.
 
 ## Definition of Done (the merge bar `verify` runs against)
@@ -96,5 +96,5 @@ A change ships only when ALL hold:
 - **Drop sections that don't apply.** No UI → drop §6. No hard perf budget → drop §7. Do not pad.
 - **Renumber on amendment carefully.** Prefer striking a principle (`~~10. …~~ (superseded by 17)`) and appending the new one over renumbering, so existing citations ("principle 10") stay valid.
 - **Version bump rules:** MAJOR = remove/reverse a principle; MINOR = add/tighten; PATCH = wording only.
-- **Link, don't paste.** Any concrete config (lint rules, pytest ini, Tailwind tokens) stays in `02-DOCS/wiki/stack/*`; the principle points to it.
+- **Link, don't paste.** Any concrete config (lint rules, pytest ini, Tailwind tokens) stays in `docs/stack/*`; the principle points to it.
 - **One screen test.** If the rendered file scrolls past ~2 screens, you are documenting, not legislating — move detail to the wiki.

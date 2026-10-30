@@ -4,7 +4,7 @@ description: "Use when the question is how interface should be BUILT — compone
 tags: [interface, frontend, architecture, components, state, craft]
 recommends: [design]
 profiles: [core, full]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # UI engineering — the decisions between the design and the framework

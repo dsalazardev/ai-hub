@@ -3,7 +3,7 @@ name: clickhouse-analytics
 description: "Use when running a ClickHouse server for high-volume OLAP: choosing a MergeTree engine and ORDER BY/PARTITION BY keys, ingesting billions of event/log/metric rows, pre-aggregating with materialized views, or fixing a query that scans instead of pruning. NOT in-process file analytics (that is `duckdb`), NOT OLTP CRUD indexing (that is `postgresdb`)."
 tags: [clickhouse, olap, columnar, mergetree, analytics, materialized-views, data-ingestion, sql]
 recommends: [duckdb, postgresdb, dashboard, kpi-framework, reporting, business-intelligence]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # ClickHouse analytics

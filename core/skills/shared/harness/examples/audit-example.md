@@ -61,17 +61,17 @@ Deletion of 00-TOOLS/: BLOCKED — AMBIGUOUS present.
 ### 03-NOTES/
 | File | Classification | Proposed destination |
 |------|----------------|----------------------|
-| architecture.md | DOCS | 02-DOCS/raw/migrated/03-NOTES/architecture.md |
+| architecture.md | DOCS | docs/raw/migrated/03-NOTES/architecture.md |
 
 Total: 1 · TOOLING: 0 · DOCS: 1 · AMBIGUOUS: 0
 Deletion of 03-NOTES/: candidate for second consent.
 
-## 4. Documentation → 02-DOCS/ (embedded protocol)
+## 4. Documentation → docs/ (embedded protocol)
 Sources to ingest (following references/wiki-protocol.md):
 - 01-TOOLS/README.md (after creation)
 - 01-TOOLS/STRIPE/README.md + CREDENTIALS.md
 - 01-TOOLS/MAILJET/README.md + CREDENTIALS.md
-- 02-DOCS/raw/migrated/03-NOTES/architecture.md (after migration)
+- docs/raw/migrated/03-NOTES/architecture.md (after migration)
 - Root CLAUDE.md and AGENTS.md
 
 ## 5. Root files

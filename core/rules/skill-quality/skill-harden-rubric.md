@@ -58,7 +58,7 @@ Why ex-ante and not only as review: moving this constraint from after-the-edit t
 before-the-edit is what buys generalization cheaply. The measured version of this result — plus the
 warning that richer feedback **without** this gate makes held-out performance *worse* — is in
 [HarnessCompass](https://arxiv.org/abs/2608.01918); the reasoning it drove is recorded in
-`02-DOCS/wiki/sdd/specs/generalization-gate.md`.
+`specs/generalization-gate/spec.md`.
 
 ## Eval-fix guard (independent judge)
 

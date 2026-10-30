@@ -3,7 +3,7 @@ name: netlify
 description: "Use when deploying or operating a site on Netlify — writing or fixing netlify.toml, authoring Functions or Edge Functions, redirects, rewrites and headers, env vars per deploy context, and shipping via the Netlify CLI. NOT deploying to Vercel (that is `vercel`)."
 tags: [netlify, deployment, serverless-functions, edge-functions, netlify-toml, redirects]
 recommends: [vercel, cloudflare, nextjs, domains-dns, github-actions]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Netlify — netlify.toml, Functions, Edge Functions, redirects & the CLI

@@ -5,7 +5,7 @@ tags: [sdd, clarify, questions]
 recommends: [plan]
 profiles: [full]
 runtime: false
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Clarify — the de-risking gate before planning
@@ -14,17 +14,17 @@ A spec written in one sitting always lies a little. It states what the author *t
 
 This is the fourth phase of the ai-hub Spec-Kit chain (`constitution` → `specify` → **`clarify`** → `plan` → `tasks` → `analyze` → `implement` → `verify` → `review` → `ship`); the method itself lives in `../sdd/SKILL.md`. `specify` turned a fuzzy intent into a spec; clarify interrogates that spec, asks the user the questions that actually change the build, and writes the answers back so the spec becomes safe to plan from. It produces **no new artifact** — it sharpens the existing one in place. The line is **specify creates, clarify de-risks, plan designs**: if you find yourself proposing how to *build* it, you have left clarify.
 
-**Model tier: `balanced`** — this phase ranks and asks the few high-leverage questions, it does not design architecture. Resolve and apply it per `../sdd/references/model-routing.md`; routing is off unless `models.enabled: true` in `02-DOCS/wiki/sdd/config.yaml`.
+**Model tier: `balanced`** — this phase ranks and asks the few high-leverage questions, it does not design architecture. Resolve and apply it per `../sdd/references/model-routing.md`; routing is off unless `models.enabled: true` in `.specify/config.yaml`.
 
-**Register.** Read `technical_level` from `02-DOCS/wiki/harness/user-profile.md` (the `02-DOCS/wiki/` convention is owned by `../harness/SKILL.md`). Clarify is question-heavy, so the voice matters here more than almost anywhere. Ask only the questions whose answer changes the build; propose safe defaults for everything else and list them as "assumed unless you object". Each question carries one line of *why* and the trade-off behind each option, in the `orient` voice. For a `non-technical` reader, frame each option with an everyday analogy. With no profile: use analogies and ask once "technical or with analogies?".
+**Register.** Read `technical_level` from `docs/harness/user-profile.md` (the `docs/` convention is owned by `../harness/SKILL.md`). Clarify is question-heavy, so the voice matters here more than almost anywhere. Ask only the questions whose answer changes the build; propose safe defaults for everything else and list them as "assumed unless you object". Each question carries one line of *why* and the trade-off behind each option, in the `orient` voice. For a `non-technical` reader, frame each option with an everyday analogy. With no profile: use analogies and ask once "technical or with analogies?".
 
 ## Read first — the inputs
 
 Clarify never works blind. Before asking a single question, load three things:
 
-1. **The spec.** Read the target spec under `02-DOCS/wiki/sdd/specs/<slug>.md` end to end. If the path wasn't given, find the most recently touched spec or ask which one. Its *Points to clarify* is a **typed** handoff, not a question list — read the types before you plan a single question (below).
-2. **The constitution.** Read `02-DOCS/wiki/sdd/constitution.md` if it exists. Its principles (stack canon, quality bars, conventions) resolve a surprising number of "ambiguities" without bothering the user — if the constitution already fixes the auth method or the data region, that's answered, not open.
-3. **The harness profile.** `02-DOCS/wiki/harness/user-profile.md`, for the register above.
+1. **The spec.** Read the target spec under `specs/<feature>/spec.md` end to end. If the path wasn't given, find the most recently touched spec or ask which one. Its *Points to clarify* is a **typed** handoff, not a question list — read the types before you plan a single question (below).
+2. **The constitution.** Read `.specify/memory/constitution.md` if it exists. Its principles (stack canon, quality bars, conventions) resolve a surprising number of "ambiguities" without bothering the user — if the constitution already fixes the auth method or the data region, that's answered, not open.
+3. **The harness profile.** `docs/harness/user-profile.md`, for the register above.
 
 Citing what you read ("checked the constitution — auth is already fixed to OAuth, so that's not an open question") shows your work and prevents re-litigating settled decisions.
 
@@ -140,7 +140,7 @@ interpreting prose (contract: `../sdd/SKILL.md`):
 {
   "status": "complete|blocked|failed",
   "executive_summary": "Open points resolved; the spec is de-risked and ready to plan against.",
-  "artifact": "02-DOCS/wiki/sdd/specs/<slug>.md",
+  "artifact": "specs/<feature>/spec.md",
   "next_recommended": "plan",
   "risk": "low|medium|high",
   "skill_resolution": {
@@ -159,4 +159,4 @@ Hand off to **`plan`** — turn the now-sharp spec into a technical implementati
 
 ## Orientación (siempre)
 
-Habla con la voz de `orient`: frases cortas, una idea por frase, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `02-DOCS/wiki/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a `suggest` el "¿instalo la skill que falta?".)
+Habla con la voz de `orient`: frases cortas, una idea por frase, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `docs/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a `suggest` el "¿instalo la skill que falta?".)

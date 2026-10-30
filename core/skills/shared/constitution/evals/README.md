@@ -48,7 +48,7 @@ Goal: prove the skill changes the answer, not just the routing.
 
 **Pass bar: WITH the skill covers >= 80% of `must_include`; WITHOUT clearly
 lower** (target a >= 30-point gap). The discriminating behaviors are: the
-reconciliation pass against `02-DOCS/wiki/stack/*` (link, don't paste), testable
+reconciliation pass against `docs/stack/*` (link, don't paste), testable
 numbered principles, the fixed authorship + decisions-logged principles,
 versioning + amendment log, the Definition-of-Done checklist, and explicit user
 ratification. A base agent typically writes a vague, unversioned wall of

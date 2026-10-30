@@ -4,7 +4,7 @@ description: "Use when work is about to become commits and needs isolation first
 tags: [git, worktree, isolation]
 recommends: []
 profiles: [core, full]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # worktrees — isolate the work before you touch it
@@ -18,7 +18,7 @@ default branch.
 `worktrees` is an **on-demand** step in the SDD chain — not a numbered phase, but the gate that
 `implement` calls when it finds itself on `main`. It does exactly one job: confirm an isolated
 workspace exists, create one if it doesn't, and hand back. It writes no runtime code and leaves no
-artifact under `02-DOCS`; isolation is plumbing, not knowledge.
+artifact under `docs`; isolation is plumbing, not knowledge.
 
 ```text
 constitution → specify → clarify → plan → tasks → analyze → [ worktrees ] → implement → verify → review → ship
@@ -54,9 +54,9 @@ extra directory. The rest of this skill assumes a worktree; the branch path is t
 
 Run this in order. Each check prevents a class of "lost work" you can't easily undo.
 
-1. **Read the register** — `technical_level` in `02-DOCS/wiki/harness/user-profile.md` picks
+1. **Read the register** — `technical_level` in `docs/harness/user-profile.md` picks
    technical terms or plain words with analogies (see "Talking about it" below). No profile yet, or
-   no `02-DOCS/` at all (a worktree can be created in any git repo with no ai-hub harness present) →
+   no `docs/` at all (a worktree can be created in any git repo with no ai-hub harness present) →
    use analogies: explain what a worktree is in one plain sentence before making one, and proceed.
 2. **Confirm you're in a git repo.** `git rev-parse --is-inside-work-tree`. If not, there's nothing
    to isolate with git — tell the user; don't fabricate a worktree.
@@ -75,8 +75,8 @@ Run this in order. Each check prevents a class of "lost work" you can't easily u
 5. **Pick the base ref.** Branch from an up-to-date default branch unless the user wants to build on
    local HEAD. Stale base = predictable merge pain later. Default: fresh from `origin/<default>`.
 6. **Choose a name** tied to the feature slug — the same `<slug>` the spec and plan use
-   (`feat/<slug>`), so the branch, the spec at `02-DOCS/wiki/sdd/specs/<slug>.md`, and the plan at
-   `02-DOCS/wiki/sdd/plans/<slug>.md` all line up and are trivially traceable. A change that is not
+   (`feat/<slug>`), so the branch, the spec at `specs/<feature>/spec.md`, and the plan at
+   `specs/<feature>/plan.md` all line up and are trivially traceable. A change that is not
    a feature takes the type that fits — `fix/<slug>`, `docs/<slug>`, `chore/<slug>` — from the same
    Conventional Commits vocabulary the commit guard already enforces here. **The prefix is load
    bearing**: the automatic cleanup uses it, with the location, as the two signals that say a
@@ -170,7 +170,7 @@ a linked worktree (`git rev-parse --git-dir` ≠ `--git-common-dir`), rule out a
 
 ## Model tier — `light` (opt-in routing)
 
-This phase's default model tier is **`light`** — isolating the workspace is mechanical git work. Routing is **off** unless `models.enabled: true` in `02-DOCS/wiki/sdd/config.yaml`. When on: resolve this phase's tier (`models.overrides` wins over `models.phases`), map it to a model via `models.tiers`, and apply per `../sdd/references/model-routing.md` — announce the switch in one line when it differs from the session model, and dispatch any `Task`/`parallel` subagents on that model. Routing off or no profile → honor the session model silently. Never fake a switch a tool can't make; skip routing on a one-line change.
+This phase's default model tier is **`light`** — isolating the workspace is mechanical git work. Routing is **off** unless `models.enabled: true` in `.specify/config.yaml`. When on: resolve this phase's tier (`models.overrides` wins over `models.phases`), map it to a model via `models.tiers`, and apply per `../sdd/references/model-routing.md` — announce the switch in one line when it differs from the session model, and dispatch any `Task`/`parallel` subagents on that model. Routing off or no profile → honor the session model silently. Never fake a switch a tool can't make; skip routing on a one-line change.
 
 ## Talking about it
 
@@ -193,7 +193,7 @@ wish for brevity removes the check before risking someone's WIP.
 | "I'll name it `wip` / `temp` / `branch2`" | An untraceable name divorces the branch from its spec/plan, and the automatic cleanup will not claim it. Use `<type>/<slug>` — `feat/` for a feature, `fix/`, `docs/`, `chore/` for the rest. |
 | "I'll create the worktree AND start writing code right here" | This skill only isolates. Hand a clean isolated workspace to `implement`; don't blur the two steps. |
 | "Already on a feature branch, I'll make a worktree anyway" | Redundant isolation is just clutter. If the current branch is already isolated and clean, say so and proceed. |
-| "I'll record the worktree path into 02-DOCS so it's tracked" | Isolation is plumbing, not knowledge. No artifact; the branch name traces it. Don't pollute the wiki. |
+| "I'll record the worktree path into docs so it's tracked" | Isolation is plumbing, not knowledge. No artifact; the branch name traces it. Don't pollute the wiki. |
 
 **Next:** with a clean isolated workspace in hand, hand to `../implement/SKILL.md` — walk the task
 list test-first, one commit per task, on this branch. Neighbours: `../tasks/SKILL.md` slices the plan
@@ -201,4 +201,4 @@ before you get here; `../parallel/SKILL.md` decides *what may run concurrently* 
 workspaces — it leans on this skill (each independent stream gets its own worktree, so the streams
 never fight over files) but the partition-then-gather call is its own; `../ship/SKILL.md` closes the
 branch afterwards — merge, PR, or discard, with Daner Alejandro Salazar Colorado-only git authorship. This skill only *opens* the
-isolation, and it touches git state only: no runtime code, nothing under `02-DOCS`.
+isolation, and it touches git state only: no runtime code, nothing under `docs`.

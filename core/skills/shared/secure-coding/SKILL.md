@@ -3,7 +3,7 @@ name: secure-coding
 description: "Use when securing application code: threat-modeling a feature, security-reviewing a diff, hardening auth/authz, secrets, CORS/CSP, or fixing OWASP-class bugs (access control, injection, SSRF, supply chain) in FastAPI, Next.js, Go or Flutter. NOT running the scanners (that is security-scan), NOT agent prompt-injection guardrails (that is agent-safety)."
 tags: [security, owasp, stride, auth, review]
 recommends: [deployment]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Secure coding — threat modeling + OWASP across the stack
@@ -319,13 +319,13 @@ equivalent is in `references/secrets-and-supply-chain.md`.
 
 ## Project grounding
 
-In a project with a `02-DOCS/` layer ([`harness`](../harness/SKILL.md)), this
-project's security decisions live in `02-DOCS/wiki/stack/security.md`, indexed
-from `02-DOCS/wiki/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a
+In a project with a `docs/` layer ([`harness`](../harness/SKILL.md)), this
+project's security decisions live in `docs/stack/security.md`, indexed
+from `docs/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a
 pointer to it). Read it first and stay consistent; if it is missing or stale,
 create/update it with the real choices — threat model, auth model, secrets
 backend, CI security gates, accepted risks — index it, and bump its `Updated`
-date in the same change. No `02-DOCS/` layer? Skip silently (optionally suggest
+date in the same change. No `docs/` layer? Skip silently (optionally suggest
 `harness`): technical conventions are *recorded, not gated* — never block the
 task on this.
 

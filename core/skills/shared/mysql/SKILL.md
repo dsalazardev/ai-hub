@@ -3,7 +3,7 @@ name: mysql
 description: "Use when designing, querying, indexing or operating a MySQL or MariaDB database and engine-specific behaviour matters — schema and type choices, index design, reading EXPLAIN, online schema change, replication and replica lag, locking and InnoDB deadlocks, charset traps, and server config. NOT portable SELECT/JOIN/window-function craft (that is `sql`), NOT PostgreSQL engine behaviour like VACUUM or JSONB (that is `postgresdb`), NOT the PlanetScale/Vitess branch-and-deploy workflow (that is `planetscale`)."
 tags: [mysql, mariadb, innodb, explain, replication, indexing, online-ddl, database]
 recommends: [sql, postgresdb, planetscale, db-migrations, backups]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # MySQL / MariaDB engine

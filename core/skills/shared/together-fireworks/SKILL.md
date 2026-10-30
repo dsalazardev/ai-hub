@@ -3,7 +3,7 @@ name: together-fireworks
 description: "Use when calling open-weight LLMs on Together AI or Fireworks AI's OpenAI-compatible endpoints — `base_url` plus namespaced model id, the cheapest model that clears the bar, per-1M-token cost math, serverless vs batch vs dedicated. NOT renting GPUs to self-host weights (that is `runpod`), NOT running a model locally for free (that is `ollama`)."
 tags: [llm, inference, together-ai, fireworks-ai, openai-compatible, open-models, batch, cost]
 recommends: [runpod, modal, ollama, huggingface, fal, cost-tracking, llm-pipeline, prompt-engineering, embeddings-search]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # together-fireworks

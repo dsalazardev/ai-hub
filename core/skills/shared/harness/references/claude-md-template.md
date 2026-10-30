@@ -14,19 +14,19 @@ workspace. If you're working in a subproject that also has its own
 
 ## Knowledge map
 
-The **full** index of this project's conventions lives in **`02-DOCS/wiki/index.md`** — maintained by
+The **full** index of this project's conventions lives in **`docs/index.md`** — maintained by
 the stack skills plus the `harness/` topic. Read the relevant article before working in its area, and
 update it when conventions change. Keep this section a **short pointer**: CLAUDE.md is read on every
-turn, so the full per-area table belongs in `02-DOCS/wiki/index.md`, not here. New index entries go
+turn, so the full per-area table belongs in `docs/index.md`, not here. New index entries go
 there, not into this file.
 
 Read first, always:
 
 | Area | Article |
 |------|---------|
-| User profile (register: technical or analogies) | `02-DOCS/wiki/harness/user-profile.md` |
-| SDD constitution (project non-negotiables) | `02-DOCS/wiki/sdd/constitution.md` |
-| **Everything else — full index** | `02-DOCS/wiki/index.md` |
+| User profile (register: technical or analogies) | `docs/harness/user-profile.md` |
+| SDD constitution (project non-negotiables) | `.specify/memory/constitution.md` |
+| **Everything else — full index** | `docs/index.md` |
 
 ## Workspace map
 
@@ -34,7 +34,7 @@ Read first, always:
 |------|------|
 {{SUBPROJECT_ROWS}}
 | `01-TOOLS/` | Operational arsenal: one folder per external provider, with co-located credentials and a working `test_connection`. |
-| `02-DOCS/` | LLM wiki: immutable sources in `raw/`, compiled articles in `wiki/`, plus `wiki/index.md` and `wiki/log.md`. |
+| `docs/` | LLM wiki: immutable sources in `raw/`, compiled articles in `wiki/`, plus `wiki/index.md` and `wiki/log.md`. |
 
 The root is not a single Git repo; the Git repos live inside the main
 subdirectories. Do not assume that `git status` at the root works.
@@ -54,7 +54,7 @@ subdirectories. Do not assume that `git status` at the root works.
   workspace.
 - For UI changes, read the canonical design document for the affected
   surface before editing.
-- For documentation, update `02-DOCS/` following the embedded wiki
+- For documentation, update `docs/` following the embedded wiki
   protocol: new sources go in `raw/<topic>/`, distilled knowledge in
   `wiki/<topic>/`. The skill maintains `wiki/index.md` and `wiki/log.md`.
 
@@ -76,9 +76,9 @@ the README in `01-TOOLS/`.
 
 ## Documentation
 
-- `02-DOCS/raw/` — immutable source material (READMEs, ADRs, notes).
-- `02-DOCS/wiki/index.md` — index of compiled articles.
-- `02-DOCS/wiki/log.md` — append-only ingest/query log.
+- `docs/raw/` — immutable source material (READMEs, ADRs, notes).
+- `docs/index.md` — index of compiled articles.
+- `docs/log.md` — append-only ingest/query log.
 
 When you learn something new and reusable, ingest it with
 `harness` (the wiki protocol lives embedded in the skill,

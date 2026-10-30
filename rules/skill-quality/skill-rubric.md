@@ -23,7 +23,7 @@ dishonest 9.
 
 ## Deterministic gates (pass/fail — not part of the 0–10, but block shipping)
 
-1. `name` matches the directory id; `origin: ai-hub` present.
+1. `name` matches the directory id; `origin: dsalazardev` present.
 2. Frontmatter validates against `schema/frontmatter.schema.json` (`node scripts/build-manifest.js --validate`).
 3. Every `recommends` id is a **real** skill in the catalog (no dangling refs — `--validate` enforces).
 4. `scripts/eval-lint.sh` reports PASS for the skill (≥5/≥4/≥1 and the keys are lists).

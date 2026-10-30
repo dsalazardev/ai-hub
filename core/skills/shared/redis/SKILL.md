@@ -4,7 +4,7 @@ description: "Use when using Redis or any Redis-protocol store (Valkey, ElastiCa
 tags: [redis, valkey, cache, rate-limiting, distributed-locks, queues, bullmq, streams, lua, data-infra]
 recommends: [postgresdb, vector-db, clickhouse-analytics, scaling, nodejs, fly-io]
 profiles: []
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Redis — cache, lock, rate limiter, queue done correctly
@@ -285,7 +285,7 @@ read-only, never connects to a server, and exits 0 when no Redis usage is found.
 
 ## Project grounding
 
-Record this project's Redis decisions in `02-DOCS/wiki/stack/redis.md` (recorded, not gated — same
+Record this project's Redis decisions in `docs/stack/redis.md` (recorded, not gated — same
 convention `postgresdb` uses): which primitive(s) you run, the `maxmemory-policy`, persistence
 (RDB/AOF/none), the client library, and any lock/rate-limit Lua you depend on. Future agents read
 this before touching the cache.

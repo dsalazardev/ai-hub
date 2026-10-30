@@ -4,7 +4,7 @@ description: "Use when implementation or review depends on current version-speci
 tags: [official-docs, primary-sources, version-detection, implementation, verification]
 recommends: [research-ops, decision-records, debug, technical-writing]
 profiles: [core, full]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # source-grounded-development — make current facts part of the change
@@ -105,4 +105,4 @@ Do not use this skill as a reason to delay reversible work indefinitely. If a pr
 
 ## Orientación (siempre)
 
-Habla con la voz de `orient`: frases cortas, una idea por frase, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `02-DOCS/wiki/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a `suggest` el "¿instalo la skill que falta?".)
+Habla con la voz de `orient`: frases cortas, una idea por frase, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `docs/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a `suggest` el "¿instalo la skill que falta?".)

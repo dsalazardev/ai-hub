@@ -55,7 +55,7 @@ Once they're installed, run the harness skill and I'll build the project structu
 You're organizing how your agency runs — client emails, contracts, invoicing,
 and you want it all findable. That's a non-code harness; install:
 
-npx ai-hub add harness        # your 01-TOOLS (connections) + 02-DOCS (your second brain)
+npx ai-hub add harness        # your 01-TOOLS (connections) + docs (your second brain)
 npx ai-hub add secure-coding deployment   # connect email, payments, drive — and keep credentials safe
 npx ai-hub add marketing      # for the proposals, decks and copy you send clients
 
@@ -98,7 +98,7 @@ State your recommendation and why, in their register. For a `non-technical` user
 
 ### 4. Log the decision
 
-Once they choose, append an entry to `02-DOCS/wiki/harness/decisions.md` (format in `accompaniment-and-profile.md`): context (the requirements you gathered), the three options, the decision, and why.
+Once they choose, append an entry to `docs/harness/decisions.md` (format in `accompaniment-and-profile.md`): context (the requirements you gathered), the three options, the decision, and why.
 
 ## Canonical worked example — deploy target
 

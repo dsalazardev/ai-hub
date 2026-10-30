@@ -5,7 +5,7 @@ tags: [sdd, implement, code]
 recommends: [verify]
 profiles: [full]
 runtime: false
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # implement — turn the task list into tested code
@@ -27,23 +27,23 @@ Run this short gate. Skipping it is the most common way an implement session goe
 **This gate is a hard refuse, not a checklist to feel good about:** if it fails you stop and route
 back — you do not write feature code anyway.
 
-1. **The spec + plan must exist AND be approved.** Open the spec (`02-DOCS/wiki/sdd/specs/<slug>.md`),
-   the plan (`02-DOCS/wiki/sdd/plans/<slug>.md`, which holds the task list), and the constitution
-   (`02-DOCS/wiki/sdd/constitution.md`). If any is missing, **you are not allowed to implement** —
+1. **The spec + plan must exist AND be approved.** Open the spec (`specs/<feature>/spec.md`),
+   the plan (`specs/<feature>/plan.md`, which holds the task list), and the constitution
+   (`.specify/memory/constitution.md`). If any is missing, **you are not allowed to implement** —
    route back: no spec → `specify`; no plan → `plan`; no task list inside the plan → `tasks`;
    unresolved `analyze` findings → resolve them first. If a spec/plan exists but the user has not
    actually seen and **approved** it, get that approval first. Never "start coding to discover the
    plan as you go", and never accept "just build it, skip the spec" on a non-trivial feature — name
    the gate in one friendly line and route to `specify`. (Only a true one-line, low-risk change
    earns a skip, and you say so.)
-2. **Read the SDD runtime config.** Open `02-DOCS/wiki/sdd/config.yaml`. If it is missing on
+2. **Read the SDD runtime config.** Open `.specify/config.yaml`. If it is missing on
    non-trivial work, stop and route to `sdd-init`. Use `testing.strict_tdd`,
    `testing.commands.apply`, `testing.commands.verify`, `sdd.review_budget` and
    `sdd.registry_path`. Do not choose a different test command from memory while config exists.
 3. **Read the skill registry.** Open `.ai-hub/skill-registry.json` if present. Select only the
    relevant stack/process skills for this task, then digest them into compact rules. If the
    registry is missing, run or recommend `npx ai-hub registry refresh` and record the fallback.
-4. **Read the register.** Open `02-DOCS/wiki/harness/user-profile.md` and read `technical_level`.
+4. **Read the register.** Open `docs/harness/user-profile.md` and read `technical_level`.
    It picks technical terms or plain words with analogies at each checkpoint (see "Checkpoints"
    below). No profile yet → use analogies, and ask before any irreversible step.
 5. **Confirm isolation.** Default branch open for this project → work on it. Closed → stop before
@@ -65,7 +65,7 @@ TRIANGULATE → add the smallest edge-case test that proves the behavior is not 
            (only when config.testing.strict_tdd is true and the task has meaningful edge cases).
 REFACTOR → with the test green, clean up names/duplication/shape. Re-run; still green. Only now.
 CHECK    → re-read the task's done-check. Met? Constitution still honored? Decision worth logging?
-PROGRESS → append task/test/blocker/decision state to 02-DOCS/wiki/sdd/progress/<slug>.md.
+PROGRESS → append task/test/blocker/decision state to specs/<feature>/tasks.md.
 COMMIT   → commit this task as one logical unit (authorship = Daner Alejandro Salazar Colorado; see ship for the rule).
 REVIEW   → dispatch a fresh reviewer subagent over THIS task's commits (see "Per-task review gate").
            Fold its Critical/Important findings back in before you move on; Minor can wait.
@@ -146,7 +146,7 @@ If a skill is referenced but unavailable, say so and record the fallback. Do not
 Maintain an append-only progress file:
 
 ```text
-02-DOCS/wiki/sdd/progress/<slug>.md
+specs/<feature>/tasks.md
 ```
 
 Entry shape:
@@ -255,7 +255,7 @@ gate on a genuinely trivial task (a one-line change), like the rest of the chain
 
 ## Model tier — `balanced` (opt-in routing)
 
-This phase's default model tier is **`balanced`** — it is the bulk of TDD execution: cost-sensitive, with quality balanced handles well. Routing is **off** unless `models.enabled: true` in `02-DOCS/wiki/sdd/config.yaml`. When on: resolve this phase's tier (`models.overrides` wins over `models.phases`), map it to a model via `models.tiers`, and apply per `../sdd/references/model-routing.md` — announce the switch in one line when it differs from the session model, and dispatch any `Task`/`parallel` subagents on that model (this is where routing pays off most — fan-out runs on `balanced` while a hard sub-problem can be escalated to `heavy`). Routing off or no profile → honor the session model silently. Never fake a switch a tool can't make; skip routing on a one-line change.
+This phase's default model tier is **`balanced`** — it is the bulk of TDD execution: cost-sensitive, with quality balanced handles well. Routing is **off** unless `models.enabled: true` in `.specify/config.yaml`. When on: resolve this phase's tier (`models.overrides` wins over `models.phases`), map it to a model via `models.tiers`, and apply per `../sdd/references/model-routing.md` — announce the switch in one line when it differs from the session model, and dispatch any `Task`/`parallel` subagents on that model (this is where routing pays off most — fan-out runs on `balanced` while a hard sub-problem can be escalated to `heavy`). Routing off or no profile → honor the session model silently. Never fake a switch a tool can't make; skip routing on a one-line change.
 
 ## Checkpoints — what to say
 
@@ -267,11 +267,11 @@ irreversible.
 How short you are **never** changes the engineering. TDD, the done-checks, the constitution and
 decision logging hold for every reader.
 
-## Logging decisions (the 02-DOCS trail)
+## Logging decisions (the docs trail)
 
 When you make a choice the plan did not fully specify — a library, a data shape, an error contract, a
-deviation from the plan — append it to `02-DOCS/wiki/sdd/decisions.md` (append-only; create it if
-absent and index it in `02-DOCS/wiki/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer) under the `sdd/` topic). One entry:
+deviation from the plan — append it to `docs/sdd/decisions.md` (append-only; create it if
+absent and index it in `docs/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer) under the `sdd/` topic). One entry:
 
 ```text
 ## YYYY-MM-DD — <short title>  (feature: <slug>, task: <n>)
@@ -287,7 +287,7 @@ not get to log your way around it: stop (see red flags).
 
 ## Staying inside the constitution
 
-`02-DOCS/wiki/sdd/constitution.md` holds the project's non-negotiables (stack canon, quality bars,
+`.specify/memory/constitution.md` holds the project's non-negotiables (stack canon, quality bars,
 naming, security posture). Every task you implement must honor it. If a task can only be done by
 breaking a constitutional rule, that is a contradiction the `analyze` phase should have caught —
 surface it and stop; do not quietly violate the constitution to make a test pass. The constitution
@@ -330,8 +330,8 @@ outranks the plan, and the plan outranks your in-the-moment preference.
 - [ ] GREEN: least code to pass; test now green
 - [ ] REFACTOR: cleaned up on green; still green
 - [ ] Constitution honored; no banned pattern introduced
-- [ ] Non-obvious decision (if any) logged to 02-DOCS/wiki/sdd/decisions.md
-- [ ] Apply progress appended to 02-DOCS/wiki/sdd/progress/<slug>.md
+- [ ] Non-obvious decision (if any) logged to docs/sdd/decisions.md
+- [ ] Apply progress appended to specs/<feature>/tasks.md
 - [ ] Skill resolution recorded (used/missing/fallback/compact rules)
 - [ ] Committed as one logical unit (authorship = Daner Alejandro Salazar Colorado)
 - [ ] Checkpoint shown in the orient voice; next task named
@@ -345,7 +345,7 @@ End every implementation checkpoint or completed batch with:
 {
   "status": "complete",
   "executive_summary": "Implemented task(s) with red/green/triangulate/refactor evidence.",
-  "artifact": "02-DOCS/wiki/sdd/progress/<slug>.md",
+  "artifact": "specs/<feature>/tasks.md",
   "next_recommended": "implement|verify",
   "risk": "low|medium|high",
   "skill_resolution": {
@@ -380,5 +380,5 @@ the feature done.
 
 ## Orientación (siempre)
 
-Habla con la voz de `orient`: frases cortas, una idea por frase, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `02-DOCS/wiki/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a `suggest` el "¿instalo la skill que falta?".)
+Habla con la voz de `orient`: frases cortas, una idea por frase, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `docs/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a `suggest` el "¿instalo la skill que falta?".)
 

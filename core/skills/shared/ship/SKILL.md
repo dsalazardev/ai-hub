@@ -5,7 +5,7 @@ tags: [sdd, ship, release, pr]
 recommends: []
 profiles: [full]
 runtime: false
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Ship — close the development branch
@@ -36,9 +36,9 @@ git log -1 --format='%an <%ae>%n%n%b' | grep -iE 'co-authored-by.*(claude|anthro
 
 ## Read these first
 
-1. `02-DOCS/wiki/harness/user-profile.md` — `technical_level`, the register. It sets the words only, never whether you run the safety checklist.
+1. `docs/harness/user-profile.md` — `technical_level`, the register. It sets the words only, never whether you run the safety checklist.
 2. The **review verdict** for this branch — ship runs only on `APPROVE` or `APPROVE WITH NITS`. `CHANGES REQUESTED` loops back to `implement`, not forward to ship. If there is no verdict on record, say so and treat it as a red flag: do not ship a diff that skipped `../review/SKILL.md` — offer to run it first.
-3. `02-DOCS/wiki/sdd/decisions.md` and the spec/plan slug — so the commit message and PR body describe *what shipped against which spec*, not a vague "various changes".
+3. `docs/sdd/decisions.md` and the spec/plan slug — so the commit message and PR body describe *what shipped against which spec*, not a vague "various changes".
 
 ## The pre-ship safety checklist
 
@@ -104,7 +104,7 @@ Recommend based on repo signals: protected `main` or an existing PR culture (loo
 
 ### Delivery strategy from SDD config
 
-Read `02-DOCS/wiki/sdd/config.yaml` and the `Review Workload Forecast` in the plan if present.
+Read `.specify/config.yaml` and the `Review Workload Forecast` in the plan if present.
 
 - `single-pr` keeps option 2 as one PR.
 - `ask-on-risk` pauses when the forecast exceeds the review budget and asks before landing a large diff.
@@ -156,7 +156,7 @@ PR body shape (no generated-with line, ever):
 
 ## Why
 
-Implements `02-DOCS/wiki/sdd/specs/<slug>.md`. <the user-facing reason>
+Implements `specs/<feature>/spec.md`. <the user-facing reason>
 
 ## How
 
@@ -185,7 +185,7 @@ Never stack to hide review risk. Stack because each slice is independently revie
 
 ### Option 3 — park or discard
 
-- **Park:** leave the branch, push it so it's not lost (`git push -u origin feature/<slug>`), and log *why it's parked* to `02-DOCS/wiki/sdd/decisions.md`. Do not merge.
+- **Park:** leave the branch, push it so it's not lost (`git push -u origin feature/<slug>`), and log *why it's parked* to `docs/sdd/decisions.md`. Do not merge.
 - **Discard:** deletion is **destructive and unrecoverable** once the branch is gone from both sides, so it takes an explicit confirmation that quotes the branch name (the literal `yes, delete feature/<slug>`) before `git branch -D`. Anything ambiguous means keep it. Log the discard and the reason so the dead-end is remembered, not re-attempted.
 
 **Park and discard do NOT reap.** The cleanup default acts only on work that is already in the trunk;
@@ -206,11 +206,11 @@ The commit is the durable record. Make it describe the change and tie it to the 
 
 ## Model tier — `light` (opt-in routing)
 
-Closing the branch (PR / merge / cleanup) is mechanical, so this phase's default tier is **`light`**. Routing is **off** unless `models.enabled: true` in `02-DOCS/wiki/sdd/config.yaml`; when it is on, follow `../sdd/references/model-routing.md` for resolving and announcing the switch rather than from memory. Routing off or no profile → honor the session model silently, and skip routing on a one-line change. The Daner Alejandro Salazar Colorado-only authorship rule is independent of the model and never relaxes.
+Closing the branch (PR / merge / cleanup) is mechanical, so this phase's default tier is **`light`**. Routing is **off** unless `models.enabled: true` in `.specify/config.yaml`; when it is on, follow `../sdd/references/model-routing.md` for resolving and announcing the switch rather than from memory. Routing off or no profile → honor the session model silently, and skip routing on a one-line change. The Daner Alejandro Salazar Colorado-only authorship rule is independent of the model and never relaxes.
 
 ## What ship shows
 
-Read `technical_level` from `02-DOCS/wiki/harness/user-profile.md`. It changes the words, **never** the safety checklist or the authorship rule. No profile → use analogies and proceed; don't stall the ship to ask.
+Read `technical_level` from `docs/harness/user-profile.md`. It changes the words, **never** the safety checklist or the authorship rule. No profile → use analogies and proceed; don't stall the ship to ask.
 
 In the `orient` voice: the checklist result in one line, the three options as one-liners, the recommendation and its *why*, then execute on a yes — e.g. `Clean, rebased, authorship Daner Alejandro Salazar Colorado. Recommend PR (main is protected). Open it?`. For a `non-technical` owner, explain the recommended option with an analogy: a protected `main` wants a PR ("asking permission before changing the shared copy"). Explain fast-forward vs `--no-ff` or what squashing trades away only when asked.
 
@@ -232,9 +232,9 @@ In the `orient` voice: the checklist result in one line, the three options as on
 
 Ship is mostly git actions, but the outcome is recorded so the knowledge model stays whole:
 
-- **The landing decision** (which of the three options, and why) → append to `02-DOCS/wiki/sdd/decisions.md`, the same append-only log `implement`, `verify`, and `review` write to. Parks and discards are logged with their reason so dead-ends aren't re-walked.
-- A **shipped feature** flips its spec under `02-DOCS/wiki/sdd/specs/<slug>.md` to a shipped state (note the merge commit / PR). The harness owns the wiki; ship just keeps the `sdd/` rows in `02-DOCS/wiki/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer) honest.
-- An **archive bundle** closes the loop under `02-DOCS/wiki/sdd/archive/<slug>/`:
+- **The landing decision** (which of the three options, and why) → append to `docs/sdd/decisions.md`, the same append-only log `implement`, `verify`, and `review` write to. Parks and discards are logged with their reason so dead-ends aren't re-walked.
+- A **shipped feature** flips its spec under `specs/<feature>/spec.md` to a shipped state (note the merge commit / PR). The harness owns the wiki; ship just keeps the `sdd/` rows in `docs/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer) honest.
+- An **archive bundle** closes the loop under `docs/sdd/archive/<slug>/`:
   - `final-report.md` — what shipped, why, landing decision, links.
   - `apply-progress.md` — copy or link to `progress/<slug>.md`.
   - `verification.md` — copy or link to the verification record.
@@ -251,7 +251,7 @@ End with:
 {
   "status": "complete",
   "executive_summary": "Branch landed/parked/discarded and SDD archive updated.",
-  "artifact": "02-DOCS/wiki/sdd/archive/<slug>/final-report.md",
+  "artifact": "docs/sdd/archive/<slug>/final-report.md",
   "next_recommended": "none",
   "risk": "low|medium|high",
   "skill_resolution": {
@@ -270,4 +270,4 @@ Ship is the end of the SDD loop for a feature. Two onward paths: the merged code
 
 ## Orientación (siempre)
 
-Habla con la voz de `orient`: frases cortas, una idea por frase, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `02-DOCS/wiki/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a `suggest` el "¿instalo la skill que falta?".)
+Habla con la voz de `orient`: frases cortas, una idea por frase, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `docs/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a `suggest` el "¿instalo la skill que falta?".)

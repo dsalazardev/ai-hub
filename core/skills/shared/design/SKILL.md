@@ -4,7 +4,7 @@ description: "Use when designing, redesigning, restyling or reviewing a web page
 tags: [design, ui, ux, landing, dashboard, frontend, taste]
 recommends: [landing-copy, ui-engineering, accessibility, brand-identity, nextjs]
 profiles: [minimal, core, full]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # design
@@ -38,7 +38,7 @@ What each mode allows and refuses: [references/modes.md](references/modes.md).
 
 ## 1. Brand first, when there is one
 
-Look for an existing identity before dealing anything: `02-DOCS/wiki/brand/`, a `DESIGN.md` in the
+Look for an existing identity before dealing anything: `docs/brand/`, a `DESIGN.md` in the
 repo, or a coherent identity already in the code. If one exists, its colours and faces win: pass
 `--keep palette,type` to the draw and take only the composition. If none exists, do not stop to
 interview the user about brand; the draw is how a starting point is made.

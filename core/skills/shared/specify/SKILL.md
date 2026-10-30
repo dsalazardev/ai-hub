@@ -5,14 +5,14 @@ tags: [sdd, spec, requirements]
 recommends: [clarify, plan]
 profiles: [full]
 runtime: false
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Specify — intent becomes a spec
 
 This is the **specify** phase of the ai-hub Spec-Kit chain: `constitution` → **`specify`** → `clarify` → `plan` → `tasks` → `analyze` → `implement` → `verify` → `review` → `ship`. Its single job is to turn a fuzzy intent into a written specification that states **WHAT** the change is and **WHY** it matters — and nothing about **HOW** it gets built.
 
-A spec is a contract about behaviour and outcomes, readable by a non-technical stakeholder and precise enough that a `plan` can be derived from it. The output is one file: `02-DOCS/wiki/sdd/specs/<slug>.md`, indexed in `02-DOCS/wiki/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer).
+A spec is a contract about behaviour and outcomes, readable by a non-technical stakeholder and precise enough that a `plan` can be derived from it. The output is one file: `specs/<feature>/spec.md`, indexed in `docs/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer).
 
 ## Detect the moment — and hold the gate
 
@@ -53,11 +53,11 @@ If you cannot state a requirement without naming the technology, that is a real 
 
 ## Model tier — `balanced` (opt-in routing)
 
-This phase's default model tier is **`balanced`** — it drafts the what/why spec through dialogue, not architecture. Routing is **off** unless `models.enabled: true` in `02-DOCS/wiki/sdd/config.yaml`. When on: resolve this phase's tier (`models.overrides` wins over `models.phases`), map it to a model via `models.tiers`, and apply per `../sdd/references/model-routing.md` — announce the switch in one line when it differs from the session model, and dispatch any `Task`/`parallel` subagents on that model. Routing off or no profile → honor the session model silently. Never fake a switch a tool can't make; skip routing on a one-line change.
+This phase's default model tier is **`balanced`** — it drafts the what/why spec through dialogue, not architecture. Routing is **off** unless `models.enabled: true` in `.specify/config.yaml`. When on: resolve this phase's tier (`models.overrides` wins over `models.phases`), map it to a model via `models.tiers`, and apply per `../sdd/references/model-routing.md` — announce the switch in one line when it differs from the session model, and dispatch any `Task`/`parallel` subagents on that model. Routing off or no profile → honor the session model silently. Never fake a switch a tool can't make; skip routing on a one-line change.
 
 ## Read the room first (register)
 
-Before asking anything, read `technical_level` in `02-DOCS/wiki/harness/user-profile.md`. It picks the register — technical terms, or plain words with everyday analogies — and nothing else; the method is the same for every reader:
+Before asking anything, read `technical_level` in `docs/harness/user-profile.md`. It picks the register — technical terms, or plain words with everyday analogies — and nothing else; the method is the same for every reader:
 
 - Infer aggressively from the intent and any existing wiki/constitution. Ask only the questions whose answer would change the contract — one round per frontier, never crossing a dependency.
 - Give one line of *why* per question, in the `orient` voice; record each requirement with the trade-off you inferred.
@@ -85,7 +85,7 @@ Ceremony scales with the stakes here as everywhere: FRAME earns its five lines o
 
 The failure mode of specs is the wall of twenty questions. The cure is not one question per turn: that spends a turn of the user's time per question even when the questions do not touch each other. The cure is the **frontier**.
 
-1. **Infer first.** Read the `constitution` (`02-DOCS/wiki/sdd/constitution.md`), the existing wiki, and sibling specs. Fill every section you reasonably can from what already exists.
+1. **Infer first.** Read the `constitution` (`.specify/memory/constitution.md`), the existing wiki, and sibling specs. Fill every section you reasonably can from what already exists.
 2. **Ask only the gaps that change the contract.** A gap earns a question only if a different answer would move scope, a goal, a user, or an acceptance criterion. Cosmetic gaps become typed *points to clarify*, not questions.
 3. **Ask the whole frontier in one round.** The frontier is every remaining gap whose prerequisites are already settled — the questions you can ask *now* without guessing at answers you have not heard yet. Number them, give each your recommended answer, then wait. Where the harness offers a native question selector, use it; where it does not, emit the same round as numbered text.
 4. **Never cross a dependency.** A gap whose answer depends on another question open in *this* round belongs to a later round. Recompute the frontier after every set of answers: settled decisions push it outward and unblock what waited on them. If an answer redefines a question you already emitted in the same round, discard that question out loud and re-ask it next round rather than using an answer given under a premise that just moved.
@@ -96,7 +96,7 @@ A frontier of one is one question, and needs no apology. A frontier of zero is n
 
 ## What a good spec contains
 
-Write these sections into `02-DOCS/wiki/sdd/specs/<slug>.md` using `references/spec-template.md`. Keep every line about behaviour and intent.
+Write these sections into `specs/<feature>/spec.md` using `references/spec-template.md`. Keep every line about behaviour and intent.
 
 | Section | Holds | Watch for |
 | --- | --- | --- |
@@ -168,7 +168,7 @@ Run these in order. It is a collaborative dialogue, not a form you fill in silen
 5. PROPOSE 2-3 approaches → distinct directions with honest trade-offs; lead with your recommendation and why
 6. PRESENT the design     → section by section (problem, users, behaviour, acceptance), scaled to complexity;
                             after EACH section ask "does this look right?" and adjust before moving on
-7. WRITE the spec         → 02-DOCS/wiki/sdd/specs/<slug>.md (WHAT/WHY), index it in 02-DOCS/wiki/index.md
+7. WRITE the spec         → specs/<feature>/spec.md (WHAT/WHY), index it in docs/index.md
                             (the Knowledge map; root CLAUDE.md keeps only a short pointer), commit if a repo
 8. SELF-REVIEW            → run the EXIT GATE (below) until green; scan for contradictions, ambiguity,
                             scope creep; fix inline. On a non-trivial or high-risk spec, add a FRESH-EYES review
@@ -300,7 +300,7 @@ Note what is *absent*: no token format, no table, no email provider, no framewor
 For a tiny feature, skip this. For ambiguous, architectural, high-risk, high-review-cost or research-heavy work, write a proposal before the spec:
 
 ```text
-02-DOCS/wiki/sdd/proposals/<slug>.md
+docs/sdd/proposals/<slug>.md
 ```
 
 Proposal grammar:
@@ -337,16 +337,16 @@ repeated here as prohibitions: naming a behaviour makes it more available, not l
 | Skip non-goals because "it's obvious" | Unsaid scope becomes assumed scope. State what you are *not* doing. |
 | Resolve every ambiguity yourself to look finished | Inventing answers is worse than naming gaps. List them in Points to clarify. |
 | Start designing the solution because it's clearer | Stay on WHAT/WHY. The plan is a later, separate phase. |
-| Write the spec somewhere other than 02-DOCS/wiki/sdd/specs/ | That's the canonical location the rest of the chain reads. Use it. |
+| Write the spec somewhere other than specs/ | That's the canonical location the rest of the chain reads. Use it. |
 
-## Project grounding (02-DOCS + CLAUDE.md)
+## Project grounding (docs + CLAUDE.md)
 
-- Read `02-DOCS/wiki/sdd/config.yaml` if present. If it is missing and the change is non-trivial, recommend `sdd-init` before proceeding; if the user asks to continue, record the missing config as a risk.
-- Read `02-DOCS/wiki/sdd/constitution.md` first — its principles are inherited constraints, not things to re-decide. If it's missing, note that the project has no constitution yet and suggest the `constitution` phase before continuing (you can still draft a spec, but flag the absence). If its frontmatter says `status: draft` (written by `ai-hub onboard`, unratified), route to `constitution` first and come back: a draft has no principles to inherit.
+- Read `.specify/config.yaml` if present. If it is missing and the change is non-trivial, recommend `sdd-init` before proceeding; if the user asks to continue, record the missing config as a risk.
+- Read `.specify/memory/constitution.md` first — its principles are inherited constraints, not things to re-decide. If it's missing, note that the project has no constitution yet and suggest the `constitution` phase before continuing (you can still draft a spec, but flag the absence). If its frontmatter says `status: draft` (written by `ai-hub onboard`, unratified), route to `constitution` first and come back: a draft has no principles to inherit.
 - **No constitution yet?** Still write the spec, but inherit nothing — lean harder on the wiki and the user's answers, and record every constraint you would have inherited as a *point to clarify* instead of assuming it.
-- Write the spec to `02-DOCS/wiki/sdd/specs/<slug>.md`. Create the directory if absent.
-- Add a row in `02-DOCS/wiki/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer) linking the new spec under the `sdd/specs` topic (additive only — never delete existing rows). Create the index if absent.
-- Log the spec's creation and any significant scoping decision to `02-DOCS/wiki/sdd/decisions.md` (append-only), so the chain keeps a trace of why scope landed where it did. This is the canonical SDD decisions log shared with `constitution` and `plan` — not the harness's own `02-DOCS/wiki/harness/decisions.md`.
+- Write the spec to `specs/<feature>/spec.md`. Create the directory if absent.
+- Add a row in `docs/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer) linking the new spec under the `sdd/specs` topic (additive only — never delete existing rows). Create the index if absent.
+- Log the spec's creation and any significant scoping decision to `docs/sdd/decisions.md` (append-only), so the chain keeps a trace of why scope landed where it did. This is the canonical SDD decisions log shared with `constitution` and `plan` — not the harness's own `docs/harness/decisions.md`.
 
 ## Result envelope
 
@@ -356,7 +356,7 @@ End with:
 {
   "status": "complete",
   "executive_summary": "Spec written with open points ready for clarify.",
-  "artifact": "02-DOCS/wiki/sdd/specs/<slug>.md",
+  "artifact": "specs/<feature>/spec.md",
   "next_recommended": "clarify",
   "risk": "low|medium|high",
   "skill_resolution": {
@@ -373,7 +373,7 @@ End with:
 
 A spec is the input to **`clarify`**, not the finish line. End by pointing there:
 
-> "Spec written to `02-DOCS/wiki/sdd/specs/<slug>.md` with N open points. Next: run **`clarify`** to resolve them and de-risk the spec before planning."
+> "Spec written to `specs/<feature>/spec.md` with N open points. Next: run **`clarify`** to resolve them and de-risk the spec before planning."
 
 If `clarify` surfaces answers, they get baked back into this same spec file. Only once the spec is de-risked does `plan` derive the technical approach.
 
@@ -382,11 +382,11 @@ If `clarify` surfaces answers, they get baked back into this same spec file. Onl
 - `../constitution/SKILL.md` — the project principles this spec inherits as constraints.
 - `../clarify/SKILL.md` — the next phase: resolves the Points to clarify and de-risks the spec.
 - `../plan/SKILL.md` — turns the de-risked spec into a technical implementation plan (the HOW).
-- `../harness/SKILL.md` — the 02-DOCS wiki + user profile + decisions log this skill honors.
-- `references/spec-template.md` — the exact section template written to `02-DOCS/wiki/sdd/specs/<slug>.md`.
+- `../harness/SKILL.md` — the docs wiki + user profile + decisions log this skill honors.
+- `references/spec-template.md` — the exact section template written to `specs/<feature>/spec.md`.
 - `references/eliciting-requirements.md` — inference checklist + the frontier-round elicitation pattern.
 
 ## Orientación (siempre)
 
-Habla con la voz de `orient`: frases cortas, una idea por frase, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `02-DOCS/wiki/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a `suggest` el "¿instalo la skill que falta?".)
+Habla con la voz de `orient`: frases cortas, una idea por frase, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `docs/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a `suggest` el "¿instalo la skill que falta?".)
 

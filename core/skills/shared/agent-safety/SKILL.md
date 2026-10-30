@@ -3,7 +3,7 @@ name: agent-safety
 description: "Use when bounding an LLM agent that already runs — scoping its task domain, gating tools to least privilege, defending against prompt injection in untrusted web/email/RAG text, requiring human approval on irreversible actions, capping runtime and cost, or triaging what it already did. NOT building the loop, tools, or RAG (that is `building-agents`)."
 tags: [agent-security, guardrails, prompt-injection, least-privilege, owasp-agentic]
 recommends: [building-agents, secure-coding, agent-eval]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Agent safety

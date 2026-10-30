@@ -1,4 +1,4 @@
-# Obsidian scaffolding — make `02-DOCS/` open as a vault
+# Obsidian scaffolding — make `docs/` open as a vault
 
 Materialized during **Initialization** (see `wiki-protocol.md`). Turns the wiki
 into a native Obsidian vault: graph, backlinks, Properties, and Bases — with **no
@@ -6,10 +6,10 @@ vector DB, no embeddings, no RAG**. Navigation is structure (links + frontmatter
 not semantic search. Do NOT add embedding/semantic-search plugins; that breaks the
 thesis. Obsidian core only.
 
-The point a human opens the vault at (the "base folder") is `02-DOCS/` itself —
-not the repo root. Obsidian writes its config into `02-DOCS/.obsidian/`.
+The point a human opens the vault at (the "base folder") is `docs/` itself —
+not the repo root. Obsidian writes its config into `docs/.obsidian/`.
 
-## `02-DOCS/.gitignore` (additions)
+## `docs/.gitignore` (additions)
 
 ```gitignore
 # Obsidian per-machine state (the rest of .obsidian/ — themes, bases, config — is tracked)
@@ -21,7 +21,7 @@ audits/*.html
 inbox/_processed/
 ```
 
-## `02-DOCS/attachments/README.md`
+## `docs/attachments/README.md`
 
 ```markdown
 # attachments
@@ -31,7 +31,7 @@ not bundled with a specific raw source. Link them from the page that depends on
 them. Source-bundled originals stay in `raw/<topic>/_originals/`.
 ```
 
-## `02-DOCS/.obsidian/app.json` (attachment folder + OKF link mode)
+## `docs/.obsidian/app.json` (attachment folder + OKF link mode)
 
 ```json
 {
@@ -57,7 +57,7 @@ on rename, so links survive moves the way wikilinks used to. `userIgnoreFilters`
 These supersede manual upkeep of `index.md`/`dashboard.html` for humans;
 `index.md` and `scores.json` remain as the machine layer + fallback.
 
-### `02-DOCS/wiki/Articles.base`
+### `docs/Articles.base`
 
 ```yaml
 filters:
@@ -72,7 +72,7 @@ views:
         direction: DESC
 ```
 
-### `02-DOCS/wiki/Worklog.base`
+### `docs/Worklog.base`
 
 ```yaml
 filters:
@@ -87,7 +87,7 @@ views:
         direction: DESC
 ```
 
-### `02-DOCS/wiki/Decisions.base`
+### `docs/Decisions.base`
 
 ```yaml
 filters:

@@ -4,7 +4,7 @@ description: "Use when making NPCs, enemies, or units navigate a level — grid 
 tags: [pathfinding, navmesh, navigation, steering, a-star]
 recommends: [godot, unity, unreal, gamedev-physics]
 profiles: [full]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Game AI navigation & pathfinding
@@ -224,10 +224,10 @@ AICon->MoveToActor(TargetActor, /*AcceptanceRadius*/ 50.f);   // or MoveToLocati
 - [ ] Correct **current** engine APIs (no banned names from the version table); paths validated for reachability.
 - [ ] Grid paths smoothed (funnel) so movement isn't staircased.
 
-## Project grounding (02-DOCS + CLAUDE.md)
+## Project grounding (docs + CLAUDE.md)
 
-When this runs in a project with a `02-DOCS/` layer (the [`harness`](../harness/SKILL.md) wiki), record
-the project's navigation decisions in `02-DOCS/wiki/stack/gamedev-pathing.md` (indexed from
-`02-DOCS/wiki/index.md`): engine + version, chosen representation, bake settings (agent sizes, cell
+When this runs in a project with a `docs/` layer (the [`harness`](../harness/SKILL.md) wiki), record
+the project's navigation decisions in `docs/stack/gamedev-pathing.md` (indexed from
+`docs/index.md`): engine + version, chosen representation, bake settings (agent sizes, cell
 size), avoidance/crowd choice, custom links/areas. Read it first on every use; bump its `Updated` date
-when a convention changes. No `02-DOCS/` layer? Skip silently — conventions are *recorded, not gated*.
+when a convention changes. No `docs/` layer? Skip silently — conventions are *recorded, not gated*.

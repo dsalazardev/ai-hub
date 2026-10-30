@@ -1,10 +1,10 @@
 ---
 name: harness
-description: "Use when governing a workspace's control plane, code or not — the `01-TOOLS/` tooling layer, the `02-DOCS/` chaos→knowledge wiki, the root Knowledge map. Audits it, migrates legacy `XX-*` folders, scaffolds provider tooling, sweeps the inbox, eats a file the person hands over (\"cómete este fichero\", \"guárdalo en la documentación\": moved into 02-DOCS/raw/ and documented), writes root CLAUDE.md/AGENTS.md. NOT the bootstrap front door (that is `init`, which hands off here)."
+description: "Use when governing a workspace's control plane, code or not — the `01-TOOLS/` tooling layer, the `docs/` chaos→knowledge wiki, the root Knowledge map. Audits it, migrates legacy `XX-*` folders, scaffolds provider tooling, sweeps the inbox, eats a file the person hands over (\"cómete este fichero\", \"guárdalo en la documentación\": moved into docs/raw/ and documented), writes root CLAUDE.md/AGENTS.md. NOT the bootstrap front door (that is `init`, which hands off here)."
 tags: [harness, company, ops, docs, wiki, connect, tools, knowledge]
 recommends: [init, connect-tool]
 profiles: [minimal, core, full]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Harness — the workspace control plane
@@ -12,7 +12,7 @@ origin: ai-hub
 The **harness** is the control plane of a workspace. A workspace need not be code: it can be a company, an ops desk, a legal archive, a personal knowledge vault. Whatever it is, the harness is the durable apparatus that keeps it operable and legible, made of three parts:
 
 - **`01-TOOLS/<PROVIDER>/`** — the operational tooling layer. One folder per external provider, co-locating credentials (`.env`) with the scripts that consume them. Each tool ships a working `test_connection` against the real API.
-- **`02-DOCS/`** — the **Karpathy chaos→knowledge engine**: a domain-agnostic LLM wiki
+- **`docs/`** — the **Karpathy chaos→knowledge engine**: a domain-agnostic LLM wiki
   (`inbox/`, `raw/`, `raw/worklog/`, `wiki/` with its `index.md` / `log.md` / `gaps.md` /
   `scores.json` and `.base` views), embedded in this skill — no external sub-skill required.
 
@@ -29,7 +29,7 @@ The **harness** is the control plane of a workspace. A workspace need not be cod
 
   **When the person hands you a file** ("cómete este fichero", "guárdalo en la documentación",
   "ingest this"): run `npx ai-hub ingest <file> --topic <topic>`. It moves the file into
-  `02-DOCS/raw/<topic>/` only after the copy is verified, and records it in `wiki/.ingested.json`.
+  `docs/raw/<topic>/` only after the copy is verified, and records it in `wiki/.ingested.json`.
   Never move or rename that raw copy afterwards: the ledger points at it. Then compile from the raw copy
   into `wiki/` (update before create, cross-links, `index.md`, `log.md`) and say in one line where it
   lives now. The file must not stay in the root. A refused file (project file, code, secret) stays
@@ -60,7 +60,7 @@ The **harness** is the control plane of a workspace. A workspace need not be cod
 
 ## How the harness talks to the user
 
-Read `02-DOCS/wiki/harness/user-profile.md` before you start. Its `technical_level` picks the
+Read `docs/harness/user-profile.md` before you start. Its `technical_level` picks the
 register: technical terms used directly, or plain words with everyday analogies. Everything else is
 the one `orient` voice: short sentences, and every answer understandable on its own. No profile yet
 → use analogies, and let `init` run first contact (it owns the one register question; do not re-ask
@@ -73,7 +73,7 @@ date, requirements gathered, options presented, choice, why. Log every significa
 `.ai-hub/.no-harness` is the user's explicit "no harness in this repo". Treat it as canonical: never
 overwrite it, never delete it, never auto-start onboarding past it.
 
-For long SDD work, write the recovery note `02-DOCS/wiki/sdd/sessions/<date>-<slug>.md` before
+For long SDD work, write the recovery note `docs/sdd/sessions/<date>-<slug>.md` before
 context compacts or the work is handed off — active artifacts, phase, last verdict, next steps,
 risks, commands. It is what lets the next agent resume without trusting chat history.
 
@@ -120,7 +120,7 @@ Walk the workspace root and gather:
    - **TOOLING** — folder contains `.env`, `.env.example`, executable scripts (`*.sh`, `*.py` with shebang), or integrates a provider from the catalog.
    - **DOCS** — `*.md`, `*.txt`, diagrams (`*.png`, `*.svg`, `*.mmd`), notes.
    - **AMBIGUOUS** — mixed, runtime code (Python modules without shebang, TS files), or content the classifier cannot place with high confidence.
-5. **Existing canonical layout** — check whether `01-TOOLS/`, `02-DOCS/`, `CLAUDE.md`, `AGENTS.md` already exist. If yes, read their current content.
+5. **Existing canonical layout** — check whether `01-TOOLS/`, `docs/`, `CLAUDE.md`, `AGENTS.md` already exist. If yes, read their current content.
 6. **Git state** — for each subproject that's a git repo, capture `git status --short`. Don't act on dirty trees without flagging.
 
 ### Phase 2 — AUDIT (presented to user)
@@ -128,11 +128,11 @@ Walk the workspace root and gather:
 Render **two artifacts**:
 
 1. **A compact text summary in the conversation** — 1–3 sentences per section, the full destructive-ops list, the consent prompt, in the format of `references/audit-report-template.md`. This keeps the terminal flow fast. A full walked-through audit on a synthetic project: `examples/audit-example.md`.
-2. **A full HTML report at `<workspace_root>/02-DOCS/audits/audit-YYYY-MM-DD-HHMM.html`** using `references/audit-report-template.html`. Self-contained (inline CSS, no CDN). Includes color-coded action tables, collapsible legacy-folder sections, highlighted destructive ops, and the consent prompt. **Gitignored** (per-run artifact).
+2. **A full HTML report at `<workspace_root>/docs/audits/audit-YYYY-MM-DD-HHMM.html`** using `references/audit-report-template.html`. Self-contained (inline CSS, no CDN). Includes color-coded action tables, collapsible legacy-folder sections, highlighted destructive ops, and the consent prompt. **Gitignored** (per-run artifact).
 
-If `02-DOCS/audits/` does not exist, create it (with `.gitkeep`) before writing — even on first run, before Phase 4 builds the rest of `02-DOCS/`. Same for `02-DOCS/` itself: the audits subdirectory is the only piece allowed to materialize during Phase 2; the rest waits until APPLY. Never write the audit HTML at the workspace root.
+If `docs/audits/` does not exist, create it (with `.gitkeep`) before writing — even on first run, before Phase 4 builds the rest of `docs/`. Same for `docs/` itself: the audits subdirectory is the only piece allowed to materialize during Phase 2; the rest waits until APPLY. Never write the audit HTML at the workspace root.
 
-The text summary points to the HTML: `"Full audit at ./02-DOCS/audits/audit-XXX.html — open it to review details, then reply 'yes, proceed' or 'adjust'."`
+The text summary points to the HTML: `"Full audit at ./docs/audits/audit-XXX.html — open it to review details, then reply 'yes, proceed' or 'adjust'."`
 
 The HTML must contain:
 
@@ -141,7 +141,7 @@ The HTML must contain:
 - **Legacy `XX-*` folders** — one sub-section per folder, with a per-file classification table and a proposed destination.
 - **Ambiguous files** — explicit list. These will NOT be moved. The user decides later.
 - **Root files** — what happens to `CLAUDE.md` / `AGENTS.md` (CREATE, MERGE-additive, or SKIP if identical).
-- **`02-DOCS/` plan** — list of sources to ingest (per `references/wiki-protocol.md`), the topics that will appear in `wiki/`, and confirmation that the wiki layer is built in-skill.
+- **`docs/` plan** — list of sources to ingest (per `references/wiki-protocol.md`), the topics that will appear in `wiki/`, and confirmation that the wiki layer is built in-skill.
 - **Files NEVER touched** — explicit list reminding the user of the safety boundary: real `.env`, contents of `node_modules/`, `.venv/`, `.next/`, `__pycache__/`, `.git/`, subproject runtime source.
 - **Destructive operations** — separate section, bold. List every folder that would be deleted and under what condition.
 - **Dirty git trees** — if any subproject has uncommitted changes, list them and recommend stashing/committing before proceeding.
@@ -176,7 +176,7 @@ Execute in this exact order. Each step writes to disk; abort and report on first
    - **NEVER write a real `.env` file. NEVER fill credentials.**
 4. **Migrate legacy `XX-*` folders.**
    - For each TOOLING file: move to its mapped destination in `01-TOOLS/<X>/`. If the destination file already exists from step 3, the legacy file goes to `01-TOOLS/<X>/migrated/<original-name>` so nothing is overwritten. The user resolves manually.
-   - For each DOCS file: move to `02-DOCS/raw/migrated/<original-folder>/<path>`.
+   - For each DOCS file: move to `docs/raw/migrated/<original-folder>/<path>`.
    - For each AMBIGUOUS file: leave in place. Record in the verification report. Never force-classify — a file moved to the wrong place is harder to recover than one left where the user put it.
 5. **Verify migration.**
    - Count files moved vs files originally present. They must match (moved + ambiguous-remaining = original).
@@ -187,15 +187,15 @@ Execute in this exact order. Each step writes to disk; abort and report on first
    - For each legacy folder where ALL files were classified (zero ambiguous) AND migration verified: prompt the user with the exact path: `"Migration verified. Delete 00-TOOLS/? Reply with the literal string 'yes, delete 00-TOOLS'."`
    - Only delete on exact-string match. Anything else: skip the deletion, preserve the now-empty folder.
    - For folders WITH ambiguous files: never delete. The folder stays with the ambiguous content.
-8. **Build `02-DOCS/` (embedded wiki protocol).**
+8. **Build `docs/` (embedded wiki protocol).**
    - Open `references/wiki-protocol.md` and follow it. It defines initialization, ingest, query, and lint flows in full.
-   - For the bootstrap pass on this APPLY: run the Initialization sub-section (create `02-DOCS/inbox/`, `02-DOCS/inbox/README.md` from `inbox-readme-template.md`, `02-DOCS/inbox/_processed/`, `02-DOCS/raw/`, `02-DOCS/wiki/`, `02-DOCS/wiki/index.md`, `02-DOCS/wiki/log.md`), then run the **bootstrap ingest** (one optional seeding pass — the ongoing path is dropping files into `inbox/` and running the Inbox Sweep) for each of these sources (see the "How `harness` uses this protocol" section at the bottom of `wiki-protocol.md`):
+   - For the bootstrap pass on this APPLY: run the Initialization sub-section (create `docs/inbox/`, `docs/inbox/README.md` from `inbox-readme-template.md`, `docs/inbox/_processed/`, `docs/raw/`, `docs/`, `docs/index.md`, `docs/log.md`), then run the **bootstrap ingest** (one optional seeding pass — the ongoing path is dropping files into `inbox/` and running the Inbox Sweep) for each of these sources (see the "How `harness` uses this protocol" section at the bottom of `wiki-protocol.md`):
      - Each subproject `README.md` if present.
      - `01-TOOLS/README.md` (just written in step 6).
      - Each `01-TOOLS/<TOOL>/README.md` and `CREDENTIALS.md`.
-     - Every file under `02-DOCS/raw/migrated/` (from legacy `XX-*` migration in step 4).
+     - Every file under `docs/raw/migrated/` (from legacy `XX-*` migration in step 4).
      - Root `CLAUDE.md` and `AGENTS.md`.
-   - Use these templates verbatim; `wiki-protocol.md` is the source of truth for `02-DOCS`, so do NOT invent a different structure or format:
+   - Use these templates verbatim; `wiki-protocol.md` is the source of truth for `docs`, so do NOT invent a different structure or format:
      - `references/wiki-raw-template.md` — `raw/<topic>/*.md`.
      - `references/wiki-article-template.md` — `wiki/<topic>/*.md` (OKF v0.1 frontmatter + relative markdown links + `## Related`).
      - `references/wiki-index-template.md` — `wiki/index.md` (machine catalog; the `.base` views are the human navigation).
@@ -255,13 +255,13 @@ Print a final report:
 
 Once the structure stands, make sure the workspace has the ai-hub skills its stack and goals call for — detection here, not just at `init`:
 
-1. **Detect → propose.** From the detected stacks/providers and the user's goals in `02-DOCS/wiki/harness/`, build a shortlist. Ask the CLI if unsure: `npx ai-hub consult "<stack + goal>"`. (Map e.g. detected Stripe→`stripe`, Postgres→`postgresdb`, Next→`nextjs`+`design`, a company/ops focus→`finance-ops`/`invoicing`/`gdpr-privacy`…)
+1. **Detect → propose.** From the detected stacks/providers and the user's goals in `docs/harness/`, build a shortlist. Ask the CLI if unsure: `npx ai-hub consult "<stack + goal>"`. (Map e.g. detected Stripe→`stripe`, Postgres→`postgresdb`, Next→`nextjs`+`design`, a company/ops focus→`finance-ops`/`invoicing`/`gdpr-privacy`…)
 2. **Confirm, then install yourself.** Show the shortlist with a one-line *why* each (in their register), get a one-word confirm, and run it via Bash — installing writes to their environment, so always confirm first:
    ```bash
    npx ai-hub add <skill> [<skill> ...]
    ```
    Can't run a shell? Print the exact command for another terminal tab.
-3. **Flag the new session.** New skills load at session start — tell the user to open a **new tab/session** (or reload Cursor/Codex/Gemini) in this folder for them to activate. Log the installed set in `02-DOCS/wiki/harness/decisions.md`.
+3. **Flag the new session.** New skills load at session start — tell the user to open a **new tab/session** (or reload Cursor/Codex/Gemini) in this folder for them to activate. Log the installed set in `docs/harness/decisions.md`.
 
 ## Keep CLAUDE.md lean — the index lives in the wiki
 
@@ -270,21 +270,21 @@ practice: keep it **under ~200 lines**; beyond that, adherence rots as the rules
 diluted by an index nobody needs in context). The biggest growth vector is the `## Knowledge map` —
 a row per wiki article, appended by many skills, forever.
 
-**The rule:** the **full** Knowledge map lives in `02-DOCS/wiki/index.md` (loaded on demand, grows
+**The rule:** the **full** Knowledge map lives in `docs/index.md` (loaded on demand, grows
 freely). Root `CLAUDE.md`'s `## Knowledge map` is a **short pointer** — only the read-first entries
-(`harness/user-profile.md`, `sdd/constitution.md`) plus "full index → `02-DOCS/wiki/index.md`".
+(`harness/user-profile.md`, `sdd/constitution.md`) plus "full index → `docs/index.md`".
 
 **Offload when it bloats (a move, never a trim — no info lost):** when `CLAUDE.md` passes ~200 lines
 (the SessionStart hook nudges you) or its `## Knowledge map` has grown past the read-first entries:
 
-1. Open `02-DOCS/wiki/index.md` (create it if absent).
+1. Open `docs/index.md` (create it if absent).
 2. **Move** every Knowledge-map row beyond the read-first entries from `CLAUDE.md` into
-   `02-DOCS/wiki/index.md`, merging — don't duplicate, don't delete.
+   `docs/index.md`, merging — don't duplicate, don't delete.
 3. Leave `CLAUDE.md`'s `## Knowledge map` as the short pointer above.
 4. Same for any other section overgrown into an index (e.g. a huge tool table): detail to the wiki,
    pointer stays.
 
-From then on, **new index entries go to `02-DOCS/wiki/index.md`**, not `CLAUDE.md`. This is additive
+From then on, **new index entries go to `docs/index.md`**, not `CLAUDE.md`. This is additive
 and reversible; it honors the "never delete user content" rule (you relocate it, with a pointer).
 Opt out of the size nudge with `.ai-hub/.no-claudemd-check`.
 
@@ -296,7 +296,7 @@ scope rules that no single phase owns, and breaking one destroys something the u
 1. **No speculative tools.** A tool is created only when there is evidence: the detector found it in the user's code, or the user asked for it by name (then `../connect-tool/SKILL.md` builds it). No "we should probably have a Sentry tool too".
 2. **Idempotent.** Running the skill twice produces no extra side effects. Re-scanning a project already canonical detects "nothing to do".
 3. **Out-of-scope dirs are invisible.** `node_modules/`, `.venv/`, `.next/`, `__pycache__/`, `.git/`, `dist/`, `build/`, `.dart_tool/` are never read for detection and never touched.
-4. **Subproject internals are out of scope.** `.env.example`, `requirements.txt`, `package.json`, source files inside subprojects are READ for detection only. They are NEVER moved, renamed, modified, or deleted. The skill operates exclusively on workspace-root artifacts (`CLAUDE.md`, `AGENTS.md`, `01-TOOLS/`, `02-DOCS/`, and `XX-*` legacy folders at the root level).
+4. **Subproject internals are out of scope.** `.env.example`, `requirements.txt`, `package.json`, source files inside subprojects are READ for detection only. They are NEVER moved, renamed, modified, or deleted. The skill operates exclusively on workspace-root artifacts (`CLAUDE.md`, `AGENTS.md`, `01-TOOLS/`, `docs/`, and `XX-*` legacy folders at the root level).
 
 ## Red flags — abort and re-plan
 
@@ -312,5 +312,5 @@ This skill is fully self-contained. No external sub-skill required.
 
 ## Orientación (siempre)
 
-Habla con la voz de `orient`: frases cortas, una idea por frase, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `02-DOCS/wiki/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a `suggest` el "¿instalo la skill que falta?".)
+Habla con la voz de `orient`: frases cortas, una idea por frase, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `docs/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a `suggest` el "¿instalo la skill que falta?".)
 

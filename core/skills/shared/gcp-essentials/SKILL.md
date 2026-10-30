@@ -3,7 +3,7 @@ name: gcp-essentials
 description: "Use when running a small product on core Google Cloud via the gcloud CLI: a project, Cloud Run deploys, a locked-down Cloud Storage bucket, managed Cloud SQL, and least-privilege IAM wiring them together. NOT AWS (that is `aws-essentials`), NOT the CI pipeline that ships the image (that is `deployment`), NOT Postgres schema/query tuning (that is `postgresdb`)."
 tags: [gcp, cloud-run, cloud-sql, cloud-storage, iam, gcloud, serverless, devops]
 recommends: [aws-essentials, docker, github-actions, secure-coding, postgresdb, deployment, monitoring, backups]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # GCP essentials

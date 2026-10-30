@@ -3,7 +3,7 @@ name: testing-py
 description: "Use when writing or fixing Python tests with pytest — especially when the suite is green but bugs still ship, when you must decide where to patch a mocked dependency, when coverage is high but catches nothing, when fixture scope leaks state, or when adding property-based tests for parsers and invariants. NOT browser end-to-end flows (that is `e2e-testing`), NOT JS/TS unit tests (that is `testing-web`), NOT Go tests (that is `testing-go`)."
 tags: [pytest, python, testing, coverage, hypothesis, mocking, fixtures, property-based]
 recommends: [python, code-review, github-actions, e2e-testing]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Testing Python

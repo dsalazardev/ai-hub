@@ -3,7 +3,7 @@ name: machine-learning
 description: "Use when predicting a column from rows of tabular features with classic models — scikit-learn pipelines, RandomForest, XGBoost/LightGBM, leak-free cross-validation, metrics for imbalanced classes, or a model that aced CV then collapsed in production. NOT PyTorch neural nets (that is `deep-learning`), NOT cleaning the dirty table first (that is `data-cleaning`), NOT forecasting a dated series (that is `forecasting`), NOT text/token modeling (that is `nlp`)."
 tags: [machine-learning, scikit-learn, sklearn, xgboost, lightgbm, tabular, gbdt, cross-validation, data-leakage, classification, regression, pipeline]
 recommends: [deep-learning, data-cleaning, python, training-data]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Machine learning — classic/tabular models, done without lying to yourself
@@ -219,10 +219,10 @@ print("TEST PR-AUC:", round(average_precision_score(y_test, proba), 3))
 print(classification_report(y_test, (proba >= 0.5).astype(int)))   # threshold is a choice — tune it
 ```
 
-## Project grounding (02-DOCS + CLAUDE.md)
+## Project grounding (docs + CLAUDE.md)
 
-In a project with a `02-DOCS/` layer (the [`harness`](../harness/SKILL.md) wiki), record the modeling
-contract in `02-DOCS/wiki/ml/<target>.md`, linked from the root `CLAUDE.md` `## Knowledge map`: target
+In a project with a `docs/` layer (the [`harness`](../harness/SKILL.md) wiki), record the modeling
+contract in `docs/ml/<target>.md`, linked from the root `CLAUDE.md` `## Knowledge map`: target
 definition, split strategy + `random_state`, CV scheme, chosen metric and *why*, baseline, pinned versions,
 and the dated final test-set score. Read it first on every re-train so results stay comparable. No
-`02-DOCS/`? Skip silently — conventions are recorded, never gated.
+`docs/`? Skip silently — conventions are recorded, never gated.

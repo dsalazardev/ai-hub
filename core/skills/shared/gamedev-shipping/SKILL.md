@@ -4,7 +4,7 @@ description: "Use when exporting, packaging, signing, or publishing a game — e
 tags: [export, build, release, packaging, store, steam, itch, notarization, webassembly, aab]
 recommends: [godot, unity, unreal, deployment]
 profiles: [full]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Ship the game — export, build & release (per engine · per platform)

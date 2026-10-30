@@ -6,8 +6,9 @@ import { parse as parseYaml } from 'yaml';
 
 const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url));
 
-/** Tokens that must never reach a published source again (REQ-01). */
-const BRAND = /\b(?:rsc|risco)\b|ericrisco|rsc-harness|@ericrisco\/rsc|ai-hub SDD|origin:\s*risco/i;
+/** Tokens that must never reach a published source again (REQ-01, catalogo-completo). */
+const BRAND =
+  /\b(?:rsc|risco)\b|ericrisco|rsc-harness|@ericrisco\/rsc|ai-hub SDD|origin:\s*(?:risco|ai-hub)\b|02-DOCS/i;
 
 const SCAN_TREES = ['core/skills', 'rules'];
 const SCAN_ROOT_FILES = [
@@ -128,7 +129,7 @@ describe('brand gate', () => {
     expect(findings).toEqual([]);
   });
 
-  it('marks every published skill with origin: ai-hub', async () => {
+  it('marks every published skill with origin: dsalazardev', async () => {
     const manifestText = await fs.readFile(path.join(REPO_ROOT, 'manifest.yaml'), 'utf8');
     const ids = await publishedSkillIds(manifestText);
     const missing: string[] = [];
@@ -138,7 +139,7 @@ describe('brand gate', () => {
       const frontmatter = FRONTMATTER.exec(text);
       expect(frontmatter, `${id} has no frontmatter`).not.toBeNull();
       const meta = parseYaml(frontmatter![1]) as { origin?: unknown };
-      if (meta.origin !== 'ai-hub') {
+      if (meta.origin !== 'dsalazardev') {
         missing.push(`${id}: origin=${String(meta.origin)}`);
       }
     }
@@ -148,6 +149,8 @@ describe('brand gate', () => {
   it('proves the gate detects a reintroduced token and skips NOTICE.md', async () => {
     expect(BRAND.test('npx @ericrisco/rsc add x')).toBe(true);
     expect(BRAND.test('origin: risco')).toBe(true);
+    expect(BRAND.test('origin: ai-hub')).toBe(true);
+    expect(BRAND.test('read 02-DOCS/wiki/index.md first')).toBe(true);
     expect(BRAND.test('ai-hub SDD')).toBe(true);
     expect(BRAND.test('the catalog ships skills, undiscussed')).toBe(false);
 

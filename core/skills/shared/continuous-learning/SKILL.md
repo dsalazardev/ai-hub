@@ -3,16 +3,16 @@ name: continuous-learning
 description: "Use when a mistake, correction, or surprise taught the workspace something that must stick — a retro or postmortem, the same agent error corrected twice, a resolved bug's root cause, scattered notes-to-self — and route that lesson to the durable surface that fires next time. NOT a forward choice with alternatives (that is `decision-records`)."
 tags: [learning, retro, postmortem, feedback-loop, knowledge, meta]
 recommends: [decision-records, author-skill, debug, harness, knowledge-ops]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Continuous learning — the feedback loop of the harness
 
 This is the engine that makes the system get better every time it is wrong. When something broke, got corrected, surprised you, or simply taught the workspace something, your job is to **catch that lesson and route it back into the durable apparatus so the same mistake cannot recur**.
 
-One premise is load-bearing: **a lesson that lives only in chat is gone at the next compaction.** Verbal reflection only changes future behaviour when it is persisted to memory the agent actually reads next time (this is the Reflexion mechanism — self-reflection written to durable memory, not held in the conversation). In this harness, "memory" is a concrete set of surfaces: a `SKILL.md` body, `02-DOCS/wiki/harness/decisions.md`, `02-DOCS/wiki/harness/user-profile.md`, a root `CLAUDE.md` rule, or a `verify.sh` check. **Chat is not memory.** A lesson is "captured" only when it has landed in one of those.
+One premise is load-bearing: **a lesson that lives only in chat is gone at the next compaction.** Verbal reflection only changes future behaviour when it is persisted to memory the agent actually reads next time (this is the Reflexion mechanism — self-reflection written to durable memory, not held in the conversation). In this harness, "memory" is a concrete set of surfaces: a `SKILL.md` body, `docs/harness/decisions.md`, `docs/harness/user-profile.md`, a root `CLAUDE.md` rule, or a `verify.sh` check. **Chat is not memory.** A lesson is "captured" only when it has landed in one of those.
 
-Read `technical_level` in `02-DOCS/wiki/harness/user-profile.md` before you narrate, and speak in the `orient` voice in that register. It governs the words only — the capture loop runs identically for every reader.
+Read `technical_level` in `docs/harness/user-profile.md` before you narrate, and speak in the `orient` voice in that register. It governs the words only — the capture loop runs identically for every reader.
 
 ## Boundaries
 
@@ -24,7 +24,7 @@ Read `technical_level` in `02-DOCS/wiki/harness/user-profile.md` before you narr
 | "Now that debug found it, make sure we never ship that pattern again" | `continuous-learning` | post-resolution capture |
 | "Write the SKILL.md and evals for pr-describe" | `../author-skill/SKILL.md` | skill craft — body, description, evals |
 | "This lesson means the deploy skill needs a new guardrail" | `continuous-learning` decides the home → `../author-skill/SKILL.md` makes the edit | you route, it writes |
-| "Consolidate these docs / sweep the inbox" | `../harness/SKILL.md` | generic 02-DOCS filing; your trigger is "we learned something the hard way" |
+| "Consolidate these docs / sweep the inbox" | `../harness/SKILL.md` | generic docs filing; your trigger is "we learned something the hard way" |
 | "What do I know about X" | `../knowledge-ops/SKILL.md` | reference knowledge, as opposed to mistake-derived experiential knowledge |
 | "Run this sweep every week" | `loop` / `schedule` harness CLI | you may recommend a cadence; you are not a scheduler |
 
@@ -44,13 +44,13 @@ The single most important artifact in this skill. Pick the row, write to that ex
 
 | Lesson type | Durable home (exact path) | Who writes it |
 |---|---|---|
-| About the user (prefers X, hates Y, works this way) | `02-DOCS/wiki/harness/user-profile.md` | this skill |
+| About the user (prefers X, hates Y, works this way) | `docs/harness/user-profile.md` | this skill |
 | A rule we keep breaking | root `CLAUDE.md` rule, or the relevant `SKILL.md` body | `author-skill` for the skill body; this skill for `CLAUDE.md` |
 | A pattern to ban | a `verify.sh` banlist/check on the owning skill | `author-skill` |
 | A missed-trigger insight (skill fired wrong / didn't fire) | a `should_not_trigger` (or `should_trigger`) eval case | `author-skill` |
 | A surprising fact / how a provider actually behaves | wiki article via the harness ingest protocol | `harness` |
 | A forward choice that surfaced mid-retro | punt to `decisions.md` | `decision-records` |
-| A one-off, low-stakes note | `02-DOCS/wiki/harness/decisions.md` append, or a topic note | this skill |
+| A one-off, low-stakes note | `docs/harness/decisions.md` append, or a topic note | this skill |
 
 Full catalogue with hand-off recipes and a worked end-to-end example is in `references/lesson-routing.md`. The body table is enough for routine cases; read the reference when the home or the hand-off is unobvious.
 
@@ -70,7 +70,7 @@ Copy-pasteable and **situation-tagged**, so it retrieves on the trigger that mat
 - **We believed:** <the wrong assumption>
 - **Actually:** <what is true>
 - **Durable home:** <path + surface that now holds it>
-- **Fires next time via:** <rule / eval / verify.sh / index entry in `02-DOCS/wiki/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer)>
+- **Fires next time via:** <rule / eval / verify.sh / index entry in `docs/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer)>
 ```
 
 The last two lines are not optional. An entry with no durable home and no "fires next time" is a chat message with a date on it.
@@ -82,7 +82,7 @@ This is the rigor of this process skill, and it stands in for a `verify.sh` (thi
 - a rule the agent reads on its next pass (`CLAUDE.md` or a skill body), or
 - an eval case (`should_not_trigger` / `should_trigger`) that would have caught the miss, or
 - a `verify.sh` check on the owning skill that fails on the banned pattern, or
-- a `02-DOCS/wiki/index.md` entry (the Knowledge map; root `CLAUDE.md` keeps only a short pointer) pointing at the new wiki article.
+- a `docs/index.md` entry (the Knowledge map; root `CLAUDE.md` keeps only a short pointer) pointing at the new wiki article.
 
 If you cannot name one of those, the lesson is not captured — keep going. Prefer a surface a human can review (a rule, an eval, a profile line) over an opaque store: a single agent reflecting alone can talk itself into a local optimum, so the durable write should be legible enough for a human to sanity-check.
 
@@ -90,7 +90,7 @@ If you cannot name one of those, the lesson is not captured — keep going. Pref
 
 ## Periodic retro sweep
 
-To harvest scattered corrections and notes-to-self on a cadence, do not reimplement a scheduler — recommend the `loop` / `schedule` harness CLI to run the sweep weekly. For pulling raw notes through `02-DOCS/inbox/` into the wiki, route the consolidation itself through `../harness/SKILL.md`; you only own the lessons that came from a mistake, not the general filing.
+To harvest scattered corrections and notes-to-self on a cadence, do not reimplement a scheduler — recommend the `loop` / `schedule` harness CLI to run the sweep weekly. For pulling raw notes through `docs/inbox/` into the wiki, route the consolidation itself through `../harness/SKILL.md`; you only own the lessons that came from a mistake, not the general filing.
 
 ## Anti-patterns
 

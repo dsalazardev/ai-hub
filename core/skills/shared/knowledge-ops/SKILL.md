@@ -1,18 +1,18 @@
 ---
 name: knowledge-ops
-description: "Use when an already-running 02-DOCS/ wiki needs gardening judgment — what is worth capturing (default: nothing), where a loose note belongs, whether to split a bloated article or merge near-duplicates, how to link orphans back in, and what retires to _archive (never delete). NOT building or sweeping the wiki engine itself (that is `harness`)."
-tags: [knowledge-ops, wiki, 02-docs, knowledge-base, curation, cross-linking, pruning, knowledge-meta]
+description: "Use when an already-running docs/ wiki needs gardening judgment — what is worth capturing (default: nothing), where a loose note belongs, whether to split a bloated article or merge near-duplicates, how to link orphans back in, and what retires to _archive (never delete). NOT building or sweeping the wiki engine itself (that is `harness`)."
+tags: [knowledge-ops, wiki, docs, knowledge-base, curation, cross-linking, pruning, knowledge-meta]
 recommends: [harness, decision-records, meeting-notes, sop-builder, research-ops, codebase-onboarding]
-origin: ai-hub
+origin: dsalazardev
 ---
 
-# Knowledge Ops — Garden the 02-DOCS Wiki
+# Knowledge Ops — Garden the docs Wiki
 
-*The engine is already running. `harness` built the `02-DOCS/` wiki and owns its automation — the inbox sweep, deterministic lint, scoring, gap detection, the self-improve loop — and changing that machinery or filling the wiki in bulk stays with it. Yours are the four judgments automation deliberately leaves to a human: what is worth capturing, how it should be shaped, how it connects, and what should retire. You are the gardener, not the machinery.*
+*The engine is already running. `harness` built the `docs/` wiki and owns its automation — the inbox sweep, deterministic lint, scoring, gap detection, the self-improve loop — and changing that machinery or filling the wiki in bulk stays with it. Yours are the four judgments automation deliberately leaves to a human: what is worth capturing, how it should be shaped, how it connects, and what should retire. You are the gardener, not the machinery.*
 
 ## Before you touch anything
 
-1. **Confirm `02-DOCS/wiki/` exists.** If there is no wiki, stop and say: "Run `harness` to build the `02-DOCS/` wiki first, then come back to garden it." Why: this skill operates an existing engine; it never creates one. See `../harness/SKILL.md`.
+1. **Confirm `docs/` exists.** If there is no wiki, stop and say: "Run `harness` to build the `docs/` wiki first, then come back to garden it." Why: this skill operates an existing engine; it never creates one. See `../harness/SKILL.md`.
 2. **Read `wiki/harness/user-profile.md`** for `technical_level`, which sets your register (technical terms, or plain words with analogies). Why: a non-technical owner needs each decision explained with an analogy; a technical one reads the term directly. Either way, speak in the `orient` voice: short, and every answer understandable on its own.
 3. **Read `wiki/index.md` and `wiki/scores.json` before any edit.** Why: you garden from the map and the score signal, never blind. `scores.json` tells you what is bloated, orphaned, or stale.
 

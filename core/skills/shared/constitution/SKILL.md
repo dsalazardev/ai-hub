@@ -1,27 +1,27 @@
 ---
 name: constitution
-description: "Use when setting or amending a project's non-negotiables — stack canon, quality bars, conventions, security/a11y floors — as numbered, testable rules later phases obey. First ai-hub Spec-Kit phase; writes 02-DOCS/wiki/sdd/constitution.md. NOT a feature spec (that is `specify`), NOT the technical plan (that is `plan`), NOT the wiki itself (that is `harness`)."
+description: "Use when setting or amending a project's non-negotiables — stack canon, quality bars, conventions, security/a11y floors — as numbered, testable rules later phases obey. First ai-hub Spec-Kit phase; writes .specify/memory/constitution.md. NOT a feature spec (that is `specify`), NOT the technical plan (that is `plan`), NOT the wiki itself (that is `harness`)."
 tags: [sdd, constitution, principles]
 recommends: [specify]
 profiles: [core, full]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # constitution — the project's non-negotiable principles
 
 *The first ai-hub Spec-Kit phase. Run once per project, then amend. It writes down the rules every later phase obeys: stack canon, quality bars, conventions. Everything downstream — specify, plan, analyze, implement, verify, review — reads this file as guardrails.*
 
-A constitution is small, durable, and enforceable. It is **not** a wiki of everything you know about the project (that is what `02-DOCS/wiki/` already is, run by the `harness`). It is the short list of principles that, if violated, mean the work is wrong regardless of whether it runs. If a rule here cannot be checked or pointed at later, it does not belong here — move it to the stack wiki and link it.
+A constitution is small, durable, and enforceable. It is **not** a wiki of everything you know about the project (that is what `docs/` already is, run by the `harness`). It is the short list of principles that, if violated, mean the work is wrong regardless of whether it runs. If a rule here cannot be checked or pointed at later, it does not belong here — move it to the stack wiki and link it.
 
-Not this phase: *what to build* → `../specify/SKILL.md`; the technical approach for one feature → `../plan/SKILL.md`; setting up `01-TOOLS/` + `02-DOCS/` or capturing general project knowledge → `harness`; concrete stack mechanics (*how* to configure Ruff, pytest, Tailwind tokens) → the relevant stack skill (`../fastapi/SKILL.md`, `../nextjs/SKILL.md`, `../go/SKILL.md`, `../postgresdb/SKILL.md`, `../flutter/SKILL.md`, `../design/SKILL.md`, `../secure-coding/SKILL.md`). The constitution *names* the bar; the stack skill *enforces* it.
+Not this phase: *what to build* → `../specify/SKILL.md`; the technical approach for one feature → `../plan/SKILL.md`; setting up `01-TOOLS/` + `docs/` or capturing general project knowledge → `harness`; concrete stack mechanics (*how* to configure Ruff, pytest, Tailwind tokens) → the relevant stack skill (`../fastapi/SKILL.md`, `../nextjs/SKILL.md`, `../go/SKILL.md`, `../postgresdb/SKILL.md`, `../flutter/SKILL.md`, `../design/SKILL.md`, `../secure-coding/SKILL.md`). The constitution *names* the bar; the stack skill *enforces* it.
 
 ## Model tier — `heavy` (opt-in routing)
 
-This phase's default model tier is **`heavy`** — it sets the project's non-negotiables, the highest-leverage decisions in the repo. Routing is **off** unless `models.enabled: true` in `02-DOCS/wiki/sdd/config.yaml`. When on: resolve this phase's tier (`models.overrides` wins over `models.phases`), map it to a model via `models.tiers`, and apply per `../sdd/references/model-routing.md` — announce the switch in one line when it differs from the session model, and dispatch any `Task`/`parallel` subagents on that model. Routing off or no profile → honor the session model silently. Never fake a switch a tool can't make; skip routing on a one-line change.
+This phase's default model tier is **`heavy`** — it sets the project's non-negotiables, the highest-leverage decisions in the repo. Routing is **off** unless `models.enabled: true` in `.specify/config.yaml`. When on: resolve this phase's tier (`models.overrides` wins over `models.phases`), map it to a model via `models.tiers`, and apply per `../sdd/references/model-routing.md` — announce the switch in one line when it differs from the session model, and dispatch any `Task`/`parallel` subagents on that model. Routing off or no profile → honor the session model silently. Never fake a switch a tool can't make; skip routing on a one-line change.
 
 ## Honor the register first
 
-Before asking anything, read `02-DOCS/wiki/harness/user-profile.md` and use its `technical_level`: technical terms, or plain words with analogies. No profile yet → use analogies and ask once "technical or with analogies?", or point the user at `init`; never assume fluency. The interview is the same for every reader:
+Before asking anything, read `docs/harness/user-profile.md` and use its `technical_level`: technical terms, or plain words with analogies. No profile yet → use analogies and ask once "technical or with analogies?", or point the user at `init`; never assume fluency. The interview is the same for every reader:
 
 - Infer almost everything from the codebase and stack wiki. Ask only the few questions that genuinely change a principle.
 - Give one line of *why* per principle proposed, and the trade-off where a rule constrains the team — in the `orient` voice.
@@ -29,9 +29,9 @@ Before asking anything, read `02-DOCS/wiki/harness/user-profile.md` and use its 
 
 ## Reconcile before you write (do not duplicate the stack wiki)
 
-The harness may already hold real conventions under `02-DOCS/wiki/stack/*` (e.g. `nextjs.md`, `fastapi.md`, `postgresdb.md`). The constitution does not copy them — it **ratifies the principle and links the detail**. Run this reconciliation pass first:
+The harness may already hold real conventions under `docs/stack/*` (e.g. `nextjs.md`, `fastapi.md`, `postgresdb.md`). The constitution does not copy them — it **ratifies the principle and links the detail**. Run this reconciliation pass first:
 
-1. **Read the Knowledge map** — the full index lives in `02-DOCS/wiki/index.md` (root `CLAUDE.md` keeps only a short pointer to it). List every `02-DOCS/wiki/stack/*` article that exists.
+1. **Read the Knowledge map** — the full index lives in `docs/index.md` (root `CLAUDE.md` keeps only a short pointer to it). List every `docs/stack/*` article that exists.
 2. **Read each stack article.** Pull out anything already phrased as a rule (a version pin, a lint config, a test threshold, a naming convention).
 3. **For each existing rule, decide:** is it a *project-wide non-negotiable* (→ ratify it as a principle, linking the stack article for detail) or a *local mechanic* (→ leave it in the stack wiki, do not lift it into the constitution)?
 4. **Contradictions are findings, not fixes.** If two stack articles disagree, or a stack article contradicts what the user states now, surface it and let the user resolve — never silently pick a winner.
@@ -73,18 +73,18 @@ For any significant either/or (e.g. "strict types or gradual?", "squash or merge
 Two principles are inherited from the ai-hub ecosystem and appear in every constitution unless the user explicitly overrides them:
 
 - **Git authorship is the human's.** Commits and PRs are authored by the human (Daner Alejandro Salazar Colorado, or whoever owns the repo). No `Co-Authored-By` an AI, no "generated with" footer. Enforced at the `ship` phase.
-- **Decisions are logged.** Every significant decision is appended to `02-DOCS/wiki/sdd/decisions.md` (or the harness `decisions.md`) with date, options considered, and the why. The constitution itself is the highest-order decision record.
+- **Decisions are logged.** Every significant decision is appended to `docs/sdd/decisions.md` (or the harness `decisions.md`) with date, options considered, and the why. The constitution itself is the highest-order decision record.
 
 ## Drafting the constitution
 
-Write `02-DOCS/wiki/sdd/constitution.md` from the template in `references/constitution-template.md`. Keep it short — a readable constitution is 1-2 screens, not a manual. Structure:
+Write `.specify/memory/constitution.md` from the template in `references/constitution-template.md`. Keep it short — a readable constitution is 1-2 screens, not a manual. Structure:
 
 - **Header** — project name, version (`v1.0.0`), ratified date, last-amended date.
 - **Principles** — numbered, grouped by the dimensions above. Each is one testable statement; link the stack article or script that enforces it.
 - **The bar (Definition of Done)** — the merge checklist every feature must pass. This is what `verify` runs against.
 - **Amendment log** — append-only; every change recorded (see protocol below).
 
-Create `02-DOCS/wiki/sdd/` if it does not exist. Do not overwrite an existing constitution — amend it.
+Create `docs/sdd/` if it does not exist. Do not overwrite an existing constitution — amend it.
 
 **A draft is "complete me", not "amend me".** `ai-hub onboard` writes a skeleton with `status: draft` in the frontmatter: the template's headings, the facts onboarding knew (goal, kind, scope, workflow, detected stack) and no principle. Keep those facts, run the interview, fill the sections, then on ratification drop `status: draft`, set `version: v1.0.0` and log v1.0.0 in the amendment log.
 
@@ -112,21 +112,21 @@ The constitution is versioned so `analyze` and `review` can cite "constitution v
 
 ## Checklist before handing off
 
-- [ ] `02-DOCS/wiki/harness/user-profile.md` read; register matched to `technical_level` (or the register question asked).
-- [ ] Reconciliation pass done against every `02-DOCS/wiki/stack/*` article; contradictions surfaced, not auto-resolved.
+- [ ] `docs/harness/user-profile.md` read; register matched to `technical_level` (or the register question asked).
+- [ ] Reconciliation pass done against every `docs/stack/*` article; contradictions surfaced, not auto-resolved.
 - [ ] Every principle is numbered, imperative, testable, and links its enforcer where one exists.
 - [ ] The Definition-of-Done checklist is present (what `verify` runs against).
 - [ ] Fixed principles included: human git authorship + decisions logged.
-- [ ] `02-DOCS/wiki/sdd/constitution.md` written with version + ratified date + amendment log.
+- [ ] `.specify/memory/constitution.md` written with version + ratified date + amendment log.
 - [ ] Root `CLAUDE.md` `## Knowledge map` pointer has the read-first row for the constitution.
 - [ ] The constitution was shown to the user and explicitly ratified.
 
-## Project grounding (02-DOCS + CLAUDE.md)
+## Project grounding (docs + CLAUDE.md)
 
-This skill's `02-DOCS` record is the constitution at `02-DOCS/wiki/sdd/constitution.md`. It is a **read-first** pointer entry, so its row stays in the short `## Knowledge map` pointer in the root `CLAUDE.md` (create `CLAUDE.md` if absent, additive only — never delete existing sections) — unlike other sdd artifacts, which are indexed in `02-DOCS/wiki/index.md` (the full Knowledge map that root `CLAUDE.md` points to). Add this row to the root pointer if it is not already present:
+This skill's `docs` record is the constitution at `.specify/memory/constitution.md`. It is a **read-first** pointer entry, so its row stays in the short `## Knowledge map` pointer in the root `CLAUDE.md` (create `CLAUDE.md` if absent, additive only — never delete existing sections) — unlike other sdd artifacts, which are indexed in `docs/index.md` (the full Knowledge map that root `CLAUDE.md` points to). Add this row to the root pointer if it is not already present:
 
 ```markdown
-| Project constitution (SDD non-negotiables) | `02-DOCS/wiki/sdd/constitution.md` |
+| Project constitution (SDD non-negotiables) | `.specify/memory/constitution.md` |
 ```
 
 Every later ai-hub Spec-Kit phase reads this file before it works. The harness maintains and improves the article over the life of the project; this skill is the place that ratifies and amends it.
@@ -140,7 +140,7 @@ interpreting prose (contract: `../sdd/SKILL.md`):
 {
   "status": "complete|blocked|failed",
   "executive_summary": "Constitution written with N numbered, testable rules the later phases inherit.",
-  "artifact": "02-DOCS/wiki/sdd/constitution.md",
+  "artifact": ".specify/memory/constitution.md",
   "next_recommended": "specify",
   "risk": "low|medium|high",
   "skill_resolution": {

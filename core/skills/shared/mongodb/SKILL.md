@@ -4,7 +4,7 @@ description: "Use when modeling MongoDB documents (embed versus reference, the 1
 tags: [mongodb, nosql, database, aggregation, indexing]
 recommends: [secure-coding, harness]
 profiles: []
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # MongoDB — modeling, indexing, aggregation, transactions, ops
@@ -305,22 +305,22 @@ scripts. If `node` is present it runs `node --check` for a syntax pass; otherwis
 `[skip]`. Everything except a committed credential is advisory `[warn]`/`[skip]`. It runs on stock
 macOS bash 3.2 and exits 0 on a clean or empty target.
 
-## Project grounding (02-DOCS + CLAUDE.md)
+## Project grounding (docs + CLAUDE.md)
 
-When this skill runs in a project with a `02-DOCS/` layer (the [`harness`](../harness/SKILL.md)
+When this skill runs in a project with a `docs/` layer (the [`harness`](../harness/SKILL.md)
 Karpathy wiki), record this project's MongoDB decisions there and index them from the root
 `CLAUDE.md`, so the next agent inherits the conventions instead of re-deriving them.
 
-1. **Find the article** `02-DOCS/wiki/stack/mongodb.md`, indexed in `02-DOCS/wiki/index.md` (the
+1. **Find the article** `docs/stack/mongodb.md`, indexed in `docs/index.md` (the
    Knowledge map index; root `CLAUDE.md` points to it).
 2. **If missing or stale**, create/update it with the project's real choices — collection layout and
    embed/reference decisions, the index set and its ESR rationale, read/write concern policy, the
-   Atlas tier, and any encryption/RBAC setup — then index it in `02-DOCS/wiki/index.md` (the
+   Atlas tier, and any encryption/RBAC setup — then index it in `docs/index.md` (the
    Knowledge map; root `CLAUDE.md` keeps only a short pointer to it).
 3. **Read it first on every use** and stay consistent; when a convention changes, update the article
    (bump its `Updated` date) in the same change.
 
-No `02-DOCS/` layer? Skip silently (optionally suggest `harness`). Technical conventions are
+No `docs/` layer? Skip silently (optionally suggest `harness`). Technical conventions are
 *recorded, not gated* — never block the task on this.
 
 ## See Also

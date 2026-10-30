@@ -1,24 +1,24 @@
 ---
 name: sdd
-description: "Use when you want a disciplined, spec-driven path from a feature idea to shipped, verified software — the SDD dispatcher and front door, in any language. States the method, reads the user's register from 02-DOCS, and routes to the right phase: constitution -> specify -> clarify -> plan -> tasks -> analyze -> implement -> verify -> review -> ship, with debug / worktrees / parallel on demand. Use it to start a feature, to govern the whole flow, or when unsure which phase you are in. NOT a single phase itself (it dispatches), NOT the workspace harness (that is `harness`), NOT a stack build skill."
+description: "Use when you want a disciplined, spec-driven path from a feature idea to shipped, verified software — the SDD dispatcher and front door, in any language. States the method, reads the user's register from docs, and routes to the right phase: constitution -> specify -> clarify -> plan -> tasks -> analyze -> implement -> verify -> review -> ship, with debug / worktrees / parallel on demand. Use it to start a feature, to govern the whole flow, or when unsure which phase you are in. NOT a single phase itself (it dispatches), NOT the workspace harness (that is `harness`), NOT a stack build skill."
 tags: [sdd, spec, workflow, plan]
 recommends: [sdd-init, constitution, specify]
 profiles: [full]
 runtime: false
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # sdd — the ai-hub Spec-Driven Development dispatcher
 
 *The front door for building software the ai-hub way: intent in, shipped-and-verified software out, with the spec, plan and decisions recorded into the project's living knowledge model as you go.*
 
-`sdd` is the **engineering counterpart of the `harness`**. The harness runs the chaos → knowledge loop (inbox → `02-DOCS` wiki). `sdd` runs the **intent → shipped software** loop, and it writes the artifacts of that loop — constitution, specs, plans, decisions — into the same `02-DOCS/wiki/sdd/` so the project's knowledge grows with every feature instead of leaking into chat history.
+`sdd` is the **engineering counterpart of the `harness`**. The harness runs the chaos → knowledge loop (inbox → `docs` wiki). `sdd` runs the **intent → shipped software** loop, and it writes the artifacts of that loop — constitution, specs, plans, decisions — into the same `docs/sdd/` so the project's knowledge grows with every feature instead of leaking into chat history.
 
 This skill does **not** do a phase itself. It is the dispatcher: it names the method, reads which register you want (technical or with analogies), tells you which phase you are in, and hands off to the phase skill that owns the work. Each phase skill, when it finishes, points you at the next one — so once you enter the chain you rarely come back here.
 
 ## The method in one breath
 
-Spec-Driven Development (SDD, GitHub Spec Kit lineage) says: **decide what and why before how, write it down, and let each written artifact gate the next step.** You do not jump from a sentence in chat to a pull request. You move through ordered phases, each producing a durable artifact that the next phase reads. The payoff is that the *intent* is reviewable before any code exists, drift is caught at a gate instead of in production, and the whole thing is legible to the next person (or the next session) because it lives in `02-DOCS`, not in a scrollback.
+Spec-Driven Development (SDD, GitHub Spec Kit lineage) says: **decide what and why before how, write it down, and let each written artifact gate the next step.** You do not jump from a sentence in chat to a pull request. You move through ordered phases, each producing a durable artifact that the next phase reads. The payoff is that the *intent* is reviewable before any code exists, drift is caught at a gate instead of in production, and the whole thing is legible to the next person (or the next session) because it lives in `docs`, not in a scrollback.
 
 If you only remember one rule: **the artifact is the contract.** Code is checked against the plan, the plan against the spec, the spec against the constitution. When they disagree, you fix the disagreement before writing more code — you do not let the code silently win.
 
@@ -27,7 +27,7 @@ If you only remember one rule: **the artifact is the contract.** Code is checked
 Before the first non-trivial feature in a repo, run `../sdd-init/SKILL.md`. It detects the stack, package manager, test runners, scripts, monorepo signals and review budget, refreshes `.ai-hub/skill-registry.json`, and writes:
 
 ```text
-02-DOCS/wiki/sdd/config.yaml
+.specify/config.yaml
 ```
 
 If `config.yaml` is missing and the request is more than a tiny one-line change, route to `sdd-init` before `specify`. This is not the same as `init`: `init` profiles the user/workspace; `sdd-init` calibrates the technical SDD runtime.
@@ -49,15 +49,15 @@ constitution ─(once per project)─┐
 
 | Phase | Owns | Writes | Tier | Sibling skill |
 | --- | --- | --- | --- | --- |
-| **sdd-init** | Technical runtime calibration: stack, tests, commands, registry, budgets | `02-DOCS/wiki/sdd/config.yaml`, `.ai-hub/skill-registry.*` | light | `../sdd-init/SKILL.md` |
-| **proposal** | Optional pre-execution briefing for ambiguous/architectural/risky work | `02-DOCS/wiki/sdd/proposals/<slug>.md` | — | handled by `../specify/SKILL.md` when needed |
-| **constitution** | Project non-negotiables: stack canon, quality bars, conventions | `02-DOCS/wiki/sdd/constitution.md` | heavy | `../constitution/SKILL.md` |
-| **specify** | Turn a fuzzy intent into a spec — what & why, no how | `02-DOCS/wiki/sdd/specs/<slug>.md` | balanced | `../specify/SKILL.md` |
+| **sdd-init** | Technical runtime calibration: stack, tests, commands, registry, budgets | `.specify/config.yaml`, `.ai-hub/skill-registry.*` | light | `../sdd-init/SKILL.md` |
+| **proposal** | Optional pre-execution briefing for ambiguous/architectural/risky work | `docs/sdd/proposals/<slug>.md` | — | handled by `../specify/SKILL.md` when needed |
+| **constitution** | Project non-negotiables: stack canon, quality bars, conventions | `.specify/memory/constitution.md` | heavy | `../constitution/SKILL.md` |
+| **specify** | Turn a fuzzy intent into a spec — what & why, no how | `specs/<feature>/spec.md` | balanced | `../specify/SKILL.md` |
 | **clarify** | Surface ambiguities / edge cases, ask, bake answers back in | updates the spec | balanced | `../clarify/SKILL.md` |
-| **plan** | Technical plan: architecture, interfaces, data flow, tests, risks | `02-DOCS/wiki/sdd/plans/<slug>.md` | heavy | `../plan/SKILL.md` |
+| **plan** | Technical plan: architecture, interfaces, data flow, tests, risks | `specs/<feature>/plan.md` | heavy | `../plan/SKILL.md` |
 | **tasks** | Break the plan into ordered, independently-verifiable tasks | task list in the plan artifact | balanced | `../tasks/SKILL.md` |
 | **analyze** | Consistency gate: constitution ↔ spec ↔ plan ↔ tasks (report only) | a gap report | heavy | `../analyze/SKILL.md` |
-| **implement** | Execute tasks with checkpoints; TDD discipline embedded | logs to `02-DOCS/wiki/sdd/decisions.md` | balanced | `../implement/SKILL.md` |
+| **implement** | Execute tasks with checkpoints; TDD discipline embedded | logs to `docs/sdd/decisions.md` | balanced | `../implement/SKILL.md` |
 | **verify** | Post-build gate: run the stack's checks + done-checks + acceptance | evidence | balanced | `../verify/SKILL.md` |
 | **review** | Adversarial code review — give and receive with rigor | review notes | heavy | `../review/SKILL.md` |
 | **ship** | Close the branch: PR / merge / cleanup. **Git authorship = Daner Alejandro Salazar Colorado** | the merge/PR and archive bundle | light | `../ship/SKILL.md` |
@@ -77,7 +77,7 @@ When a request lands, do not start typing code. Place it on the map first, then 
 
 > **The new-feature gate (hard).** The moment the user is thinking about a new feature or change — "add…", "build…", "it should also…", "quiero añadir…" — it goes to `specify` first, *even if a stack skill (nextjs/fastapi/flutter/react…) also fired and could just build it*. **No feature code is written — by any skill — until a spec AND a plan exist and the user has approved them.** A stack skill about to build an unspec'd, non-trivial feature must stop and route here. The only exception is a genuinely one-line, low-risk change; name it and skip.
 
-1. **No `02-DOCS/wiki/sdd/config.yaml` and this is non-trivial?** → `sdd-init`.
+1. **No `.specify/config.yaml` and this is non-trivial?** → `sdd-init`.
 2. **No constitution yet AND this project will grow — or its frontmatter says `status: draft` (the one `ai-hub onboard` writes)?** → `constitution` once, then come back to the chain.
 3. **Ambiguous / architectural / risky change before spec?** → optional proposal artifact via `specify`.
 4. **A new idea, fuzzy, no spec on disk?** → `specify`.
@@ -94,7 +94,7 @@ If you genuinely cannot tell which phase you are in, ask the user one question: 
 ### Skip rules (be honest about them)
 
 - A **one-line, low-risk change** (typo, copy tweak, config bump) does not need the full chain. Say so, do it, and verify. The method serves shipping, not ceremony.
-- `constitution` runs **once per project**, not per feature. If `02-DOCS/wiki/sdd/constitution.md` exists, read it as guardrails and move on — unless it is still `status: draft`: then complete it first.
+- `constitution` runs **once per project**, not per feature. If `.specify/memory/constitution.md` exists, read it as guardrails and move on — unless it is still `status: draft`: then complete it first.
 - `clarify` and `analyze` are **gates, not paperwork**. If a spec is genuinely unambiguous and tiny, name that out loud and pass through — but the bias is to run them, because skipped gates are where drift hides.
 
 ## Autopilot mode — run the whole chain on one up-front yes
@@ -103,12 +103,12 @@ By default the chain pauses at its gates (spec approval, plan approval). **Autop
 per-phase stops for a **single up-front consent**: the user says "take it all the way" once, and the
 chain runs `specify → clarify → plan → tasks → analyze → implement → verify → review` end to end
 **without asking to continue between phases** — still writing every artifact (spec, plan, decisions)
-to `02-DOCS/wiki/sdd/` as it goes, so the work stays reviewable after the fact.
+to `docs/sdd/` as it goes, so the work stays reviewable after the fact.
 
 **How it turns on:**
 
 - `specify` **offers it at the brainstorm boundary** ("¿lo llevo hasta el final yo solo, o paramos en cada fase?"). A yes engages autopilot for this feature.
-- Or set `sdd.autopilot: true` in `02-DOCS/wiki/sdd/config.yaml` to default it on (still surfaced once per feature).
+- Or set `sdd.autopilot: true` in `.specify/config.yaml` to default it on (still surfaced once per feature).
 
 **The up-front yes IS the gate.** It satisfies the new-feature gate's "spec + plan approved before code" — approval was granted in advance, for the whole run. Do not re-ask phase by phase.
 
@@ -122,7 +122,7 @@ Run the fan-out on the `developer` subagent as usual, and narrate in the `orient
 
 ## Read the register first
 
-Before dispatching, read `technical_level` in `02-DOCS/wiki/harness/user-profile.md` — exactly as every ai-hub skill does. It picks the register (technical terms, or plain words with analogies); it never changes whether the gates exist. Speak in the `orient` voice:
+Before dispatching, read `technical_level` in `docs/harness/user-profile.md` — exactly as every ai-hub skill does. It picks the register (technical terms, or plain words with analogies); it never changes whether the gates exist. Speak in the `orient` voice:
 
 - **At each phase:** name the phase, give one line of *why this phase now*, do it, show the artifact.
 - **At gates** (clarify / analyze / decisions): ask only the questions that actually change the outcome, each with its trade-off and a recommendation.
@@ -134,7 +134,7 @@ If there is no profile yet, use analogies and ask once **"technical or with anal
 Different phases reward different models: architecture and adversarial review want the strongest
 one; scaffolding and git plumbing don't. SDD can route each phase to a **tier** — `heavy`
 (deep reasoning), `balanced` (execution), `light` (mechanical) — that resolves to a concrete
-model in `02-DOCS/wiki/sdd/config.yaml` under `models`. The default mapping is the **Tier**
+model in `.specify/config.yaml` under `models`. The default mapping is the **Tier**
 column above (quality-biased: heavy on constitution/plan/analyze/review/debug, balanced on
 execution, light on ship/worktrees/sdd-init).
 
@@ -149,10 +149,10 @@ per-assistant mechanism, and the provider→model table: `references/model-routi
 
 ## Where the artifacts live (and why it matters)
 
-Every phase writes under `02-DOCS/wiki/sdd/` so the feature's reasoning outlives the chat:
+Every phase writes under `docs/sdd/` so the feature's reasoning outlives the chat:
 
 ```text
-02-DOCS/wiki/sdd/
+docs/sdd/
 ├── config.yaml              ← repo runtime calibration from sdd-init
 ├── constitution.md          ← project non-negotiables (once)
 ├── proposals/<slug>.md      ← optional pre-execution briefing
@@ -165,14 +165,14 @@ Every phase writes under `02-DOCS/wiki/sdd/` so the feature's reasoning outlives
 └── decisions.md             ← append-only log of decisions taken while building
 ```
 
-Index these in `02-DOCS/wiki/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer) under an `sdd/` topic, so every other skill reads them before working in the area. The harness maintains and improves these files just like any other wiki topic — `sdd` produces them, the harness keeps them honest.
+Index these in `docs/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer) under an `sdd/` topic, so every other skill reads them before working in the area. The harness maintains and improves these files just like any other wiki topic — `sdd` produces them, the harness keeps them honest.
 
 ```markdown
-# 02-DOCS/wiki/index.md
+# docs/index.md
 ## Knowledge map
 | Topic | Where | What |
 | --- | --- | --- |
-| sdd/ | 02-DOCS/wiki/sdd/ | Constitution, specs, plans, decisions for spec-driven feature work |
+| sdd/ | docs/sdd/ | Constitution, specs, plans, decisions for spec-driven feature work |
 ```
 
 ## Stack handoff
@@ -219,7 +219,7 @@ If a phase cannot produce the envelope because the user stopped it mid-flight, w
 When a session is long, about to pause, or context is at risk, write:
 
 ```text
-02-DOCS/wiki/sdd/sessions/<date>-<slug>.md
+docs/sdd/sessions/<date>-<slug>.md
 ```
 
 Include current phase, active artifacts, last verdict, completed tasks, next steps, risks, useful commands, and the current `skill_resolution`. This lets the next agent resume from artifacts instead of scrollback.
@@ -232,7 +232,7 @@ Include current phase, active artifacts, last verdict, completed tasks, next ste
 | "`sdd` should write the spec itself." | No. `sdd` dispatches. Invoke `specify` — it owns the spec and asks the right questions. |
 | "Clarify and analyze are bureaucracy, skip them." | Skipped gates are where drift hides. Run them; only pass through if the change is genuinely trivial and you say so. |
 | "The user wants it short, so I'll skip the gates to be terse." | Short changes the words, not the method. Fewer words, same gates. |
-| "I'll keep the plan in chat, it's faster." | Chat is not durable. Write it under `02-DOCS/wiki/sdd/` or the next session is blind. |
+| "I'll keep the plan in chat, it's faster." | Chat is not durable. Write it under `docs/sdd/` or the next session is blind. |
 | "I'll skip `sdd-init`; I remember the test command." | The runtime contract belongs in `config.yaml`, not memory. |
 | "I'll load every skill into the subagent." | That contaminates context. Use registry -> selected paths -> compact rules. |
 | "The phase wrote a nice summary, so no envelope needed." | The envelope is the phase contract. Add it. |

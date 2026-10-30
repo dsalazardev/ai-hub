@@ -4,7 +4,7 @@ description: "Use when traffic is growing or about to spike and the system bends
 tags: [scaling, capacity, load-testing, caching, read-replicas, pgbouncer, k6, devops]
 recommends: [performance, redis, postgresdb, monitoring, deployment, backups, fly-io]
 profiles: []
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Scaling: survive many requests at once

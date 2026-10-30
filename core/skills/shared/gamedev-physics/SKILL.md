@@ -4,7 +4,7 @@ description: "Use when working with a game engine's physics — rigid bodies, co
 tags: [physics, collision, rigidbody, character-controller, colliders]
 recommends: [godot, unity, unreal, gamedev-pathing]
 profiles: [full]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Game physics & collision

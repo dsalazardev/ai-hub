@@ -4,7 +4,7 @@ description: "Use when two or more pieces of work are genuinely independent — 
 tags: [parallel, subagents, fanout]
 recommends: []
 profiles: [core, full]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # parallel — fan out independent work, then reconcile
@@ -73,7 +73,7 @@ SUBAGENT BRIEF (one per unit)
 
 Each subagent still owns its own discipline inside its scope — TDD via `implement`, the stack skill's test mechanics, decision logging. This skill does not relax any of that; it just runs several of them at once.
 
-**Per-unit model tier (when routing is enabled).** `parallel` has *no fixed tier* — this is the most concrete place per-phase model routing pays off. When `models.enabled: true` in `02-DOCS/wiki/sdd/config.yaml`, give each unit the tier of the *kind of work it does*, not one tier for the whole fan-out: an implement-type unit → `balanced`, a scan/research/boilerplate unit → `light`, a unit doing genuine design or root-cause reasoning → `heavy`. Resolve the tier to a concrete model via `models.tiers` and **dispatch that subagent on that model** (e.g. Claude Code's `model` field on the Task/subagent) — real routing, independent of the session model. If routing is off or no profile exists, dispatch on the session model and say nothing. Full protocol: `../sdd/references/model-routing.md`.
+**Per-unit model tier (when routing is enabled).** `parallel` has *no fixed tier* — this is the most concrete place per-phase model routing pays off. When `models.enabled: true` in `.specify/config.yaml`, give each unit the tier of the *kind of work it does*, not one tier for the whole fan-out: an implement-type unit → `balanced`, a scan/research/boilerplate unit → `light`, a unit doing genuine design or root-cause reasoning → `heavy`. Resolve the tier to a concrete model via `models.tiers` and **dispatch that subagent on that model** (e.g. Claude Code's `model` field on the Task/subagent) — real routing, independent of the session model. If routing is off or no profile exists, dispatch on the session model and say nothing. Full protocol: `../sdd/references/model-routing.md`.
 
 **Set the model on every dispatch — an omitted model silently inherits the session's, usually the most expensive one, and that is how a fan-out's cost quietly explodes.** ai-hub installs a `developer` subagent pinned to the **balanced** tier (Sonnet by default; the user's onboarding choice in `.ai-hub/developer.json`, never `light`). For implement-type units, **dispatch to the `developer` agent** (e.g. Claude Code `subagent_type: developer`) — that's the deliberate cost cap the user asked for. Only escalate a genuinely heavy unit (real design / root-cause) to a heavy model, and only when routing is enabled; otherwise balanced is the floor and the ceiling. If you dispatch a raw subagent instead, name its tier explicitly.
 
@@ -116,11 +116,11 @@ This is where parallel work is actually finished. In order:
 1. **Merge the units** onto the integration branch (or working tree). Resolve any conflict by hand — a conflict here means the partition leaked (two units touched the same line); note it so the next partition is cleaner.
 2. **Run the *combined* suite.** Each unit was green alone; that proves nothing about together. Run the whole test suite (the stack skill's `scripts/verify.sh`) across the merged result.
 3. **If the combined suite is red**, the failure lives in the seam between units. Switch to `debug` — reproduce → isolate → fix — instead of guessing which unit to blame.
-4. **Reconcile the decision logs.** Fold each unit's decisions into `02-DOCS/wiki/sdd/decisions.md` (append-only), and if two units made a choice that now disagrees, resolve it explicitly and log the resolution.
+4. **Reconcile the decision logs.** Fold each unit's decisions into `docs/sdd/decisions.md` (append-only), and if two units made a choice that now disagrees, resolve it explicitly and log the resolution.
 
 Only after the combined suite is green is the parallel batch done. Hand the merged, green result back to the phase that called you (usually `implement`, heading for `verify`).
 
-**What to say.** In chat, say only what the reader needs, in the `orient` voice: the partition, any frozen contract, and each reconcile conflict with its fix — one line each. The register (technical or with analogies) comes from `technical_level` in `02-DOCS/wiki/harness/user-profile.md`. However short the report, you still run the independence test and the combined-suite gate in full.
+**What to say.** In chat, say only what the reader needs, in the `orient` voice: the partition, any frozen contract, and each reconcile conflict with its fix — one line each. The register (technical or with analogies) comes from `technical_level` in `docs/harness/user-profile.md`. However short the report, you still run the independence test and the combined-suite gate in full.
 
 ## Anti-patterns → STOP
 
@@ -145,7 +145,7 @@ End with:
 {
   "status": "complete",
   "executive_summary": "Parallel units gathered, reconciled, and combined suite checked.",
-  "artifact": "02-DOCS/wiki/sdd/progress/<slug>.md",
+  "artifact": "specs/<feature>/tasks.md",
   "next_recommended": "implement",
   "risk": "low|medium|high",
   "model": { "per_unit": [{ "unit": "users-repo", "tier": "balanced", "resolved": "model-id" }], "routing": "on|off" },

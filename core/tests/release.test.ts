@@ -26,14 +26,13 @@ async function currentSection(): Promise<{ version: string; date: string; body: 
 }
 
 describe('release 0.3.1 (9.3)', () => {
-  it('bumps the package and names the contracts that change in 0.4.0', async () => {
+  it('bumps the package and names the contracts that change in 0.5.0', async () => {
     const section = await currentSection();
-    expect(section.version).toBe('0.4.0');
-    expect(section.body).toMatch(/pin → rango/);
-    expect(section.body).toMatch(/excludeNewer.*eliminado/);
-    expect(section.body).toContain('satisfiesRange');
-    expect(section.body).toContain('versión RESUELTA');
-    expect(section.body).toMatch(/tres directorios de scripts siempre/i);
+    expect(section.version).toBe('0.5.0');
+    expect(section.body).toMatch(/de 163 a 261/);
+    expect(section.body).toContain('origin: dsalazardev');
+    expect(section.body).toMatch(/02-DOCS/);
+    expect(section.body).toContain('com.dsalazardev.contrast');
   });
 
   it('publishes the measured figures, not computed ones', async () => {

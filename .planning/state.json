@@ -2,14 +2,14 @@
   "version": 1,
   "project": "ai-hub",
   "preset": "generic-ts",
-  "activeChange": "speckit-latest",
+  "activeChange": "catalogo-completo",
   "lane": "feature",
-  "phase": "archived",
+  "phase": "implemented",
   "tasks": {
-    "total": 17,
-    "done": 17
+    "total": 18,
+    "done": 18
   },
   "branch": null,
   "worktree": null,
-  "updatedAt": "2026-10-29T11:15:00.000Z"
+  "updatedAt": "2026-10-29T19:45:00.000Z"
 }

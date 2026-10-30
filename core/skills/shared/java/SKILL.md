@@ -3,7 +3,7 @@ name: java
 description: "Use when writing, reviewing or refactoring modern Java (21+, 25 LTS) — records and sealed interfaces as algebraic data types, exhaustive pattern-matching switch over instanceof ladders, virtual-thread concurrency, structured concurrency and ScopedValue replacing ThreadLocal, Stream and Optional pipelines, compact-constructor validation, parametrized JDBC, and the Maven/Gradle build surface. NOT Spring framework wiring (that is `spring-boot`)."
 tags: [java, jvm, records, virtual-threads, sealed-types]
 recommends: [spring-boot, secure-coding, deployment]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Modern Java (21+)
@@ -297,23 +297,23 @@ AssertJ + Mockito, jlink/jpackage -> `references/builds.md`.
 | Run a single source file | `java App.java` (compact source + instance `main`, JEP 512, final in 25) |
 | Local gate | `./scripts/verify.sh` (run in your project root) |
 
-## Project grounding (02-DOCS + CLAUDE.md)
+## Project grounding (docs + CLAUDE.md)
 
-When this skill runs in a project with a `02-DOCS/` layer (the
+When this skill runs in a project with a `docs/` layer (the
 [`harness`](../harness/SKILL.md) Karpathy wiki), record this project's Java decisions there
 and index them from the root `CLAUDE.md`, so the next agent inherits them instead of re-deriving.
 
-1. **Find the article** `02-DOCS/wiki/stack/java.md`, indexed in `02-DOCS/wiki/index.md` (the
+1. **Find the article** `docs/stack/java.md`, indexed in `docs/index.md` (the
    Knowledge map index; root `CLAUDE.md` points to it).
 2. **If missing or stale**, create/update it with the project's real choices — JDK/LTS target,
    Maven vs Gradle, the domain-modeling conventions (records/sealed), the concurrency model
    (virtual threads, structured-concurrency preview on/off), and the error/null conventions —
-   then index it in `02-DOCS/wiki/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a
+   then index it in `docs/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a
    short pointer to it).
 3. **Read it first on every use** and stay consistent; when a convention changes, update the
    article (bump its `Updated` date) in the same change.
 
-No `02-DOCS/` layer? Skip silently (optionally suggest `harness`). Technical conventions are
+No `docs/` layer? Skip silently (optionally suggest `harness`). Technical conventions are
 *recorded, not gated* — never block the task on this.
 
 ## See Also
@@ -328,7 +328,7 @@ Sibling skills (link only those present under `skills/`):
   jlink/jpackage note and base-image choice).
 - [`postgresdb`](../postgresdb/SKILL.md) - SQL schema/index/query tuning (this skill covers JDBC
   parametrization from the Java side only).
-- [`harness`](../harness/SKILL.md) - the `02-DOCS/` workspace wiki where per-project Java
+- [`harness`](../harness/SKILL.md) - the `docs/` workspace wiki where per-project Java
   conventions are recorded (see "Project grounding").
 
 Local references (read when):

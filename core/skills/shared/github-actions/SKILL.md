@@ -3,7 +3,7 @@ name: github-actions
 description: "Use when authoring or fixing GitHub Actions CI/CD — workflows under .github/workflows, triggers, job matrix, caching, token permissions, OIDC cloud deploys, environment gates, reusable workflows. NOT the Dockerfile or image build strategy (that is `docker`), NOT the branching model (that is `git-workflow`), NOT release readiness (that is `ship`)."
 tags: [github-actions, ci-cd, workflows, oidc, caching]
 recommends: [docker, git-workflow, ship, deployment, secure-coding, aws-essentials, vercel]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # GitHub Actions CI/CD

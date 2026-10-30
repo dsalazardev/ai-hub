@@ -5,7 +5,7 @@ tags: [sdd, analyze, consistency]
 recommends: [implement]
 profiles: [full]
 runtime: false
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Analyze — the pre-implementation consistency gate
@@ -16,21 +16,21 @@ Sixth phase of the ai-hub Spec-Kit chain (`constitution → specify → clarify 
 
 **Report only. Resolve nothing.** Never edit the constitution, spec, plan or tasks; never open a code file to "just fix it"; never silently reconcile a contradiction by picking a side. This one is absolute because a gate that quietly fixes things stops being a gate: the user never learns the spec was wrong, the plan built on the old assumption stays stale, and the "consistency check" has manufactured a new inconsistency. Name the conflict, show both sides with locations, propose where it should be resolved, hand the decision back.
 
-**Model tier: `heavy`** (adversarial cross-reading). Resolve and apply it per `../sdd/references/model-routing.md`; routing is off unless `models.enabled: true` in `02-DOCS/wiki/sdd/config.yaml`.
+**Model tier: `heavy`** (adversarial cross-reading). Resolve and apply it per `../sdd/references/model-routing.md`; routing is off unless `models.enabled: true` in `.specify/config.yaml`.
 
-**Register.** Read `technical_level` in `02-DOCS/wiki/harness/user-profile.md` before reporting; with no profile, use analogies and say the harness has not set the register yet. The register changes how the report reads, never what gets checked; the six analyses always run in full.
+**Register.** Read `technical_level` in `docs/harness/user-profile.md` before reporting; with no profile, use analogies and say the harness has not set the register yet. The register changes how the report reads, never what gets checked; the six analyses always run in full.
 
 The report is the same for every reader: a finding table (severity, the two artifacts, the conflict in one line), a one-line *why it matters* per CRITICAL/HIGH finding, and per finding the recommended resolution phase and the trade-off of leaving it. For a `non-technical` reader, explain the consequence at implement time with an everyday analogy so they can choose.
 
 ## Inputs — locate the four artifacts
 
-Read all four before analyzing. The ai-hub Spec-Kit artifacts live under `02-DOCS/wiki/sdd/`, indexed from `02-DOCS/wiki/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer to it):
+Read all four before analyzing. The ai-hub Spec-Kit artifacts live under `docs/sdd/`, indexed from `docs/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer to it):
 
 | Artifact | Canonical location | Role in the check |
 | --- | --- | --- |
-| Constitution | `02-DOCS/wiki/sdd/constitution.md` | The non-negotiables. Everything below must obey it. |
-| Spec | `02-DOCS/wiki/sdd/specs/<slug>.md` | WHAT & WHY. The source of truth for requirements. |
-| Plan | `02-DOCS/wiki/sdd/plans/<slug>.md` | HOW. Must cover every spec requirement, add nothing the spec didn't ask for. |
+| Constitution | `.specify/memory/constitution.md` | The non-negotiables. Everything below must obey it. |
+| Spec | `specs/<feature>/spec.md` | WHAT & WHY. The source of truth for requirements. |
+| Plan | `specs/<feature>/plan.md` | HOW. Must cover every spec requirement, add nothing the spec didn't ask for. |
 | Tasks | task list inside the plan artifact | The ordered, verifiable steps. Must implement the plan, no more. |
 
 If any artifact is missing, **stop and say so** — analyze cannot gate what isn't there. Name the missing one and the phase that produces it. If a `<slug>` is ambiguous (several specs), ask which feature is being gated; do not analyze all of them blindly.
@@ -83,7 +83,7 @@ Produce a single consistency report:
 3. **Findings table** — `# | Severity | Type | Artifact A (loc) | Artifact B (loc) | Conflict | Resolve in (phase)`.
 4. **Recommended routing** — group fixes by the phase that owns them (`clarify` for spec ambiguity, `plan` for missing architecture, `tasks` for a missing done-check, `constitution` if a principle itself is wrong). If findings pour in across all six checks, the artifacts diverged badly — recommend re-running `clarify`/`plan` before a line-by-line analyze is even useful.
 
-Write the report to `02-DOCS/wiki/sdd/analysis/<slug>.md` (create the dir if absent) and index it in `02-DOCS/wiki/index.md` under the `sdd/` topic, so the next phase and the harness can find it. It is an OKF v0.1 wiki article: open it with YAML frontmatter carrying a non-empty `type:` (use `type: analysis`), a `timestamp` in ISO 8601, and standard markdown links — never wikilinks. The report is the artifact analyze owns — it is the *only* thing analyze writes. Per-run point-in-time; overwrite on re-run, the wiki keeps history.
+Write the report to `docs/sdd/analysis/<slug>.md` (create the dir if absent) and index it in `docs/index.md` under the `sdd/` topic, so the next phase and the harness can find it. It is an OKF v0.1 wiki article: open it with YAML frontmatter carrying a non-empty `type:` (use `type: analysis`), a `timestamp` in ISO 8601, and standard markdown links — never wikilinks. The report is the artifact analyze owns — it is the *only* thing analyze writes. Per-run point-in-time; overwrite on re-run, the wiki keeps history.
 
 Render it in the orient voice, in the user's register. Do not log a decision to `decisions.md` — analyze decides nothing; the phase that resolves the finding logs its own decision.
 
@@ -106,7 +106,7 @@ interpreting prose (contract: `../sdd/SKILL.md`):
 {
   "status": "complete|blocked|failed",
   "executive_summary": "Cross-read of spec/plan/tasks against the constitution; findings ranked.",
-  "artifact": "02-DOCS/wiki/sdd/analysis/<slug>.md",
+  "artifact": "docs/sdd/analysis/<slug>.md",
   "next_recommended": "implement",
   "risk": "low|medium|high",
   "skill_resolution": {

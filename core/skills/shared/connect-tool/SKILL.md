@@ -4,7 +4,7 @@ description: "Use when the user names a specific tool to connect to the agent (a
 tags: [connect, integration, erp, legacy, desktop, database, read-only, mcp, api, export, least-privilege, onboarding]
 recommends: [harness, api-connector-builder, automation-strategy, automation-flows]
 profiles: [minimal, core, full]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Connect a tool: research it, pick the safe route, prove it works
@@ -20,7 +20,7 @@ prove it, leave it written down.**
 ## Before anything: what does the user want to do?
 
 Ask only what the docs cannot answer, in plain words (`technical_level` in
-`02-DOCS/wiki/harness/user-profile.md` sets the register):
+`docs/harness/user-profile.md` sets the register):
 
 - **Which product, exactly?** Name, edition, version. "Sage" is five different products.
 - **Where does it run?** In the cloud (a website they log into) or installed on a computer or
@@ -71,7 +71,7 @@ site: they have moved before.
 - **Never write directly into a desktop program's database.** It bypasses the program's own
   rules, voids support contracts, and can corrupt accounting. Generate the program's official
   import file instead, and a person imports it.
-- **Secrets stay in `.env`** (gitignored, `chmod 600`). Never in the repo, never in `02-DOCS`.
+- **Secrets stay in `.env`** (gitignored, `chmod 600`). Never in the repo, never in `docs`.
 
 ## 4. Build it in `01-TOOLS/<TOOL>/`
 
@@ -135,7 +135,7 @@ Say what you found, which route you chose and why, and what happens next, in sho
 
 ## 6. Leave it written down
 
-Record the connection in `02-DOCS` following the `harness` wiki protocol: what is connected, the
+Record the connection in `docs` following the `harness` wiki protocol: what is connected, the
 route, the permissions, who owns the credentials, and the date. The next session, or a colleague,
 reads it instead of starting over.
 
@@ -153,11 +153,11 @@ reads it instead of starting over.
 
 ## See also
 
-- `../harness/SKILL.md`: owns `01-TOOLS/` and `02-DOCS/` as a whole.
+- `../harness/SKILL.md`: owns `01-TOOLS/` and `docs/` as a whole.
 - `../api-connector-builder/SKILL.md`: auth, pagination and retries once an API is the route.
 - `../automation-strategy/SKILL.md`: whether to connect, migrate or automate at all.
 - `../automation-flows/SKILL.md`: chaining the connected tool into a workflow.
 
 ## Orientación (siempre)
 
-Habla con la voz de `orient`: frases cortas, una idea por frase, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `02-DOCS/wiki/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a `suggest` el "¿instalo la skill que falta?".)
+Habla con la voz de `orient`: frases cortas, una idea por frase, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `docs/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a `suggest` el "¿instalo la skill que falta?".)

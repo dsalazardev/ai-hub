@@ -1,0 +1,81 @@
+skill: scroll-film
+
+# scroll-film owns one job end to end: a page section whose picture is a chain of pre-rendered
+# clips scrubbed by scroll — the chain (seams handed off as real frames), the encode (short GOP,
+# Blob-seekable), the page (engine that holds up on phones) and the seam QA. It is NOT scroll
+# animation without video (design), NOT a finished MP4 (ai-media), NOT the words (landing-copy),
+# NOT a still image (replicate-images), NOT the provider call mechanics (fal), NOT page speed in
+# general (performance), NOT a video rendered from code (remotion-video).
+
+should_trigger:
+  - prompt: "Quiero una landing en la que, al hacer scroll, la cámara vuele por las fases de nuestro negocio sin cortes, como las webs de Apple, con vídeos generados con IA."
+    why: "The core job in Spanish: a scroll-scrubbed camera flight built from AI clips, from the brief to the page."
+
+  - prompt: "Build a scroll-driven hero where the camera flies from the tea farm into the kitchen and then into our shop, all AI-generated video, no visible cuts."
+    why: "The core job in English: ordered scenes, one continuous flight, generated clips that must chain without seams."
+
+  - prompt: "Our scroll-scrubbed hero video works on localhost but in production it is stuck on the first frame whatever I scroll."
+    why: "Non-obvious symptom: a host that ignores byte-range requests leaves the streamed video unseekable. The fix is the engine's Blob loading."
+
+  - prompt: "Every time the scroll passes from one AI clip to the next there's a jump: the kitchen at the end of the transition doesn't look like the kitchen at the start of the next clip."
+    why: "Non-obvious symptom of the seam law: the transition ended on the original still instead of the next clip's real first frame."
+
+  - prompt: "On iPhone our scroll video is black until I touch the screen, and on Android a fast flick freezes it."
+    why: "Phone failures specific to scrubbing: iOS paints nothing for a never-played video; queued seeks on a long-GOP master freeze the decoder."
+
+  - prompt: "Convierte la web de la inmobiliaria en un recorrido: al bajar, la cámara entra por la puerta, cruza el salón y sale a la terraza, todo con imágenes generadas."
+    why: "Photoreal walkthrough phrased as a tour, not as 'scroll video': it needs the forward-take chain shape and frame handoffs."
+
+  - prompt: "Vull que el hero de la web sigui un vol de càmera per un món en miniatura que avança amb l'scroll."
+    why: "Catalan, diorama look: the dive-and-hop chain shape scrubbed by scroll."
+
+should_not_trigger:
+  - prompt: "On our Next.js landing page, make each section fade and rise in as it scrolls into view, and pin the pricing block while its cards slide in."
+    route_to: design
+    why: "Scroll-linked animation of DOM elements, with no video: CSS scroll timelines and ScrollTrigger pinning belong to design."
+
+  - prompt: "Take these five Kling clips, stitch them into one 30-second MP4, and lay a voiceover and music under them."
+    route_to: ai-media
+    why: "A finished media file assembled with ffmpeg, not a page scrubbed by scroll."
+
+  - prompt: "Write the headline, subhead and call to action for the hero of our bubble tea landing page."
+    route_to: landing-copy
+    why: "The words on the page; scroll-film hands its copy slots to landing-copy."
+
+  - prompt: "Generate a photorealistic product image of our bottle on a marble counter for the homepage."
+    route_to: replicate-images
+    why: "One still image, no chain and no scrubbing."
+
+  - prompt: "Our homepage LCP is 4.8 seconds because of a 6 MB hero image. How do we get it under 2.5?"
+    route_to: performance
+    why: "A Core Web Vitals fix from a measurement; nothing about scrubbed video."
+
+  - prompt: "How do I submit a video job to fal's queue and verify the webhook signature when it finishes?"
+    route_to: fal
+    why: "Provider call mechanics; scroll-film only defines what the clip must be and delegates the call."
+
+  - prompt: "Render an animated explainer from our monthly metrics JSON in React and export it as an MP4."
+    route_to: remotion-video
+    why: "A video rendered from code and data, not a generated chain scrubbed on a page."
+
+capability:
+  - scenario: "A boutique hotel wants its homepage hero to be a photoreal scroll-through: lobby, then a guest room, then the rooftop pool, then the restaurant, on desktop and phones. Money is tight. Their image-to-video endpoint on fal accepts a prompt, an image_url and an end_image_url, and its page lists a price per second of video. Nothing has been generated yet. Write the plan an engineer will follow, from the first question to the last check, including the commands for the steps that need them."
+    must_include:
+      - "Prices the chain before anything renders — the clip count follows from the chosen shape (one leg per scene for a forward take, doubled by a native 9:16 phone chain) times seconds times the provider's current price, plus re-roll headroom — and waits for the client's approval"
+      - "Chooses a continuous forward take for this photoreal walkthrough, and says that a pull-out-and-fly-over transition would reverse the camera at every seam and read as a rewind"
+      - "Starts each leg from the previous leg's actual rendered last frame, extracted from the video file, and gives legs no end frame"
+      - "Extracts the real last frame (decoding to the end, e.g. -update 1) rather than an approximate seek a few frames from the end"
+      - "Probes the endpoint with one cheap clip before batching, checking that frame 0 reproduces the start image rather than re-rendering the scene"
+      - "Keeps one model for the whole chain, and plans for the rooftop pool clip tripping a content filter (re-roll, neutral wording) instead of switching the whole chain"
+      - "Encodes for seeking: a keyframe every few frames (about 8 on desktop, about 4 on phones), no audio track, faststart, native resolution"
+      - "Renders a native 9:16 chain for phones, or labels a centre crop as a stopgap if the budget cannot cover it"
+      - "Loads clips so seeking works on hosts without byte-range support (as Blobs), keeps the poster until a frame paints for iOS, and falls back to stills under reduced motion"
+      - "Verifies every seam by comparing the two boundary frames and by scrolling across it, including a throttled phone emulation"
+
+  - scenario: "A team built their own scroll video: a single <video src='hero.mp4' muted> whose currentTime is set to scrollProgress * duration inside a scroll event listener. It worked in development. In production behind nginx the video never moves from the first frame, on iPhone it shows black until the user taps, and on a mid-range Android a fast flick freezes it for seconds. The MP4 is a 1080p export from an editor with default settings and an audio track. Diagnose each symptom and give the fixes."
+    must_include:
+      - "Attributes the stuck first frame to the server not honouring byte-range requests (video.seekable stuck at [0, 0]) and fixes it by loading the file as a Blob (or by enabling range support), not by re-encoding alone"
+      - "Attributes the Android freeze to seeks queued while the decoder is still seeking plus a long keyframe interval, and fixes both: one seek in flight (skip while video.seeking) and a re-encode with a short GOP"
+      - "Attributes the black iPhone video to iOS not painting a muted video that never played, and fixes it with the poster kept until a frame paints plus a muted play/pause prime (muted and playsinline attributes kept)"
+      - "Re-encodes with no audio track and faststart, at a keyframe every few frames"
+      - "Moves the per-frame work out of the scroll handler: a passive listener that only requests an animation frame"

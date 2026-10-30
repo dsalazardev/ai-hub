@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.5.0 — Catálogo completo y marca de origen dsalazardev (2026-10-29)
+
+### Ruptura
+
+- **BREAKING — catálogo completo:** `skills.publish` pasa de 163 a 261 skills de proyecto: las 98 skills nuevas (ads … zapier) se publican integradas en orden alfabético. El catálogo queda con 272 SKILL.md: 261 publicadas más los 11 comandos Spec Kit que declaran `runtime: false` y el doctor ignora como huérfanas.
+- **BREAKING — marca de origen:** toda skill publicada declara `origin: dsalazardev` (antes `origin: ai-hub`); los 272 SKILL.md quedan alineados y `dsalazardev` es la marca de origen oficial del catálogo.
+- **Gate de marca extendido:** el patrón BRAND de `core/tests/brand.test.ts` proscribe además `origin: ai-hub` y `02-DOCS`; el vocabulario heredado del upstream se reescribió en el catálogo y en las reglas universales (`com.risco.contrast` → `com.dsalazardev.contrast` consistente entre fixture y script, `.rsc` → `.ai-hub`, vault `02-DOCS` → `docs/` con las rutas del SDD mapeadas a las canónicas del motor). `NOTICE.md` conserva intacta la procedencia upstream (rsc-harness, MIT).
+
+### Cifras medidas
+
+Re-medidas en consumidor temporal con el CLI compilado y `uvx` real (specify-cli 1.2.5 dentro del rango soportado); la fórmula del plan las reproduce (`tests/fixtures/install-counts.json`):
+
+| Instalación | Destinos en `sync.lock.json` |
+|---|---|
+| `init --yes` (`generic-ts`, full) | 6.837 |
+| `init --yes --preset-only` | 40 |
+| `init --yes --exclude rule:skill-quality` | 6.817 |
+| `init --yes --preset angular-express` | 6.852 |
+
+`full` instala 261 skills de proyecto + 17 comandos Spec Kit, 35 agentes y 6 reglas universales.
+
+### Empaquetado
+
+- `core/package.json` en `0.5.0`. No se publica en npm desde esta sesión; el release queda condicionado a la revisión del diff.
+
 ## 0.4.0 — Spec Kit por rango soportado y tres scripts siempre (2026-10-29)
 
 ### Ruptura

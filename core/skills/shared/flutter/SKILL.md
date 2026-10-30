@@ -3,7 +3,7 @@ name: flutter
 description: "Use when building, structuring, testing or optimizing a Flutter app — feature-first layering, Riverpod 3 or Bloc, typed go_router, freezed models, a dio data layer, Material 3, jank hunting, widget/golden tests. Targets Flutter 3.44 / Dart 3.12. NOT React Native (that is `react-native`), NOT Compose Multiplatform (that is `compose-multiplatform`)."
 tags: [flutter, dart, mobile, app, ios, android]
 recommends: [design, deployment]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Flutter & Dart app architecture
@@ -18,7 +18,7 @@ this skill targets: **Flutter 3.44 / Dart 3.12**, **Riverpod 3.0**, **go_router 
 
 ## Boundaries
 
-> **⚠️ SDD new-feature gate — read this first.** If this skill fired on a **new, non-trivial feature or behaviour change** and there is **no approved spec + plan** under `02-DOCS/wiki/sdd/`, STOP — do **not** write feature code yet. Hand off to `../specify/SKILL.md` first: it runs brainstorm → spec → plan → tasks before any code, then routes back here once the plan is approved. Build here directly only for a genuinely one-line / low-risk change. Method: `../sdd/SKILL.md`.
+> **⚠️ SDD new-feature gate — read this first.** If this skill fired on a **new, non-trivial feature or behaviour change** and there is **no approved spec + plan** under `docs/sdd/`, STOP — do **not** write feature code yet. Hand off to `../specify/SKILL.md` first: it runs brainstorm → spec → plan → tasks before any code, then routes back here once the plan is approved. Build here directly only for a genuinely one-line / low-risk change. Method: `../sdd/SKILL.md`.
 
 This skill owns the `pubspec.yaml` subproject and nothing else in the repo. Hand off when the UI is
 Compose Multiplatform (`compose-multiplatform`), SwiftUI/native iOS (`swift-ios`) or React Native
@@ -27,7 +27,7 @@ skill). For a pure Dart **server/CLI** with no widget tree, general Dart applies
 UI/nav/perf references. For a single-file throwaway sample, say architecture is overkill and do not
 impose layering.
 
-Around the edges: `harness` owns the workspace `01-TOOLS`/`02-DOCS` layer and flavor secrets; `fastapi`,
+Around the edges: `harness` owns the workspace `01-TOOLS`/`docs` layer and flavor secrets; `fastapi`,
 `go` and `nextjs` build the backends this app talks to; `secure-coding` reviews token handling and
 deep-link validation; `deployment` handles store/CI release; `design` owns the Material 3 token system.
 
@@ -389,12 +389,12 @@ encapsulation → `references/i18n-and-dependencies.md`.
 | raw `DioException.toString()` shown to the user | map to a `Failure` with a localized message. |
 | `print()` for logging | use `dart:developer` `log()` — has levels and can be filtered. |
 
-## Project grounding (02-DOCS)
+## Project grounding (docs)
 
-In a project with a `02-DOCS/` layer (the [`harness`](../harness/SKILL.md) wiki), this app's decisions
-live in `02-DOCS/wiki/stack/flutter.md`, indexed in `02-DOCS/wiki/index.md`. Read it first and stay
+In a project with a `docs/` layer (the [`harness`](../harness/SKILL.md) wiki), this app's decisions
+live in `docs/stack/flutter.md`, indexed in `docs/index.md`. Read it first and stay
 consistent. Missing or stale? Write the real choices there — state management (Riverpod/Bloc), the
 architecture layers, routing, the Material 3 token system, codegen setup — index it, and bump its
 `Updated` date in the same change a convention changes, so the next agent inherits it instead of
-re-deriving it. No `02-DOCS/` layer? Skip silently: technical conventions are *recorded, not gated*,
+re-deriving it. No `docs/` layer? Skip silently: technical conventions are *recorded, not gated*,
 so never block the task on this.

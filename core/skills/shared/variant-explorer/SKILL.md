@@ -4,7 +4,7 @@ description: "Use when someone wants OPTIONS rather than an answer — 'show me 
 tags: [prototyping, divergence, options, exploration, decision]
 recommends: [design]
 profiles: [full]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Variant explorer — several real options, cheap enough to discard

@@ -3,7 +3,7 @@ name: nextjs
 description: "Use when building, reviewing, testing, securing, or optimizing a Next.js App Router app: Server vs Client boundaries, `use server` actions, route handlers, the v15 vs v16 `use cache` caching model, metadata/SEO, auth, and Core Web Vitals. NOT framework-agnostic React or a Vite SPA (that is `react`), and NOT visual/UI design (that is `design`)."
 tags: [nextjs, react, frontend, web, seo, ssr]
 recommends: [design, secure-coding, deployment]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Next.js App Router — React Server Components, Server Actions, React 19, TypeScript
@@ -11,7 +11,7 @@ origin: ai-hub
 > Build, review, test, secure and optimize App Router apps, handling both the Next.js 15 (uncached-by-default) and Next.js 16 (`use cache`) caching models correctly.
 
 > **SDD gate — read before writing code.** If this fired on a **new, non-trivial feature or
-> behaviour change** and there is **no approved spec + plan** under `02-DOCS/wiki/sdd/`, STOP and
+> behaviour change** and there is **no approved spec + plan** under `docs/sdd/`, STOP and
 > hand off to `../specify/SKILL.md` (brainstorm → spec → plan → tasks); it routes back here once the
 > plan is approved. Build directly only for a genuinely one-line / low-risk change. Method:
 > `../sdd/SKILL.md`.
@@ -388,13 +388,13 @@ never a false failure. The lint/type/test steps are read-only; the final `next b
 Test strategy — Vitest 3 + RTL + MSW 2 for units, Playwright for pages, and the React Server Components testing reality
 behind that last anti-pattern row: `references/testing.md`.
 
-## Project grounding (02-DOCS + CLAUDE.md)
+## Project grounding (docs + CLAUDE.md)
 
-In a project with a `02-DOCS/` layer (the [`harness`](../harness/SKILL.md) Karpathy wiki), this
-project's app decisions live in `02-DOCS/wiki/stack/nextjs.md`, indexed from `02-DOCS/wiki/index.md`
+In a project with a `docs/` layer (the [`harness`](../harness/SKILL.md) Karpathy wiki), this
+project's app decisions live in `docs/stack/nextjs.md`, indexed from `docs/index.md`
 (the Knowledge map; root `CLAUDE.md` keeps only a pointer). Read it first on every use and stay
 consistent. Missing or stale → write the project's real choices there — caching model in use (v15
 fetch-cache vs v16 `use cache`), auth approach, server-action and data-fetching conventions, runtime
 (edge/node), design-system hookup — index it, and bump its `Updated` date in the same change as any
-convention change. No `02-DOCS/` layer? Skip silently (optionally suggest `harness`). Unlike the
+convention change. No `docs/` layer? Skip silently (optionally suggest `harness`). Unlike the
 brand study, technical conventions are *recorded, not gated* — never block the task on this.

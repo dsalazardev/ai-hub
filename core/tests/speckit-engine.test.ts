@@ -101,7 +101,7 @@ describe('catalog (5.3, 6.1, 6.2)', () => {
       expect(frontmatter, name).not.toMatch(/profiles:.*\bcore\b/);
       expect(index.skills).not.toContain(name);
     }
-    expect(index.skills).toHaveLength(163);
+    expect(index.skills).toHaveLength(261);
   });
 });
 

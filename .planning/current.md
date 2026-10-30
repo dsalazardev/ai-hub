@@ -1,38 +1,25 @@
-# Estado de sesión — speckit-latest
+# Estado de la sesión — catalogo-completo aplicado (2026-10-29)
 
-- Fecha: 2026-10-29 (implementación completa y ARCHIVADO)
-- Cambio: `speckit-latest` → `openspec/changes/archive/2026-10-29-speckit-latest/`
-- Fase: archivado (17/17 tareas; specs principales sincronizados)
-- Repo: `C:\Users\USUARIO\OneDrive\Escritorio\ARCHIVOS\DESARROLLO\ai-hub`
-- Anterior: `shell-resolution` archivado (0.3.1 publicado)
-- Detalle y desviaciones: `.planning/impl_speckit-latest.md`; evidencia de la sonda en `.planning/findings.md`
+**Change activo:** `catalogo-completo` — **18/18 tareas aplicadas y verificadas** (0.5.0).
 
-## Resultado de la implementación
+- Grupo 1 (sondas): doctor rojo de partida + brand.test 2/2 fallidos registrados en
+  `findings.md`; censo 98 untracked, frontmatter 0 problemas, orígenes 165/107/0.
+- Grupo 2 (publish): 98 skills en `skills.publish` (163→261); sonda de gate cerrado
+  (brand.test seguía rojo sin tocar brand); `manifest:check` exit 0.
+- Grupo 3 (marca): 165 SKILL.md `origin: ai-hub`→`dsalazardev`; censo final 272 dsalazardev.
+- Grupo 4 (reescritura): 19 rsc/risco + 192 02-DOCS + 1 .rsc reescritos; gate BRAND
+  extendido (`origin: ai-hub`, `02-DOCS`); sonda de invariante en vivo; brand.test 4/4.
+- Grupo 5 (cifras): pines 261; re-medición full 6837 / preset-only 40 / custom 6817 /
+  angular 6852 en `install-counts.json`; 0.5.0 en package.json+lock+CHANGELOG+release.test;
+  README actualizado.
+- Grupo 6 (verificación): doctor del taller sano; suite 290 pasados/1 skipped + typecheck
+  + build en verde; instalación full en consumidor con plan = instalado y doctor sano.
 
-Aplicado en 6 lotes, con sondas rojas vistas antes de cada cambio:
+**Desviaciones y reparaciones:** ver `.planning/impl_catalogo-completo.md` (orden del
+publish sin guiones, bug propio del origin corregido, matchers de release.test a contratos
+0.5.0, residuo extra del gate extendido, reparación del ledger, resellado del manifest,
+pin entryCount 1878 y sync de rúbricas empaquetadas).
 
-- `supported` (`>=1.2.3 <1.3.0`) es la única fuente de versión: `engine.yaml` sin `pin` ni `excludeNewer`; `uvxPrefix` produce `--from specify-cli>=1.2.3,<1.3.0` (o `==<declarada>` con `speckit.version`, design D6); validación del motor y del proyecto rechaza campos retirados nombrándolos (dinámica, sin literales en `core/src`).
-- `speckit:version` valida por rango con `satisfiesRange`: 1.2.5 sana; `1.3.0` y `1.2.1.dev0` fallan nombrando instalada y rango; `speckit:managed` informa el rango.
-- Secuencia interna de tres `specify init` (no elegidos primero, elegido al final): `.specify/scripts/{bash,powershell,python}` con 6 archivos cada uno y manifiesto de 24; `doctor` no exige los tres (proyecto viejo bash-only sigue sano).
-- El hash del plan lleva la versión RESUELTA (sondeo en dry-run, `init-options.speckit_version` tras instalar); sin resolución nombra el rango.
-- `speckit-real.test.ts` dinámico: valida el contrato (dentro del rango), no una versión puntual.
-- Docs: `core/README.md` y `AGENTS.md` §3 con el rango como única fuente; `CHANGELOG.md` 0.4.0 (0.3.1 intacta); bump a 0.4.0 en `core/package.json` + lock.
-
-## Verificación final (6.1–6.3, con salida real)
-
-- `npm run build`: exit 0. `npm run ai:typecheck`: exit 0.
-- Suite completa: 27 archivos, **290 pasados, 1 omitido**, exit 0 (~378 s).
-- Grep `excludeNewer|exclude-newer`: limpio en `core/src`, `core/engine`, `core/README.md`, `AGENTS.md`; en `core/tests` sólo lápidas (escenario exigido por 1.1 y aserciones negativas). Sin `any` en `core/src`.
-- Sonda manual (consumidor `scratch\speckit-latest-probe\consumer-final`): `init --yes` exit 0, `Spec Kit 1.2.5 · script sh`, tres directorios con 6 archivos, manifiesto 24, `doctor` exit 0 con `speckit:version: 1.2.5 dentro del rango >=1.2.3 <1.3.0`.
-- `doctor` en el taller: sano (exit 0); los 11 `speckit:*` en "no aplica en el checkout del motor".
-
-## Pendiente
-
-1. Publicar 0.4.0 fuera de esta sesión (todo sigue sin commit).
-2. Próximo cambio puede actualizar el wording residual de `preset-system` ("The project manifest separates engine from project" aún menciona "pin, date" en su descripción y "package pin" en un escenario; el delta no lo tocó y se conservó tal cual).
-
-## Comando para retomar
-
-```powershell
-openspec instructions apply --change "speckit-latest" --json
-```
+**Pendiente humano:** revisión del diff; commit, push y publicación npm fuera de sesión.
+`refuter-panel` (0.6.0) sigue en cola como propuesta completa; al aplicarse rebasa sus
+cifras 163→261 contra el texto vigente.

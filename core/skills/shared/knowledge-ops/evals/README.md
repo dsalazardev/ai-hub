@@ -7,7 +7,7 @@ and confirm the router would (or would not) reach for `knowledge-ops`, with the
 near-misses correctly routing to `harness` (engine/sweep), `meeting-notes`
 (transcript recap), `decision-records` (ADR), `sop-builder` (procedure), and
 `codebase-onboarding` (first-pass walkthrough). Second, run the `capability` case
-by hand: stand up a scratch messy `02-DOCS/wiki/` matching the scenario (a
+by hand: stand up a scratch messy `docs/` matching the scenario (a
 two-thesis 600-line article, two near-duplicates, three orphans in
 `scores.json`, a stale archive, an unresolved conflict, a homeless note), invoke
 the skill against it, and grade the result against the `must_include` rubric —

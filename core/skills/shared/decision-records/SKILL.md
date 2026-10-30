@@ -3,7 +3,7 @@ name: decision-records
 description: "Use when a hard-to-reverse choice (database, framework, vendor, auth model) must be frozen as an immutable numbered ADR — the context that forced it, the options weighed, the decision, consequences both ways — or superseded without erasing history. NOT a meeting recap (that is meeting-notes), NOT standing project principles (that is constitution)."
 tags: [decision-records, adr, architecture-decisions, rationale, decision-log, madr, knowledge-ops]
 recommends: [meeting-notes, constitution, sop-builder, knowledge-ops, codebase-onboarding, plan, specify]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Decision Records — Freeze the Why Before It Evaporates
@@ -40,7 +40,7 @@ Prefer **numeric-prefix**: `NNNN-title-with-dashes.md`. Stable IDs are what make
 **Where to store** (first match wins):
 1. The project's existing convention — never invent a parallel log.
 2. A code repo with no convention: `docs/adr/` (also seen as `doc/adr/`).
-3. A harness workspace: `02-DOCS/wiki/decisions/`, indexed in `02-DOCS/wiki/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer).
+3. A harness workspace: `docs/decisions/`, indexed in `docs/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer).
 
 ```text
 Bad:  decision-final-v2-REAL.md          # no ID, no order, will rot
@@ -57,7 +57,7 @@ Map every ADR to the **MADR 4.0.0 template** (released 2024-09-17 — the curren
 Required spine, in order: **Title → Status → Date → Context and Problem Statement → Decision Drivers → Considered Options → Decision Outcome → Consequences**. The MADR-optional sections (Confirmation, Pros and Cons of the Options, More Information) you add only when they pull weight.
 
 Minimal skeleton — this is enough for most decisions. When the ADR lives in a harness
-workspace (`02-DOCS/wiki/decisions/`), it is part of an OKF v0.1 bundle, so it opens with YAML
+workspace (`docs/decisions/`), it is part of an OKF v0.1 bundle, so it opens with YAML
 frontmatter carrying a non-empty `type: decision` (plus the OKF-recommended `title`/`tags`/
 `timestamp`). The body keeps the human-readable `- Status:`/`- Date:` lines verbatim — they are
 the decision's domain record and `scripts/verify.sh` reads them, so the frontmatter is purely
@@ -182,7 +182,7 @@ A decision log is only useful if it stays navigable.
 - **Index every ADR at creation.** One row: `| 0007 | Choose Postgres | accepted | 2026-06-02 |`. No orphans.
 - **Keep supersession links live** in both directions.
 - **Review cadence.** Periodically sweep `accepted` ADRs — anything reality has overtaken gets a superseding record, not a silent edit.
-- **Index the log from the entry point** — `02-DOCS/wiki/index.md` — so onboarding finds it. The broader wiki and onboarding doc belong to [`knowledge-ops`](../knowledge-ops/SKILL.md) and [`codebase-onboarding`](../codebase-onboarding/SKILL.md); this skill owns only the ADRs the wiki links to. The meeting that spawned a decision routes to [`meeting-notes`](../meeting-notes/SKILL.md); the repeatable how-to it implies routes to [`sop-builder`](../sop-builder/SKILL.md).
+- **Index the log from the entry point** — `docs/index.md` — so onboarding finds it. The broader wiki and onboarding doc belong to [`knowledge-ops`](../knowledge-ops/SKILL.md) and [`codebase-onboarding`](../codebase-onboarding/SKILL.md); this skill owns only the ADRs the wiki links to. The meeting that spawned a decision routes to [`meeting-notes`](../meeting-notes/SKILL.md); the repeatable how-to it implies routes to [`sop-builder`](../sop-builder/SKILL.md).
 
 ## Anti-patterns
 

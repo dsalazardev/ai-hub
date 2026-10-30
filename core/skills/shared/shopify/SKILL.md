@@ -3,7 +3,7 @@ name: shopify
 description: "Use when building or customizing a Shopify store across its three code surfaces — themes (Liquid, Online Store 2.0 sections, blocks and JSON templates), apps (Remix with the versioned GraphQL Admin API and its query-cost model), and checkout (UI extensions, Functions, Web Pixels), plus the CLI flow and checkout-extensibility migration. NOT WooCommerce or PHP stores (that is `wordpress`), NOT the React layer of a headless storefront (that is `nextjs`), NOT non-Shopify payment integrations (that is `stripe`)."
 tags: [shopify, liquid, ecommerce, themes, checkout, graphql, storefront]
 recommends: [nextjs, stripe, wordpress, api-design, seo-geo]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Shopify themes, apps & checkout

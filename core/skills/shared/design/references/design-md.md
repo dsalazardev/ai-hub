@@ -12,7 +12,7 @@ never before. A rulebook written ahead of the build gets defended against realit
 - `DESIGN.md` at the project root, committed with the code.
 - Written when a surface creates or replaces the visual system. Extending an existing surface reads
   it and does not rewrite it.
-- If `02-DOCS/wiki/brand/` exists, `DESIGN.md` uses the brand's colours and faces and names that
+- If `docs/brand/` exists, `DESIGN.md` uses the brand's colours and faces and names that
   file as its source.
 
 ## Shape

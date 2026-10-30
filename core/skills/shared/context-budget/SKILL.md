@@ -3,7 +3,7 @@ name: context-budget
 description: "Use when a long-horizon task is filling the context window and you must decide what to keep, offload, drop, or hand off to a fresh window — when to compact, what the summary must preserve, and whether to isolate a read-heavy subtask in a subagent. NOT dollar spend or caps (that is cost-tracking), NOT finding context via embeddings (that is rag)."
 tags: ["context-window", "token-budget", "compaction", "context-rot", "long-running-agents", "handoff", "subagents"]
 recommends: ["cost-tracking", "rag", "parallel", "building-agents", "harness"]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Context budget
@@ -12,7 +12,7 @@ The context window is RAM, not a hard drive. Full ≠ free: a window stuffed to 
 
 > **The one rule:** if you can reconstruct a thing from a file or from git, it does not belong resident in the window. Keep load-bearing-right-now; evict the rest. The cost of forgetting is one re-read; the cost of hoarding is silent quality rot on every turn that follows.
 
-Neighbours, so you don't do their job here: pricing tokens, spend ledgers and hard `$` caps are `../cost-tracking/SKILL.md` — same words ("token budget"), different unit, dollars vs. attention. Finding the *right* context via embeddings/chunking is `../rag/SKILL.md`; RAG is *how you find* context, this is *how much* you let live and *when to evict*. Prompt text, few-shot and output format are `../prompt-engineering/SKILL.md`; the agent loop, tool schemas and provider adapters are `../building-agents/SKILL.md`; partition-then-gather fan-out of independent work is `../parallel/SKILL.md` (this skill *uses* subagents as a context-isolation tactic but does not own that discipline); the 01-TOOLS / 02-DOCS control plane is `../harness/SKILL.md`.
+Neighbours, so you don't do their job here: pricing tokens, spend ledgers and hard `$` caps are `../cost-tracking/SKILL.md` — same words ("token budget"), different unit, dollars vs. attention. Finding the *right* context via embeddings/chunking is `../rag/SKILL.md`; RAG is *how you find* context, this is *how much* you let live and *when to evict*. Prompt text, few-shot and output format are `../prompt-engineering/SKILL.md`; the agent loop, tool schemas and provider adapters are `../building-agents/SKILL.md`; partition-then-gather fan-out of independent work is `../parallel/SKILL.md` (this skill *uses* subagents as a context-isolation tactic but does not own that discipline); the 01-TOOLS / docs control plane is `../harness/SKILL.md`.
 
 ## Read the gauge first
 

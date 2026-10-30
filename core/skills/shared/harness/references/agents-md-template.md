@@ -16,7 +16,7 @@ independent Git repo. The root is NOT a repo.
 |------|------|
 {{SUBPROJECT_ROWS}}
 | `01-TOOLS/` | Operational tooling per external provider. |
-| `02-DOCS/` | LLM wiki (`raw/` + `wiki/` + `index.md` + `log.md`). |
+| `docs/` | LLM wiki (`raw/` + `wiki/` + `index.md` + `log.md`). |
 
 ## Minimum rules
 
@@ -26,8 +26,8 @@ independent Git repo. The root is NOT a repo.
 4. **Do not touch generated outputs**: `node_modules/`, `.venv/`,
    `.next/`, `__pycache__/`, `.dart_tool/`, `build/`.
 5. **To add a new external tool**, use `01-TOOLS/_TEMPLATE/`.
-6. **For reusable documentation**, write to `02-DOCS/raw/<topic>/` and
-   compile in `02-DOCS/wiki/<topic>/`. The protocol lives in
+6. **For reusable documentation**, write to `docs/raw/<topic>/` and
+   compile in `docs/<topic>/`. The protocol lives in
    `harness/references/wiki-protocol.md` (embedded in the
    skill).
 

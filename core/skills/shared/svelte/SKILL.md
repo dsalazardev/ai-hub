@@ -3,7 +3,7 @@ name: svelte
 description: "Use when building, reviewing or fixing Svelte 5 (runes) and SvelteKit code — components with the rune primitives, rune modules versus stores, file routing, universal versus server load functions, form actions with progressive enhancement, remote functions, SSR/CSR/prerender choices, and adapters. Covers migrating Svelte 4 reactive statements to runes and hydration mismatches. NOT Next.js or React Server Components (that is `nextjs`)."
 tags: [svelte, sveltekit, runes, frontend, ssr, web]
 recommends: [typescript, vercel, design]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Svelte 5 runes + SvelteKit

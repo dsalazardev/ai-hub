@@ -4,7 +4,7 @@ description: "Always-on. How the harness talks to the person: STE-style short se
 tags: [orient, voice, ste, explain, diagram, eli5, show-me, compass, always-on]
 recommends: []
 profiles: [minimal, core, full]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # orient — talk so the person understands, then show them where they are
@@ -41,7 +41,7 @@ Full rules and examples → `references/orientation-contract.md`.
 
 ## The register
 
-Read `technical_level` in `02-DOCS/wiki/harness/user-profile.md`.
+Read `technical_level` in `docs/harness/user-profile.md`.
 
 | technical_level | Register |
 |---|---|

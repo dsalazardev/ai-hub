@@ -3,7 +3,7 @@ name: python
 description: "Use when the task is Python itself, in any framework or none: PEP 695 generics, mypy --strict typing, dataclass/Protocol/TypedDict/Enum choices, asyncio.TaskGroup, stdlib idioms, src/ layout + pyproject.toml with uv, ruff+mypy+pytest gate. NOT a FastAPI/ASGI service (that is fastapi), NOT a deep pytest suite (that is testing-py)."
 tags: [python, typing, async, packaging, uv]
 recommends: [fastapi, secure-coding, deployment]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Modern Python at the language level
@@ -310,11 +310,11 @@ env or a secret manager, never hardcode or log them.
 | "`pickle.loads` the cache, it's ours" | Any untrusted byte = code execution; use `json`. |
 | "explicit `TypeVar` everywhere" | New code uses PEP 695 `def f[T]` / `class C[T]` / `type X`. |
 
-## Project grounding (02-DOCS)
+## Project grounding (docs)
 
 In a project that has the [`harness`](../harness/SKILL.md) wiki, record this project's Python
-conventions in `02-DOCS/wiki/stack/python.md` and index it in `02-DOCS/wiki/index.md` — the
+conventions in `docs/stack/python.md` and index it in `docs/index.md` — the
 interpreter floor, `src/` layout, uv workflow, ruff/mypy config, async-vs-sync stance, and
 data-modeling defaults. Read it first on every use and bump its `Updated` date when a convention
 changes. This is *recorded, not gated*: never block the task on it, and skip silently when there
-is no `02-DOCS/` layer.
+is no `docs/` layer.

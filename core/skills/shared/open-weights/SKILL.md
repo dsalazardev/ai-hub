@@ -3,7 +3,7 @@ name: open-weights
 description: "Use when choosing an open-weight LLM and clearing it for use — which family and size fit the task, the hardware and the budget, and above all whether the license permits shipping. Owns the license-class map (OSI-open versus custom-community versus non-commercial), the always-verify-the-model-card rule, size-to-VRAM budgeting and the quant formats. This layer decides WHICH model and whether the license allows it, then hands off. NOT downloading or hosting on the Hub (that is `huggingface`), NOT running it locally (that is `ollama`), NOT serving at throughput (that is `vllm`), NOT fine-tuning it (that is `finetuning`)."
 tags: [open-weights, open-source-llm, model-selection, model-licenses, llama-qwen-mistral-gemma]
 recommends: [huggingface, ollama, finetuning, vllm]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Open weights — pick the model, then clear the license

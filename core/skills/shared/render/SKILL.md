@@ -3,7 +3,7 @@ name: render
 description: "Use when deploying or fixing an app on Render — web services, background workers, cron jobs, private services, managed Postgres and Key-Value, and especially the render.yaml Blueprint. Covers deploys that fail with no open ports detected, 502s on first deploy, free-tier cold starts, and a free Postgres about to expire with its data. NOT the generic ship and release flow (that is `deployment`), NOT another PaaS such as `railway` or `fly-io`."
 tags: [render, paas, deployment, render-yaml, cron, background-worker, infrastructure-as-code]
 recommends: [deployment, postgresdb, docker, domains-dns, github-actions, scaling]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Render — make this repo deploy correctly, wired as code

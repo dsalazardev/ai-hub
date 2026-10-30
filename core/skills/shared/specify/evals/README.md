@@ -54,7 +54,7 @@ Goal: prove the skill changes the answer, not just the routing.
 **Pass bar: WITH the skill covers >= 80% of `must_include`; WITHOUT clearly
 lower** (target a >= 30-point gap). The skill must demonstrably add: the
 no-implementation-leak discipline, one-question-at-a-time elicitation, the
-canonical `02-DOCS/wiki/sdd/specs/<slug>.md` path + Knowledge-map index,
+canonical `specs/<feature>/spec.md` path + Knowledge-map index,
 Given/When/Then acceptance criteria, and an honest *Points to clarify* handoff
 to the `clarify` phase. If the base answer already scores ~80%, the case isn't
 discriminating — tighten the rubric.

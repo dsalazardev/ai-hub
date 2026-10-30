@@ -3,7 +3,7 @@ name: solid-js
 description: "Use when building, reviewing or debugging a SolidJS app — signals, stores, effects, memos and resources, and JSX that compiles to real DOM with no virtual DOM. Covers the classic traps: a signal that does not update the UI, For versus Index, effect loops, components that run once, and props losing reactivity when destructured. NOT React's re-render model (that is `react`)."
 tags: [solidjs, signals, reactivity, frontend, jsx, web]
 recommends: [vercel, testing-web, design]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # SolidJS — fine-grained reactivity, no VDOM

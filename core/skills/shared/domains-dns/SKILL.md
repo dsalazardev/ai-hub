@@ -3,7 +3,7 @@ name: domains-dns
 description: "Use when pointing a domain at a host or fixing broken HTTPS — delegating nameservers, writing A/AAAA/CNAME/ALIAS/MX/TXT/CAA rows, apex vs www, standing up auto-renewing TLS, and cutting nameservers over without downtime. NOT inbox placement or warmup (that is `email-deliverability`), NOT what runs behind the name (that is `deployment`)."
 tags: [dns, tls, ssl, domains, https, acme, certbot, dig, caa, nameservers]
 recommends: [email-deliverability, deployment, monitoring, cloudflare, vercel]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Domains & DNS

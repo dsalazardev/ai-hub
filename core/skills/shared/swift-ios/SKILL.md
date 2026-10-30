@@ -4,7 +4,7 @@ description: "Use when building native iOS and Apple-platform apps in Swift with
 tags: [swift, swiftui, ios, swift-concurrency, swiftdata, swift-testing, apple]
 recommends: [kotlin-android, compose-multiplatform, flutter, react-native, expo, testing-web, github-actions, ship]
 profiles: []
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # swift-ios

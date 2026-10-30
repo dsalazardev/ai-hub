@@ -5,7 +5,7 @@ tags: [sdd, verify, test]
 recommends: [review]
 profiles: [full]
 runtime: false
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # verify — the evidence gate before "done"
@@ -20,11 +20,11 @@ Not this phase: still writing tests or production code → `../implement/SKILL.m
 
 ## Model tier — `balanced` (opt-in routing)
 
-This phase's default model tier is **`balanced`** — it runs the checks and interprets failures with judgment. Routing is **off** unless `models.enabled: true` in `02-DOCS/wiki/sdd/config.yaml`. When on: resolve this phase's tier (`models.overrides` wins over `models.phases`), map it to a model via `models.tiers`, and apply per `../sdd/references/model-routing.md` — announce the switch in one line when it differs from the session model, and dispatch any `Task`/`parallel` subagents on that model. Routing off or no profile → honor the session model silently. Never fake a switch a tool can't make; skip routing on a one-line change.
+This phase's default model tier is **`balanced`** — it runs the checks and interprets failures with judgment. Routing is **off** unless `models.enabled: true` in `.specify/config.yaml`. When on: resolve this phase's tier (`models.overrides` wins over `models.phases`), map it to a model via `models.tiers`, and apply per `../sdd/references/model-routing.md` — announce the switch in one line when it differs from the session model, and dispatch any `Task`/`parallel` subagents on that model. Routing off or no profile → honor the session model silently. Never fake a switch a tool can't make; skip routing on a one-line change.
 
 ## Read the room first (register)
 
-Before running anything, read `technical_level` in `02-DOCS/wiki/harness/user-profile.md`; no profile yet → use analogies. The verdict itself (pass / fail per item) never changes with the register — only the words around it.
+Before running anything, read `technical_level` in `docs/harness/user-profile.md`; no profile yet → use analogies. The verdict itself (pass / fail per item) never changes with the register — only the words around it.
 
 Report in the `orient` voice: pass/fail per gate, then one line of *why* per failing check, then what the user should decide next. For a `non-technical` reader, say what each failing check protects with an everyday analogy.
 
@@ -34,7 +34,7 @@ Report in the `orient` voice: pass/fail per gate, then one line of *why* per fai
 LOCATE  → find the spec, the task done-checks, and which stack(s) changed
 RUN     → execute the relevant stack scripts/verify.sh (lint, type, test+coverage, audit)
 WALK    → check every task done-check and every spec acceptance criterion against real output
-RECORD  → write the verification record under 02-DOCS/wiki/sdd/, index it
+RECORD  → write the verification record under docs/sdd/, index it
 VERDICT → PASS only if every item has passing evidence; otherwise FAIL with the gaps + handoff
 ```
 
@@ -42,16 +42,16 @@ Never collapse a step. Never write the verdict before RUN and WALK have produced
 
 ### 1 — LOCATE
 
-- Read `02-DOCS/wiki/sdd/config.yaml` if present. Prefer `testing.commands.verify`
+- Read `.specify/config.yaml` if present. Prefer `testing.commands.verify`
   from config for repo-level gates. If config is missing and the change is
   non-trivial, mark that as a verification risk and recommend `sdd-init`.
-- Read the spec at `02-DOCS/wiki/sdd/specs/<slug>.md` for its **acceptance criteria**.
-- Read the plan/task list at `02-DOCS/wiki/sdd/plans/<slug>.md` for each task's **done-check**.
-- Read `02-DOCS/wiki/sdd/progress/<slug>.md` if present for apply evidence and
+- Read the spec at `specs/<feature>/spec.md` for its **acceptance criteria**.
+- Read the plan/task list at `specs/<feature>/plan.md` for each task's **done-check**.
+- Read `specs/<feature>/tasks.md` if present for apply evidence and
   completed tasks. Missing progress does not automatically fail, but it is a
   traceability gap to record.
 - Determine which subprojects/stacks the change touched (from `git status`/`git diff --name-only` and the manifests). That tells you *which* stack `verify.sh` to run — possibly more than one in a monorepo.
-- If the constitution exists (`02-DOCS/wiki/sdd/constitution.md`), note its quality bars (coverage floor, lint level) — they are part of the gate.
+- If the constitution exists (`.specify/memory/constitution.md`), note its quality bars (coverage floor, lint level) — they are part of the gate.
 
 If the spec or task list is missing, stop: there is nothing to verify against. Say so and point back up the chain.
 
@@ -96,7 +96,7 @@ The dangerous way a checker breaks is not a crash — it is **fail-open**: nothi
 
 **Over-blocking is not the safe side.** It feels like caution and it is not: a gate that fires on correct work gets muted, worked around, or wedges the pipeline that depends on it, which is the same damage as a gate that checks nothing with the sign reversed. And it is *harder* to notice, because the failure arrives dressed as diligence.
 
-Where this bites hardest is a check that matches text rather than structure — **"the path appears in the string" is not "the write targets that location"**. Our own integrity gate learned this twice in one day: it flagged a transcript that merely *named* a protected path (the skill body it had been handed named it), then flagged a sandbox directory whose path *contained* the protected one as a substring. Twelve mutants had proven it could fail; not one had asked whether it could pass, so the defect shipped and surfaced on first real use with the filesystem provably untouched. → `02-DOCS/wiki/harness/puertas-y-mecanismos.md`
+Where this bites hardest is a check that matches text rather than structure — **"the path appears in the string" is not "the write targets that location"**. Our own integrity gate learned this twice in one day: it flagged a transcript that merely *named* a protected path (the skill body it had been handed named it), then flagged a sandbox directory whose path *contained* the protected one as a substring. Twelve mutants had proven it could fail; not one had asked whether it could pass, so the defect shipped and surfaced on first real use with the filesystem provably untouched. → `docs/harness/puertas-y-mecanismos.md`
 
 So when you write the negative control, write the positive one beside it, and prefer matching **structure** (a parsed tool call, a resolved path, an exit code) over matching text that happens to contain the thing you care about.
 
@@ -111,7 +111,7 @@ Where a criterion needs runtime proof (a page renders, a command produces output
 
 ### 4 — RECORD
 
-Write a dated verification record to `02-DOCS/wiki/sdd/verifications/<slug>-YYYY-MM-DD.md` so the project's living knowledge carries the proof, then index it in `02-DOCS/wiki/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer) under the `sdd/` topic. It is an OKF v0.1 wiki article: open it with YAML frontmatter carrying a non-empty `type:`. Keep it short and factual:
+Write a dated verification record to `docs/sdd/verifications/<slug>-YYYY-MM-DD.md` so the project's living knowledge carries the proof, then index it in `docs/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer) under the `sdd/` topic. It is an OKF v0.1 wiki article: open it with YAML frontmatter carrying a non-empty `type:`. Keep it short and factual:
 
 ```markdown
 ---
@@ -208,7 +208,7 @@ End with:
 {
   "status": "complete|failed",
   "executive_summary": "Verification PASS/FAIL with open evidence gaps.",
-  "artifact": "02-DOCS/wiki/sdd/verifications/<slug>-YYYY-MM-DD.md",
+  "artifact": "docs/sdd/verifications/<slug>-YYYY-MM-DD.md",
   "next_recommended": "review|debug|implement|clarify",
   "risk": "low|medium|high",
   "skill_resolution": {
@@ -223,9 +223,9 @@ End with:
 
 ## Next in the chain
 
-A **PASS** record is the entry ticket to the next phase: **`../review/SKILL.md`** (adversarial read of the diff for what the gate can't catch), then **`../ship/SKILL.md`** (PR/merge). A **FAIL** routes back per the VERDICT step. Either way the verification record under `02-DOCS/wiki/sdd/verifications/` travels with the work as its proof.
+A **PASS** record is the entry ticket to the next phase: **`../review/SKILL.md`** (adversarial read of the diff for what the gate can't catch), then **`../ship/SKILL.md`** (PR/merge). A **FAIL** routes back per the VERDICT step. Either way the verification record under `docs/sdd/verifications/` travels with the work as its proof.
 
 ## Orientación (siempre)
 
-Habla con la voz de `orient`: frases cortas, una idea por frase, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `02-DOCS/wiki/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a `suggest` el "¿instalo la skill que falta?".)
+Habla con la voz de `orient`: frases cortas, una idea por frase, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `docs/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a `suggest` el "¿instalo la skill que falta?".)
 

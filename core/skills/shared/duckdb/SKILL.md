@@ -3,7 +3,7 @@ name: duckdb
 description: "Use when analytical SQL must run in-process with no server: Parquet/CSV/JSON/Arrow queried in place, OLAP embedded in an app or notebook, a slow pandas groupby on multi-GB data, or S3/lakehouse data read without downloading. NOT a multi-user analytics server (that is clickhouse-analytics), NOT an app's transactional CRUD store (that is postgresdb)."
 tags: [duckdb, olap, analytics, parquet, embedded-database, sql, columnar]
 recommends: [clickhouse-analytics, postgresdb, sql, sqlite-turso, data-cleaning, business-intelligence]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # DuckDB — embedded columnar OLAP, no server
@@ -193,10 +193,10 @@ CLI, falls back to `python3 -c "import duckdb"` — that runs an aggregate and a
 generated file and asserts a known scalar, proving the documented commands execute on your installed
 version. If neither the CLI nor the Python module is present it prints `SKIP` and exits 0. No network.
 
-## Project grounding (02-DOCS + CLAUDE.md)
+## Project grounding (docs + CLAUDE.md)
 
-In a project with a `02-DOCS/` layer (the [`harness`](../harness/SKILL.md) wiki), record this project's
+In a project with a `docs/` layer (the [`harness`](../harness/SKILL.md) wiki), record this project's
 DuckDB decisions — version pin, file layout, persistent vs in-memory, remote/secret setup — in
-`02-DOCS/wiki/stack/duckdb.md` and index it in `02-DOCS/wiki/index.md` (the Knowledge map; root `CLAUDE.md`
+`docs/stack/duckdb.md` and index it in `docs/index.md` (the Knowledge map; root `CLAUDE.md`
 keeps only a short pointer to it). Read it first on
-every use and keep choices consistent. No `02-DOCS/`? Skip silently. Conventions are recorded, never gated.
+every use and keep choices consistent. No `docs/`? Skip silently. Conventions are recorded, never gated.

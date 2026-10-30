@@ -1,11 +1,11 @@
 ---
 name: sdd-init
-description: "Use when calibrating an existing repo for the ai-hub Spec-Kit chain: detect stack, package manager, test runners and apply/verify commands, refresh the skill registry, and write the runtime config at 02-DOCS/wiki/sdd/config.yaml. NOT the dispatcher that routes SDD phases (that is `sdd`), NOT first-contact user/workspace bootstrap (that is `init`)."
+description: "Use when calibrating an existing repo for the ai-hub Spec-Kit chain: detect stack, package manager, test runners and apply/verify commands, refresh the skill registry, and write the runtime config at .specify/config.yaml. NOT the dispatcher that routes SDD phases (that is `sdd`), NOT first-contact user/workspace bootstrap (that is `init`)."
 tags: [sdd, init, config, testing, registry]
 recommends: [sdd, specify, implement, verify]
 profiles: [full]
 runtime: false
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # sdd-init — calibrate the repo before the SDD chain
@@ -13,21 +13,21 @@ origin: ai-hub
 Step zero for technical SDD work: read the repo, detect how it should be built and tested, refresh the cheap skill registry, and write one durable config:
 
 ```text
-02-DOCS/wiki/sdd/config.yaml
+.specify/config.yaml
 ```
 
-That config is the runtime contract later phases read before choosing commands, TDD strictness, artifact paths, review budget or skill briefs. `sdd` dispatches the phases that consume it, `init` owns first contact and user profiling, `harness` owns `01-TOOLS/` and `02-DOCS/` scaffolding. This skill only calibrates.
+That config is the runtime contract later phases read before choosing commands, TDD strictness, artifact paths, review budget or skill briefs. `sdd` dispatches the phases that consume it, `init` owns first contact and user profiling, `harness` owns `01-TOOLS/` and `docs/` scaffolding. This skill only calibrates.
 
 ## Inputs
 
 Read-only first:
 
 - `package.json`, lockfiles, `pnpm-workspace.yaml`, `pyproject.toml`, `requirements.txt`, `go.mod`, `pubspec.yaml`, `Dockerfile`, `.github/`.
-- Existing `02-DOCS/wiki/sdd/config.yaml`, if present.
-- `02-DOCS/wiki/harness/user-profile.md`, if present, for `technical_level` (the register) only.
+- Existing `.specify/config.yaml`, if present.
+- `docs/harness/user-profile.md`, if present, for `technical_level` (the register) only.
 - `.ai-hub/skill-registry.json`, if present, to decide whether it is stale or missing.
 
-If `02-DOCS/` does not exist, create only the `02-DOCS/wiki/sdd/` path needed for the config. Do not run full harness scaffolding unless the user asked for `harness`.
+If `docs/` does not exist, create only the `docs/sdd/` path needed for the config. Do not run full harness scaffolding unless the user asked for `harness`.
 
 ## Preflight Choices
 
@@ -36,7 +36,7 @@ Ask only when the answer changes behavior; explain each trade-off in one line, i
 | Setting | Default | Options |
 | --- | --- | --- |
 | `execution_mode` | `interactive` | `interactive` pauses at review-risk gates; `automatic` chains phases until a blocker/risk appears. |
-| `artifact_store` | `02-DOCS/wiki/sdd` | Keep ai-hub artifacts in `02-DOCS`; do not create an `openspec/` parallel tree. |
+| `artifact_store` | `docs/sdd` | Keep ai-hub artifacts in `docs`; do not create an `openspec/` parallel tree. |
 | `review_budget.line_budget` | `400` | Lower for solo tight review; higher only with explicit approval. |
 | `delivery_strategy.default` | `ask-on-risk` | `ask-on-risk`, `single-pr`, `autochain`, `exception`. |
 | `models.enabled` | `false` | Per-phase model routing is opt-in; leave off unless the user asks for it. |
@@ -88,7 +88,7 @@ Calibration is the moment to make sure the relevant skills are actually present,
 
 ## Config Shape
 
-Write `02-DOCS/wiki/sdd/config.yaml` in this shape:
+Write `.specify/config.yaml` in this shape:
 
 ```yaml
 version: 1
@@ -99,7 +99,7 @@ project:
   monorepo: false
   signals: []
 sdd:
-  artifact_store: 02-DOCS/wiki/sdd
+  artifact_store: docs/sdd
   execution_mode: interactive
   registry_path: .ai-hub/skill-registry.json
   review_budget:
@@ -158,7 +158,7 @@ End with the standard SDD result envelope:
 {
   "status": "complete",
   "executive_summary": "SDD config calibrated and registry refreshed.",
-  "artifact": "02-DOCS/wiki/sdd/config.yaml",
+  "artifact": ".specify/config.yaml",
   "next_recommended": "sdd",
   "risk": "low",
   "skill_resolution": {
@@ -183,8 +183,8 @@ End with the standard SDD result envelope:
 | "No test command detected, but I'll still say strict TDD is active." | Strict TDD needs a runner. Record the gap. |
 | "Load all skills so the agent has context." | That pollutes context. Use registry -> selected skills -> compact rules. |
 | "This is the same as init." | No. `init` profiles user/workspace, `sdd` dispatches the phases, `sdd-init` calibrates the technical SDD runtime they both rely on. |
-| "Create openspec/ because Gentle does." | ai-hub uses `02-DOCS/wiki/sdd/` as source of truth. |
+| "Create openspec/ because Gentle does." | ai-hub uses `docs/sdd/` as source of truth. |
 
 ## Next
 
-After `sdd-init`, return to `sdd`. If no spec exists, route to `specify`. If the work is ambiguous or architectural, write a proposal first under `02-DOCS/wiki/sdd/proposals/`.
+After `sdd-init`, return to `sdd`. If no spec exists, route to `specify`. If the work is ambiguous or architectural, write a proposal first under `docs/sdd/proposals/`.

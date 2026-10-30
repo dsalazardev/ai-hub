@@ -3,7 +3,7 @@ name: observability
 description: "Use when instrumenting a service from the inside so an incident can be explained from telemetry alone — wiring OpenTelemetry logs, metrics and traces, standing up a Collector, exporting via OTLP, and defining telemetry-driven alerts. NOT outside-in uptime probes, on-call rotation, or who-gets-paged (that is `monitoring`)."
 tags: [observability, opentelemetry, tracing, metrics, structured-logging]
 recommends: [monitoring, error-handling, performance, cost-tracking, docker]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Observability

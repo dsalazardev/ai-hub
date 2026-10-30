@@ -3,7 +3,7 @@ name: backups
 description: "Use when designing or auditing a backup-and-restore program that must survive a real disaster: setting defensible RPO/RTO targets, laying out 3-2-1-1-0 copies that are offsite and immutable, wiring point-in-time recovery, and proving restores work on a schedule. NOT tuning Postgres internals or writing the archive_command (that is `postgresdb`)."
 tags: [backups, disaster-recovery, pitr, rpo-rto, restore]
 recommends: [postgresdb, secure-coding, monitoring]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Backups & disaster recovery

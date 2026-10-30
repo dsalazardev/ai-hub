@@ -3,7 +3,7 @@ name: django
 description: "Use when building, reviewing, securing, testing or shipping a Django app — models, migrations, QuerySets/managers, FBV/CBV views, forms, the admin, settings split, and Django REST Framework (serializers, ModelViewSet, permissions). NOT async FastAPI/Pydantic services (that is `fastapi`), NOT Postgres schema/index work (that is `postgresdb`)."
 tags: [python, django, orm, drf, backend, web]
 recommends: [postgresdb, secure-coding, deployment, testing-py, api-design]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Django web applications

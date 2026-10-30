@@ -3,7 +3,7 @@ name: docker
 description: "Use when authoring or auditing a Dockerfile, shrinking a bloated image, hardening a container that runs as root, picking a base image, or wiring a Compose dev loop with hot reload. NOT CI builds or deploy-to-host (that is `deployment`), NOT k8s autoscaling (that is `scaling`), NOT app-level injection or secrets-in-code (that is `secure-coding`)."
 tags: [docker, containers, dockerfile, compose, image-security]
 recommends: [deployment, secure-coding, scaling, github-actions]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # docker — container-craft

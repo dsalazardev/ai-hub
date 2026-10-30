@@ -3,7 +3,7 @@ name: vue-nuxt
 description: "Use when building or reviewing a Vue 3 + Nuxt 4 app — `<script setup>` reactivity, SSR/SSG/hybrid `routeRules`, the `app/`+`server/` layout, SSR-safe fetching (`useFetch`/`useAsyncData`) and state (`useState`/Pinia), Nitro routes, hydration mismatches, Nuxt 3→4 migration. NOT React/React Server Components (that is nextjs), NOT a static islands site (that is astro)."
 tags: [vue, nuxt, frontend, web, ssr]
 recommends: [design, deployment, secure-coding]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Vue 3 + Nuxt 4 — Composition API, SSR, SSR-safe data & state
@@ -308,14 +308,14 @@ is a yellow SKIP, never a failure; everything is read-only except the final buil
 `.nuxt/`/`.output/` (or `dist/`). No installs, no network mutations, safe to re-run, exits 0 on a
 clean/empty target.
 
-## Project grounding (02-DOCS + CLAUDE.md)
+## Project grounding (docs + CLAUDE.md)
 
-In a project with a `02-DOCS/` layer (the [`harness`](../harness/SKILL.md) Karpathy wiki), read
-`02-DOCS/wiki/stack/vue-nuxt.md` first and stay consistent with it. If it is missing or stale,
+In a project with a `docs/` layer (the [`harness`](../harness/SKILL.md) Karpathy wiki), read
+`docs/stack/vue-nuxt.md` first and stay consistent with it. If it is missing or stale,
 create/update it with this app's real choices — rendering mode per route (`routeRules`), the
 `useFetch`/`useAsyncData` conventions, `useState` vs Pinia, the Nitro preset/deploy target, the
 design-system hookup — bump its `Updated` date, and link it from a `## Knowledge map` section in
-the root `CLAUDE.md` (creating that section, and `CLAUDE.md` itself, if absent). No `02-DOCS/`
+the root `CLAUDE.md` (creating that section, and `CLAUDE.md` itself, if absent). No `docs/`
 layer? Skip silently. Technical conventions are *recorded, not gated* — never block the task.
 
 Nuxt 3 → 4 deltas (`app/` move, `compatibilityVersion`, shared-key data, shallowRef payload,

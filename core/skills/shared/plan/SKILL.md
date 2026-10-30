@@ -5,14 +5,14 @@ tags: [sdd, plan, design]
 recommends: [tasks]
 profiles: [full]
 runtime: false
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Plan — the technical blueprint between spec and tasks
 
 The spec says **what** and **why**. `plan` decides **how**: the components, the contracts between
 them, the data that flows, how each claim gets proven, and what is most likely to bite. It reads the
-clarified spec and the constitution, writes ONE artifact — `02-DOCS/wiki/sdd/plans/<slug>.md` — and
+clarified spec and the constitution, writes ONE artifact — `specs/<feature>/plan.md` — and
 hands off to `tasks`, which slices it into an ordered, independently-verifiable checklist.
 
 ```text
@@ -39,17 +39,17 @@ Pydantic model or a Go method on a struct — it can, because the contract is un
 
 ## Entry gate
 
-1. **The spec** — `02-DOCS/wiki/sdd/specs/<slug>.md`. Missing → STOP, route to
+1. **The spec** — `specs/<feature>/spec.md`. Missing → STOP, route to
    `../specify/SKILL.md`. Still carrying `[NEEDS CLARIFICATION]` markers or open questions → STOP,
    route to `../clarify/SKILL.md`. A plan built on an unclarified spec is a guess wearing a diagram,
    and every phase downstream inherits the guess.
-2. **The constitution** — `02-DOCS/wiki/sdd/constitution.md` holds the project's non-negotiables
+2. **The constitution** — `.specify/memory/constitution.md` holds the project's non-negotiables
    (stack canon, quality bars, conventions). Every architectural choice must be consistent with it;
    where the design needs to bend a principle, say so with a reason instead of bending it silently.
-3. **The Knowledge map** — `02-DOCS/wiki/index.md` points at `02-DOCS/wiki/stack/*` and prior
+3. **The Knowledge map** — `docs/index.md` points at `docs/stack/*` and prior
    plans/decisions. Reusing what the project already settled is the difference between a plan and
    scope drift.
-4. **The profile** — `technical_level` in `02-DOCS/wiki/harness/user-profile.md` (see below).
+4. **The profile** — `technical_level` in `docs/harness/user-profile.md` (see below).
 
 ## What a plan contains
 
@@ -80,20 +80,20 @@ Three of them carry the weight and fail quietly:
   is what makes `implement`'s TDD possible. You choose the seams; the stack skill owns the tooling.
 - **§7 Risks** — ranked, each with trigger, impact, and the mitigation or spike that retires it. A
   plan claiming zero risk is the riskiest one. Significant decisions taken while planning also get
-  appended to `02-DOCS/wiki/sdd/decisions.md`, so later phases can trace the *why*.
+  appended to `docs/sdd/decisions.md`, so later phases can trace the *why*.
 
 ## The artifact
 
-Write `02-DOCS/wiki/sdd/plans/<slug>.md`, `<slug>` matching the spec's slug exactly — one plan per
+Write `specs/<feature>/plan.md`, `<slug>` matching the spec's slug exactly — one plan per
 spec, same name, because that is how `tasks`, `analyze` and `implement` find it. Then index it in
-`02-DOCS/wiki/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a pointer). If a plan for
+`docs/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a pointer). If a plan for
 this slug already exists, update it in place and note what changed — never fork a `-v2`.
 
 ## Model tier — `heavy` (opt-in routing)
 
 Architecture, interfaces, data flow and risk are the heaviest reasoning in the chain, so this
 phase's default tier is **`heavy`**. Routing is off unless `models.enabled: true` in
-`02-DOCS/wiki/sdd/config.yaml`; the resolution order, the announce rule and the model table live in
+`.specify/config.yaml`; the resolution order, the announce rule and the model table live in
 `../sdd/references/model-routing.md`. Routing off or no profile → session model, silently.
 
 ## Talking about the plan
@@ -101,7 +101,7 @@ phase's default tier is **`heavy`**. Routing is off unless `models.enabled: true
 The artifact is complete regardless of who reads it: every section, each significant design choice
 justified with the trade-offs weighed. In chat, say only what the reader needs, in the `orient`
 voice: point to the file and give one line of *why* on the top architectural decision. The register
-comes from `technical_level` in `02-DOCS/wiki/harness/user-profile.md` (set by `../init/SKILL.md`):
+comes from `technical_level` in `docs/harness/user-profile.md` (set by `../init/SKILL.md`):
 for a `non-technical` reader, explain the architecture with an everyday analogy and define each term
 inline. Ask only about constraints you cannot infer.
 
@@ -147,7 +147,7 @@ interpreting prose (contract: `../sdd/SKILL.md`):
 {
   "status": "complete|blocked|failed",
   "executive_summary": "Technical plan derived from the clarified spec, with the isolation decision made.",
-  "artifact": "02-DOCS/wiki/sdd/plans/<slug>.md",
+  "artifact": "specs/<feature>/plan.md",
   "next_recommended": "tasks",
   "risk": "low|medium|high",
   "skill_resolution": {

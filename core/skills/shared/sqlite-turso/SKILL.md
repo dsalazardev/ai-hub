@@ -3,7 +3,7 @@ name: sqlite-turso
 description: "Use when deciding whether plain SQLite is enough, or wiring SQLite, Turso or libSQL for local-first, edge and embedded-replica apps — a local file DB, a remote Turso URL, or a local replica synced to a remote primary — plus WAL mode and SQLite's single-writer model and its lock errors. NOT Drizzle schema or queries on libSQL (that is `drizzle-orm`), NOT versioned up/down migrations (that is `db-migrations`), NOT serverless Postgres with branching (that is `neon`)."
 tags: [sqlite, turso, libsql, edge, embedded-replica, local-first, wal]
 recommends: [drizzle-orm, db-migrations, postgresdb, neon, backups, sql]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # SQLite & Turso/libSQL — decide, connect, operate

@@ -3,7 +3,7 @@ name: deployment
 description: "Use when taking an app from source to live: choosing the deploy target from requirements (Hetzner+Coolify vs Vercel vs a third), then wiring container → CI → registry → host with build secrets, healthchecks and rollback. NOT one platform's mechanics (that is `coolify`, `vercel`, `railway`, `render`), NOT the Dockerfile alone (that is `docker`)."
 tags: [deploy, docker, ci, github-actions, coolify]
 recommends: [secure-coding]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Ship it — Docker, GitHub Actions, and a deploy target (Coolify · Vercel · Hetzner)
@@ -356,13 +356,13 @@ async def readyz() -> dict[str, str]:
 - [ ] trivy clean (no HIGH/CRITICAL)
 - [ ] Rollback path known
 
-## Project grounding (02-DOCS)
+## Project grounding (docs)
 
-In a project with a `02-DOCS/` layer (the [`harness`](../harness/SKILL.md) Karpathy wiki), read
-`02-DOCS/wiki/stack/deployment.md` first and stay consistent with it. Create or update it with this
+In a project with a `docs/` layer (the [`harness`](../harness/SKILL.md) Karpathy wiki), read
+`docs/stack/deployment.md` first and stay consistent with it. Create or update it with this
 project's real choices — base-image/container choices, the CI pipeline, the target config, the
-secrets flow, the rollback strategy — index it in `02-DOCS/wiki/index.md` (the Knowledge map root
-`CLAUDE.md` points to), and bump its `Updated` date in the same change. No `02-DOCS/` layer? Skip
+secrets flow, the rollback strategy — index it in `docs/index.md` (the Knowledge map root
+`CLAUDE.md` points to), and bump its `Updated` date in the same change. No `docs/` layer? Skip
 silently (optionally suggest `harness`) — technical conventions are *recorded, not gated*; never
 block the task on this.
 

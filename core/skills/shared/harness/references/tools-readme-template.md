@@ -81,8 +81,8 @@ external service lives under `01-TOOLS/<SERVICE>/`.
 
 ## See also
 
-- `02-DOCS/` — project LLM wiki. When a tool gains recurring operations
+- `docs/` — project LLM wiki. When a tool gains recurring operations
   worth documenting beyond the local README, the `harness`
   protocol ingests the README + `CREDENTIALS.md` into
-  `02-DOCS/raw/operations/` and compiles them in
-  `02-DOCS/wiki/operations/`.
+  `docs/raw/operations/` and compiles them in
+  `docs/operations/`.

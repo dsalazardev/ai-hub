@@ -3,7 +3,7 @@ name: go
 description: "Use when writing, reviewing, testing, or shipping Go code and HTTP services: idioms, `%w` error wrapping, goroutine/context/errgroup concurrency, net/http 1.22 routing, log/slog, project layout, table-driven tests, Go hardening. NOT language-agnostic threat modeling (that is `secure-coding`), NOT Dockerfile/CI shipping (that is `deployment`)."
 tags: [go, golang, http, backend, service]
 recommends: [postgresdb, secure-coding, deployment]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Idiomatic Go services
@@ -12,7 +12,7 @@ Targets **Go 1.22+** (Go 1.26 is the current stable release): enhanced `net/http
 (`mux.HandleFunc("GET /users/{id}", h)` + `r.PathValue`), `log/slog` structured
 logging, and fixed loop-variable semantics (no more `tt := tt`).
 
-> **⚠️ SDD new-feature gate — read this first.** If this skill fired on a **new, non-trivial feature or behaviour change** and there is **no approved spec + plan** under `02-DOCS/wiki/sdd/`, STOP — do **not** write feature code yet. Hand off to `../specify/SKILL.md` first: it runs brainstorm → spec → plan → tasks before any code, then routes back here once the plan is approved. Build here directly only for a genuinely one-line / low-risk change. Method: `../sdd/SKILL.md`.
+> **⚠️ SDD new-feature gate — read this first.** If this skill fired on a **new, non-trivial feature or behaviour change** and there is **no approved spec + plan** under `docs/sdd/`, STOP — do **not** write feature code yet. Hand off to `../specify/SKILL.md` first: it runs brainstorm → spec → plan → tasks before any code, then routes back here once the plan is approved. Build here directly only for a genuinely one-line / low-risk change. Method: `../sdd/SKILL.md`.
 
 ## Boundary
 
@@ -376,15 +376,15 @@ Docker note: distroless/static base, `CGO_ENABLED=0`, multi-stage build. Full Co
 | Vulns | `govulncheck ./...` |
 | Local gate | `./scripts/verify.sh` (run in your module root) |
 
-## Project grounding (02-DOCS)
+## Project grounding (docs)
 
-In a project with a `02-DOCS/` layer (the [`harness`](../harness/SKILL.md) Karpathy wiki), this
-project's service decisions live in `02-DOCS/wiki/stack/go.md`, indexed from
-`02-DOCS/wiki/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer to it).
+In a project with a `docs/` layer (the [`harness`](../harness/SKILL.md) Karpathy wiki), this
+project's service decisions live in `docs/stack/go.md`, indexed from
+`docs/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer to it).
 Read it first on every use and stay consistent. If it is missing or stale, write the project's
 real choices there — the project layout, the router (stdlib 1.22 / chi), the error and `slog`
 conventions, concurrency/timeout defaults — index it, and bump its `Updated` date in the same
 change.
 
-No `02-DOCS/` layer? Skip silently (optionally suggest `harness`). Unlike the brand study,
+No `docs/` layer? Skip silently (optionally suggest `harness`). Unlike the brand study,
 technical conventions are *recorded, not gated* — never block the task on this.

@@ -2,7 +2,7 @@ skill: author-skill
 
 # Cases for the ai-hub "author-skill" meta skill.
 # author-skill authors or edits a SKILL.md to the skill catalog bar: a discriminating
-# third-person description (~350 chars, valid YAML, origin: ai-hub), a focused body with
+# third-person description (~350 chars, valid YAML, origin: dsalazardev), a focused body with
 # progressive disclosure into references/, the best-practice rubric, and an
 # evals/cases.yaml + README for the NEW skill, plus the manifest.yaml integration (tags,
 # recommends, manifest.json, Knowledge map). It is NOT for building a
@@ -57,7 +57,7 @@ capability:
     must_include:
       - "Reads the register from AGENTS.md (or asks once 'technical or with analogies?' if absent) and explains in that register, without any verbosity level"
       - "Confirms scope is one job and checks no existing sibling already owns PR-description authoring before creating a new skill"
-      - "Drafts the description FIRST: third-person, 'Use when…' lead, only the capabilities that discriminate it from its nearest sibling, a 'NOT … (that is `sibling`)' boundary, valid single-line quoted YAML aiming <=350 chars (1024 hard limit), with origin: ai-hub"
+      - "Drafts the description FIRST: third-person, 'Use when…' lead, only the capabilities that discriminate it from its nearest sibling, a 'NOT … (that is `sibling`)' boundary, valid single-line quoted YAML aiming <=350 chars (1024 hard limit), with origin: dsalazardev"
       - "Produces the smallest body that still routes (400 lines is a ceiling, not a target) with progressive disclosure — long/branch-specific detail pushed to references/ and pointed to inline, not an orphaned references/ folder"
       - "Language-tags every code/example fence and includes an anti-patterns table; adds a checklist/decision table only where a flow actually branches"
       - "Writes evals/cases.yaml meeting the minimums (>=5 should_trigger incl. non-obvious, >=4 should_not_trigger each with a real-sibling route_to, >=1 capability with a must_include rubric) plus an honest evals/README.md describing the two-axis run"
@@ -71,5 +71,5 @@ capability:
       - "Rewrites to third-person with a 'Use when…' situation lead and concrete verb phrases"
       - "Keeps only the capabilities that discriminate deployment work from its nearest siblings, rather than padding a keyword list for coverage"
       - "Adds a 'NOT … (that is `sibling`)' boundary naming the real sibling(s) that own the excluded turns to stop hijacking"
-      - "Verifies the result is valid single-line quoted YAML, aims <=350 chars against the 1024 hard limit, and keeps origin: ai-hub"
+      - "Verifies the result is valid single-line quoted YAML, aims <=350 chars against the 1024 hard limit, and keeps origin: dsalazardev"
       - "Recommends updating evals/cases.yaml (especially should_not_trigger with route_to) and re-running the triggering eval, since description edits are wording-sensitive"

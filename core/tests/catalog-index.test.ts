@@ -20,7 +20,7 @@ describe('catalog index', () => {
       ruleFiles: Record<string, string[]>;
       walkCount: number;
     };
-    expect(index.skills).toHaveLength(163);
+    expect(index.skills).toHaveLength(261);
     expect(index.agents).toHaveLength(35);
     expect(Object.keys(index.ruleFiles)).toHaveLength(4);
     expect(index.walkCount).toBe(1);

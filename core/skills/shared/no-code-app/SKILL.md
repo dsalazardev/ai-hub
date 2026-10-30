@@ -3,7 +3,7 @@ name: no-code-app
 description: "Use when building an app on a no-code/low-code platform (Bubble, Softr, Glide over Airtable or Xano) — picking the platform, modeling the data, keeping usage-metered cost predictable, and planning the exit before lock-in. NOT a hand-written coded app (that is `nextjs`), NOT wiring SaaS tools together with no app UI (that is `automation-flows`)."
 tags: [no-code, low-code, bubble, glide, softr, app-builder, mvp]
 recommends: [nextjs, shopify, wordpress, automation-flows, spreadsheet-ops, notion-connector, stripe]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # No-code app

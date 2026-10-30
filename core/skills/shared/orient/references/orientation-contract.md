@@ -44,7 +44,7 @@ Test: could someone read only this message and act on it? If not, add the missin
 
 ## Register
 
-`technical_level` in `02-DOCS/wiki/harness/user-profile.md` sets the vocabulary:
+`technical_level` in `docs/harness/user-profile.md` sets the vocabulary:
 
 - `technical` — use the precise term directly. No 101 explanations.
 - `non-technical` or `mixed` — plain words. One everyday analogy per new idea: things a person has

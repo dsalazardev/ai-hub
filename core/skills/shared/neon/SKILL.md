@@ -3,7 +3,7 @@ name: neon
 description: "Use when you have picked Neon (serverless Postgres) and need to connect correctly from a serverless or edge runtime, wire database branching into dev, preview and CI, or stop being burned by scale-to-zero cold starts and pooler limits — including choosing HTTP versus WebSocket connections and pooled versus direct endpoints for migrations. NOT generic Postgres schema, index, EXPLAIN, RLS or migration-engine work (that is `postgresdb`)."
 tags: [neon, postgres, serverless, database, branching, edge]
 recommends: [postgresdb, drizzle-orm, prisma-orm, vercel]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Neon — serverless Postgres as a platform

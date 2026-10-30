@@ -1,14 +1,14 @@
 ---
 name: code-review
-description: "Use to judge a concrete diff, branch, or GitHub PR on its own merits with no ai-hub Spec-Kit spec/plan chain to key off — the spec-less giving pass behind /code-review: only findings you can defend, one verdict, read-only unless --comment or --fix. NOT the SDD gate keyed to 02-DOCS/wiki/sdd/ that also processes incoming review comments (that is `review`)."
+description: "Use to judge a concrete diff, branch, or GitHub PR on its own merits with no ai-hub Spec-Kit spec/plan chain to key off — the spec-less giving pass behind /code-review: only findings you can defend, one verdict, read-only unless --comment or --fix. NOT the SDD gate keyed to docs/sdd/ that also processes incoming review comments (that is `review`)."
 tags: [code-review, pr-review, quality, correctness]
 recommends: [review, secure-coding, verify]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Code review — standalone, spec-less diff judgment
 
-You are reviewing a concrete change — a `git diff`, a branch, a GitHub PR, a pasted patch — on its own merits. No ai-hub Spec-Kit spec/plan/constitution chain is required and you should not pretend one exists. This is the doctrine behind the executable `/code-review` slash command: same evidence bar, written as a discipline you run by hand. If the user is mid-SDD and wants to process *incoming* comments against `02-DOCS/wiki/sdd/`, that is `../review/SKILL.md`; a naked diff or an inbound third-party PR is this skill.
+You are reviewing a concrete change — a `git diff`, a branch, a GitHub PR, a pasted patch — on its own merits. No ai-hub Spec-Kit spec/plan/constitution chain is required and you should not pretend one exists. This is the doctrine behind the executable `/code-review` slash command: same evidence bar, written as a discipline you run by hand. If the user is mid-SDD and wants to process *incoming* comments against `docs/sdd/`, that is `../review/SKILL.md`; a naked diff or an inbound third-party PR is this skill.
 
 **The north star is signal-to-noise.** Report only findings you would stake your name on. A clean diff is `APPROVE`, not a manufactured nit. High-false-positive review gets tuned out by humans in about two weeks; the bar to aim for is the logic-error review where under 1% of findings come back marked wrong. Padding does not make you look thorough — it trains the reader to ignore you.
 

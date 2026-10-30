@@ -3,7 +3,7 @@ name: cloudflare
 description: "Use when working on Cloudflare's edge platform — wrangler.jsonc bindings, choosing between D1/KV/R2/Durable Objects/Queues, deploying a Worker or SPA via Static Assets, or designing around a Workers runtime limit. NOT generic CI/release (that is `deployment`), NOT Next.js framework wiring (that is `nextjs`), NOT DNS records (that is `domains-dns`)."
 tags: [cloudflare, workers, edge, r2, d1, kv, queues, wrangler, serverless]
 recommends: [deployment, nextjs, domains-dns, postgresdb, redis, secure-coding]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Cloudflare Workers & edge primitives

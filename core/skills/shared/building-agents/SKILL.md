@@ -3,7 +3,7 @@ name: building-agents
 description: "Use when building or restructuring an LLM agent — provider adapter, tool calling, structured output, RAG, agent loop, eval gate, cost routing, tracing, MCP server — model-agnostic across OpenAI/Anthropic/Gemini/OSS so a model swap is a config change. NOT vector-store SQL alone (that is `postgresdb`) or service deployment (that is `deployment`)."
 tags: [agents, llm, mcp, rag, evals, ai]
 recommends: [secure-coding, deployment]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Building production LLM agents (model-agnostic)
@@ -14,7 +14,7 @@ A thin provider adapter, a disciplined agent loop, schema-validated tools, provi
 
 > Program against a **capability interface**, never a vendor SDK. Vendor specifics (model id, tool-schema shape, JSON mode, caching, token limits) live behind one adapter resolved from config. Model names and prices rot — if one appears in business logic it's a bug, and re-verify the dated tables before quoting a number.
 
-**Hand off instead when:** a new non-trivial feature has no approved spec + plan under `02-DOCS/wiki/sdd/` → stop and run [`specify`](../specify/SKILL.md) first (method: [`sdd`](../sdd/SKILL.md)), which routes back here once the plan is approved; one-line/low-risk changes go straight through. Anthropic-SDK internals (caching, thinking, batch) in a file that *only* imports `anthropic` → `claude-api` if your environment has it, since this skill stays multi-provider. Workspace scaffolding → [`harness`](../harness/SKILL.md). Choosing *which* coding agent to use → agent-eval territory. Pure prompt-wording tuning with no architecture change → prompt engineering, not this. A one-shot throwaway prompt, or no retrieval/tools/loop/evals at all → you don't need an agent; call the SDK directly and say so.
+**Hand off instead when:** a new non-trivial feature has no approved spec + plan under `docs/sdd/` → stop and run [`specify`](../specify/SKILL.md) first (method: [`sdd`](../sdd/SKILL.md)), which routes back here once the plan is approved; one-line/low-risk changes go straight through. Anthropic-SDK internals (caching, thinking, batch) in a file that *only* imports `anthropic` → `claude-api` if your environment has it, since this skill stays multi-provider. Workspace scaffolding → [`harness`](../harness/SKILL.md). Choosing *which* coding agent to use → agent-eval territory. Pure prompt-wording tuning with no architecture change → prompt engineering, not this. A one-shot throwaway prompt, or no retrieval/tools/loop/evals at all → you don't need an agent; call the SDK directly and say so.
 
 ## Decision rules (read before writing code)
 
@@ -378,7 +378,7 @@ if __name__ == "__main__":
 
 ## Project grounding
 
-In a project with a `02-DOCS/` layer ([`harness`](../harness/SKILL.md)), read `02-DOCS/wiki/stack/agents.md` first on every use and stay consistent with it. If it is missing or stale, write this project's real choices there — provider(s) and model routing, where the adapter lives, tool/RAG conventions, eval gates, observability backend — as a `type: stack` article per the harness [`wiki-article-template.md`](../harness/references/wiki-article-template.md), index it in `02-DOCS/wiki/index.md`, and bump its `timestamp` in the same change as any convention change. No `02-DOCS/`? Skip silently — technical conventions here are *recorded, not gated*; never block the task on this.
+In a project with a `docs/` layer ([`harness`](../harness/SKILL.md)), read `docs/stack/agents.md` first on every use and stay consistent with it. If it is missing or stale, write this project's real choices there — provider(s) and model routing, where the adapter lives, tool/RAG conventions, eval gates, observability backend — as a `type: stack` article per the harness [`wiki-article-template.md`](../harness/references/wiki-article-template.md), index it in `docs/index.md`, and bump its `timestamp` in the same change as any convention change. No `docs/`? Skip silently — technical conventions here are *recorded, not gated*; never block the task on this.
 
 ## See also
 

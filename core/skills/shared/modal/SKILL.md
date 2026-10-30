@@ -3,7 +3,7 @@ name: modal
 description: "Use when running Python or GPU workloads serverlessly on Modal — modal.App, inline container Images, gpu= on @app.function, Volumes for weight caching, Cron schedules, ASGI endpoints, modal run vs serve vs deploy. NOT managed prediction APIs with no container of your own (that is replicate); NOT SSH-able GPU boxes rented by the hour (that is runpod)."
 tags: [modal, serverless, gpu, python, ai-infra, deployment, cron, web-endpoint]
 recommends: [replicate, runpod, fastapi, docker, python, llm-pipeline]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Modal — serverless Python & GPU as decorators
@@ -282,9 +282,9 @@ checks that any web decorator sits under an `@app.function`, and that any `Volum
 `from_name(..., create_if_missing=...)`. It runs `python -c "import modal"` only if modal is
 installed (skip-pass otherwise), needs **no Modal credentials**, and exits 0 on an empty target.
 
-## Project grounding (02-DOCS)
+## Project grounding (docs)
 
-In a project with a `02-DOCS/` layer (the [`harness`](../harness/SKILL.md) wiki), read
-`02-DOCS/wiki/stack/modal.md` first, then record this app's real Modal choices there — GPU types,
-image base, Volume names, schedule, endpoint shape — and index it in `02-DOCS/wiki/index.md`. No
-`02-DOCS/`? Skip silently.
+In a project with a `docs/` layer (the [`harness`](../harness/SKILL.md) wiki), read
+`docs/stack/modal.md` first, then record this app's real Modal choices there — GPU types,
+image base, Volume names, schedule, endpoint shape — and index it in `docs/index.md`. No
+`docs/`? Skip silently.

@@ -3,7 +3,7 @@ name: author-skill
 description: "Use when authoring a NEW ai-hub skill or editing an existing one — scoping it to one job, writing the description that decides whether it ever loads, splitting the body into references/, writing its evals, auditing it against the rubric. NOT building a product feature (that is `specify`) and NOT designing an agent loop (that is `building-agents`)."
 tags: [skill, authoring, meta]
 recommends: []
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # author-skill — write skills that trigger and teach
@@ -12,9 +12,9 @@ This is the **meta skill**: it authors and edits the other skills in the ai-hub 
 
 Where the SDD chain (`specify` → `plan` → … → `ship`) builds *product*, `author-skill` builds *the tools that build product*. Use it whenever a skill is born or edited.
 
-**Not this skill — delegate:** a product feature specced or planned → `../specify/SKILL.md`, `../plan/SKILL.md`. An autonomous agent or tool-calling loop → `../building-agents/SKILL.md`. Generic project docs or a wiki article → the `../harness/SKILL.md` 02-DOCS engine. Bootstrapping a workspace or profiling the user → `../init/SKILL.md`.
+**Not this skill — delegate:** a product feature specced or planned → `../specify/SKILL.md`, `../plan/SKILL.md`. An autonomous agent or tool-calling loop → `../building-agents/SKILL.md`. Generic project docs or a wiki article → the `../harness/SKILL.md` docs engine. Bootstrapping a workspace or profiling the user → `../init/SKILL.md`.
 
-Read `02-DOCS/wiki/harness/user-profile.md` and speak in the register its `technical_level` records (technical terms, or plain words with analogies); `../init/SKILL.md` sets it, and `orient` owns the voice. With no profile, use analogies and ask once "technical or with analogies?" — skill authoring is itself a technical act, so a non-technical author needs each convention explained, not just named.
+Read `docs/harness/user-profile.md` and speak in the register its `technical_level` records (technical terms, or plain words with analogies); `../init/SKILL.md` sets it, and `orient` owns the voice. With no profile, use analogies and ask once "technical or with analogies?" — skill authoring is itself a technical act, so a non-technical author needs each convention explained, not just named.
 
 ## What a skill is (the anatomy)
 
@@ -42,7 +42,7 @@ Rules, all enforced:
 2. **Discriminative, not exhaustive.** Lead with a `Use when …` clause naming the *situation*, then only the capabilities that separate this skill from its neighbours. Do **not** append a `Triggers: '…', '…'` phrase list: the model matches on meaning, so a keyword bank in three languages buys nothing and is charged on every turn. The test is *discrimination, not coverage* — could a reader pick this skill over its nearest sibling from this line alone?
 3. **Draw the boundary.** End with a `NOT <x> (that is <sibling>)` clause, naming a sibling that actually exists under `skills/`. Negative space prevents hijacking as much as positive matching causes firing.
 4. **Aim ≤ 350 characters; 1024 is the schema-enforced hard limit.** One physical line, wrapped in double quotes, internal quotes escaped or avoided. If it does not parse, the skill does not load.
-5. **`origin: ai-hub`** on its own line. This marks it as ours.
+5. **`origin: dsalazardev`** on its own line. This marks it as ours.
 
 ```yaml
 # Good — situation, the few capabilities that discriminate, a real boundary
@@ -84,7 +84,7 @@ Every new skill MUST end with the orientation footer so the harness never leaves
 
 ## Orientación (siempre)
 
-Habla con la voz de `orient`: frases cortas, una idea por frase, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `02-DOCS/wiki/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a `suggest` el "¿instalo la skill que falta?".)
+Habla con la voz de `orient`: frases cortas, una idea por frase, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `docs/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a `suggest` el "¿instalo la skill que falta?".)
 ````
 
 The full protocol lives once in the `orient` skill; the footer only references it.
@@ -99,7 +99,7 @@ Run in order. Each step gates the next.
 4. **Write the body** in the ai-hub voice (see below). Tag every code/example fence with a language. Add a checklist or decision table *only where the flow actually branches* — not as decoration. Add a short anti-patterns table.
 5. **Extract references** for anything long or branch-specific, and link each one inline.
 6. **Write the evals** — `cases.yaml` then `README.md`. → `references/eval-authoring.md`.
-7. **Wire it into the ai-hub plumbing** (`tags`, `recommends`, `npm run manifest`, and indexing any artifact in `02-DOCS/wiki/index.md` — the Knowledge map; root `CLAUDE.md` keeps only a short pointer). → `references/skill-conventions.md`.
+7. **Wire it into the ai-hub plumbing** (`tags`, `recommends`, `npm run manifest`, and indexing any artifact in `docs/index.md` — the Knowledge map; root `CLAUDE.md` keeps only a short pointer). → `references/skill-conventions.md`.
 8. **Self-audit against the rubric** (below). Fix every miss or justify it.
 
 ## The ai-hub voice
@@ -136,7 +136,7 @@ output, rewrite it as the shape to hit.
 
 A skill ships only when every box is checked or a miss is consciously justified.
 
-- [ ] **Frontmatter parses** as YAML; `name` matches the directory `<id>`; `origin: ai-hub` present.
+- [ ] **Frontmatter parses** as YAML; `name` matches the directory `<id>`; `origin: dsalazardev` present.
 - [ ] **Description** third-person, `Use when…` lead, an explicit `NOT … (that is sibling)` boundary naming a real sibling, ≤ 350 chars target / ≤ 1024 hard limit — judged on discrimination against the nearest sibling, not coverage.
 - [ ] **One job.** The body never drifts into a second skill's territory; it delegates instead.
 - [ ] **Body ≤ 400 lines** — a ceiling, not a target, with no floor. Long/branch-specific material lives in `references/`.
@@ -144,7 +144,7 @@ A skill ships only when every box is checked or a miss is consciously justified.
 - [ ] **Every fence language-tagged**; no placeholder/TODO prose; examples concrete.
 - [ ] **Checklist/decision table only where a flow branches**; an **anti-patterns table** present, naming failure modes rather than restating rules.
 - [ ] **Orient voice honored** — reads `technical_level` from the profile and picks the register; short sentences, every answer understandable on its own.
-- [ ] **Artifacts under `02-DOCS/wiki/`** and indexed in `02-DOCS/wiki/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer), if the skill produces any.
+- [ ] **Artifacts under `docs/`** and indexed in `docs/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer), if the skill produces any.
 - [ ] **Concrete tooling delegated** to the stack skills rather than reinvented.
 - [ ] **evals present** — `cases.yaml` (≥5 `should_trigger` incl. non-obvious, ≥4 `should_not_trigger` each with a real-sibling `route_to`, ≥1 `capability` with a `must_include` rubric) + an honest `README.md`. `scripts/eval-lint.sh` passes — but it only checks presence and the counts (≥5/≥4/≥1) and that those keys are lists; the `route_to`-points-at-a-real-sibling, non-obvious phrasings, and `must_include` quality are yours to verify here, not the linter's.
 - [ ] **verify.sh** present iff the skill has a checkable artifact; process skills rely on evals.
@@ -189,6 +189,6 @@ only when **both** are green:
 | `../foo/SKILL.md` linked to something not in this repo | A dead link is a defect. Verify the directory exists under `skills/`. |
 | Another catalog mirrored wholesale ("it's basically superpowers' writing-skills") | Mine the idea, write it in the ai-hub voice. Copied artifacts or phrasing are a defect. |
 
-## Project grounding (02-DOCS + CLAUDE.md)
+## Project grounding (docs + CLAUDE.md)
 
-When authoring produces a durable design note (a skill's scope decision, a description rationale worth keeping), persist it under `02-DOCS/wiki/sdd/` and index it in `02-DOCS/wiki/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer), per the `../harness/SKILL.md` convention — never a stray file at the repo root. The skill's own `evals/` is the executable record of intent; the wiki note is the human-readable why.
+When authoring produces a durable design note (a skill's scope decision, a description rationale worth keeping), persist it under `docs/sdd/` and index it in `docs/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer), per the `../harness/SKILL.md` convention — never a stray file at the repo root. The skill's own `evals/` is the executable record of intent; the wiki note is the human-readable why.

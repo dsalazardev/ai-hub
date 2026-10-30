@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Brand — one-line promise</title>
+<meta name="description" content="One sentence on what the brand does, for search and link previews.">
+<!-- The first poster is the LCP image: fetch it before the engine asks for it. -->
+<link rel="preload" as="image" href="assets/shot-01.webp" fetchpriority="high">
+<style>
+  :root {
+    --film-bg: #f3ede4;      /* match the scene background so posters and seams sit on it */
+    --ink: #1e1a22;
+    --ink-soft: #5b5462;
+    --accent: #6d55b8;
+    --film-focus: 50% 45%;   /* where object-fit: cover keeps the subject when it crops */
+  }
+  html { background: var(--film-bg); color: var(--ink); font: 400 1rem/1.55 system-ui, sans-serif; }
+  /* clip, never hidden: overflow hidden turns body into a scroll container and the stage stops sticking */
+  body { margin: 0; overflow-x: clip; }
+  a { color: inherit; }
+  .skip { position: absolute; left: -9999px; }
+  .skip:focus { left: 16px; top: 16px; z-index: 2000; background: var(--ink); color: var(--film-bg); padding: 8px 14px; border-radius: 8px; }
+  .site-head { position: fixed; inset: 0 0 auto; z-index: 1500; display: flex; justify-content: space-between; align-items: center; padding: 16px clamp(16px, 5vw, 56px); }
+  .eyebrow { margin: 0 0 12px; font-size: .8rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+  .film-copy h1, .film-copy h2 { margin: 0; font-size: clamp(2rem, 4.4vw, 3.4rem); line-height: 1.05; letter-spacing: -.01em; }
+  .film-copy p { margin: 16px 0 0; max-width: 38ch; color: var(--ink-soft); font-size: clamp(1rem, 1.3vw, 1.15rem); }
+  .cta { display: inline-block; margin-top: 24px; padding: 13px 24px; border-radius: 999px; background: var(--ink); color: var(--film-bg); text-decoration: none; font-weight: 600; }
+
+  /* Without JavaScript the copy is a plain stacked page: readable, indexable, nothing hidden. */
+  .film-copy article { padding: 18vh clamp(16px, 6vw, 80px); }
+
+  /* With the engine mounted, the copy rides the sticky stage and the scroll drives its opacity. */
+  .sf-root .film-copy { position: absolute; inset: 0; }
+  .sf-root .film-copy::before { content: ""; position: absolute; inset: 0 auto 0 0; width: min(60vw, 760px);
+    background: linear-gradient(90deg, var(--film-bg) 0%, color-mix(in srgb, var(--film-bg) 70%, transparent) 45%, transparent 100%); }
+  .sf-root .film-copy article { position: absolute; left: clamp(16px, 6vw, 80px); top: 50%; transform: translateY(-50%);
+    width: min(40vw, 460px); padding: 0; opacity: 0; }
+  .sf-root .film-copy article.is-current { pointer-events: auto; }
+  @media (max-width: 860px) {
+    .sf-root .film-copy::before { inset: auto 0 0 0; width: auto; height: 60%;
+      background: linear-gradient(0deg, var(--film-bg) 10%, color-mix(in srgb, var(--film-bg) 65%, transparent) 50%, transparent 100%); }
+    .sf-root .film-copy article { top: auto; transform: none; left: 16px; right: 16px; width: auto;
+      bottom: calc(10svh + env(safe-area-inset-bottom)); }
+  }
+
+  .after-film { position: relative; z-index: 1; padding: 20vh clamp(16px, 6vw, 80px); background: var(--film-bg); }
+</style>
+</head>
+<body>
+<a class="skip" href="#after-film">Skip the film</a>
+<header class="site-head"><strong>Brand</strong><a href="#contact">Contact</a></header>
+
+<main>
+  <section id="film" aria-label="The journey, from first step to finished product">
+    <div class="film-copy">
+      <article data-section="0">
+        <p class="eyebrow">Where it starts</p>
+        <h1>Headline for the opening scene.</h1>
+        <p>One sentence, from the visitor's side.</p>
+      </article>
+      <article data-section="1">
+        <p class="eyebrow">Step two</p>
+        <h2>Headline for the second scene.</h2>
+        <p>One sentence, from the visitor's side.</p>
+      </article>
+      <article data-section="2">
+        <p class="eyebrow">The payoff</p>
+        <h2>Headline for the finale.</h2>
+        <p>One sentence that earns the click.</p>
+        <a class="cta" href="#contact">The one action</a>
+      </article>
+    </div>
+  </section>
+
+  <section id="after-film" class="after-film">
+    <h2 id="contact">The rest of the page scrolls normally after the film.</h2>
+  </section>
+</main>
+
+<script src="scrub-engine.js"></script>
+<script>
+  (function () {
+    var copy = document.querySelector('#film .film-copy');
+    var blocks = Array.prototype.slice.call(copy.querySelectorAll('article'));
+    var last = blocks.length - 1;
+    var EDGE = 0.15; // share of a section spent fading its copy in and out
+
+    var film = ScrollFilm.mount(document.getElementById('film'), {
+      // Architecture B shown: dive, connector, dive, connector, dive. A forward take (A) is
+      // the same list with one leg per section and no connectors.
+      shots: [
+        { section: 0, src: 'assets/vid/shot-01.mp4', srcMobile: 'assets/vid/shot-01-m.mp4',
+          poster: 'assets/shot-01.webp', posterMobile: 'assets/shot-01-m.webp', length: 1.4, hold: 0.4 },
+        { section: 0, src: 'assets/vid/hop-01.mp4', srcMobile: 'assets/vid/hop-01-m.mp4',
+          poster: 'assets/hop-01.webp', posterMobile: 'assets/hop-01-m.webp', length: 0.9 },
+        { section: 1, src: 'assets/vid/shot-02.mp4', srcMobile: 'assets/vid/shot-02-m.mp4',
+          poster: 'assets/shot-02.webp', posterMobile: 'assets/shot-02-m.webp', length: 1.2, hold: 0.3 },
+        { section: 1, src: 'assets/vid/hop-02.mp4', srcMobile: 'assets/vid/hop-02-m.mp4',
+          poster: 'assets/hop-02.webp', posterMobile: 'assets/hop-02-m.webp', length: 0.9 },
+        { section: 2, src: 'assets/vid/shot-03.mp4', srcMobile: 'assets/vid/shot-03-m.mp4',
+          poster: 'assets/shot-03.webp', posterMobile: 'assets/shot-03-m.webp', length: 1.6, hold: 0.5 },
+      ],
+      onChange: function (state) {
+        blocks.forEach(function (block, i) {
+          var opacity = 0;
+          if (i === state.section) {
+            var p = state.sectionProgress;
+            var fadeIn = i === 0 ? 1 : Math.min(1, p / EDGE);       // the first block greets on load
+            var fadeOut = i === last ? 1 : Math.min(1, (1 - p) / EDGE); // the last one holds its CTA
+            opacity = Math.min(fadeIn, fadeOut);
+          }
+          block.style.opacity = String(opacity);
+          block.classList.toggle('is-current', opacity > 0.5);
+        });
+      },
+    });
+
+    film.overlay.appendChild(copy);
+
+    // Keyboard users tab into copy that may be faded out: bring its scene to them.
+    blocks.forEach(function (block) {
+      block.addEventListener('focusin', function () { film.jumpTo(Number(block.dataset.section)); });
+    });
+  })();
+</script>
+</body>
+</html>

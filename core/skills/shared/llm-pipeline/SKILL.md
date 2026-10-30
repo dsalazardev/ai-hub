@@ -3,7 +3,7 @@ name: llm-pipeline
 description: "Use when wiring several LLM calls into a production flow: typed contracts between steps, a router/gateway so 429s, timeouts and outages fail over instead of taking you down, and cost control via caching, model tiers and abort caps. NOT single-prompt wording (that is `prompt-engineering`), NOT a model-driven tool loop (that is `building-agents`)."
 tags: [llm-orchestration, llm-gateway, fallbacks, prompt-caching, cost-control, litellm, reliability]
 recommends: [prompt-engineering, structured-extraction, building-agents, cost-tracking, agent-eval, rag, observability, parallel]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # llm-pipeline

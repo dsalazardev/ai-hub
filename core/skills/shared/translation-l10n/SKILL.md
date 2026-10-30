@@ -3,7 +3,7 @@ name: translation-l10n
 description: "Use when adding a second or Nth language to a web or app product — i18n plumbing (string extraction, ICU messages, locale routing), fixing broken plurals or date formats, and making a UI survive other languages through right-to-left layout and text expansion. NOT defining the brand's tone in one language (that is `brand-voice`)."
 tags: [i18n, l10n, internationalization, localization, translation, rtl, icu-messageformat]
 recommends: [brand-voice, nextjs, seo-geo, accessibility, content-engine]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Translation & localization

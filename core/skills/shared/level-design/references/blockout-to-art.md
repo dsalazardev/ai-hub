@@ -52,7 +52,7 @@ get gaps that feel wrong and cover that doesn't protect.
 | **Run speed** | Travel time between beats, breather length | Distance = speed × intended seconds |
 | **Weapon/threat effective range** | Arena sightline length, cover spacing | Long lanes for ranged, short for melee |
 
-Write these into `02-DOCS/wiki/stack/level-design.md` (see the SKILL.md grounding
+Write these into `docs/stack/level-design.md` (see the SKILL.md grounding
 section) so every level in the project shares one metrics block. When a metric
 is a *rule* of the game (how high the player jumps at all), that number is owned
 by `game-design`; level design *consumes* it here and builds space to fit.

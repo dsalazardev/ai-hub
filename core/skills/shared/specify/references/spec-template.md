@@ -1,6 +1,6 @@
 # Spec template
 
-Copy this into `02-DOCS/wiki/sdd/specs/<slug>.md`, fill it, and delete the
+Copy this into `specs/<feature>/spec.md`, fill it, and delete the
 italic guidance lines. Every line stays on WHAT and WHY — no framework, table,
 endpoint, library, file path, or algorithm. If you can't phrase it without
 naming the tech, it's a *point to clarify*, not a requirement.

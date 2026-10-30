@@ -1,10 +1,10 @@
 ---
 name: init
-description: "Use when starting from nothing or pointing ai-hub at an existing project — the front door. First asks one question — technical terms or analogies (analogies by default) — then discovers what the user wants to build or govern (any stack, or a non-code harness: company/ops, research, knowledge, content), writes the profile to 02-DOCS, and installs the skills discovery justified. NOT the scaffolder (that is `harness`), NOT a stack skill."
+description: "Use when starting from nothing or pointing ai-hub at an existing project — the front door. First asks one question — technical terms or analogies (analogies by default) — then discovers what the user wants to build or govern (any stack, or a non-code harness: company/ops, research, knowledge, content), writes the profile to docs, and installs the skills discovery justified. NOT the scaffolder (that is `harness`), NOT a stack skill."
 tags: [init, bootstrap, start, new, setup]
 recommends: [harness]
 profiles: [minimal, core, full]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # init — the ai-hub Front Door
@@ -15,8 +15,8 @@ otherwise — figures out what they actually want, installs the right skills, an
 
 Think of `init` as the receptionist: it learns who you are and what you need, writes that down where
 every other skill can read it, and walks you to the right room. The boundary is fixed: **`init`
-writes only the user-profile and decisions log under `02-DOCS/wiki/harness/`, plus the `CLAUDE.md`
-Knowledge-map link.** Every other `01-TOOLS/` + `02-DOCS/` scaffold belongs to `harness`.
+writes only the user-profile and decisions log under `docs/harness/`, plus the `CLAUDE.md`
+Knowledge-map link.** Every other `01-TOOLS/` + `docs/` scaffold belongs to `harness`.
 
 It is **domain-agnostic**. The thing being built or governed may be software on any stack, or a
 non-code harness — running a company, an ops desk, a research program, a knowledge base, a content
@@ -42,14 +42,14 @@ value only picks its register. Full rules and file formats → `references/accom
 
 **Step 2 — Persist immediately.** Before discovery, before any recommendation:
 
-- `02-DOCS/wiki/harness/user-profile.md` — the living profile (register, goals, context, constraints).
-- `02-DOCS/wiki/harness/decisions.md` — append-only. Entries are never edited or deleted.
+- `docs/harness/user-profile.md` — the living profile (register, goals, context, constraints).
+- `docs/harness/decisions.md` — append-only. Entries are never edited or deleted.
 - Root `CLAUDE.md` → a **short** `## Knowledge map` pointer: those two read-first entries plus a
-  "full index → `02-DOCS/wiki/index.md`" line. Keep it tiny; it loads on every turn, and every other
+  "full index → `docs/index.md`" line. Keep it tiny; it loads on every turn, and every other
   index entry belongs in the wiki index. Create `CLAUDE.md` if absent, additive only — never delete
   user content.
 
-Greenfield? Create just `02-DOCS/wiki/harness/` to hold those two files. That plus the link is
+Greenfield? Create just `docs/harness/` to hold those two files. That plus the link is
 everything `init` writes.
 
 **Step 3 — Propose the developer model.** ai-hub installs a `developer` subagent (the implementation
@@ -103,14 +103,14 @@ Establish **the state of the ground** and **what they want**.
 
 Detect greenfield vs brownfield; don't ask blindly. **Brownfield** if the workspace has subproject
 manifests (`package.json`, `pyproject.toml`, `pubspec.yaml`, `go.mod`, `Cargo.toml`), source files,
-legacy `XX-*` folders, or an existing `01-TOOLS/` / `02-DOCS/`. Detect the stack the way `harness`
+legacy `XX-*` folders, or an existing `01-TOOLS/` / `docs/`. Detect the stack the way `harness`
 SCAN does — a read-only walk ignoring `node_modules/`, `.venv/`, `.next/`, `.git/`, `dist/`,
 `build/`, `__pycache__/`, `.dart_tool/`. Summarize what you found and confirm it. **Greenfield** if
 the workspace is empty or holds only stray notes: interview from zero.
 
 Then the domain. Software (backend, frontend, mobile, agents) or a non-code harness (company/ops,
 research, knowledge, content)? Capture goals, audience, constraints, and any tools already in play.
-Record to `02-DOCS/wiki/harness/` as you go. Questionnaires for both cases →
+Record to `docs/harness/` as you go. Questionnaires for both cases →
 `references/discovery.md`. Ask in short batches; never dump every question at once.
 
 ### Phase 3 — INSTALL
@@ -175,7 +175,7 @@ So **invoke `harness` yourself, now**, as the last step of this phase. Say what 
 line, then do it:
 
 > "Tu perfil y lo que hemos hablado ya están guardados. Monto ahora el esqueleto del proyecto
-> (`01-TOOLS/` + `02-DOCS/`) leyendo todo lo que acabamos de decidir."
+> (`01-TOOLS/` + `docs/`) leyendo todo lo que acabamos de decidir."
 
 `harness` still owns *how* the scaffold is built — you are calling it, not reimplementing it. Do not
 hand-roll directories here.
@@ -196,7 +196,7 @@ never fails).
 
 ## See Also
 
-- `harness` — the scaffolder this hands off to; builds `01-TOOLS/` + `02-DOCS/` from the profile.
+- `harness` — the scaffolder this hands off to; builds `01-TOOLS/` + `docs/` from the profile.
 - `deployment` — invoked when the deploy decision above is actually made.
 - `secure-coding` — recommended whenever software is being shipped.
 - Stack skills (`fastapi`, `go`, `nextjs`, `flutter`, `building-agents`…) are recommended at runtime
@@ -206,4 +206,4 @@ never fails).
 
 ## Orientación (siempre)
 
-Habla con la voz de `orient`: frases cortas, una idea por frase, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `02-DOCS/wiki/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a `suggest` el "¿instalo la skill que falta?".)
+Habla con la voz de `orient`: frases cortas, una idea por frase, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `docs/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a `suggest` el "¿instalo la skill que falta?".)

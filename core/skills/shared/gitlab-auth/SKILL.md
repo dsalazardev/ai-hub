@@ -6,7 +6,7 @@ compatibility: Requires curl or Node and a GitLab personal access token with the
 metadata:
   author: ai-hub
   version: "1.0"
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # GitLab Auth — self-managed con Personal Access Token

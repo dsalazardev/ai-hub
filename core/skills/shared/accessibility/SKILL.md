@@ -3,7 +3,7 @@ name: accessibility
 description: "Use when making a web UI conform to WCAG 2.2 Level AA — axe-core or Lighthouse a11y violations, keyboard operability, focus management, ARIA roles/names/live regions, contrast, tap-target size. NOT palette or visual intent (that is `design`), NOT test-runner setup (that is `testing-web`), NOT LCP/page-speed (that is `performance`)."
 tags: [wcag, accessibility, a11y, aria, axe-core]
 recommends: [testing-web, e2e-testing, design, react, performance]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Accessibility — Ship WCAG 2.2 AA, not vibes

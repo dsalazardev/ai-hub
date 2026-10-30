@@ -3,7 +3,7 @@ name: git-workflow
 description: "Use when naming or scoping a branch, writing or fixing a commit message, picking the gitmoji for a commit, untangling history (rebase versus merge versus squash), or cutting a versioned release — the portable git-convention layer for any repo. Covers gitmoji + Conventional Commits, SemVer tags, branch hygiene, force-push safety and gh pr/release mechanics. NOT the land-it decision and pre-ship checklist (that is `ship`), NOT an isolated checkout before coding (that is `worktrees`), NOT CI/CD release automation (that is `deployment`)."
 tags: [git, version-control, conventional-commits, gitmoji, semver, pull-request]
 recommends: [ship, worktrees, deployment, github-actions]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # git-workflow — the grammar and hygiene of version control

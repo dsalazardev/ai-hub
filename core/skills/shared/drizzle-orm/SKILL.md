@@ -3,7 +3,7 @@ name: drizzle-orm
 description: "Use when modeling data or querying with Drizzle ORM in TypeScript — `pgTable` schema in `.ts`, type-safe select/insert/relational queries, `drizzle-kit` migrations. NOT Prisma Client or `schema.prisma` (that is `prisma-orm`), NOT ORM-agnostic migration strategy (that is `db-migrations`), NOT Postgres engine tuning or EXPLAIN (that is `postgresdb`)."
 tags: [drizzle, drizzle-orm, typescript-orm, drizzle-kit, sql, migrations, database, schema]
 recommends: [prisma-orm, postgresdb, db-migrations, neon, sqlite-turso, planetscale, supabase, typescript, sql]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Drizzle ORM — schema as code, type-safe queries, drizzle-kit migrations

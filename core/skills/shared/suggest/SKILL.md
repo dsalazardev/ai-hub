@@ -4,7 +4,7 @@ description: "Always-on. Use whenever the current user turn would clearly benefi
 tags: [suggest, detect, install, meta, always-on]
 recommends: []
 profiles: [minimal, core, full]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # ai-hub-suggest — the always-on layer
@@ -28,7 +28,7 @@ about* building something is still this lane; only asking to build authorises it
 intent is ambiguous, ask one question and stay here — ambiguity slows the lane, never raises it.
 
 **You choose the lane; never hand that choice to the person.** Simple → **FTD**: one feature document
-in `02-DOCS` (intent, scope, checklist, evidence, next step), tasks checked off against observed proof.
+in `docs` (intent, scope, checklist, evidence, next step), tasks checked off against observed proof.
 Big, or decisions that affect each other → **SDD**: enter the chain; the person approves the spec and
 clarify, then picks manual or autopilot. Say which and why in one line; switch if asked.
 → `../ftd/SKILL.md` · `../sdd/SKILL.md`.
@@ -106,7 +106,7 @@ Offer once per session. Never mention any of it when the harness is healthy.
 
 Before handling the first request of a session, check the workspace:
 
-- No `02-DOCS/wiki/harness/user-profile.md` **and** no `.ai-hub/.no-harness` → invoke `init` first
+- No `docs/harness/user-profile.md` **and** no `.ai-hub/.no-harness` → invoke `init` first
   (one question: technical terms or analogies) before the task.
 - A clone (`.ai-hubrc.json` committed) is not first contact: ask that once, in one line, then continue
   with their task; with `.ai-hub/.profile-offered`, never again.
@@ -120,4 +120,4 @@ Define a term at first use; never give a command, flag or path without saying wh
 
 ## Orientación (siempre)
 
-Habla con la voz de `orient`: frases cortas, una idea por frase, al grano, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `02-DOCS/wiki/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a §2 el "¿instalo la skill que falta?".)
+Habla con la voz de `orient`: frases cortas, una idea por frase, al grano, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `docs/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a §2 el "¿instalo la skill que falta?".)

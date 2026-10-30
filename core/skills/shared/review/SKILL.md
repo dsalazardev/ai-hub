@@ -1,11 +1,11 @@
 ---
 name: review
-description: "Use when a green diff needs adversarial judgment in the ai-hub Spec-Kit chain, between verify and ship — give a review keyed to the spec/plan/constitution in 02-DOCS/wiki/sdd/, or receive one and verify each comment before agreeing. NOT running lint/type/tests (that is `verify`), NOT the spec-less standalone pass (that is `code-review`), NOT merging (that is `ship`)."
+description: "Use when a green diff needs adversarial judgment in the ai-hub Spec-Kit chain, between verify and ship — give a review keyed to the spec/plan/constitution in docs/sdd/, or receive one and verify each comment before agreeing. NOT running lint/type/tests (that is `verify`), NOT the spec-less standalone pass (that is `code-review`), NOT merging (that is `ship`)."
 tags: [sdd, review, code-review]
 recommends: [ship]
 profiles: [full]
 runtime: false
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # Review — adversarial code review, both directions
@@ -23,9 +23,9 @@ The discipline is the same in both directions: **every finding and every rebutta
 
 ## Read these first
 
-1. `02-DOCS/wiki/sdd/specs/<slug>.md` and `02-DOCS/wiki/sdd/plans/<slug>.md` — what the diff was *supposed* to do. A review with no spec is a review of vibes.
-2. `02-DOCS/wiki/sdd/constitution.md` — the project's non-negotiables (stack canon, quality bars, conventions). Constitution violations are findings even when the code "works".
-3. `02-DOCS/wiki/harness/user-profile.md` — `technical_level`, the register (see "How a review reads" below).
+1. `specs/<feature>/spec.md` and `specs/<feature>/plan.md` — what the diff was *supposed* to do. A review with no spec is a review of vibes.
+2. `.specify/memory/constitution.md` — the project's non-negotiables (stack canon, quality bars, conventions). Constitution violations are findings even when the code "works".
+3. `docs/harness/user-profile.md` — `technical_level`, the register (see "How a review reads" below).
 
 If there is no spec/plan (someone jumped straight to code), say so and review against the constitution + the diff's own stated intent. Don't pretend a spec exists.
 
@@ -142,7 +142,7 @@ whole panel.
 1. **The task contract** — the original request **plus every scope change a human explicitly
    approved since.** Not just the first message: without the approved changes a legitimate scope
    revision reads as a spec gap and you get a confident false positive.
-2. **The approved spec** (`02-DOCS/wiki/sdd/specs/<slug>.md`).
+2. **The approved spec** (`specs/<feature>/spec.md`).
 3. **The exact source state** — commit SHA, or a tree hash when git is absent. A verdict belongs to
    the state that was reviewed, not to the project.
 4. **The entry point** — the one command that reruns the checks.
@@ -271,22 +271,22 @@ When you've processed the review, summarize for the reviewer (and the decisions 
 
 ## How a review reads
 
-Read `technical_level` from `02-DOCS/wiki/harness/user-profile.md`. It changes the words, never the rigor — every reader gets the same passes and the same evidence bar. No profile → use analogies and proceed; don't stall a review to ask.
+Read `technical_level` from `docs/harness/user-profile.md`. It changes the words, never the rigor — every reader gets the same passes and the same evidence bar. No profile → use analogies and proceed; don't stall a review to ask.
 
 In the `orient` voice: the verdict first, then the blocker list — e.g. `CHANGES REQUESTED: 1 blocker (auth, documents.py:42), 1 nit. Fix the auth scope and re-run verify.` Each finding keeps its full format (where/why/repro/fix) and names its defect class (IDOR, N+1, TOCTOU). For a `non-technical` author, translate the impact ("any logged-in person could read everyone else's documents").
 
 ## Model tier — `heavy` (opt-in routing)
 
-This phase's default model tier is **`heavy`** — adversarial diff reading is where the strongest model pays off most. Routing is **off** unless `models.enabled: true` in `02-DOCS/wiki/sdd/config.yaml`. When on: resolve this phase's tier (`models.overrides` wins over `models.phases`), map it to a model via `models.tiers`, and apply per `../sdd/references/model-routing.md` — announce the switch in one line when it differs from the session model, and dispatch any `Task`/`parallel` subagents on that model. Routing off or no profile → honor the session model silently. Never fake a switch a tool can't make; skip routing on a one-line change.
+This phase's default model tier is **`heavy`** — adversarial diff reading is where the strongest model pays off most. Routing is **off** unless `models.enabled: true` in `.specify/config.yaml`. When on: resolve this phase's tier (`models.overrides` wins over `models.phases`), map it to a model via `models.tiers`, and apply per `../sdd/references/model-routing.md` — announce the switch in one line when it differs from the session model, and dispatch any `Task`/`parallel` subagents on that model. Routing off or no profile → honor the session model silently. Never fake a switch a tool can't make; skip routing on a one-line change.
 
 ## Where this writes
 
 Review is mostly a conversation, but two artifacts persist into the harness wiki so the knowledge model grows:
 
-- **Accepted/declined findings** of consequence → append to `02-DOCS/wiki/sdd/decisions.md` (e.g. "declined NPE finding on documents.py:42 — guarded by require_auth; added regression test"). This is the same append-only log `implement` writes to.
-- If a finding reveals a **missing constitution rule** (a defect class the project keeps hitting), propose adding it to `02-DOCS/wiki/sdd/constitution.md` so the next review catches it earlier.
+- **Accepted/declined findings** of consequence → append to `docs/sdd/decisions.md` (e.g. "declined NPE finding on documents.py:42 — guarded by require_auth; added regression test"). This is the same append-only log `implement` writes to.
+- If a finding reveals a **missing constitution rule** (a defect class the project keeps hitting), propose adding it to `.specify/memory/constitution.md` so the next review catches it earlier.
 
-Index both in `02-DOCS/wiki/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer) under the `sdd/` topic — the harness owns that map; this skill just keeps its rows honest.
+Index both in `docs/index.md` (the Knowledge map; root `CLAUDE.md` keeps only a short pointer) under the `sdd/` topic — the harness owns that map; this skill just keeps its rows honest.
 
 ## Result envelope
 
@@ -297,7 +297,7 @@ interpreting prose (contract: `../sdd/SKILL.md`):
 {
   "status": "complete|blocked|failed",
   "executive_summary": "Adversarial review against spec/plan/constitution; verdict and blocking findings.",
-  "artifact": "02-DOCS/wiki/sdd/reviews/<slug>.md",
+  "artifact": "docs/sdd/reviews/<slug>.md",
   "next_recommended": "ship",
   "risk": "low|medium|high",
   "skill_resolution": {

@@ -12,12 +12,12 @@ import { seedFixture } from './fixtures.js';
 const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url));
 
 describe('real catalog', () => {
-  it('validates 35 agents, 163 project skills and 17 Spec Kit commands', async () => {
+  it('validates 35 agents, 261 project skills and 17 Spec Kit commands', async () => {
     const context = await loadManifestContext(REPO_ROOT);
     const speckitCommands = [...new Set(context.engine.commands.map((command) => command.speckit))];
 
     expect(context.manifest.agents.publish).toHaveLength(35);
-    expect(context.manifest.skills.publish).toHaveLength(163);
+    expect(context.manifest.skills.publish).toHaveLength(261);
     expect(speckitCommands).toHaveLength(17);
 
     for (const agent of context.manifest.agents.publish) {

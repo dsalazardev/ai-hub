@@ -1,10 +1,10 @@
 ---
 name: ftd
-description: "Use for ordinary authorised change — the default lane once the decisor has ruled out a question and not selected the chain. Keeps one feature document per feature in 02-DOCS holding intent, scope, checklist, evidence and next step, checks tasks off only against observed proof, and asks whether to branch before the work writes code. NOT the ten-phase chain (that is `sdd`), NOT the classification itself (that is the decisor in `suggest`), NOT a request for information, which writes nothing."
+description: "Use for ordinary authorised change — the default lane once the decisor has ruled out a question and not selected the chain. Keeps one feature document per feature in docs holding intent, scope, checklist, evidence and next step, checks tasks off only against observed proof, and asks whether to branch before the work writes code. NOT the ten-phase chain (that is `sdd`), NOT the classification itself (that is the decisor in `suggest`), NOT a request for information, which writes nothing."
 tags: [ftd, lane, default, feature-document, evidence]
 recommends: [worktrees, debug, verify]
 profiles: [minimal, core, full]
-origin: ai-hub
+origin: dsalazardev
 ---
 
 # FTD — Fast-Track Development
@@ -28,7 +28,7 @@ through ten phases. This lane is that principle finally implemented, not a new i
 
 ## The feature document
 
-One per feature, in the workspace wiki under `02-DOCS/wiki/ftd/<slug>.md`. **Never inside the code
+One per feature, in the workspace wiki under `docs/ftd/<slug>.md`. **Never inside the code
 repository**: whoever clones it should get code, not somebody else's notes in progress.
 
 It is written **before the first change**, not after, and it holds exactly this:
@@ -94,7 +94,7 @@ and never because the work turned out to be big.
 | --- | --- |
 | Skip the document because the change is small | The document is what survives an interruption. Write it, keep it short. |
 | Check a task off because you believe it works | Observed proof or it is not done (P10). Record the check you could not run. |
-| Write the document into the code repository | It belongs in `02-DOCS`. A clone should get code, not notes. |
+| Write the document into the code repository | It belongs in `docs`. A clone should get code, not notes. |
 | Open a worktree "to be safe" | That is the chain's ceremony arriving through the back door (P7). |
 | Escalate to the chain because the change is large | Size never selects it. Only unresolved ambiguity that artifacts would settle. |
 | Produce a spec, plan or task artifact here | Those are the chain's. This lane has one document. |
@@ -108,4 +108,4 @@ and never because the work turned out to be big.
 
 ## Orientación (siempre)
 
-Habla con la voz de `orient`: frases cortas, una idea por frase, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `02-DOCS/wiki/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a `suggest` el "¿instalo la skill que falta?".)
+Habla con la voz de `orient`: frases cortas, una idea por frase, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `docs/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a `suggest` el "¿instalo la skill que falta?".)
