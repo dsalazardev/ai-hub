@@ -22,6 +22,7 @@ import { cmdWorktrees } from './worktrees.js';
 import { cliVersion } from './onboarding.js';
 import { sourceCheckout } from './source.js';
 import type { CliContext, CliIO, CommandHandler, ParsedArgs } from './types.js';
+import type { AssistantPrompts } from './assistant.js';
 import { processIO } from './types.js';
 import { defaultRunner, type ProcessRunner } from '../speckit/runner.js';
 
@@ -164,23 +165,31 @@ export function printHelp(io: CliIO): void {
   io.out('Compatibilidad: verify, judge (fuera del catálogo).');
 }
 
+export interface ContextExtras {
+  /** TTY inyectable para tests (design D3); ausente = decidir por process.stdout/stdin. */
+  interactive?: boolean;
+  /** Prompts del asistente (design D13); ausente = adaptador clack, sólo con TTY real. */
+  assistantPrompts?: AssistantPrompts;
+}
+
 export async function createContext(
   cwd: string,
   io: CliIO,
   exec: ProcessRunner = defaultRunner,
+  extras: ContextExtras = {},
 ): Promise<CliContext> {
   try {
     const location = resolveAiHubDir(cwd);
-    return { cwd, root: location.dir, source: location.source, io, exec };
+    return { cwd, root: location.dir, source: location.source, io, exec, ...extras };
   } catch (error) {
     if (error instanceof AiHubDirNotFoundError) {
-      return { cwd, root: cwd, source: null, io, exec };
+      return { cwd, root: cwd, source: null, io, exec, ...extras };
     }
     throw error;
   }
 }
 
-export interface RunCliOptions {
+export interface RunCliOptions extends ContextExtras {
   cwd?: string;
   io?: CliIO;
   exec?: ProcessRunner;
@@ -190,7 +199,10 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
   const io = options.io ?? processIO;
   const cwd = options.cwd ?? process.cwd();
   const [command, ...rest] = argv;
-  const ctx = await createContext(cwd, io, options.exec);
+  const ctx = await createContext(cwd, io, options.exec, {
+    interactive: options.interactive,
+    assistantPrompts: options.assistantPrompts,
+  });
 
   if (!command) {
     printHelp(io);

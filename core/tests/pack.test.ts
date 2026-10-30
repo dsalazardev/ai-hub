@@ -35,7 +35,7 @@ describe('published package', () => {
     expect(paths).toEqual(
       expect.arrayContaining(RUBRICS.map((file) => `rules/skill-quality/${file}`)),
     );
-    expect(pkg.entryCount).toBe(1882);
+    expect(pkg.entryCount).toBe(1888);
     expect(paths.filter((file) => file.startsWith('skills/shared/speckit-'))).toEqual([]);
 
     for (const file of RUBRICS) {

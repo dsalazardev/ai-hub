@@ -34,6 +34,24 @@ Para el mínimo de 0.1.x: `init --preset-only --yes`. Para el catálogo completo
 
 `init` detecta el preset desde `package.json`, `angular.json`, `pyproject.toml` o `requirements.txt`. Si dos presets empatan, exige `--preset <id>`. El plan tiene un hash SHA-256 determinista.
 
+### Asistente de onboarding (0.7.0)
+
+`ai-hub init` **sin flags** en una terminal real (TTY en stdout y stdin, fuera del checkout del motor) abre un asistente interactivo de `@clack/prompts`. El gate vive al inicio de `cmdInit`: con cualquier flag, con la salida pipeada o en CI, ni una línea del asistente se ejecuta y la salida es byte a byte la del flujo de flags.
+
+El asistente es una **generadora de flags**, no un camino paralelo: cada decisión se resuelve a los flags existentes (`--targets`, `--preset`, `--full`/`--preset-only`/`--exclude`, `--script`) y el plan lo construye el mismo `planBodyFor` — el mismo input por el asistente y por flags produce el mismo plan y el mismo hash (test permanente en `core/tests/assistant.test.ts`). Pasos:
+
+1. **Destinos** — multi-select con preselección por detección (`claude --version`, etc.).
+2. **Preset** — el detectado; si dos empatan, elección explícita (nunca adivina).
+3. **Perfil** — `full` / `preset-only` / `custom` con excludes guiados.
+4. **Script** — `sh`/`ps` informando el shell resuelto para `sh`.
+5. **Entorno** — verificación de herramientas (informativa: si falta una, nombra cómo instalarla y loguearse; el login jamás se verifica) y preflight de Spec Kit (fail-closed: si falla, exit 2 antes de escribir).
+6. **Idea del proyecto** — opcional, saltable.
+7. **Plan** — el mismo JSON de `--dry-run` con el entorno real, y confirmación. Al confirmar aplica por el mismo camino que `--yes`; al cancelar en cualquier paso no se escribe un byte.
+
+Con idea, la confirmación escribe `backlog/seed.md` (la idea textual, la fecha y un apuntador) y `backlog/pre-prompt.md`, una plantilla bilingüe (español/inglés) que instruye al **agente del cliente** — no al CLI — a convertir la idea en items de backlog con criterio de aceptación verificable, priorizarlos y arrancar con `/speckit.constitution` y `/speckit-assess-intake`. La semilla es un activo versionable del proyecto: no entra al hash del plan, `sync` no la lockea y el `.gitignore` generado no la ignora. `doctor` la reporta como aviso informativo (`[OK] backlog: …`), nunca como gate.
+
+`@clack/prompts` ^1.8.1 es la única dependencia nueva: JS puro sin binarios nativos, 166,3 KB (170.333 bytes) de árbol en `node_modules`; el tarball publicado no incluye `node_modules` y crece sólo por los archivos nuevos de `dist`.
+
 ### Contrato de instalación (0.3.0)
 
 Una instalación nueva usa `full` por defecto: **261 skills de proyecto + 17 comandos Spec Kit**, 39 agentes, las 6 reglas universales, las reglas propias del preset y la regla generada `ai-hub-speckit`. Los 17 comandos los provee Spec Kit en cuatro destinos; AI-Hub no proyecta sus cuerpos.
@@ -59,7 +77,7 @@ Cifras medidas en copias temporales con el CLI compilado y `uvx` real (`core/tes
 
 ### Empaquetado y medición
 
-Las 4 rúbricas viajan en `core/rules/skill-quality/` porque `core/package.json.files` incluye `rules`; un test SHA-256 exige que la copia del taller sea idéntica. `npm pack --dry-run` desde `core` reporta 1.295 entradas y ningún `skills/shared/speckit-*`.
+Las 4 rúbricas viajan en `core/rules/skill-quality/` porque `core/package.json.files` incluye `rules`; un test SHA-256 exige que la copia del taller sea idéntica. `npm pack --dry-run` desde `core` reporta 1.888 entradas y ningún `skills/shared/speckit-*`.
 
 No hay `postinstall`: la instalación sólo escribe cuando se ejecuta `init`/`install`. `prepublishOnly` ejecuta `build`, `manifest:build` y `npm test` (proyectos `unit` e `integration`), que incluye pruebas con Spec Kit real: la máquina que publica necesita `uv` y `bash`. Los tests de git se omiten, nombrando el binario, si `git` no se puede ejecutar.
 

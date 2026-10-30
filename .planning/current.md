@@ -1,43 +1,52 @@
-# Estado de la sesión — refuter-panel aplicado (2026-10-29)
+# Estado de la sesión — tui-onboarding aplicado (2026-10-30)
 
-**Change activo:** `refuter-panel` — **31/31 tareas aplicadas y verificadas** (0.6.0).
-Anterior: `catalogo-completo` (0.5.0) aplicado y archivado como
-`2026-10-29-catalogo-completo`.
+**Change activo:** `tui-onboarding` — **24/24 tareas aplicadas y verificadas** (0.7.0).
+Anterior: `refuter-panel` (0.6.0) aplicado; `catalogo-completo` (0.5.0) archivado.
 
 ## Líneas de cierre
 
-1. **Tareas marcadas:** 31/31 en `openspec/changes/refuter-panel/tasks.md`, cada una con
-   su sonda ejecutada y pegada en `.planning/impl_refuter-panel.md`.
-2. **Invariante de roles:** 8 → **9** (rol `refuter`, read-only, sin comandos; schema
-   minItems/maxItems 9 + campo `read_only`; `ENGINE_COUNTS.roles` 9; regla en
-   `crossValidate` que rechaza write-permissions en un rol read-only).
-3. **Agentes:** 35 → **39** (`refuter-correctness`, `refuter-security`, `refuter-tests`,
-   `finding-verifier` en `core/agents/` y `manifest.yaml` `agents.publish`; validación de
-   `role` contra `engine.roles`; 29 declaraciones legacy retiradas).
-4. **Cifras full re-medidas:** full **6853** (+16), presetOnly 40, customNoRubrics 6833,
-   angularExpress 6868 — medidas en consumidor temporal con CLI 0.6.0 y uvx real;
-   `install-counts.json` actualizado (agents 39, package 0.6.0).
-5. **Veredicto del panel:** REFUTED / NOT-REFUTED — sólo un blocker o should-fix
-   `CONFIRMED` produce `REFUTED`; `NOT-REFUTED` no es aprobación. Por hallazgo, el
-   verifier emite CONFIRMED / REFUTED / UNPROVEN y sólo CONFIRMED bloquea. Despacho
-   documentado (D3), no cableado: sin exit_effects, sin Spec Kit.
-6. **Tokens upstream en los cuerpos:** **0** (brand.test 4/4 con `core/agents` en
-   SCAN_TREES; un token upstream reintroducido falla el gate por aserción).
+1. **Tareas marcadas:** 24/24 en `openspec/changes/tui-onboarding/tasks.md`, cada una con
+   su sonda ejecutada y pegada en `.planning/impl_tui-onboarding.md`.
+2. **Sonda de mismo hash:** el mismo input por asistente (prompts inyectados) y por flags
+   (`parseArgs` sobre el argv equivalente) produce el mismo plan body y el mismo sha256 —
+   full `118ac9b6…dd25d` y custom `e6736e29…3d742` por ambos caminos; el apply real
+   repite `db5f7d5f…629a` entre corridas. Test permanente en `core/tests/assistant.test.ts`.
+3. **Diff pipeado:** vacío byte a byte en las 5 comparaciones contra la línea base 1.1
+   (`init` bare, `--dry-run`, `--preset python --dry-run`, `--yes --no-speckit`, árbol de
+   8.504 archivos) — con el gate instalado, el flujo no interactivo queda intacto.
+4. **`backlog/seed.md` contiene:** la idea del usuario **textual** (verbatim, el arnés no
+   añade requisitos), la fecha del registro (YYYY-MM-DD) y el apuntador a
+   `backlog/pre-prompt.md` (plantilla bilingüe es/en que instruye al agente del cliente:
+   items con criterio verificable, priorización, `/speckit.constitution` y
+   `/speckit-assess-intake` con invocación canónica por destino).
+5. **Tarball:** 1.882 → **1.888 entradas** (+6: `assistant`, `assistant-clack`,
+   `preprompt` × `.js`/`.d.ts`); unpacked 12.490.323 → **12.520.573 bytes** (+30.250,
+   sólo `dist`). La dependencia `@clack/prompts` ^1.8.1 no viaja en el tarball: su árbol
+   en `node_modules` mide 170.333 bytes (166,3 KB), JS puro sin binarios nativos.
+6. **Prueba manual pendiente (TUI real, del usuario):** en una terminal real,
+   `node core\dist\bin\ai-hub.js init` sin flags en un repo consumidor vacío — checklist
+   completo en la sección "Prueba manual pendiente" del impl.
 
-## Verificación final (salidas reales en impl_refuter-panel.md)
+## Verificación final (salidas reales en impl_tui-onboarding.md)
 
-- Suite completa: 27 archivos, **292 pasados / 1 skipped**, exit 0; typecheck y build
-  en verde (0.6.0).
-- Doctor del taller: sano — 9/9 roles, 39 agentes, exit 0.
-- Consumidor temporal full: plan = instalado (6853 = 6853), doctor sano, drift 0, los 4
-  refuters en los 4 destinos de agente (cursor sin superficie de agentes, 0 archivos).
-- brand.test 4/4.
+- Suite completa: 28 archivos, **321 pasados / 1 skipped (preexistente)**, exit 0 —
+  verificados por proyecto en secuencia (`unit`: 204+1 skipped; `integration`: 117)
+  porque `npm test` en paralelo sólo fallaba por timeouts de saturación de I/O (cero
+  AssertionErrors; desviación documentada). Typecheck, build (0.7.0) y `manifest:check`
+  en verde.
+- Doctor del taller: sano, exit 0, todos `[OK]`, sin cambios en los checks existentes
+  (el aviso `backlog` es exclusivo de la rama de instalación).
+- Consumidor temporal (runner real): asistente scriptado aplica el plan, escribe
+  `backlog/seed.md` con la idea verbatim y `backlog/pre-prompt.md` bilingüe; doctor sano
+  con y sin `backlog/` (`[OK] backlog: semilla presente` / aviso informativo, 0 FAILs);
+  `sync.lock.json` y el `.gitignore` generado no conocen `backlog/`; cancelación en el
+  primer paso → 0 archivos.
 
 ## Pendientes
 
-- Publicar 0.6.0 en npm (fuera de sesión).
-- Archivar `refuter-panel` (`/opsx-archive`): los delta specs ya están rebasados
-  (261 skills, 39 agentes, cifras medidas); el sync llevará 9 roles y los 4 requisitos
-  ADDED a las specs principales.
-- Drift preexistente observado (no causado por este change, fuera de alcance):
-  `preset-system` cita 174 skills y 4.642/4.657 destinos en escenarios antiguos.
+- Publicar 0.7.0 en npm (fuera de sesión; condicionado a la revisión del diff).
+- Archivar `tui-onboarding` (`/opsx-archive`): delta specs de `interactive-onboarding`,
+  `backlog-seed` y `dev-cli` a las specs principales.
+- Prueba manual de la TUI real (TTY) — comando y checklist en el impl.
+- Drift preexistente de `preset-system` (cita 174 skills y 4.642/4.657 destinos en
+  escenarios antiguos) — candidato a change de limpieza, fuera de alcance.

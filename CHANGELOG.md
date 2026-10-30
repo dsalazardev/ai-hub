@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.7.0 — Asistente de onboarding interactivo y semilla de backlog (2026-10-30)
+
+### Añadido
+
+- **Asistente TUI de `ai-hub init`:** `init` sin flags en una terminal real (TTY en stdout y stdin, fuera del checkout del motor) abre un asistente de `@clack/prompts`. El gate vive al inicio de `cmdInit`, antes de `resolveSelection`: con cualquier flag, pipe o CI ni una línea del asistente se ejecuta y la salida pipeada es byte a byte la de 0.6.0. El asistente es una generadora de flags, no un camino paralelo: cada decisión se resuelve a los flags existentes (`--targets`, `--preset`, `--full`/`--preset-only`/`--exclude`, `--script`) y el plan lo construye el mismo `planBodyFor` — el mismo input por asistente y por flags da el mismo plan y el mismo hash (sonda permanente en `core/tests/assistant.test.ts`). Pasos: (1) destinos multi-select con preselección por detección (`<comando> --version`), (2) preset detectado con empate→elección explícita, (3) perfil full/preset-only/custom con excludes guiados, (4) script sh/ps informando el shell resuelto, (5) entorno + verificación de herramientas (informativa: el login jamás se verifica; el preflight de Spec Kit sigue fail-closed con exit 2 antes de escribir), (6) idea del proyecto opcional, (7) plan — el mismo JSON de `--dry-run` — y confirmación. Cancelar en cualquier paso no escribe un byte.
+- **Semilla de backlog y pre-prompt:** con idea, la confirmación escribe `backlog/seed.md` (idea textual + fecha + apuntador) y `backlog/pre-prompt.md` (plantilla bilingüe del motor que instruye al agente del cliente — no al CLI — a convertir la idea en items con criterio de aceptación verificable, priorizarlos y arrancar con `/speckit.constitution` y `/speckit-assess-intake`). La semilla es un activo versionable del proyecto: fuera del plan body (el hash no cambia con la idea), fuera del lock, `sync` no la toca y el `.gitignore` generado no la ignora.
+- **Aviso de doctor:** en instalación, `doctor` informa si la semilla está presente (`[OK] backlog: semilla presente…`) o ausente; informativo como el aviso de la constitución, nunca un gate.
+
+### Dependencia
+
+- `@clack/prompts` ^1.8.1, única dependencia nueva: JS puro sin binarios nativos. Su árbol en `node_modules` mide **170.333 bytes (166,3 KB)** (`@clack/prompts` 93.683 + `@clack/core` 55.634 + `sisteransi`, `fast-wrap-ansi`, `fast-string-width`); la estimación «~200 KB unpacked» de la propuesta quedó en 166,3 KB medidos. El tarball publicado no incluye `node_modules`: crece sólo por los 6 archivos nuevos de `dist` (`assistant`, `assistant-clack`, `preprompt` × `.js`/`.d.ts`).
+
+### Cifras medidas
+
+Sin cambios respecto a 0.6.0 — la semilla y el pre-prompt no son destinos ni entran al lock; la fórmula del plan las sigue reproduciendo (`core/tests/fixtures/install-counts.json`):
+
+| Instalación | Destinos en `sync.lock.json` |
+|---|---|
+| `init --yes` (`generic-ts`, full) | 6.853 |
+| `init --yes --preset-only` | 40 |
+| `init --yes --exclude rule:skill-quality` | 6.833 |
+| `init --yes --preset angular-express` | 6.868 |
+
+`full` instala 261 skills de proyecto + 17 comandos Spec Kit, 39 agentes y 6 reglas universales.
+
+### Empaquetado
+
+- `core/package.json` en `0.7.0`. Tarball: 1.882 → 1.888 entradas; unpacked 12.490.323 → 12.520.573 bytes (+30.250, sólo `dist`). No se publica en npm desde esta sesión; el release queda condicionado a la revisión del diff.
+
 ## 0.6.0 — Rol refuter y panel de refutación adversarial (2026-10-29)
 
 ### Añadido

@@ -262,6 +262,16 @@ export async function diagnose(ctx: CliContext): Promise<DoctorReport> {
         }
       }
       add('hooks', missingHooks.length === 0, missingHooks.length === 0 ? 'superficies presentes' : missingHooks.join(', '));
+      // Aviso del backlog (design D11): informativo como el de la constitución
+      // (speckit/doctor.ts), nunca un gate. La semilla es un activo opcional del
+      // proyecto: su ausencia no puede fallar doctor.
+      add(
+        'backlog',
+        true,
+        (await exists(path.join(ctx.root, 'backlog', 'seed.md')))
+          ? 'semilla presente; ejecuta el pre-prompt de backlog/pre-prompt.md en tu agente'
+          : 'sin semilla de backlog (opcional: el asistente de init la escribe con una idea)',
+      );
     }
 
     const reserved = await scanReservedNamespace();

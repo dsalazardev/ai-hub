@@ -25,15 +25,18 @@ async function currentSection(): Promise<{ version: string; date: string; body: 
   return { version: pkg.version, date: heading[1], body: changelog.slice(start, next < 0 ? undefined : next) };
 }
 
-describe('release 0.6.0 (8.1)', () => {
-  it('bumps the package and names the contracts that change in 0.6.0', async () => {
+describe('release 0.7.0 (8.1)', () => {
+  it('bumps the package and names the contracts that change in 0.7.0', async () => {
     const section = await currentSection();
-    expect(section.version).toBe('0.6.0');
-    expect(section.body).toMatch(/9 roles/);
-    expect(section.body).toMatch(/39 agentes/);
-    expect(section.body).toContain('read_only');
-    expect(section.body).toMatch(/REFUTED \/ NOT-REFUTED/);
-    expect(section.body).toMatch(/CONFIRMED/);
+    expect(section.version).toBe('0.7.0');
+    expect(section.body).toMatch(/asistente/i);
+    expect(section.body).toMatch(/generadora de flags/);
+    expect(section.body).toMatch(/mismo hash/);
+    expect(section.body).toContain('backlog/seed.md');
+    expect(section.body).toContain('backlog/pre-prompt.md');
+    expect(section.body).toContain('@clack/prompts');
+    expect(section.body).toContain('170.333 bytes (166,3 KB)');
+    expect(section.body).toMatch(/nunca un gate/);
   });
 
   it('publishes the measured figures, not computed ones', async () => {

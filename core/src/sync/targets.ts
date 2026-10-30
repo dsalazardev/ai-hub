@@ -91,6 +91,45 @@ export function isToolId(value: string): value is ToolId {
   return (TOOL_IDS as readonly string[]).includes(value);
 }
 
+/**
+ * Presencia e instrucciones por destino (design D7). El probe sólo pregunta por el
+ * binario (`<probeCommand> --version` vía ctx.exec); el login JAMÁS se verifica ni
+ * se lee auth: el hint se imprime y las credenciales viven en las herramientas.
+ */
+export interface ToolHints {
+  probeCommand: string;
+  installHint: string;
+  loginHint: string;
+}
+
+export const TOOL_HINTS: Record<ToolId, ToolHints> = {
+  claude: {
+    probeCommand: 'claude',
+    installHint: 'npm install -g @anthropic-ai/claude-code',
+    loginHint: 'arranca claude y sigue el login',
+  },
+  opencode: {
+    probeCommand: 'opencode',
+    installHint: 'npm install -g opencode-ai',
+    loginHint: 'opencode auth login',
+  },
+  pi: {
+    probeCommand: 'pi',
+    installHint: 'instala el agente Pi siguiendo la documentación de tu distribución',
+    loginHint: 'haz login en tu agente Pi como indique su documentación',
+  },
+  cursor: {
+    probeCommand: 'cursor-agent',
+    installHint: 'instala Cursor CLI (cursor-agent) siguiendo la documentación de Cursor',
+    loginHint: 'cursor-agent login (usa la sesión de tu instalación de Cursor)',
+  },
+  copilot: {
+    probeCommand: 'gh',
+    installHint: 'instala GitHub CLI y luego gh extension install github/gh-copilot',
+    loginHint: 'gh auth login',
+  },
+};
+
 export function assertToolIds(values: string[]): ToolId[] {
   const invalid = values.filter((value) => !isToolId(value));
   if (invalid.length > 0) {

@@ -18,6 +18,7 @@ import { runSync } from '../sync/sync.js';
 import { TOOL_IDS, assertToolIds, TARGETS } from '../sync/targets.js';
 import { sha256 } from '../sync/lock.js';
 import { isEngineCheckout } from '../source-checkout.js';
+import { assertExclusions, isInteractiveRequest, runAssistantInit } from './assistant.js';
 import {
   ENGINE_AGENTS_DIR,
   ENGINE_RULES_DIR,
@@ -118,6 +119,16 @@ function parseScriptFlag(
   ctx: CliContext,
   command: 'init' | 'install',
 ): SpeckitScript | undefined | null {
+  try {
+    return scriptFromArgs(args, command);
+  } catch (error) {
+    ctx.io.err((error as Error).message);
+    return null;
+  }
+}
+
+/** Validación pura de `--script`; lanza con el mensaje canónico. Compartida por init e install. */
+function scriptFromArgs(args: ParsedArgs, command: 'init' | 'install'): SpeckitScript | undefined {
   if (!('script' in args.flags)) {
     return undefined;
   }
@@ -125,11 +136,10 @@ function parseScriptFlag(
   if (value === 'sh' || value === 'ps') {
     return value;
   }
-  ctx.io.err(
+  throw new Error(
     `--script acepta sh o ps${value === null ? ' y necesita un valor' : ` (recibido: ${value})`}; ` +
       `ejecuta ai-hub ${command} --script sh o ai-hub ${command} --script ps`,
   );
-  return null;
 }
 
 function speckitSettingsFor(
@@ -216,7 +226,7 @@ async function exists(file: string): Promise<boolean> {
   );
 }
 
-interface SelectionSpec {
+export interface SelectionSpec {
   modes: { skills: SelectionMode; agents: SelectionMode; rules: SelectionMode };
   skills: string[];
   agents: string[];
@@ -232,10 +242,13 @@ function parseExclusions(args: ParsedArgs): {
   agents: Set<string>;
   rules: Set<string>;
 } {
+  const items = flagList(args, 'exclude');
+  // Regla compartida con el asistente (R1): un exclude válido en flags lo es en la TUI.
+  assertExclusions(items);
   const skills = new Set<string>();
   const agents = new Set<string>();
   const rules = new Set<string>();
-  for (const item of flagList(args, 'exclude')) {
+  for (const item of items) {
     const separator = item.indexOf(':');
     const kind = separator >= 0 ? item.slice(0, separator) : 'skill';
     const id = separator >= 0 ? item.slice(separator + 1) : item;
@@ -245,9 +258,6 @@ function parseExclusions(args: ParsedArgs): {
     if (kind === 'agent') {
       agents.add(id);
     } else if (kind === 'rule') {
-      if (id === 'core' || id === 'preflight') {
-        throw new Error(`la regla base "${id}" no se puede excluir`);
-      }
       rules.add(id);
     } else {
       skills.add(id);
@@ -555,21 +565,38 @@ async function resolveSelection(
   };
 }
 
-export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number> {
-  const scriptFlag = parseScriptFlag(args, ctx, 'init');
-  if (scriptFlag === null) {
-    return 2;
-  }
+/**
+ * Todo lo que `cmdInit` resuelve antes de decidir si imprime o aplica: un solo constructor
+ * de plan (R1). El asistente y el camino de flags pasan por aquí, así que el mismo input
+ * da el mismo plan y el mismo hash por construcción (design D2/D4).
+ */
+export interface PreparedInit {
+  id: string;
+  rc: AiHubRc;
+  engine: EngineManifest;
+  selection: { preset: ResolvedPreset; profilePackageManager?: string; targets: string[]; migrate: boolean };
+  spec: SelectionSpec;
+  includeMcp: boolean;
+  assets: AssetPlan;
+  speckit: ProjectSpeckit;
+  speckitSettings: SpeckitSettings;
+  /** El taller nunca ejecuta Spec Kit: su .specify/ es del mantenedor. */
+  runSpeckit: boolean;
+  existing: ProjectManifest | undefined;
+  write: string[];
+  planBodyFor(resolved: string | null): Omit<Plan, 'hash'>;
+}
+
+/**
+ * Resuelve el plan de init sin imprimir ni escribir. Lanza `Error` con el mensaje canónico
+ * cuando el input es inválido (quien llama decide imprimirlo y el código de salida).
+ */
+export async function prepareInit(args: ParsedArgs, ctx: CliContext): Promise<PreparedInit> {
+  const scriptFlag = scriptFromArgs(args, 'init');
   const sourceCheckout = await isEngineCheckout(ctx.root);
-  let selection;
-  try {
-    selection = await resolveSelection(args, ctx);
-    if (selection.migrate && !sourceCheckout) {
-      throw new Error('--migrate solo aplica en el checkout de desarrollo; la instalación no tiene .planning/');
-    }
-  } catch (error) {
-    ctx.io.err((error as Error).message);
-    return 2;
+  const selection = await resolveSelection(args, ctx);
+  if (selection.migrate && !sourceCheckout) {
+    throw new Error('--migrate solo aplica en el checkout de desarrollo; la instalación no tiene .planning/');
   }
   const id = projectId(ctx.cwd);
   const rc: AiHubRc = {
@@ -584,13 +611,7 @@ export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number
   if (await exists(path.join(ctx.root, 'manifest.yaml'))) {
     existing = (await loadManifestContext(ctx.root).catch(() => null))?.manifest;
   }
-  let spec: SelectionSpec;
-  try {
-    spec = await buildSelection(args, selection.preset, engine, existing);
-  } catch (error) {
-    ctx.io.err((error as Error).message);
-    return 2;
-  }
+  const spec = await buildSelection(args, selection.preset, engine, existing);
   const includeMcp = await exists(path.join(ctx.root, 'mcp-manifest.yaml'));
   const assets = await buildAssetPlan(spec, engine, selection.targets, includeMcp);
   const speckit = speckitBlock(existing?.speckit, !args.flags['no-speckit'], scriptFlag);
@@ -619,68 +640,109 @@ export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number
     write,
     speckit: speckitPlan(speckitSettings, resolved),
   });
+  return {
+    id,
+    rc,
+    engine,
+    selection,
+    spec,
+    includeMcp,
+    assets,
+    speckit,
+    speckitSettings,
+    runSpeckit,
+    existing,
+    write,
+    planBodyFor,
+  };
+}
+
+/** Imprime el plan con su entorno, el mismo JSON que `--dry-run`; devuelve el plan sellado. */
+export function printInitPlan(
+  prepared: PreparedInit,
+  ctx: CliContext,
+  environment: SpeckitEnvironment | { skipped: string },
+): Plan {
+  const resolved = 'version' in environment ? environment.version : null;
+  const planBody = prepared.planBodyFor(resolved);
+  const plan: Plan = { ...planBody, hash: sha256(JSON.stringify(planBody)) };
+  ctx.io.out(JSON.stringify({ ...plan, environment }, null, 2));
+  return plan;
+}
+
+export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number> {
+  const sourceCheckout = await isEngineCheckout(ctx.root);
+  // Gate del asistente (design D3): sólo instalación, sólo TTY, sólo sin flags.
+  // Ni una línea del asistente corre antes de esta comprobación (R2).
+  if (!sourceCheckout && isInteractiveRequest(args, ctx)) {
+    return runAssistantInit(ctx);
+  }
+  let prepared: PreparedInit;
+  try {
+    prepared = await prepareInit(args, ctx);
+  } catch (error) {
+    ctx.io.err((error as Error).message);
+    return 2;
+  }
 
   if (!args.flags.yes || args.flags['dry-run']) {
-    const environment = await environmentFor(speckitSettings, ctx);
-    const resolved = 'version' in environment ? environment.version : null;
-    const planBody = planBodyFor(resolved);
-    const plan: Plan = { ...planBody, hash: sha256(JSON.stringify(planBody)) };
-    ctx.io.out(JSON.stringify({ ...plan, environment }, null, 2));
+    const environment = await environmentFor(prepared.speckitSettings, ctx);
+    printInitPlan(prepared, ctx, environment);
     if (!args.flags['dry-run']) {
       ctx.io.out('Nada escrito. Repite con --yes para aplicar este plan.');
     }
     return 0;
   }
 
-  const preflight = runSpeckit ? await preflightOrReport(speckitSettings, ctx, 'init') : null;
+  const preflight = prepared.runSpeckit ? await preflightOrReport(prepared.speckitSettings, ctx, 'init') : null;
   if (preflight !== null && !preflight.ok) {
     return 2;
   }
   // Backup restaurable antes de que Spec Kit toque un proyecto existente (constitución incluida).
   const backupId =
-    existing || (await exists(path.join(ctx.root, '.specify')))
+    prepared.existing || (await exists(path.join(ctx.root, '.specify')))
       ? (await createBackup(ctx.root, 'init')).id
       : null;
-  const materialized = await materializeSelection(ctx.root, selection.preset, spec);
+  const materialized = await materializeSelection(ctx.root, prepared.selection.preset, prepared.spec);
   const manifest = manifestFromSelection(
-    id,
-    selection.preset,
-    selection.targets,
-    selection.profilePackageManager,
-    rc.guardMode ?? 'shadow',
-    includeMcp,
-    spec,
-    speckit,
+    prepared.id,
+    prepared.selection.preset,
+    prepared.selection.targets,
+    prepared.selection.profilePackageManager,
+    prepared.rc.guardMode ?? 'shadow',
+    prepared.includeMcp,
+    prepared.spec,
+    prepared.speckit,
   );
   await writeManifest(ctx.root, manifest);
   await writeInventory(ctx.root);
-  if (runSpeckit && !(await installSpeckit(speckitSettings, ctx, backupId))) {
+  if (prepared.runSpeckit && !(await installSpeckit(prepared.speckitSettings, ctx, backupId))) {
     return 1;
   }
   // El hash describe la instalación real: la versión que quedó registrada tras instalar (design D5).
   let resolved = preflight?.version ?? null;
-  if (runSpeckit) {
+  if (prepared.runSpeckit) {
     resolved = (await readSpeckitState(ctx.root)).initOptions?.speckit_version ?? resolved;
   }
-  const planBody = planBodyFor(resolved);
+  const planBody = prepared.planBodyFor(resolved);
   const plan: Plan = { ...planBody, hash: sha256(JSON.stringify(planBody)) };
   const sync = await runSync(ctx.root, { check: false });
   const existingRc = readAiHubRc(ctx.cwd);
   if (!existingRc || existingRc.version === 1 || args.flags.force) {
-    writeAiHubRc(ctx.cwd, rc);
+    writeAiHubRc(ctx.cwd, prepared.rc);
   }
   if (sourceCheckout) {
     try {
       await readState(ctx.root);
     } catch (error) {
       if (error instanceof StateNotFoundError) {
-        await writeState(ctx.root, emptyState(id, selection.preset.id));
+        await writeState(ctx.root, emptyState(prepared.id, prepared.selection.preset.id));
       } else {
         throw error;
       }
     }
-    if (selection.migrate) {
-      await migrateLegacyState(ctx.root, id, selection.preset.id);
+    if (prepared.selection.migrate) {
+      await migrateLegacyState(ctx.root, prepared.id, prepared.selection.preset.id);
     }
   }
   await ensureProjectIgnores(ctx.root);
@@ -689,12 +751,12 @@ export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number
     ctx.io.out(`hooks: ${hook.installed ? 'post-merge instalado' : hook.reason}`);
   }
   ctx.io.out(
-    `init: ${selection.preset.id} · skills=${spec.modes.skills} agents=${spec.modes.agents} rules=${spec.modes.rules} · ${spec.skills.length} skills de proyecto + ${engine.commands.length} comandos Spec Kit · ${spec.agents.length} agentes · ${spec.rules.length + 1} reglas · ${assets.destinations} destinos · ${sync.written.length} sincronizados · ${materialized.written.length} nuevos, ${materialized.kept.length} conservados, ${materialized.collisions.length} colisiones`,
+    `init: ${prepared.selection.preset.id} · skills=${prepared.spec.modes.skills} agents=${prepared.spec.modes.agents} rules=${prepared.spec.modes.rules} · ${prepared.spec.skills.length} skills de proyecto + ${prepared.engine.commands.length} comandos Spec Kit · ${prepared.spec.agents.length} agentes · ${prepared.spec.rules.length + 1} reglas · ${prepared.assets.destinations} destinos · ${sync.written.length} sincronizados · ${materialized.written.length} nuevos, ${materialized.kept.length} conservados, ${materialized.collisions.length} colisiones`,
   );
   if (materialized.collisions.length > 0) {
     ctx.io.err(`colisiones (no se sobrescribieron): ${materialized.collisions.join(', ')}`);
   }
-  ctx.io.out(speckitSummary(speckitSettings, resolved));
+  ctx.io.out(speckitSummary(prepared.speckitSettings, resolved));
   ctx.io.out(`plan: ${plan.hash}`);
   return 0;
 }
