@@ -52,7 +52,14 @@ Anterior: `tui-onboarding` (0.7.0) archivado; `refuter-panel` (0.6.0) aplicado.
   `NO_COLOR`), multiselect del conjunto con mínimo 1 (cero no continúa), select del
   activo cuando elige más de un tipo — `node core\dist\bin\ai-hub.js init` sin flags en
   un repo consumidor vacío.
-- Archivar con `/opsx-archive script-choice` cuando el usuario lo pida.
 - Drift preexistente de `preset-system` (cita 174 skills y 4.642/4.657 destinos en
   escenarios antiguos) — candidato a change de limpieza, fuera de alcance.
 - `backlog-craft` como change siguiente, con sus referencias evaluadas.
+
+## Archivado (2026-10-30)
+
+`script-choice` archivado en `openspec/changes/archive/2026-10-30-script-choice/`;
+`dev-cli` 37 → 37 requisitos (−1 REMOVED +1 ADDED, 5 MODIFIED con sus escenarios) e
+`interactive-onboarding` 6 → 7 (ADDED del banner con 4 escenarios, 2 MODIFIED con los 3
+escenarios nuevos del multiselect/activo); sin cabeceras de delta; `openspec validate
+--all`: 7 passed, 0 failed. Constancia en la sección "Post-archivo" del impl.
