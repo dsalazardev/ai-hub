@@ -26,7 +26,7 @@ const EXTENSION_IDS: Record<string, string[]> = {
 };
 
 export interface FakeOptions {
-  missing?: Array<'uvx' | 'bash' | 'pwsh' | 'powershell'>;
+  missing?: Array<'uvx' | 'bash' | 'pwsh' | 'powershell' | 'python' | 'python3' | 'py'>;
   /** `bash` existe pero no ejecuta (lanzador de WSL sin distribución). */
   brokenBash?: boolean;
   /** Sin red y sin caché: el rango soportado no se resuelve. */
@@ -158,25 +158,33 @@ async function applyScript(root: string, script: FakeScript): Promise<void> {
   options.script = script;
   await fs.writeFile(optionsFile, `${JSON.stringify(options, null, 2)}\n`, 'utf8');
   const scriptsDir = path.join(root, '.specify', 'scripts');
-  const bashDir = path.join(scriptsDir, 'bash');
-  if (script !== 'sh') {
-    const targetDir = path.join(scriptsDir, SCRIPT_DIRS[script]);
-    await fs.mkdir(targetDir, { recursive: true });
-    for (const file of await fs.readdir(bashDir)) {
-      await fs.copyFile(path.join(bashDir, file), path.join(targetDir, file.replace(/\.sh$/, SCRIPT_EXTS[script])));
-    }
+  // Un init real crea sólo el directorio de su tipo, desde el material bash de la
+  // instantánea; los directorios existentes se acumulan sin borrarse (evidencia medida).
+  const targetDir = path.join(scriptsDir, SCRIPT_DIRS[script]);
+  await fs.mkdir(targetDir, { recursive: true });
+  for (const rel of await listSnapshot('.specify/scripts/bash')) {
+    const name = path.basename(rel);
+    await fs.copyFile(snapshotPath(rel), path.join(targetDir, name.replace(/\.sh$/, SCRIPT_EXTS[script])));
   }
   // El manifiesto declara lo que hay en disco: 6 entradas por directorio existente.
+  // Los hashes de los scripts vienen del manifiesto de la instantánea (instalación bash
+  // grabada): el manifiesto actual puede haber retirado las entradas bash en un init
+  // anterior, y un init posterior de `sh` debe poder recuperarlas.
   const manifestFile = path.join(root, '.specify', 'integrations', 'speckit.manifest.json');
   const manifest = await readJson<{ files: Record<string, string> }>(manifestFile);
-  const files: Record<string, string> = {};
+  const snapshotManifest = await readJson<{ files: Record<string, string> }>(
+    snapshotPath('.specify/integrations/speckit.manifest.json'),
+  );
   const bashHashes: Record<string, string> = {};
-  for (const [rel, hash] of Object.entries(manifest.files)) {
+  for (const [rel, hash] of Object.entries(snapshotManifest.files)) {
     const bashMatch = /^\.specify\/scripts\/bash\/(.+)$/.exec(rel);
     if (bashMatch !== null) {
       bashHashes[bashMatch[1]] = hash;
-      files[rel] = hash;
-    } else if (!rel.startsWith('.specify/scripts/')) {
+    }
+  }
+  const files: Record<string, string> = {};
+  for (const [rel, hash] of Object.entries(manifest.files)) {
+    if (!rel.startsWith('.specify/scripts/')) {
       files[rel] = hash;
     }
   }
@@ -202,6 +210,11 @@ async function applyScript(root: string, script: FakeScript): Promise<void> {
 async function specifyInit(root: string, integration: string, script: FakeScript, version: string): Promise<void> {
   for (const rel of await listSnapshot('.specify')) {
     if (rel.startsWith('.specify/integrations/') && !rel.endsWith('/speckit.manifest.json')) {
+      continue;
+    }
+    if (rel.startsWith('.specify/scripts/')) {
+      // Los directorios de scripts los materializa applyScript: sólo el del tipo
+      // elegido, acumulando sin borrar los existentes.
       continue;
     }
     await copyFromSnapshot(root, rel, rel === '.specify/memory/constitution.md');
@@ -252,7 +265,7 @@ export function fakeRunner(options: FakeOptions = {}): FakeRunner {
     if (command === 'bash') {
       return options.brokenBash ? fail('WSL: no hay distribuciones instaladas') : ok('ok\n');
     }
-    if (command === 'pwsh' || command === 'powershell') {
+    if (command === 'pwsh' || command === 'powershell' || command === 'python' || command === 'python3' || command === 'py') {
       return ok('ok\n');
     }
     if (command !== 'uvx') {

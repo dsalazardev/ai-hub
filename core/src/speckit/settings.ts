@@ -2,17 +2,28 @@ import type { EngineManifest, SpeckitScript } from '../engine/engine.js';
 import { TARGETS, isToolId, type ToolId } from '../sync/targets.js';
 import { satisfiesRange } from './version.js';
 
+/**
+ * Conjunto por defecto cuando ni el manifest ni `--scripts` eligen: los tres tipos
+ * (compatibilidad 0.4–0.7; design D1). Constante del motor, no configurable.
+ */
+export const DEFAULT_SPECKIT_SCRIPTS: readonly SpeckitScript[] = ['sh', 'ps', 'py'];
+
+/** Valores válidos de cada item de `speckit.scripts` y de `--scripts`. */
+const SCRIPT_VALUES: readonly string[] = ['sh', 'ps', 'py'];
+
 /** Bloque `speckit` de manifest.yaml: solo restringe lo que declara el paquete. */
 export interface ProjectSpeckit {
   managed?: boolean;
   /** Restricción exacta declarada por el proyecto; debe caer dentro del rango soportado. */
   version?: string;
   script?: SpeckitScript;
+  /** Conjunto elegido; ausente → los tres por defecto. El activo (`script`) debe pertenecer al conjunto. */
+  scripts?: SpeckitScript[];
   defaultTarget?: string;
 }
 
 /** Campos que el bloque `speckit` de manifest.yaml admite; cualquier otro pertenece al motor o está retirado. */
-const PROJECT_SPECKIT_FIELDS = ['managed', 'version', 'script', 'defaultTarget'] as const;
+const PROJECT_SPECKIT_FIELDS = ['managed', 'version', 'script', 'scripts', 'defaultTarget'] as const;
 
 export interface SpeckitSettings {
   managed: boolean;
@@ -22,6 +33,8 @@ export interface SpeckitSettings {
   /** Rango soportado declarado por el paquete; única fuente de versión (design D2). */
   supported: string;
   script: SpeckitScript;
+  /** Conjunto efectivo: flag → manifest → los tres por defecto (design D1). */
+  scripts: SpeckitScript[];
   /** Destinos declarados que reciben Spec Kit; el de por defecto va primero. */
   targets: ToolId[];
   defaultTarget: ToolId | null;
@@ -56,12 +69,24 @@ export function effectiveSpeckit(
   const defaultTarget = declaredDefault ?? enabled[0] ?? null;
   const targets =
     defaultTarget === null ? [] : [defaultTarget, ...enabled.filter((target) => target !== defaultTarget)];
+  // El activo resuelve dentro del conjunto (design D3): declarado ∈ conjunto → default del
+  // engine ∈ conjunto → primer elemento. Las contradicciones explícitas (flag o manifest)
+  // las rechaza la capa de flags / validateProjectSpeckit antes de llegar aquí.
+  const scripts = block.scripts ?? [...DEFAULT_SPECKIT_SCRIPTS];
+  const declared = block.script;
+  const script =
+    declared !== undefined && scripts.includes(declared)
+      ? declared
+      : scripts.includes(engine.speckit.script)
+        ? engine.speckit.script
+        : scripts[0];
   return {
     managed: block.managed !== false,
     package: engine.speckit.package,
     version: block.version ?? null,
     supported: engine.speckit.supported,
-    script: block.script ?? engine.speckit.script,
+    script,
+    scripts,
     targets,
     defaultTarget,
     defaultIntegration: defaultTarget === null ? null : integrationOf(defaultTarget),
@@ -103,6 +128,34 @@ export function validateProjectSpeckit(
       errors.push(
         `speckit.version ${String(block.version)} está fuera del rango soportado por el paquete "${engine.speckit.supported}"`,
       );
+    }
+  }
+  if (block.scripts !== undefined) {
+    const scripts = block.scripts;
+    if (!Array.isArray(scripts) || scripts.length === 0) {
+      errors.push('speckit.scripts debe ser una lista no vacía con valores sh, ps, py');
+    } else {
+      const seen = new Set<string>();
+      let invalid = false;
+      for (const item of scripts) {
+        const value = String(item);
+        if (!SCRIPT_VALUES.includes(value)) {
+          errors.push(`speckit.scripts acepta sh, ps, py (recibido: ${value})`);
+          invalid = true;
+        } else if (seen.has(value)) {
+          errors.push(`speckit.scripts no admite duplicados (recibido: ${value})`);
+          invalid = true;
+        }
+        seen.add(value);
+      }
+      const script = block.script;
+      if (!invalid && script !== undefined && !scripts.includes(script)) {
+        errors.push(
+          `speckit.script ${String(script)} debe pertenecer al conjunto speckit.scripts [${scripts
+            .map(String)
+            .join(', ')}]`,
+        );
+      }
     }
   }
   const enabled = speckitEnabledTargets(targets);

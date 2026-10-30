@@ -4,8 +4,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { TARGETS, TOOL_HINTS, TOOL_IDS, isToolId, type ToolId } from '../sync/targets.js';
 import { detectPreset } from '../presets/detect.js';
-import { loadEngine } from '../engine/engine.js';
-import { effectiveSpeckit } from '../speckit/settings.js';
+import { loadEngine, type SpeckitScript } from '../engine/engine.js';
+import { DEFAULT_SPECKIT_SCRIPTS, effectiveSpeckit } from '../speckit/settings.js';
 import { probeEnvironment, probeShell, speckitPreflight, type SpeckitEnvironment } from '../speckit/commands.js';
 // Ciclo intencional con onboarding.ts (D2): ambos módulos se usan sólo a nivel de
 // función, nunca a nivel de módulo, así que los live bindings de ESM lo resuelven.
@@ -41,16 +41,24 @@ export interface AssistantAnswers {
   preset: string | null;
   profile: 'full' | 'preset-only' | 'custom';
   excludes: string[];
-  /** `null`: usar el script efectivo por defecto (sin flag `--script`). */
-  script: 'sh' | 'ps' | null;
+  /** Conjunto de scripts elegido (mínimo uno); el orden es el de la selección (design D7). */
+  scripts: SpeckitScript[];
+  /** Activo: el único del conjunto, o el elegido cuando selecciona más de uno; siempre se emite. */
+  script: SpeckitScript;
   /** Idea del proyecto; `null` = paso saltado (no se escribe `backlog/`). */
   idea: string | null;
+}
+
+function isSpeckitScript(value: string): value is SpeckitScript {
+  return value === 'sh' || value === 'ps' || value === 'py';
 }
 
 /**
  * R1: el asistente es una generadora de flags. `answersToFlags` reproduce exactamente
  * las estructuras que `parseArgs` produce para el argv equivalente; el plan lo construye
  * el mismo constructor compartido de `cmdInit`, así que el hash es idéntico por construcción.
+ * El activo se emite siempre (design D7); el conjunto sólo cuando difiere de los tres
+ * como conjunto — así la preselección completa produce el mismo hash que el camino bare.
  */
 export function answersToFlags(answers: AssistantAnswers): ParsedArgs {
   const flags: Record<string, string | boolean> = {
@@ -67,8 +75,12 @@ export function answersToFlags(answers: AssistantAnswers): ParsedArgs {
   } else if (answers.excludes.length > 0) {
     flags.exclude = answers.excludes.join(',');
   }
-  if (answers.script !== null) {
-    flags.script = answers.script;
+  flags.script = answers.script;
+  const isDefaultSet =
+    answers.scripts.length === DEFAULT_SPECKIT_SCRIPTS.length &&
+    DEFAULT_SPECKIT_SCRIPTS.every((script) => answers.scripts.includes(script));
+  if (!isDefaultSet) {
+    flags.scripts = answers.scripts.join(',');
   }
   return { positionals: [], flags };
 }
@@ -216,31 +228,73 @@ export async function collectAnswers(
     excludes = collected;
   }
 
-  // Paso 4: script sh/ps informando el shell resuelto para sh antes de elegir.
+  // Paso 4 (design D7): conjunto de scripts con multiselect (mínimo uno; cero re-pregunta)
+  // y activo con select sólo cuando elige más de uno. La nota informa el shell resuelto
+  // para sh y el intérprete de py antes de elegir el activo.
   const engine = await loadEngine();
-  const shShell = await probeShell(
-    effectiveSpeckit({ targets, speckit: { script: 'sh' } }, engine),
-    ctx.exec,
-    ctx.root,
-  );
-  prompts.note(
-    shShell.ok
-      ? `sh se ejecutará con: ${shShell.command}`
-      : 'no se encontró un shell que ejecute sh; el preflight de Spec Kit fallará si eliges sh',
-  );
-  const script = await prompts.select(
-    '¿Script para Spec Kit?',
-    [
-      { value: 'sh', label: 'sh', hint: 'bash / git-bash' },
-      { value: 'ps', label: 'ps', hint: 'PowerShell' },
-    ],
-    engine.speckit.script,
-  );
-  if (script !== 'sh' && script !== 'ps') {
-    return null;
+  const scriptOptions: PromptOption[] = [
+    { value: 'py', label: 'Python', hint: 'python · python3 · py' },
+    { value: 'sh', label: 'Shell', hint: 'bash · git-bash' },
+    { value: 'ps', label: 'PowerShell', hint: 'pwsh · powershell' },
+  ];
+  let scripts: SpeckitScript[] | null = null;
+  while (scripts === null) {
+    const reply = await prompts.multiselect(
+      '¿Qué tipos de script instala Spec Kit?',
+      scriptOptions,
+      ['py', 'sh', 'ps'],
+    );
+    if (reply === null) {
+      return null;
+    }
+    const chosen = reply.filter(isSpeckitScript);
+    if (chosen.length === 0) {
+      prompts.note('Elige al menos un tipo de script; cero no deja continuar');
+      continue;
+    }
+    scripts = chosen;
+  }
+  if (scripts.includes('sh')) {
+    const shShell = await probeShell(
+      effectiveSpeckit({ targets, speckit: { script: 'sh' } }, engine),
+      ctx.exec,
+      ctx.root,
+    );
+    prompts.note(
+      shShell.ok
+        ? `sh se ejecutará con: ${shShell.command}`
+        : 'no se encontró un shell que ejecute sh; el preflight de Spec Kit fallará si dejas sh como activo',
+    );
+  }
+  if (scripts.includes('py')) {
+    const pyProbe = await probeShell(
+      effectiveSpeckit({ targets, speckit: { script: 'py' } }, engine),
+      ctx.exec,
+      ctx.root,
+    );
+    prompts.note(
+      pyProbe.ok
+        ? `py se ejecutará con: ${pyProbe.command}`
+        : 'no se encontró un intérprete de Python; el preflight de Spec Kit fallará si dejas py como activo',
+    );
+  }
+  let script: SpeckitScript;
+  if (scripts.length === 1) {
+    script = scripts[0];
+  } else {
+    const initial = scripts.includes(engine.speckit.script) ? engine.speckit.script : scripts[0];
+    const chosen = await prompts.select(
+      '¿Qué script deja activo Spec Kit?',
+      scriptOptions.filter((option) => scripts.includes(option.value as SpeckitScript)),
+      initial,
+    );
+    if (chosen === null || !isSpeckitScript(chosen) || !scripts.includes(chosen)) {
+      return null;
+    }
+    script = chosen;
   }
 
-  return { targets, preset, profile, excludes, script, idea: null };
+  return { targets, preset, profile, excludes, scripts, script, idea: null };
 }
 
 /** Resultado del paso entorno (D8): el preflight de hoy, más el sondeo para el plan. */
@@ -276,7 +330,7 @@ export async function verifyEnvironment(
   }
   const engine = await loadEngine();
   const settings = effectiveSpeckit(
-    { targets: answers.targets, speckit: { script: answers.script ?? undefined } },
+    { targets: answers.targets, speckit: { script: answers.script, scripts: answers.scripts } },
     engine,
   );
   if (!settings.managed) {

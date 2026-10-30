@@ -54,7 +54,9 @@ export function speckitShellDetail(probe: ShellProbe, script: SpeckitScript): st
   }
   return script === 'ps'
     ? `PowerShell no ejecuta (probados: ${probe.tried.join(', ')}); instala PowerShell, o ejecuta ai-hub install --script sh`
-    : `bash no está disponible o no ejecuta (probados: ${probe.tried.join(', ')}); en Windows instala Git for Windows, o ejecuta ai-hub install --script ps`;
+    : script === 'py'
+      ? `ningún intérprete de Python ejecuta (probados: ${probe.tried.join(', ')}); instala Python, o ejecuta ai-hub install --script sh o ai-hub install --script ps`
+      : `bash no está disponible o no ejecuta (probados: ${probe.tried.join(', ')}); en Windows instala Git for Windows, o ejecuta ai-hub install --script ps`;
 }
 
 function gitIgnored(root: string, rel: string): boolean | null {

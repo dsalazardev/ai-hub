@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.8.0 — Conjunto de scripts de Spec Kit elegible, `py` como activo y banner de identidad (2026-10-30)
+
+### Cambio
+
+- **Conjunto de scripts elegible (`--scripts`):** `init`/`install` aceptan `--scripts` con una lista comma-separated de `sh`, `ps`, `py` (mínimo un valor, sin duplicados) y materializan exactamente ese conjunto: `--scripts py` instala sólo `.specify/scripts/python` (6 archivos más su manifiesto de integridad); los `specify init` van tipo por tipo con el activo al final. **Esto revierte parcialmente, de forma deliberada y documentada, la decisión ratificada en `speckit-latest` (0.4.0)** de que los tres tipos se instalan siempre, obligatorio y sin opt-out: el conjunto pasa a ser elegido por el instalador. La compatibilidad es byte a byte: un manifest sin `speckit.scripts` y una invocación sin `--scripts` siguen instalando los tres tipos exactamente como en 0.4–0.7 (sonda de diff pipeado vacía contra la línea base de 0.7.0).
+- **`py` como activo:** `--script` acepta `py` además de `sh`/`ps`. La sonda del intérprete es `python -c "print('ok')"` con candidatos `python`, `python3`, `py` en ese orden en toda plataforma, reutilizando el contrato `stdout.trim() === 'ok'` existente; el preflight nombra Python como instalación faltante con sus alternativas exactas (`--script sh`, `--script ps`) y `doctor` reporta `speckit:shell` con el intérprete resuelto.
+- **Activo dentro del conjunto (fail-closed):** el activo resuelto por precedencia (flag → manifest) no puede caer fuera del conjunto efectivo (flag → manifest → los tres): la contradicción explícita sale con código 2 antes de escribir, nombrando ambos campos. Un `--script` explícito pisa al `speckit.script` del manifest (la migración procede); el default del engine coacciona dentro del conjunto. `speckit.scripts` se persiste en el manifest sólo con flag explícito.
+- **Plan body condicional:** el plan hasheado incluye `speckit.scripts` sólo cuando el conjunto difiere de los tres por defecto en orden y miembros: `--scripts sh,ps,py` explícito produce el mismo hash que la invocación sin flags; una permutación u otro conjunto sí lo cambia.
+- **TUI:** el paso de scripts del asistente pasa a ser un multi-select del conjunto (Python/Shell/PowerShell preseleccionado con los tres, mínimo uno — cero no deja continuar) más un select del activo sólo cuando elige más de un tipo, con notas del shell resuelto para `sh` y del intérprete para `py`. El asistente abre con un **banner de identidad** ("AI-HUB — Autonomous Software Factory"): bloque azul ANSI puro con letter-spacing, función pura en `core/src/cli/banner.ts`, sin dependencias nuevas, apagado por `NO_COLOR` y ausente de toda salida pipeada porque el adaptador clack sólo se carga tras el gate de TTY.
+
+### Cifras medidas
+
+Sin cambios respecto a 0.7.0 — el conjunto por defecto y toda invocación existente quedan byte a byte iguales (diff pipeado vacío contra la línea base); la fórmula del plan las sigue reproduciendo (`core/tests/fixtures/install-counts.json`):
+
+| Instalación | Destinos en `sync.lock.json` |
+|---|---|
+| `init --yes` (`generic-ts`, full) | 6.853 |
+| `init --yes --preset-only` | 40 |
+| `init --yes --exclude rule:skill-quality` | 6.833 |
+| `init --yes --preset angular-express` | 6.868 |
+
+`full` instala 261 skills de proyecto + 17 comandos Spec Kit, 39 agentes y 6 reglas universales.
+
+### Empaquetado
+
+- `core/package.json` en `0.8.0`. Tarball: 1.888 → 1.890 entradas (`dist/cli/banner.js` + `dist/cli/banner.d.ts`); unpacked 12.520.573 → 12.535.153 bytes (+14.580, sólo `dist`). No se publica en npm desde esta sesión; el release queda condicionado a la revisión del diff.
+
 ## 0.7.0 — Asistente de onboarding interactivo y semilla de backlog (2026-10-30)
 
 ### Añadido

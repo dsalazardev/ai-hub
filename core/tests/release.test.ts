@@ -25,18 +25,18 @@ async function currentSection(): Promise<{ version: string; date: string; body: 
   return { version: pkg.version, date: heading[1], body: changelog.slice(start, next < 0 ? undefined : next) };
 }
 
-describe('release 0.7.0 (8.1)', () => {
-  it('bumps the package and names the contracts that change in 0.7.0', async () => {
+describe('release 0.8.0 (script-choice 7.1)', () => {
+  it('bumps the package and names the contracts that change in 0.8.0', async () => {
     const section = await currentSection();
-    expect(section.version).toBe('0.7.0');
-    expect(section.body).toMatch(/asistente/i);
-    expect(section.body).toMatch(/generadora de flags/);
+    expect(section.version).toBe('0.8.0');
+    expect(section.body).toContain('--scripts');
+    expect(section.body).toMatch(/\bpy\b/);
+    expect(section.body).toMatch(/speckit-latest/);
+    expect(section.body).toMatch(/0\.4\.0/);
+    expect(section.body).toMatch(/banner/i);
     expect(section.body).toMatch(/mismo hash/);
-    expect(section.body).toContain('backlog/seed.md');
-    expect(section.body).toContain('backlog/pre-prompt.md');
-    expect(section.body).toContain('@clack/prompts');
-    expect(section.body).toContain('170.333 bytes (166,3 KB)');
-    expect(section.body).toMatch(/nunca un gate/);
+    expect(section.body).toMatch(/byte a byte/);
+    expect(section.body).toContain('1.890');
   });
 
   it('publishes the measured figures, not computed ones', async () => {
@@ -64,5 +64,13 @@ describe('workshop README (11.4)', () => {
     expect(readme).toMatch(/uv\]\(https:\/\/docs\.astral\.sh\/uv/);
     expect(readme).toContain('sale con código 2 antes de escribir nada');
     expect(readme).toContain('Copilot queda excluido de Spec Kit');
+  });
+
+  it('documents the chosen script set and the banner (script-choice 7.1)', async () => {
+    const readme = await fs.readFile(path.join(REPO, 'README.md'), 'utf8');
+    expect(readme).toContain('--scripts');
+    expect(readme).toMatch(/conjunto de scripts/i);
+    expect(readme).toMatch(/banner de identidad/);
+    expect(readme).toMatch(/NO_COLOR/);
   });
 });

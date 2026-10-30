@@ -39,7 +39,7 @@ export interface EngineCommand {
   speckit: string;
 }
 
-export type SpeckitScript = 'sh' | 'ps';
+export type SpeckitScript = 'sh' | 'ps' | 'py';
 
 /** Dependencia de Spec Kit declarada por el paquete; un proyecto solo puede restringirla. */
 export interface EngineSpeckit {

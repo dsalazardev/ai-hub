@@ -138,6 +138,30 @@ describe('preflight (2.3, 2.4)', () => {
   });
 });
 
+describe('py preflight (script-choice 4.3)', () => {
+  it('passes when a Python interpreter runs and records py', async () => {
+    const result = await cli(['init', '--yes', '--preset-only', '--script', 'py']);
+    expect(result.code, result.out).toBe(0);
+    expect(result.fake.calls.some((call) => call[0] === 'python')).toBe(true);
+    const manifest = parse(await fs.readFile(path.join(root, 'manifest.yaml'), 'utf8')) as Record<string, unknown>;
+    expect((manifest.speckit as Record<string, unknown>).script).toBe('py');
+  });
+
+  it('exits 2 without writing when no interpreter runs, naming Python and both alternatives', async () => {
+    const result = await cli(
+      ['init', '--yes', '--preset-only', '--script', 'py'],
+      fakeRunner({ missing: ['python', 'python3', 'py'] }),
+    );
+    expect(result.code).toBe(2);
+    expect(result.out).toMatch(/probados: python, python3, py/);
+    expect(result.out).toContain('Instala Python');
+    expect(result.out).toContain('ai-hub init --script sh');
+    expect(result.out).toContain('ai-hub init --script ps');
+    expect(await entries()).toEqual(['package.json']);
+    expect(result.fake.specifyCalls().filter((call) => call.includes('init'))).toHaveLength(0);
+  });
+});
+
 describe('--no-speckit and reactivation (2.5)', () => {
   it('records managed: false and runs nothing', async () => {
     const result = await cli(['init', '--yes', '--preset-only', '--no-speckit']);

@@ -169,3 +169,37 @@ describe('project speckit block (1.4)', () => {
     expect(effective.defaultIntegration).toBe('pi');
   });
 });
+
+describe('script set contract (script-choice 2.2)', () => {
+  const targets = ['claude', 'opencode', 'pi', 'cursor', 'copilot'];
+
+  it('defaults to the three scripts when the field is absent', async () => {
+    const engine = await loadEngine();
+    const effective = effectiveSpeckit({ targets }, engine);
+    expect(effective.scripts).toEqual(['sh', 'ps', 'py']);
+  });
+
+  it('accepts a valid subset and keeps declaration order', async () => {
+    const engine = await loadEngine();
+    expect(validateProjectSpeckit({ scripts: ['py', 'sh'], script: 'sh' }, targets, engine)).toEqual([]);
+    const effective = effectiveSpeckit({ targets, speckit: { scripts: ['py', 'sh'], script: 'sh' } }, engine);
+    expect(effective.scripts).toEqual(['py', 'sh']);
+    expect(effective.script).toBe('sh');
+  });
+
+  it('rejects invalid values, duplicates and the empty list', async () => {
+    const engine = await loadEngine();
+    expect(validateProjectSpeckit({ scripts: ['foo'] }, targets, engine).join('\n')).toContain(
+      'speckit.scripts acepta sh, ps, py',
+    );
+    expect(validateProjectSpeckit({ scripts: ['sh', 'sh'] }, targets, engine).join('\n')).toContain('duplicados');
+    expect(validateProjectSpeckit({ scripts: [] }, targets, engine).join('\n')).toContain('no vacía');
+  });
+
+  it('rejects an active outside the set naming both fields', async () => {
+    const engine = await loadEngine();
+    const errors = validateProjectSpeckit({ script: 'ps', scripts: ['sh', 'py'] }, targets, engine).join('\n');
+    expect(errors).toContain('speckit.script ps');
+    expect(errors).toContain('speckit.scripts [sh, py]');
+  });
+});

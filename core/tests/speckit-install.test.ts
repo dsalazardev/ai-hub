@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { parse } from 'yaml';
+import { parse, stringify } from 'yaml';
 import { runCli } from '../src/cli/run.js';
 import type { CliIO } from '../src/cli/types.js';
 import { scanReservedNamespace } from '../src/engine/gates.js';
@@ -323,14 +323,14 @@ describe('Spec Kit commands are not managed by add/uninstall (5.2)', () => {
 });
 
 describe('--script flag (3.1, 3.2, 3.3)', () => {
-  it('rejects values other than sh or ps with exit 2 before probing or writing', async () => {
+  it('rejects unknown values with exit 2 before probing or writing', async () => {
     for (const argv of [
-      ['init', '--yes', '--script', 'py'],
+      ['init', '--yes', '--script', 'zsh'],
       ['init', '--yes', '--script'],
     ]) {
       const result = await cli(argv);
       expect(result.code, argv.join(' ')).toBe(2);
-      expect(result.out, argv.join(' ')).toMatch(/sh.*ps/);
+      expect(result.out, argv.join(' ')).toMatch(/sh.*ps.*py/);
       expect(result.fake.calls, argv.join(' ')).toEqual([]);
       expect((await fs.readdir(root)).sort()).toEqual(['package.json']);
     }
@@ -393,6 +393,133 @@ describe('--script flag (3.1, 3.2, 3.3)', () => {
   });
 });
 
+describe('--scripts flag (script-choice 3.1)', () => {
+  it('accepts py as --script and the rejection names sh, ps and py', async () => {
+    const plan = await cli(['init', '--dry-run', '--script', 'py']);
+    expect(plan.code, plan.out).toBe(0);
+    expect((JSON.parse(plan.out) as { speckit: { script: string } }).speckit.script).toBe('py');
+    const rejected = await cli(['init', '--yes', '--script', 'zsh']);
+    expect(rejected.code).toBe(2);
+    expect(rejected.out).toMatch(/acepta sh, ps o py/);
+    expect(rejected.fake.calls).toEqual([]);
+    expect((await fs.readdir(root)).sort()).toEqual(['package.json']);
+  });
+
+  it('rejects an invalid, duplicated or empty --scripts with exit 2 before writing', async () => {
+    for (const argv of [
+      ['init', '--yes', '--scripts', 'foo'],
+      ['init', '--yes', '--scripts', 'sh,sh'],
+      ['init', '--yes', '--scripts', ','],
+      ['init', '--yes', '--scripts'],
+    ]) {
+      const result = await cli(argv);
+      expect(result.code, argv.join(' ')).toBe(2);
+      expect(result.out, argv.join(' ')).toMatch(/sh, ps, py/);
+      expect(result.fake.calls, argv.join(' ')).toEqual([]);
+      expect((await fs.readdir(root)).sort()).toEqual(['package.json']);
+    }
+  });
+
+  it('rejects the active outside the chosen set naming both fields, from init and install', async () => {
+    const init = await cli(['init', '--yes', '--script', 'ps', '--scripts', 'sh,py']);
+    expect(init.code).toBe(2);
+    expect(init.out).toMatch(/--script ps/);
+    expect(init.out).toMatch(/--scripts \[sh, py\]/);
+    expect(init.fake.calls).toEqual([]);
+    expect((await fs.readdir(root)).sort()).toEqual(['package.json']);
+    expect((await cli(['init', '--yes', '--preset-only'])).code).toBe(0);
+    const install = await cli(['install', '--script', 'ps', '--scripts', 'sh,py']);
+    expect(install.code).toBe(2);
+    expect(install.out).toMatch(/--script ps/);
+    expect(install.out).toMatch(/--scripts \[sh, py\]/);
+  });
+
+  it('rejects a declared manifest active outside the flag set; an explicit --script migrates', async () => {
+    expect((await cli(['init', '--yes', '--preset-only', '--script', 'sh'])).code).toBe(0);
+    const silent = await cli(['install', '--scripts', 'py']);
+    expect(silent.code).toBe(2);
+    expect(silent.out).toMatch(/speckit\.script sh del manifest/);
+    expect(silent.out).toMatch(/--scripts \[py\]/);
+    const migration = await cli(['install', '--scripts', 'py', '--script', 'py']);
+    expect(migration.code, migration.out).toBe(0);
+    const manifest = parse(await read('manifest.yaml')) as Record<string, unknown>;
+    expect((manifest.speckit as Record<string, unknown>).script).toBe('py');
+  });
+
+  it('rejects a flag active outside a manifest-declared set', async () => {
+    expect((await cli(['init', '--yes', '--preset-only'])).code).toBe(0);
+    const manifest = parse(await read('manifest.yaml')) as Record<string, unknown>;
+    manifest.speckit = { ...(manifest.speckit as Record<string, unknown>), scripts: ['py'] };
+    await fs.writeFile(path.join(root, 'manifest.yaml'), stringify(manifest), 'utf8');
+    const result = await cli(['install', '--script', 'sh']);
+    expect(result.code).toBe(2);
+    expect(result.out).toMatch(/--script sh/);
+    expect(result.out).toMatch(/speckit\.scripts \[py\] del manifest/);
+  });
+});
+
+describe('scripts persistence (script-choice 3.2)', () => {
+  it('persists an explicit --scripts into speckit.scripts and keeps declaration order', async () => {
+    const result = await cli(['init', '--yes', '--preset-only', '--scripts', 'py,sh', '--script', 'sh']);
+    expect(result.code, result.out).toBe(0);
+    const manifest = parse(await read('manifest.yaml')) as Record<string, unknown>;
+    expect((manifest.speckit as Record<string, unknown>).scripts).toEqual(['py', 'sh']);
+    expect((manifest.speckit as Record<string, unknown>).script).toBe('sh');
+  });
+
+  it('keeps the manifest set when no flag is passed (round-trip)', async () => {
+    expect((await cli(['init', '--yes', '--preset-only', '--scripts', 'py'])).code).toBe(0);
+    const second = await cli(['install']);
+    expect(second.code, second.out).toBe(0);
+    const manifest = parse(await read('manifest.yaml')) as Record<string, unknown>;
+    expect((manifest.speckit as Record<string, unknown>).scripts).toEqual(['py']);
+    const initCall = second.fake.specifyCalls().filter((call) => call.includes('init')).at(-1);
+    expect(initCall?.[initCall.indexOf('--script') + 1]).toBe('py');
+  });
+
+  it('overrides an existing manifest set with the flag', async () => {
+    expect((await cli(['init', '--yes', '--preset-only', '--scripts', 'py'])).code).toBe(0);
+    const back = await cli(['install', '--scripts', 'sh,ps,py']);
+    expect(back.code, back.out).toBe(0);
+    const manifest = parse(await read('manifest.yaml')) as Record<string, unknown>;
+    expect((manifest.speckit as Record<string, unknown>).scripts).toEqual(['sh', 'ps', 'py']);
+  });
+
+  it('writes no speckit.scripts without a flag on a fresh project', async () => {
+    expect((await cli(['init', '--yes', '--preset-only'])).code).toBe(0);
+    const manifest = parse(await read('manifest.yaml')) as Record<string, unknown>;
+    expect((manifest.speckit as Record<string, unknown>).scripts).toBeUndefined();
+  });
+});
+
+describe('plan body scripts (script-choice 3.3)', () => {
+  it('keeps the hash for an explicit default set and omits the scripts field', async () => {
+    const bare = await cli(['init', '--dry-run']);
+    const explicit = await cli(['init', '--dry-run', '--scripts', 'sh,ps,py']);
+    expect(bare.code, bare.out).toBe(0);
+    expect(explicit.code, explicit.out).toBe(0);
+    const barePlan = JSON.parse(bare.out) as { hash: string; speckit: Record<string, unknown> };
+    const explicitPlan = JSON.parse(explicit.out) as { hash: string; speckit: Record<string, unknown> };
+    expect(barePlan.speckit.scripts).toBeUndefined();
+    expect(explicitPlan.speckit.scripts).toBeUndefined();
+    expect(explicitPlan.hash).toBe(barePlan.hash);
+  });
+
+  it('includes scripts and changes the hash for a non-default set', async () => {
+    const bare = await cli(['init', '--dry-run']);
+    const py = await cli(['init', '--dry-run', '--scripts', 'py']);
+    expect(py.code, py.out).toBe(0);
+    const barePlan = JSON.parse(bare.out) as { hash: string };
+    const pyPlan = JSON.parse(py.out) as {
+      hash: string;
+      speckit: { scripts?: string[]; script: string };
+    };
+    expect(pyPlan.speckit.scripts).toEqual(['py']);
+    expect(pyPlan.speckit.script).toBe('py');
+    expect(pyPlan.hash).not.toBe(barePlan.hash);
+  });
+});
+
 describe('script change reinstalls Spec Kit (3.4)', () => {
   it('install --script ps over an sh installation rewrites init-options and keeps every scripts dir', async () => {
     expect((await cli(['init', '--yes', '--preset-only'])).code).toBe(0);
@@ -408,3 +535,31 @@ describe('script change reinstalls Spec Kit (3.4)', () => {
     expect(doctor.code, doctor.out).toBe(0);
   });
 });
+
+describe('script set (script-choice 1.3)', () => {
+  it('{py} runs a single py init, leaves only scripts/python and a 6-file script manifest', async () => {
+    const engine = await loadEngine();
+    const settings = effectiveSpeckit({ targets: ['claude'], speckit: { scripts: ['py'] } }, engine);
+    const inits = speckitSequence(settings).filter((step) => step.includes('init'));
+    expect(inits.map((step) => step[step.indexOf('--script') + 1])).toEqual(['py']);
+    const fake = fakeRunner();
+    for (const step of speckitSequence(settings)) {
+      await fake.run('uvx', step, { cwd: root });
+    }
+    expect(await fs.readdir(path.join(root, '.specify', 'scripts'))).toEqual(['python']);
+    const manifest = JSON.parse(await read('.specify/integrations/speckit.manifest.json')) as {
+      files: Record<string, string>;
+    };
+    const scriptFiles = Object.keys(manifest.files).filter((rel) => rel.startsWith('.specify/scripts/'));
+    expect(scriptFiles).toHaveLength(6);
+    expect((JSON.parse(await read('.specify/init-options.json')) as Record<string, unknown>).script).toBe('py');
+  });
+
+  it('{py,sh} with active sh runs py first and sh last', async () => {
+    const engine = await loadEngine();
+    const settings = effectiveSpeckit({ targets: ['claude'], speckit: { scripts: ['py', 'sh'], script: 'sh' } }, engine);
+    const inits = speckitSequence(settings).filter((step) => step.includes('init'));
+    expect(inits.map((step) => step[step.indexOf('--script') + 1])).toEqual(['py', 'sh']);
+  });
+});
+

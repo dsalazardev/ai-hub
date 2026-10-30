@@ -19,9 +19,10 @@ export function uvxPrefix(settings: SpeckitSettings): string[] {
 
 /**
  * Secuencia de instalación (design D1, D3). Cada elemento son los argumentos de `uvx`.
- * Antepone un `specify init` por cada script no elegido y deja el elegido al final: los init
- * se acumulan sin pisarse, así una sola invocación del usuario deja los tres directorios y
- * `init-options.json` registra el script elegido. Nunca incluye `extension add --force`.
+ * Antepone un `specify init` por cada tipo no activo del conjunto elegido y deja el activo
+ * al final: los init se acumulan sin pisarse, así una sola invocación del usuario deja
+ * exactamente los directorios del conjunto y `init-options.json` registra el activo.
+ * Nunca incluye `extension add --force`.
  * `integration use` registra de forma aditiva las extensiones ya instaladas.
  */
 export function speckitSequence(settings: SpeckitSettings): string[][] {
@@ -47,7 +48,7 @@ export function speckitSequence(settings: SpeckitSettings): string[][] {
     script,
     ...extensions,
   ];
-  const steps: string[][] = (['sh', 'ps', 'py'] as const)
+  const steps: string[][] = settings.scripts
     .filter((script) => script !== settings.script)
     .map((script) => initFor(script));
   steps.push(initFor(settings.script));
@@ -102,6 +103,8 @@ export function gitBashCandidates(env: NodeJS.ProcessEnv = process.env): string[
 /**
  * Candidatos del script declarado, en orden de preferencia. Para `sh` en Windows va primero el
  * `bash` del PATH y después las rutas estándar de Git for Windows; en Linux y macOS sólo el del PATH.
+ * Para `py` va `python`, `python3` y `py` en ese orden en toda plataforma (design D5), con la sonda
+ * `print('ok')` — el contrato `stdout.trim() === 'ok'` de `probeShell` no cambia.
  */
 export function shellCandidates(
   settings: SpeckitSettings,
@@ -112,6 +115,13 @@ export function shellCandidates(
     return [
       { command: 'pwsh', args: ['-NoProfile', '-Command', 'echo ok'] },
       { command: 'powershell', args: ['-NoProfile', '-Command', 'echo ok'] },
+    ];
+  }
+  if (settings.script === 'py') {
+    return [
+      { command: 'python', args: ['-c', "print('ok')"] },
+      { command: 'python3', args: ['-c', "print('ok')"] },
+      { command: 'py', args: ['-c', "print('ok')"] },
     ];
   }
   if (platform !== 'win32') {
@@ -226,9 +236,13 @@ export async function speckitPreflight(
       settings.script === 'ps'
         ? `PowerShell no ejecuta \`echo ok\` (probados: ${shell.tried.join(', ')}). ` +
             `Instala PowerShell (pwsh o powershell). Alternativa: ai-hub ${command} --script sh.`
-        : `ningún bash ejecuta \`bash -c "echo ok"\` (probados: ${shell.tried.join(', ')}). ` +
-            'En Windows instala Git for Windows (Git Bash); el lanzador de WSL sin distribución no sirve. ' +
-            `Alternativa sin bash: ai-hub ${command} --script ps.`,
+        : settings.script === 'py'
+          ? `ningún intérprete de Python ejecuta \`python -c "print('ok')"\` (probados: ${shell.tried.join(', ')}). ` +
+              'Instala Python (https://www.python.org/downloads/). ' +
+              `Alternativas: ai-hub ${command} --script sh o ai-hub ${command} --script ps.`
+          : `ningún bash ejecuta \`bash -c "echo ok"\` (probados: ${shell.tried.join(', ')}). ` +
+              'En Windows instala Git for Windows (Git Bash); el lanzador de WSL sin distribución no sirve. ' +
+              `Alternativa sin bash: ai-hub ${command} --script ps.`,
     );
   }
   return { ok: problems.length === 0, problems, version };

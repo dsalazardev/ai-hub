@@ -38,7 +38,7 @@ import {
   type PreflightResult,
   type SpeckitEnvironment,
 } from '../speckit/commands.js';
-import { effectiveSpeckit, type ProjectSpeckit, type SpeckitSettings } from '../speckit/settings.js';
+import { DEFAULT_SPECKIT_SCRIPTS, effectiveSpeckit, type ProjectSpeckit, type SpeckitSettings } from '../speckit/settings.js';
 import { checkExtensions, checkIntegrations, readSpeckitState } from '../speckit/state.js';
 import { flagList, flagString } from './args.js';
 import type { CliContext, ParsedArgs } from './types.js';
@@ -87,31 +87,55 @@ export interface SpeckitPlan {
   /** Rango soportado declarado por el paquete; única fuente de versión. */
   supported: string;
   script: string;
+  /** Conjunto elegido; sólo cuando difiere de los tres por defecto (design D4). */
+  scripts?: string[];
   defaultIntegration: string | null;
   integrations: string[];
   extensions: Record<string, string>;
 }
 
 function speckitPlan(settings: SpeckitSettings, resolved: string | null): SpeckitPlan {
+  // D4: el conjunto entra al cuerpo hasheado sólo cuando difiere de los tres por defecto
+  // (mismo orden) — así toda invocación existente queda byte a byte igual y
+  // `--scripts sh,ps,py` explícito ≡ bare. Una permutación sí difiere: otra orden de
+  // init es otra intención.
+  const isDefault =
+    settings.scripts.length === DEFAULT_SPECKIT_SCRIPTS.length &&
+    settings.scripts.every((script, index) => script === DEFAULT_SPECKIT_SCRIPTS[index]);
   return {
     managed: settings.managed,
     package: settings.package,
     version: resolved,
     supported: settings.supported,
     script: settings.script,
+    ...(isDefault ? {} : { scripts: settings.scripts }),
     defaultIntegration: settings.defaultIntegration,
     integrations: settings.integrations,
     extensions: settings.extensions,
   };
 }
 
-/** Bloque `speckit` a escribir: conserva las restricciones del proyecto y fija `managed` y el script explícito. */
-function speckitBlock(existing: ProjectSpeckit | undefined, managed: boolean, script?: SpeckitScript): ProjectSpeckit {
-  return { ...(existing ?? {}), managed, ...(script !== undefined ? { script } : {}) };
+/**
+ * Bloque `speckit` a escribir: conserva las restricciones del proyecto y fija `managed`, el
+ * script explícito y el conjunto explícito (design D3: persistencia espejo — `script` sólo con
+ * `--script`, `scripts` sólo con `--scripts`; sin flag, el valor del manifest existente viaja).
+ */
+function speckitBlock(
+  existing: ProjectSpeckit | undefined,
+  managed: boolean,
+  script?: SpeckitScript,
+  scripts?: SpeckitScript[],
+): ProjectSpeckit {
+  return {
+    ...(existing ?? {}),
+    managed,
+    ...(script !== undefined ? { script } : {}),
+    ...(scripts !== undefined ? { scripts: [...scripts] } : {}),
+  };
 }
 
 /**
- * Lee `--script <sh|ps>` (design D3): valida antes de cualquier sondeo y nombra el comando concreto.
+ * Lee `--script <sh|ps|py>` (design D3): valida antes de cualquier sondeo y nombra el comando concreto.
  * Devuelve `undefined` cuando la bandera no se usó y `null` cuando es inválida (ya reportado).
  */
 function parseScriptFlag(
@@ -127,18 +151,100 @@ function parseScriptFlag(
   }
 }
 
+/** Análogo de `parseScriptFlag` para `--scripts`: `null` cuando es inválida (ya reportado). */
+function parseScriptsFlag(
+  args: ParsedArgs,
+  ctx: CliContext,
+  command: 'init' | 'install',
+): SpeckitScript[] | undefined | null {
+  try {
+    return scriptsFromArgs(args, command);
+  } catch (error) {
+    ctx.io.err((error as Error).message);
+    return null;
+  }
+}
+
 /** Validación pura de `--script`; lanza con el mensaje canónico. Compartida por init e install. */
 function scriptFromArgs(args: ParsedArgs, command: 'init' | 'install'): SpeckitScript | undefined {
   if (!('script' in args.flags)) {
     return undefined;
   }
   const value = flagString(args, 'script');
-  if (value === 'sh' || value === 'ps') {
+  if (value === 'sh' || value === 'ps' || value === 'py') {
     return value;
   }
   throw new Error(
-    `--script acepta sh o ps${value === null ? ' y necesita un valor' : ` (recibido: ${value})`}; ` +
-      `ejecuta ai-hub ${command} --script sh o ai-hub ${command} --script ps`,
+    `--script acepta sh, ps o py${value === null ? ' y necesita un valor' : ` (recibido: ${value})`}; ` +
+      `ejecuta ai-hub ${command} --script sh, ai-hub ${command} --script ps o ai-hub ${command} --script py`,
+  );
+}
+
+/**
+ * Validación pura de `--scripts` (design D3): lista comma-separated de sh, ps, py,
+ * mínimo un valor, sin duplicados. Compartida por init e install.
+ */
+function scriptsFromArgs(args: ParsedArgs, command: 'init' | 'install'): SpeckitScript[] | undefined {
+  if (!('scripts' in args.flags)) {
+    return undefined;
+  }
+  const items = flagList(args, 'scripts');
+  if (items.length === 0) {
+    throw new Error(
+      `--scripts necesita una lista sh, ps, py separada por comas, mínimo un valor; ` +
+        `ejecuta ai-hub ${command} --scripts py o ai-hub ${command} --scripts sh,ps,py`,
+    );
+  }
+  const scripts: SpeckitScript[] = [];
+  for (const item of items) {
+    if (item !== 'sh' && item !== 'ps' && item !== 'py') {
+      throw new Error(
+        `--scripts acepta sh, ps, py (recibido: ${item}); ` +
+          `ejecuta ai-hub ${command} --scripts py o ai-hub ${command} --scripts sh,ps,py`,
+      );
+    }
+    if (scripts.includes(item)) {
+      throw new Error(
+        `--scripts no admite duplicados y acepta sh, ps, py (recibido repetido: ${item}); ` +
+          `ejecuta ai-hub ${command} --scripts py o ai-hub ${command} --scripts sh,ps,py`,
+      );
+    }
+    scripts.push(item);
+  }
+  return scripts;
+}
+
+/**
+ * Coherencia explícita de activo y conjunto (design D3): el activo resuelto por
+ * precedencia (flag → manifest) no puede caer fuera del conjunto efectivo
+ * (flag → manifest → los tres) cuando fue elegido por flag o declarado en el
+ * manifest; sólo el default del engine (ni flag ni manifest) coacciona dentro
+ * del conjunto en `effectiveSpeckit`. Un `--script` explícito pisa al
+ * `speckit.script` del manifest, así la migración `--scripts py --script py`
+ * sobre un manifest `sh` procede; `--scripts py` solo sobre ese manifest falla
+ * porque cambiaría el activo declarado en silencio.
+ */
+function assertScriptCoherence(
+  script: SpeckitScript | undefined,
+  scripts: SpeckitScript[] | undefined,
+  existing: ProjectSpeckit | undefined,
+  command: 'init' | 'install',
+): void {
+  const effectiveSet = scripts ?? existing?.scripts;
+  const active = script ?? existing?.script;
+  if (effectiveSet === undefined || active === undefined || effectiveSet.includes(active)) {
+    return;
+  }
+  const setSource =
+    scripts !== undefined
+      ? `--scripts [${scripts.join(', ')}]`
+      : `speckit.scripts [${effectiveSet.join(', ')}] del manifest`;
+  const activeSource =
+    script !== undefined ? `--script ${script}` : `speckit.script ${existing?.script} del manifest`;
+  throw new Error(
+    `${activeSource} queda fuera del conjunto ${setSource}; el activo debe ser uno del conjunto elegido — ` +
+      `inclúyelo con ai-hub ${command} --scripts ${[...effectiveSet, active].join(',')} ` +
+      `o elige el activo dentro de [${effectiveSet.join(', ')}]`,
   );
 }
 
@@ -593,6 +699,7 @@ export interface PreparedInit {
  */
 export async function prepareInit(args: ParsedArgs, ctx: CliContext): Promise<PreparedInit> {
   const scriptFlag = scriptFromArgs(args, 'init');
+  const scriptsFlag = scriptsFromArgs(args, 'init');
   const sourceCheckout = await isEngineCheckout(ctx.root);
   const selection = await resolveSelection(args, ctx);
   if (selection.migrate && !sourceCheckout) {
@@ -611,10 +718,11 @@ export async function prepareInit(args: ParsedArgs, ctx: CliContext): Promise<Pr
   if (await exists(path.join(ctx.root, 'manifest.yaml'))) {
     existing = (await loadManifestContext(ctx.root).catch(() => null))?.manifest;
   }
+  assertScriptCoherence(scriptFlag, scriptsFlag, existing?.speckit, 'init');
   const spec = await buildSelection(args, selection.preset, engine, existing);
   const includeMcp = await exists(path.join(ctx.root, 'mcp-manifest.yaml'));
   const assets = await buildAssetPlan(spec, engine, selection.targets, includeMcp);
-  const speckit = speckitBlock(existing?.speckit, !args.flags['no-speckit'], scriptFlag);
+  const speckit = speckitBlock(existing?.speckit, !args.flags['no-speckit'], scriptFlag, scriptsFlag);
   const speckitSettings = speckitSettingsFor(selection.targets, speckit, engine);
   // El taller nunca ejecuta Spec Kit: su .specify/ es del mantenedor.
   const runSpeckit = speckitSettings.managed && !sourceCheckout;
@@ -836,12 +944,22 @@ export async function cmdInstall(args: ParsedArgs, ctx: CliContext): Promise<num
   if (scriptFlag === null) {
     return 2;
   }
+  const scriptsFlag = parseScriptsFlag(args, ctx, 'install');
+  if (scriptsFlag === null) {
+    return 2;
+  }
   let context;
   try {
     context = await loadManifestContext(ctx.root);
   } catch (error) {
     ctx.io.err((error as Error).message);
     return 1;
+  }
+  try {
+    assertScriptCoherence(scriptFlag, scriptsFlag, context.manifest.speckit, 'install');
+  } catch (error) {
+    ctx.io.err((error as Error).message);
+    return 2;
   }
   let spec: SelectionSpec;
   try {
@@ -852,7 +970,7 @@ export async function cmdInstall(args: ParsedArgs, ctx: CliContext): Promise<num
   }
   const includeMcp = await exists(path.join(ctx.root, 'mcp-manifest.yaml'));
   // install sin --no-speckit reactiva Spec Kit en un arnés degradado; con la bandera lo mantiene apagado.
-  const speckit = speckitBlock(context.manifest.speckit, !args.flags['no-speckit'], scriptFlag);
+  const speckit = speckitBlock(context.manifest.speckit, !args.flags['no-speckit'], scriptFlag, scriptsFlag);
   const speckitSettings = speckitSettingsFor(context.manifest.targets, speckit, context.engine);
   const runSpeckit = speckitSettings.managed && !(await isEngineCheckout(ctx.root));
   if (args.flags['dry-run']) {

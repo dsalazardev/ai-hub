@@ -130,6 +130,26 @@ describe('shell (7.2)', () => {
   });
 });
 
+describe('py shell (script-choice 4.4)', () => {
+  it('passes speckit:shell naming the interpreter when py is the active script', async () => {
+    expect((await cli(['install', '--script', 'py'])).code).toBe(0);
+    const result = await doctor();
+    expect(result.out).not.toContain('[FAIL]');
+    expect(result.code).toBe(0);
+    expect(line(result.out, 'speckit:shell')).toContain('python ejecuta los scripts py');
+    expect(line(result.out, 'speckit:script')).toContain('[OK]');
+  });
+
+  it('fails naming the interpreter and the install when no Python is available', async () => {
+    expect((await cli(['install', '--script', 'py'])).code).toBe(0);
+    const result = await doctor({ missing: ['python', 'python3', 'py'] });
+    expect(result.code).toBe(1);
+    expect(line(result.out, 'speckit:shell')).toMatch(/\[FAIL\].*Python/);
+    expect(line(result.out, 'speckit:shell')).toContain('probados: python, python3, py');
+    expect(line(result.out, 'speckit:shell')).toContain('instala Python');
+  });
+});
+
 describe('script drift (speckit:script)', () => {
   it('fails naming both values when the manifest script differs from the installed one', async () => {
     const manifestFile = path.join(root, 'manifest.yaml');

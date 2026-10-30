@@ -597,3 +597,23 @@ knowledge-ops tenía el tag `02-docs` en minúsculas, y las reglas universales s
 llevaban 2 referencias (`origin: ai-hub` en skill-rubric.md:26 y la spec
 `02-DOCS/wiki/sdd/specs/generalization-gate.md` en skill-harden-rubric.md:61 — el gate también
 barre `rules/`). Todo reescrito al vocabulario del motor.
+
+## 2026-10-30 — script-choice: el init py de specify-cli 1.2.5 envía un compañero powershell
+
+- **Conflicto de fuentes (sonda e2e 7.3b):** el escenario "A single-type set installs one
+  directory" del delta decía que `--scripts py` deja `.specify/scripts/` con **sólo** `python`
+  (6 archivos, manifiesto de 6). La sonda real (uvx, specify-cli 1.2.5) muestra que el
+  `specify init --script py` crea `python` **y también** `powershell` (6+6 en el manifiesto de
+  integridad). Sondeo directo: `--script ps` → sólo powershell; `--script sh` → sólo bash;
+  `--script py` → python + powershell. El escenario estaba calibrado sobre el fake
+  (modelo sin compañero), no sobre la realidad medida.
+- **Resolución (AGENTS.md §1, nivel 3 sobre el artefacto del propio change):** el delta se
+  corrigió en la misma sesión — el requisito exige un init por miembro del conjunto y jamás
+  uno fuera del conjunto (el contrato de AI-Hub, verificado por el fake); un escenario nuevo
+  "specify-cli's own companion is not a set member" documenta el compañero como carga propia
+  de specify que el instalador no añade, invoca ni borra. El fake queda como modelo de un
+  specify sin compañero (simplificación documentada). `openspec validate script-choice
+  --strict` en verde. No se resuelve en silencio: constancia en `.planning/impl_script-choice.md`
+  §7.3.
+- **Dato para el futuro:** si specify-cli retira el compañero en una versión futura del rango,
+  el escenario del compañero queda como hecho medido de 1.2.5, no como contrato.

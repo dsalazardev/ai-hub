@@ -38,12 +38,12 @@ Para el mínimo de 0.1.x: `init --preset-only --yes`. Para el catálogo completo
 
 `ai-hub init` **sin flags** en una terminal real (TTY en stdout y stdin, fuera del checkout del motor) abre un asistente interactivo de `@clack/prompts`. El gate vive al inicio de `cmdInit`: con cualquier flag, con la salida pipeada o en CI, ni una línea del asistente se ejecuta y la salida es byte a byte la del flujo de flags.
 
-El asistente es una **generadora de flags**, no un camino paralelo: cada decisión se resuelve a los flags existentes (`--targets`, `--preset`, `--full`/`--preset-only`/`--exclude`, `--script`) y el plan lo construye el mismo `planBodyFor` — el mismo input por el asistente y por flags produce el mismo plan y el mismo hash (test permanente en `core/tests/assistant.test.ts`). Pasos:
+El asistente es una **generadora de flags**, no un camino paralelo: cada decisión se resuelve a los flags existentes (`--targets`, `--preset`, `--full`/`--preset-only`/`--exclude`, `--script`, `--scripts`) y el plan lo construye el mismo `planBodyFor` — el mismo input por el asistente y por flags produce el mismo plan y el mismo hash (test permanente en `core/tests/assistant.test.ts`). Pasos:
 
 1. **Destinos** — multi-select con preselección por detección (`claude --version`, etc.).
 2. **Preset** — el detectado; si dos empatan, elección explícita (nunca adivina).
 3. **Perfil** — `full` / `preset-only` / `custom` con excludes guiados.
-4. **Script** — `sh`/`ps` informando el shell resuelto para `sh`.
+4. **Scripts** — multi-select del conjunto (`py`/`sh`/`ps`, mínimo uno, preseleccionado con los tres) y elección del activo cuando selecciona más de un tipo; informa el shell resuelto para `sh` y el intérprete para `py`.
 5. **Entorno** — verificación de herramientas (informativa: si falta una, nombra cómo instalarla y loguearse; el login jamás se verifica) y preflight de Spec Kit (fail-closed: si falla, exit 2 antes de escribir).
 6. **Idea del proyecto** — opcional, saltable.
 7. **Plan** — el mismo JSON de `--dry-run` con el entorno real, y confirmación. Al confirmar aplica por el mismo camino que `--yes`; al cancelar en cualquier paso no se escribe un byte.
@@ -51,6 +51,12 @@ El asistente es una **generadora de flags**, no un camino paralelo: cada decisi�
 Con idea, la confirmación escribe `backlog/seed.md` (la idea textual, la fecha y un apuntador) y `backlog/pre-prompt.md`, una plantilla bilingüe (español/inglés) que instruye al **agente del cliente** — no al CLI — a convertir la idea en items de backlog con criterio de aceptación verificable, priorizarlos y arrancar con `/speckit.constitution` y `/speckit-assess-intake`. La semilla es un activo versionable del proyecto: no entra al hash del plan, `sync` no la lockea y el `.gitignore` generado no la ignora. `doctor` la reporta como aviso informativo (`[OK] backlog: …`), nunca como gate.
 
 `@clack/prompts` ^1.8.1 es la única dependencia nueva: JS puro sin binarios nativos, 166,3 KB (170.333 bytes) de árbol en `node_modules`; el tarball publicado no incluye `node_modules` y crece sólo por los archivos nuevos de `dist`.
+
+### Conjunto de scripts y banner (0.8.0)
+
+El conjunto de scripts de Spec Kit pasa a ser elegible: `--scripts py` instala sólo `.specify/scripts/python`; `--scripts py,sh --script sh` instala python y bash con `sh` activo (los `specify init` van tipo por tipo, activo al final). Sin `--scripts` — y sin `speckit.scripts` en el manifest — se instalan los tres tipos exactamente como en 0.4–0.7: la salida pipeada es byte a byte la de 0.7.0. `--script` acepta además `py` (sonda `python -c "print('ok')"`, candidatos `python`, `python3`, `py`). El activo tiene que pertenecer al conjunto: la contradicción explícita sale con código 2 antes de escribir, nombrando ambos campos; un `--script` explícito pisa al `speckit.script` del manifest. El plan hasheado incluye `speckit.scripts` sólo cuando el conjunto difiere de los tres, así `--scripts sh,ps,py` explícito produce el mismo hash que la invocación sin flags.
+
+En la TUI, el paso de scripts es un multi-select del conjunto (mínimo uno) más la elección del activo cuando selecciona más de un tipo, y el asistente abre con un **banner de identidad** — bloque azul ANSI puro ("AI-HUB — Autonomous Software Factory") con letter-spacing, sin dependencias nuevas, apagado por `NO_COLOR` y ausente de toda salida pipeada porque el adaptador sólo se carga tras el gate de TTY.
 
 ### Contrato de instalación (0.3.0)
 

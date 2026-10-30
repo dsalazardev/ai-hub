@@ -84,7 +84,7 @@
         "pin": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
         "supported": { "type": "string", "minLength": 1 },
         "excludeNewer": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
-        "script": { "enum": ["sh", "ps"] },
+        "script": { "enum": ["sh", "ps", "py"] },
         "extensions": {
           "type": "object",
           "additionalProperties": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" }

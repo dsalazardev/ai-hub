@@ -209,11 +209,12 @@ describe('mismo hash por los dos caminos (R1, D4)', () => {
       preset: null,
       profile: 'full',
       excludes: [],
-      script: null,
+      scripts: ['sh', 'ps', 'py'],
+      script: 'sh',
       // D6: la idea no es flag; no debe perturbar el plan body ni el hash.
       idea: 'Una idea de demo que no debe entrar al plan',
     };
-    const argvArgs = parseArgs(['--yes', '--targets', 'claude,opencode', '--full']);
+    const argvArgs = parseArgs(['--yes', '--targets', 'claude,opencode', '--full', '--script', 'sh']);
     const byAssistant = await prepareInit(answersToFlags(answers), ctx);
     const byArgv = await prepareInit(argvArgs, ctx);
     const bodyAssistant = byAssistant.planBodyFor(null);
@@ -234,6 +235,7 @@ describe('mismo hash por los dos caminos (R1, D4)', () => {
       preset: 'python',
       profile: 'custom',
       excludes: ['ads', 'analytics'],
+      scripts: ['sh', 'ps', 'py'],
       script: 'sh',
       idea: null,
     };
@@ -260,7 +262,7 @@ describe('mismo hash por los dos caminos (R1, D4)', () => {
 describe('colector pasos 1-4 (D12)', () => {
   it('targets: preselección por detección y selección → --targets', async () => {
     await seedConsumer();
-    const { prompts, calls } = scriptedPrompts([['claude', 'opencode'], 'full', 'sh']);
+    const { prompts, calls } = scriptedPrompts([['claude', 'opencode'], 'full', ['py', 'sh', 'ps'], 'sh']);
     const sink = capture();
     const ctx = await createContext(root, sink.io, toolRunner(['claude', 'opencode']));
     const answers = await collectAnswers(prompts, ctx);
@@ -274,7 +276,7 @@ describe('colector pasos 1-4 (D12)', () => {
 
   it('sin empate: preset detectado, sin flag --preset', async () => {
     await seedConsumer();
-    const { prompts, messages } = scriptedPrompts([['claude'], 'full', 'sh']);
+    const { prompts, messages } = scriptedPrompts([['claude'], 'full', ['py', 'sh', 'ps'], 'sh']);
     const sink = capture();
     const ctx = await createContext(root, sink.io, fakeRunner().run);
     const answers = await collectAnswers(prompts, ctx);
@@ -288,7 +290,7 @@ describe('colector pasos 1-4 (D12)', () => {
     // package.json sin typescript + requirements.txt: generic-ts y python empatan a 2.
     await fs.writeFile(path.join(root, 'package.json'), '{"name":"demo"}\n', 'utf8');
     await fs.writeFile(path.join(root, 'requirements.txt'), 'pytest\n', 'utf8');
-    const { prompts, calls } = scriptedPrompts([['claude'], 'python', 'full', 'sh']);
+    const { prompts, calls } = scriptedPrompts([['claude'], 'python', 'full', ['py', 'sh', 'ps'], 'sh']);
     const sink = capture();
     const ctx = await createContext(root, sink.io, fakeRunner().run);
     const answers = await collectAnswers(prompts, ctx);
@@ -305,6 +307,7 @@ describe('colector pasos 1-4 (D12)', () => {
       'custom',
       'rule:core',
       'ads,analytics',
+      ['py', 'sh', 'ps'],
       'sh',
     ]);
     const sink = capture();
@@ -317,20 +320,132 @@ describe('colector pasos 1-4 (D12)', () => {
     expect(calls.filter((call) => call.kind === 'text')).toHaveLength(2);
   });
 
-  it('script → --script explícito; initial = default del engine; informa el shell resuelto', async () => {
+  it('script → --script explícito; initial del activo = default del engine; opciones = elegidos', async () => {
     await seedConsumer();
-    const { prompts, calls, messages } = scriptedPrompts([['claude'], 'preset-only', 'ps']);
+    const { prompts, calls, messages } = scriptedPrompts([['claude'], 'preset-only', ['sh', 'ps'], 'ps']);
     const sink = capture();
     const ctx = await createContext(root, sink.io, fakeRunner().run);
     const engine = await loadEngine();
     const answers = await collectAnswers(prompts, ctx);
+    expect(answers?.scripts).toEqual(['sh', 'ps']);
     expect(answers?.script).toBe('ps');
-    expect(answersToFlags(answers as AssistantAnswers).flags.script).toBe('ps');
-    const scriptCall = calls[calls.length - 1];
-    expect(scriptCall.kind).toBe('select');
-    expect(scriptCall.options).toEqual(['sh', 'ps']);
-    expect(scriptCall.initial).toBe(engine.speckit.script);
+    const flags = answersToFlags(answers as AssistantAnswers).flags;
+    expect(flags.script).toBe('ps');
+    expect(flags.scripts).toBe('sh,ps');
+    const activeCall = calls.filter((call) => call.kind === 'select').at(-1);
+    expect(activeCall?.options).toEqual(['sh', 'ps']);
+    expect(activeCall?.initial).toBe(engine.speckit.script);
     expect(messages.some((message) => message.includes('sh se ejecutará con'))).toBe(true);
+  });
+});
+
+describe('paso de scripts: conjunto y activo (script-choice 5.1, 5.2)', () => {
+  it('colecta el conjunto con multiselect y el activo con select sólo cuando elige más de uno', async () => {
+    await seedConsumer();
+    const { prompts, calls } = scriptedPrompts([['claude'], 'full', ['py', 'sh'], 'sh']);
+    const sink = capture();
+    const ctx = await createContext(root, sink.io, fakeRunner().run);
+    const answers = await collectAnswers(prompts, ctx);
+    expect(answers, 'el colector no debe cancelar').not.toBeNull();
+    expect(answers?.scripts).toEqual(['py', 'sh']);
+    expect(answers?.script).toBe('sh');
+    const setCall = calls.find((call) => call.kind === 'multiselect' && call.message.includes('script'));
+    expect(setCall?.options).toEqual(['py', 'sh', 'ps']);
+    expect(setCall?.initial).toEqual(['py', 'sh', 'ps']);
+    const activeCall = calls.filter((call) => call.kind === 'select').at(-1);
+    expect(activeCall?.options).toEqual(['py', 'sh']);
+    expect(activeCall?.initial).toBe('sh');
+    const flags = answersToFlags(answers as AssistantAnswers).flags;
+    expect(flags.scripts).toBe('py,sh');
+    expect(flags.script).toBe('sh');
+  });
+
+  it('{py} solo: sin pregunta del activo; flags --scripts py --script py', async () => {
+    await seedConsumer();
+    const { prompts, calls, messages } = scriptedPrompts([['claude'], 'full', ['py']]);
+    const sink = capture();
+    const ctx = await createContext(root, sink.io, fakeRunner().run);
+    const answers = await collectAnswers(prompts, ctx);
+    expect(answers?.scripts).toEqual(['py']);
+    expect(answers?.script).toBe('py');
+    expect(calls.filter((call) => call.kind === 'select' && call.message.includes('activo'))).toHaveLength(0);
+    expect(messages.some((message) => message.includes('py se ejecutará con'))).toBe(true);
+    const flags = answersToFlags(answers as AssistantAnswers).flags;
+    expect(flags.scripts).toBe('py');
+    expect(flags.script).toBe('py');
+  });
+
+  it('los tres: sólo --script, sin --scripts', async () => {
+    await seedConsumer();
+    const { prompts } = scriptedPrompts([['claude'], 'full', ['py', 'sh', 'ps'], 'ps']);
+    const sink = capture();
+    const ctx = await createContext(root, sink.io, fakeRunner().run);
+    const answers = await collectAnswers(prompts, ctx);
+    expect(answers?.scripts).toEqual(['py', 'sh', 'ps']);
+    expect(answers?.script).toBe('ps');
+    const flags = answersToFlags(answers as AssistantAnswers).flags;
+    expect(flags.script).toBe('ps');
+    expect('scripts' in flags).toBe(false);
+  });
+
+  it('cero seleccionado no deja continuar: re-pregunta', async () => {
+    await seedConsumer();
+    const { prompts, calls, messages } = scriptedPrompts([['claude'], 'full', [], ['py']]);
+    const sink = capture();
+    const ctx = await createContext(root, sink.io, fakeRunner().run);
+    const answers = await collectAnswers(prompts, ctx);
+    expect(answers?.scripts).toEqual(['py']);
+    const setCalls = calls.filter((call) => call.kind === 'multiselect' && call.message.includes('script'));
+    expect(setCalls).toHaveLength(2);
+    expect(messages.some((message) => message.includes('cero no deja continuar'))).toBe(true);
+  });
+});
+
+describe('mismo hash con conjunto nuevo (script-choice 5.3)', () => {
+  it('scripts py,sh + activo sh: asistente y flags producen el mismo plan body y sha256', async () => {
+    // Directorio de nombre fijo: el project id (y el hash) sale del basename.
+    const base = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-hash-set-'));
+    const dir = path.join(base, 'consumer');
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(
+      path.join(dir, 'package.json'),
+      `${JSON.stringify({ name: 'demo', devDependencies: { typescript: '^5.0.0' } }, null, 2)}\n`,
+      'utf8',
+    );
+    try {
+      const sink = capture();
+      const ctx = await createContext(dir, sink.io, fakeRunner().run);
+      const answers: AssistantAnswers = {
+        targets: ['claude'],
+        preset: null,
+        profile: 'full',
+        excludes: [],
+        scripts: ['py', 'sh'],
+        script: 'sh',
+        idea: null,
+      };
+      const argvArgs = parseArgs([
+        '--yes',
+        '--targets',
+        'claude',
+        '--full',
+        '--scripts',
+        'py,sh',
+        '--script',
+        'sh',
+      ]);
+      const byAssistant = await prepareInit(answersToFlags(answers), ctx);
+      const byArgv = await prepareInit(argvArgs, ctx);
+      const bodyAssistant = byAssistant.planBodyFor(null);
+      const bodyArgv = byArgv.planBodyFor(null);
+      expect(bodyAssistant).toEqual(bodyArgv);
+      const hashAssistant = sha256(JSON.stringify(bodyAssistant));
+      const hashArgv = sha256(JSON.stringify(bodyArgv));
+      expect(hashAssistant).toBe(hashArgv);
+      expect(hashAssistant).toMatch(/^[0-9a-f]{64}$/);
+    } finally {
+      await fs.rm(base, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    }
   });
 });
 
@@ -338,7 +453,7 @@ describe('verificación de herramientas (R3, D7)', () => {
   it('herramienta faltante: nombra la herramienta, cómo instalarla y loguearse; no rompe; ningún prompt pide credenciales', async () => {
     await seedConsumer();
     // Ninguna herramienta instalada: fakeRunner responde notFound a cada probe.
-    const { prompts, messages, calls } = scriptedPrompts([['claude'], 'full', 'sh', '']);
+    const { prompts, messages, calls } = scriptedPrompts([['claude'], 'full', ['py', 'sh', 'ps'], 'sh', '']);
     const { ctx } = await assistantCtx(prompts);
     const code = await cmdInit(parseArgs([]), ctx);
     expect(code).toBe(0);
@@ -352,7 +467,7 @@ describe('verificación de herramientas (R3, D7)', () => {
 
   it('preflight de Spec Kit fallido: exit 2 antes de escribir, igual que hoy (D8)', async () => {
     await seedConsumer();
-    const { prompts } = scriptedPrompts([['claude'], 'full', 'sh']);
+    const { prompts } = scriptedPrompts([['claude'], 'full', ['py', 'sh', 'ps'], 'sh']);
     const { ctx, err } = await assistantCtx(prompts, true, fakeRunner({ missing: ['uvx'] }).run);
     const code = await cmdInit(parseArgs([]), ctx);
     expect(code).toBe(2);
@@ -375,6 +490,7 @@ describe('cero secretos (R3)', () => {
       ['claude', 'copilot'],
       'custom',
       'ads',
+      ['py', 'sh', 'ps'],
       'sh',
       '',
     ]);
@@ -438,7 +554,7 @@ describe('cancelabilidad (R5, D5)', () => {
     await assertNothingWritten();
   });
 
-  it('cancelar en el paso script: 0 archivos', async () => {
+  it('cancelar en el multiselect del conjunto: 0 archivos (script-choice 5.4)', async () => {
     await seedConsumer();
     const { prompts } = scriptedPrompts([['claude'], 'full', null]);
     const { ctx, out } = await assistantCtx(prompts);
@@ -447,9 +563,18 @@ describe('cancelabilidad (R5, D5)', () => {
     await assertNothingWritten();
   });
 
+  it('cancelar en el select del activo: 0 archivos (script-choice 5.4)', async () => {
+    await seedConsumer();
+    const { prompts } = scriptedPrompts([['claude'], 'full', ['py', 'sh'], null]);
+    const { ctx, out } = await assistantCtx(prompts);
+    expect(await cmdInit(parseArgs([]), ctx)).toBe(0);
+    expect(out.join('\n')).toContain('cancelado');
+    await assertNothingWritten();
+  });
+
   it('cancelar en el paso idea: 0 archivos', async () => {
     await seedConsumer();
-    const { prompts } = scriptedPrompts([['claude'], 'full', 'sh', null]);
+    const { prompts } = scriptedPrompts([['claude'], 'full', ['py', 'sh', 'ps'], 'sh', null]);
     const { ctx, out } = await assistantCtx(prompts);
     expect(await cmdInit(parseArgs([]), ctx)).toBe(0);
     expect(out.join('\n')).toContain('cancelado');
@@ -458,7 +583,7 @@ describe('cancelabilidad (R5, D5)', () => {
 
   it('cancelar en la confirmación final: el plan se imprimió, el confirm se pidió, 0 archivos', async () => {
     await seedConsumer();
-    const { prompts, calls } = scriptedPrompts([['claude'], 'full', 'sh', '', null]);
+    const { prompts, calls } = scriptedPrompts([['claude'], 'full', ['py', 'sh', 'ps'], 'sh', '', null]);
     const { ctx, out } = await assistantCtx(prompts);
     expect(await cmdInit(parseArgs([]), ctx)).toBe(0);
     expect(out.join('\n')).toContain('"command": "init"');
@@ -469,7 +594,7 @@ describe('cancelabilidad (R5, D5)', () => {
 
   it('confirmar: aplica el plan por el mismo camino que --yes', async () => {
     await seedConsumer();
-    const { prompts } = scriptedPrompts([['claude'], 'full', 'sh', '', true]);
+    const { prompts } = scriptedPrompts([['claude'], 'full', ['py', 'sh', 'ps'], 'sh', '', true]);
     const { ctx, out } = await assistantCtx(prompts);
     expect(await cmdInit(parseArgs([]), ctx)).toBe(0);
     const joined = out.join('\n');
@@ -496,7 +621,7 @@ describe('aplicación equivalente: asistente vs flags (R1)', () => {
     // A: asistente scriptado (targets claude, full, script sh, confirmar).
     const sinkA = capture();
     const ctxA = await createContext(dirA, sinkA.io, fakeRunner().run);
-    const promptsA = scriptedPrompts([['claude'], 'full', 'sh', '', true]).prompts;
+    const promptsA = scriptedPrompts([['claude'], 'full', ['py', 'sh', 'ps'], 'sh', '', true]).prompts;
     const codeA = await cmdInit(parseArgs([]), {
       ...ctxA,
       interactive: true,
@@ -533,7 +658,7 @@ describe('aplicación equivalente: asistente vs flags (R1)', () => {
     const lockBefore = await read(dirA, 'sync.lock.json');
     const sinkA2 = capture();
     const ctxA2 = await createContext(dirA, sinkA2.io, fakeRunner().run);
-    const promptsA2 = scriptedPrompts([['claude'], 'full', 'sh', '', true]).prompts;
+    const promptsA2 = scriptedPrompts([['claude'], 'full', ['py', 'sh', 'ps'], 'sh', '', true]).prompts;
     expect(await cmdInit(parseArgs([]), { ...ctxA2, interactive: true, assistantPrompts: promptsA2 })).toBe(0);
     expect(await read(dirA, 'sync.lock.json')).toBe(lockBefore);
 
@@ -545,7 +670,7 @@ describe('semilla y pre-prompt (D6, D9, D10)', () => {
   it('con idea: seed.md lleva la idea textual, la fecha y el apuntador; pre-prompt.md es la plantilla bilingüe', async () => {
     await seedConsumer();
     const idea = 'Un panel de control para visualizar métricas de despliegue';
-    const { prompts } = scriptedPrompts([['claude'], 'full', 'sh', idea, true]);
+    const { prompts } = scriptedPrompts([['claude'], 'full', ['py', 'sh', 'ps'], 'sh', idea, true]);
     const { ctx } = await assistantCtx(prompts);
     expect(await cmdInit(parseArgs([]), ctx)).toBe(0);
     const seed = await fs.readFile(path.join(root, 'backlog', 'seed.md'), 'utf8');
@@ -561,7 +686,7 @@ describe('semilla y pre-prompt (D6, D9, D10)', () => {
 
   it('sin idea (paso saltado): el apply ocurre y backlog/ no existe', async () => {
     await seedConsumer();
-    const { prompts } = scriptedPrompts([['claude'], 'full', 'sh', '', true]);
+    const { prompts } = scriptedPrompts([['claude'], 'full', ['py', 'sh', 'ps'], 'sh', '', true]);
     const { ctx } = await assistantCtx(prompts);
     expect(await cmdInit(parseArgs([]), ctx)).toBe(0);
     await expect(fs.access(path.join(root, 'manifest.yaml'))).resolves.toBeUndefined();
@@ -572,7 +697,7 @@ describe('semilla y pre-prompt (D6, D9, D10)', () => {
 describe('invisibilidad para el arnés (D9)', () => {
   it('sync no lockea backlog/, .gitignore no lo ignora, y la idea no cambia el hash', async () => {
     await seedConsumer();
-    const { prompts } = scriptedPrompts([['claude'], 'full', 'sh', 'Idea invisible al hash', true]);
+    const { prompts } = scriptedPrompts([['claude'], 'full', ['py', 'sh', 'ps'], 'sh', 'Idea invisible al hash', true]);
     const { ctx } = await assistantCtx(prompts);
     expect(await cmdInit(parseArgs([]), ctx)).toBe(0);
     // (a) el lock no conoce backlog/: no es un destino de sync.
@@ -589,6 +714,7 @@ describe('invisibilidad para el arnés (D9)', () => {
       preset: null,
       profile: 'full',
       excludes: [],
+      scripts: ['sh', 'ps', 'py'],
       script: 'sh',
       idea: null,
     };

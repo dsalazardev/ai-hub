@@ -1,5 +1,6 @@
 import * as p from '@clack/prompts';
 import { isCancel } from '@clack/prompts';
+import { renderBanner } from './banner.js';
 import type { AssistantPrompts, PromptOption } from './assistant.js';
 
 function toOptions(options: PromptOption[]): p.Option<string>[] {
@@ -18,6 +19,11 @@ function toOptions(options: PromptOption[]): p.Option<string>[] {
  */
 export const clackPrompts: AssistantPrompts = {
   intro: (title) => {
+    // Banner de identidad (design D8): antes de la intro de clack. El ancho sale del
+    // terminal con fallback seguro; NO_COLOR (presente y no vacío) apaga los escapes.
+    // Este módulo sólo se carga tras el gate de TTY: ningún byte de banner en salida pipeada.
+    const noColor = (process.env.NO_COLOR ?? '') !== '';
+    process.stdout.write(`${renderBanner(process.stdout.columns ?? 80, !noColor)}\n`);
     p.intro(title);
   },
   note: (message) => {

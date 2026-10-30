@@ -154,7 +154,14 @@
       "properties": {
         "managed": { "type": "boolean" },
         "version": { "type": "string", "minLength": 1 },
-        "script": { "enum": ["sh", "ps"] },
+        "script": { "enum": ["sh", "ps", "py"] },
+        "scripts": {
+          "type": "array",
+          "items": { "enum": ["sh", "ps", "py"] },
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true
+        },
         "defaultTarget": { "type": "string", "minLength": 1 }
       }
     }

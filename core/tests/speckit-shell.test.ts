@@ -15,6 +15,10 @@ async function psSettings(): Promise<SpeckitSettings> {
   return effectiveSpeckit({ targets: ['claude'], speckit: { script: 'ps' } }, await loadEngine());
 }
 
+async function pySettings(): Promise<SpeckitSettings> {
+  return effectiveSpeckit({ targets: ['claude'], speckit: { script: 'py' } }, await loadEngine());
+}
+
 /** El bash del PATH es el lanzador de WSL sin distribución; cualquier otro comando ejecuta. */
 const brokenWslRunner: ProcessRunner = async (command) =>
   command === 'bash'
@@ -62,6 +66,41 @@ describe('shellCandidates (1.1)', () => {
         'powershell',
       ]);
     }
+  });
+});
+
+describe('python candidates (script-choice 4.1, 4.2)', () => {
+  it('lists python, python3 and py in order for the py script on every platform', async () => {
+    const settings = await pySettings();
+    for (const platform of ['win32', 'linux'] as const) {
+      expect(shellCandidates(settings, platform, {})).toEqual([
+        { command: 'python', args: ['-c', "print('ok')"] },
+        { command: 'python3', args: ['-c', "print('ok')"] },
+        { command: 'py', args: ['-c', "print('ok')"] },
+      ]);
+    }
+  });
+
+  it('keeps the first candidate that executes: python3 when python fails', async () => {
+    const runner: ProcessRunner = async (command) =>
+      command === 'python'
+        ? { status: 1, stdout: '', stderr: 'not found' }
+        : { status: 0, stdout: 'ok\n', stderr: '' };
+    const probe = await probeShell(await pySettings(), runner, '.', 'linux', {});
+    expect(probe).toEqual({ ok: true, command: 'python3', tried: ['python', 'python3'] });
+  });
+
+  it('falls back to py when python and python3 do not run', async () => {
+    const runner: ProcessRunner = async (command) =>
+      command === 'py' ? { status: 0, stdout: 'ok\n', stderr: '' } : { status: 1, stdout: '', stderr: '' };
+    const probe = await probeShell(await pySettings(), runner, '.', 'win32', {});
+    expect(probe).toEqual({ ok: true, command: 'py', tried: ['python', 'python3', 'py'] });
+  });
+
+  it('fails naming every candidate when no interpreter runs', async () => {
+    const runner: ProcessRunner = async () => ({ status: 1, stdout: '', stderr: 'x' });
+    const probe = await probeShell(await pySettings(), runner, '.', 'linux', {});
+    expect(probe).toEqual({ ok: false, command: 'python', tried: ['python', 'python3', 'py'] });
   });
 });
 
