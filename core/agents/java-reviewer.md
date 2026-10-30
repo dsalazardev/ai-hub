@@ -1,7 +1,6 @@
 ---
 name: java-reviewer
 description: 'Java and Spring reviewer: inspects changed code for stack-specific failure modes and reports evidence without editing. NOT Android/Kotlin review or generic build repair.'
-role: reviewer
 tier: balanced
 skills:
   - java

@@ -1,7 +1,6 @@
 ---
 name: typescript-reviewer
 description: 'TypeScript reviewer: inspects changed code for stack-specific failure modes and reports evidence without editing. NOT framework-specific UI review or TypeScript build repair.'
-role: reviewer
 tier: balanced
 skills:
   - typescript

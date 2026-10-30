@@ -1,7 +1,6 @@
 ---
 name: csharp-reviewer
 description: 'C# and .NET reviewer: inspects changed code for stack-specific failure modes and reports evidence without editing. NOT Java review or dotnet build repair.'
-role: reviewer
 tier: balanced
 skills:
   - csharp-dotnet

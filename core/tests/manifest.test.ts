@@ -30,7 +30,7 @@ import { fixtureManifest, seedFixture } from './fixtures.js';
 const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url));
 
 describe('engine invariants', () => {
-  it('declares 8 roles, 17 commands and 7 labels', async () => {
+  it('declares 9 roles, 17 commands and 7 labels', async () => {
     const engine = await loadEngine();
     expect(engine.roles).toHaveLength(ENGINE_COUNTS.roles);
     expect(engine.commands).toHaveLength(ENGINE_COUNTS.commands);
@@ -69,7 +69,7 @@ describe('engine invariants', () => {
       ...Array(9).fill('feature'),
       ...Array(3).fill('bug'),
     ] as EngineManifest['commands'][number]['lane'][];
-    const roles: EngineManifest['roles'] = Array.from({ length: 8 }, (_, index) => ({
+    const roles: EngineManifest['roles'] = Array.from({ length: 9 }, (_, index) => ({
       id: `r${index}`,
       canonical: `r${index}`,
       derived: false,
@@ -106,6 +106,53 @@ describe('engine invariants', () => {
     expect(errors).toEqual(['comando duplicado: cmd-0']);
     expect(findDuplicateIds(['a', 'b', 'a', 'c', 'b'])).toEqual(['a', 'b']);
   });
+
+  it('rejects a read-only role that declares writes and accepts a well-formed one', () => {
+    const ids = Array.from({ length: 17 }, (_, index) => `cmd-${index}`);
+    const lanes = [
+      ...Array(5).fill('assessment'),
+      ...Array(9).fill('feature'),
+      ...Array(3).fill('bug'),
+    ] as EngineManifest['commands'][number]['lane'][];
+    const build = (refuterCanModify: string[]): EngineManifest => ({
+      version: 2,
+      roles: Array.from({ length: 9 }, (_, index) => ({
+        id: `r${index}`,
+        canonical: `r${index}`,
+        derived: false,
+        read_only: index === 1,
+        can_modify: index === 1 ? refuterCanModify : [],
+        cannot_modify: [],
+        commands: index === 0 ? [...ids] : [],
+        gate: 'none',
+      })),
+      commands: lanes.map((lane, index) => ({
+        id: ids[index],
+        name: `command ${index}`,
+        lane,
+        artifacts: ['artifact'],
+        exit: ['GO'],
+        role: 'r0',
+        speckit: `speckit.cmd${index}`,
+      })),
+      exit_effects: { GO: 'mantiene ai::in-spec' },
+      labels: Array.from({ length: 7 }, (_, index) => `label-${index}`),
+      targets: ['claude'],
+      speckit: {
+        package: 'specify-cli',
+        supported: '>=1.2.3 <1.3.0',
+        script: 'sh',
+        extensions: { assess: '1.0.1', bug: '1.0.1' },
+      },
+    });
+
+    const offending = crossValidate(build(['src/**'])).join('\n');
+    expect(offending).toContain('roles "r1"');
+    expect(offending).toContain('read-only');
+    expect(offending).toContain('can_modify');
+
+    expect(crossValidate(build([]))).toEqual([]);
+  });
 });
 
 describe('project manifest v2', () => {
@@ -139,7 +186,7 @@ describe('project manifest v2', () => {
   it('generates a stable inventory with engine and project counts', async () => {
     const context = await loadManifestContext(REPO_ROOT);
     const inventory = buildInventory(context.manifest, context.engine);
-    expect(inventory.counts).toMatchObject({ roles: 8, commands: 17, labels: 7, targets: 5 });
+    expect(inventory.counts).toMatchObject({ roles: 9, commands: 17, labels: 7, targets: 5 });
     expect(inventory.preset).toEqual({ id: 'generic-ts', version: 1 });
   });
 

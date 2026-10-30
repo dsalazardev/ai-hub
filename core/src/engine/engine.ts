@@ -10,7 +10,7 @@ const ENGINE_PATH = path.join(__dirname, '..', '..', 'engine', 'engine.yaml');
 const SCHEMA_PATH = path.join(__dirname, '..', '..', 'schema', 'engine.schema.json');
 export const ENGINE_SKILLS_DIR = path.join(__dirname, '..', '..', 'skills', 'shared');
 
-export const ENGINE_COUNTS = { roles: 8, commands: 17, labels: 7 } as const;
+export const ENGINE_COUNTS = { roles: 9, commands: 17, labels: 7 } as const;
 export const ENGINE_LANES = { assessment: 5, feature: 9, bug: 3 } as const;
 
 export type Lane = keyof typeof ENGINE_LANES;
@@ -19,6 +19,7 @@ export interface EngineRole {
   id: string;
   canonical: string;
   derived: boolean;
+  read_only?: boolean;
   description?: string;
   can_modify: string[];
   cannot_modify: string[];
@@ -160,6 +161,11 @@ export function crossValidate(engine: EngineManifest): string[] {
     const declared = [...role.commands].sort();
     if (JSON.stringify(expected) !== JSON.stringify(declared)) {
       errors.push(`roles "${role.id}".commands no coincide con los comandos asignados`);
+    }
+  }
+  for (const role of engine.roles) {
+    if (role.read_only === true && role.can_modify.length > 0) {
+      errors.push(`roles "${role.id}" es read-only y no puede declarar can_modify`);
     }
   }
   for (const [lane, count] of Object.entries(ENGINE_LANES)) {

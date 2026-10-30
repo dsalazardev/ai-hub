@@ -1,7 +1,6 @@
 ---
 name: cpp-build-resolver
 description: 'C++ build resolver: reproduces a failing build and applies the minimum verified repair. NOT ownership review or build-system modernization.'
-role: build-resolver
 tier: balanced
 skills:
   - cpp

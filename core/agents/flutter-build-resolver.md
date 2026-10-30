@@ -1,7 +1,6 @@
 ---
 name: flutter-build-resolver
 description: 'Flutter build resolver: reproduces a failing build and applies the minimum verified repair. NOT widget review or package modernization.'
-role: build-resolver
 tier: balanced
 skills:
   - flutter

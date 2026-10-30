@@ -32,7 +32,7 @@ afterEach(async () => {
 describe('full generic-ts installation', () => {
   // Timeout propio: una instalación full real tarda ~60 s (init medido en 59,6 s; 68,2 s con el montaje del
   // test en el equipo del dueño). El resto del proyecto integration conserva 60 s.
-  it('installs the measured project skills, 35 agents, 6 rules and the measured destinations (timeout 180 s)', { timeout: 180_000 }, async () => {
+  it('installs the measured project skills, 39 agents, 6 rules and the measured destinations (timeout 180 s)', { timeout: 180_000 }, async () => {
     await fs.writeFile(
       path.join(root, 'package.json'),
       JSON.stringify({ name: 'demo', devDependencies: { typescript: '^5.0.0' } }),
@@ -40,7 +40,7 @@ describe('full generic-ts installation', () => {
     const result = await cli(['init', '--yes']);
     expect(result.code).toBe(0);
     expect(result.out).toContain(`${MEASURED.projectSkills} skills de proyecto + 17 comandos Spec Kit`);
-    expect(result.out).toContain('35 agentes');
+    expect(result.out).toContain('39 agentes');
     expect(result.out).toContain('6 reglas');
     expect(result.out).toContain(`${MEASURED.lock.full} destinos`);
 
@@ -69,7 +69,7 @@ describe('full generic-ts installation', () => {
     ).toHaveLength(MEASURED.projectSkills);
     expect(
       (await fs.readdir(path.join(root, '.ai-hub', 'agents'))).filter((file) => file.endsWith('.md')),
-    ).toHaveLength(35);
+    ).toHaveLength(39);
 
     const lock = JSON.parse(await fs.readFile(path.join(root, 'sync.lock.json'), 'utf8'));
     expect(Object.keys(lock.files)).toHaveLength(MEASURED.lock.full);

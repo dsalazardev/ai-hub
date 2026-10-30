@@ -10,7 +10,7 @@
     "version": 1
   },
   "engine": {
-    "roles": 8,
+    "roles": 9,
     "commands": 17,
     "labels": 7
   },
@@ -18,6 +18,7 @@
     "implementer-backend",
     "implementer-frontend",
     "prompt-explorer",
+    "refuter",
     "reviewer-architecture",
     "reviewer-exploration",
     "reviewer-tests",
@@ -150,8 +151,8 @@
     "rules": "custom"
   },
   "catalog": {
-    "version": "0.5.0",
-    "hash": "161e1531fb9fc3fd50919e73e26db856f2e01f11f5018927fe0115dc70a42f2b"
+    "version": "0.6.0",
+    "hash": "568d0d128d4954499b759c097e835362ae188b21e9b37719243422323694151f"
   },
   "agents": [
     "cpp-build-resolver",
@@ -161,6 +162,7 @@
     "django-reviewer",
     "explorer-domain",
     "fastapi-reviewer",
+    "finding-verifier",
     "flutter-build-resolver",
     "flutter-reviewer",
     "go-build-resolver",
@@ -179,6 +181,9 @@
     "rag-reviewer",
     "react-build-resolver",
     "react-reviewer",
+    "refuter-correctness",
+    "refuter-security",
+    "refuter-tests",
     "reviewer-architecture",
     "reviewer-tests",
     "rust-build-resolver",
@@ -461,11 +466,11 @@
     "skill-quality/skill-rubric"
   ],
   "counts": {
-    "roles": 8,
+    "roles": 9,
     "commands": 17,
     "labels": 7,
     "targets": 5,
-    "agents": 35,
+    "agents": 39,
     "skills": 261,
     "rules": 5
   }

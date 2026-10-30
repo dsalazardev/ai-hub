@@ -1,10 +1,10 @@
 {
   "name": "@dsalazardev/ai-hub-cli",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "author": "Daner Alejandro Salazar Colorado",
   "license": "MIT",
   "type": "module",
-  "description": "AI Hub CLI — arnés agéntico instalable: bootstrap de .ai-hub/, preset por detección, sync multi-target, doctor y guardias.",
+  "description": "AI Hub CLI â€” arnÃ©s agÃ©ntico instalable: bootstrap de .ai-hub/, preset por detecciÃ³n, sync multi-target, doctor y guardias.",
   "keywords": [
     "ai",
     "agents",

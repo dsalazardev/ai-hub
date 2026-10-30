@@ -71,18 +71,23 @@ async function exists(file: string): Promise<boolean> {
   );
 }
 
-async function validateCatalogFile(file: string, errors: string[]): Promise<void> {
+async function validateCatalogFile(
+  file: string,
+  errors: string[],
+): Promise<Record<string, unknown> | null> {
   const text = await fs.readFile(file, 'utf8').catch(() => null);
   if (text === null) {
     errors.push(`no se puede leer ${file}`);
-    return;
+    return null;
   }
   try {
     const { data } = splitFrontmatter(text, file);
     frontmatterString(data, 'name', file);
     frontmatterString(data, 'description', file);
+    return data;
   } catch (error) {
     errors.push(error instanceof Error ? error.message : String(error));
+    return null;
   }
 }
 
@@ -171,6 +176,7 @@ export async function validateManifestData(
       await validateCatalogFile(file, errors);
     }
   }
+  const roleIds = new Set(engine.roles.map((role) => role.id));
   for (const agent of manifest.agents.publish) {
     const projectFile = path.join(root, manifest.agents.source, `${agent}.md`);
     const engineFile = path.join(ENGINE_AGENTS, `${agent}.md`);
@@ -183,7 +189,15 @@ export async function validateManifestData(
       errors.push(`agents.publish "${agent}" no existe en ${manifest.agents.source} ni en el motor`);
       continue;
     }
-    await validateCatalogFile(file, errors);
+    const frontmatter = await validateCatalogFile(file, errors);
+    if (frontmatter !== null && 'role' in frontmatter) {
+      const role = frontmatter.role;
+      if (typeof role !== 'string' || !roleIds.has(role)) {
+        errors.push(
+          `agents.publish "${agent}" declara el rol desconocido "${String(role)}"`,
+        );
+      }
+    }
   }
   for (const rule of manifest.rules.publish) {
     const file = path.join(root, manifest.rules.source, `${rule}.md`);

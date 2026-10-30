@@ -25,14 +25,15 @@ async function currentSection(): Promise<{ version: string; date: string; body: 
   return { version: pkg.version, date: heading[1], body: changelog.slice(start, next < 0 ? undefined : next) };
 }
 
-describe('release 0.3.1 (9.3)', () => {
-  it('bumps the package and names the contracts that change in 0.5.0', async () => {
+describe('release 0.6.0 (8.1)', () => {
+  it('bumps the package and names the contracts that change in 0.6.0', async () => {
     const section = await currentSection();
-    expect(section.version).toBe('0.5.0');
-    expect(section.body).toMatch(/de 163 a 261/);
-    expect(section.body).toContain('origin: dsalazardev');
-    expect(section.body).toMatch(/02-DOCS/);
-    expect(section.body).toContain('com.dsalazardev.contrast');
+    expect(section.version).toBe('0.6.0');
+    expect(section.body).toMatch(/9 roles/);
+    expect(section.body).toMatch(/39 agentes/);
+    expect(section.body).toContain('read_only');
+    expect(section.body).toMatch(/REFUTED \/ NOT-REFUTED/);
+    expect(section.body).toMatch(/CONFIRMED/);
   });
 
   it('publishes the measured figures, not computed ones', async () => {

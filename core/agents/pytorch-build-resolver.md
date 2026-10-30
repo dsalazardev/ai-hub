@@ -1,7 +1,6 @@
 ---
 name: pytorch-build-resolver
 description: 'PyTorch build resolver: reproduces a failing build and applies the minimum verified repair. NOT model-quality review or training redesign.'
-role: build-resolver
 tier: balanced
 skills:
   - machine-learning

@@ -1,7 +1,6 @@
 ---
 name: rag-reviewer
 description: 'RAG reviewer: inspects changed code for stack-specific failure modes and reports evidence without editing. NOT general ML training review or retrieval implementation.'
-role: reviewer
 tier: balanced
 skills:
   - rag

@@ -12,11 +12,11 @@ import { seedFixture } from './fixtures.js';
 const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url));
 
 describe('real catalog', () => {
-  it('validates 35 agents, 261 project skills and 17 Spec Kit commands', async () => {
+  it('validates 39 agents, 261 project skills and 17 Spec Kit commands', async () => {
     const context = await loadManifestContext(REPO_ROOT);
     const speckitCommands = [...new Set(context.engine.commands.map((command) => command.speckit))];
 
-    expect(context.manifest.agents.publish).toHaveLength(35);
+    expect(context.manifest.agents.publish).toHaveLength(39);
     expect(context.manifest.skills.publish).toHaveLength(261);
     expect(speckitCommands).toHaveLength(17);
 
@@ -92,6 +92,35 @@ describe('real catalog', () => {
       );
       await expect(loadManifestContext(root)).rejects.toThrow(/spec-author\.md/);
       await expect(loadManifestContext(root)).rejects.toThrow(/Nested mappings|frontmatter/i);
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects an agent with an unknown role and loads a known one without projecting it', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-catalog-'));
+    try {
+      await seedFixture(root);
+      await fs.writeFile(
+        path.join(root, '.ai-hub/agents/spec-author.md'),
+        '---\nname: spec-author\ndescription: Authors requirements.\nrole: no-such-role\n---\n\n# spec-author\n',
+        'utf8',
+      );
+      await expect(loadManifestContext(root)).rejects.toThrow(/spec-author/);
+      await expect(loadManifestContext(root)).rejects.toThrow(/no-such-role/);
+
+      await fs.writeFile(
+        path.join(root, '.ai-hub/agents/spec-author.md'),
+        '---\nname: spec-author\ndescription: Authors requirements.\nrole: refuter\n---\n\n# spec-author\n',
+        'utf8',
+      );
+      const context = await loadManifestContext(root);
+      expect(context.manifest.agents.publish).toContain('spec-author');
+      const config = await loadSyncConfig(root);
+      const rendered = await renderAll(root, config);
+      const claudeAgent = rendered.get('.claude/agents/spec-author.md');
+      expect(claudeAgent).toBeDefined();
+      expect(claudeAgent).not.toContain('role:');
     } finally {
       await fs.rm(root, { recursive: true, force: true });
     }

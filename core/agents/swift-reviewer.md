@@ -1,7 +1,6 @@
 ---
 name: swift-reviewer
 description: 'Swift iOS reviewer: inspects changed code for stack-specific failure modes and reports evidence without editing. NOT Kotlin review or Xcode build repair.'
-role: reviewer
 tier: balanced
 skills:
   - swift-ios

@@ -1,7 +1,6 @@
 ---
 name: php-reviewer
 description: 'PHP and Laravel reviewer: inspects changed code for stack-specific failure modes and reports evidence without editing. NOT Django review or Composer/build repair.'
-role: reviewer
 tier: balanced
 skills:
   - laravel

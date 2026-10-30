@@ -111,8 +111,19 @@ Assessment ──GO──> Feature SDD ──CONVERGED──> ai::in-review ─�
 | Implementer-Backend | implementer-backend | Backend del proyecto | Frontend | typecheck + tests |
 | Reviewer-Architecture | reviewer-architecture | `.planning/review_arch_*.md` | Código | PASS / NEEDS_FIX / BLOCKED |
 | Reviewer-Tests | reviewer-tests | `.planning/review_tests_*.md` | Código | cobertura declarada |
+| Refuter | refuter | — (read-only) | Todo | REFUTED / NOT-REFUTED |
 
 Los dos roles derivados los ejerce el orquestador; no tienen archivo propio.
+
+**Panel de refutación.** Entre `CONVERGED` y `ai::in-review` está disponible un panel
+adversarial: tres lentes (`refuter-correctness`, `refuter-security`, `refuter-tests`) más
+`finding-verifier`. Lo despacha quien orquesta la revisión; cada lente recibe exactamente
+los cuatro inputs del contrato (contrato de tarea con cambios aprobados, spec aprobado,
+estado exacto del fuente, punto de entrada) y nunca la conversación ni la defensa del
+builder. El veredicto del panel es `REFUTED` (al menos un blocker o should-fix sobrevive
+como `CONFIRMED`) o `NOT-REFUTED` (nada sobrevive — no es una aprobación); por hallazgo,
+el verifier emite `CONFIRMED`, `REFUTED` o `UNPROVEN`, y sólo `CONFIRMED` puede bloquear.
+El panel no mueve etiquetas ni aprueba nada: su veredicto es insumo para quien orquesta.
 
 ---
 

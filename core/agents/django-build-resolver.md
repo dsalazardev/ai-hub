@@ -1,7 +1,6 @@
 ---
 name: django-build-resolver
 description: 'Django build resolver: reproduces a failing build and applies the minimum verified repair. NOT ORM performance review or feature refactoring.'
-role: build-resolver
 tier: balanced
 skills:
   - django

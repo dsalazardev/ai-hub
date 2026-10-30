@@ -110,6 +110,19 @@ OpenSpec no forma parte del runtime. El directorio `openspec/` de este repositor
 | Implementer-Backend | implementer-backend | Backend del proyecto | Frontend | typecheck + tests |
 | Reviewer-Architecture | reviewer-architecture | `.planning/review_arch_*.md` | Código | PASS / NEEDS_FIX / BLOCKED |
 | Reviewer-Tests | reviewer-tests | `.planning/review_tests_*.md` | Código | cobertura declarada |
+| Refuter | refuter | — (read-only) | Todo | REFUTED / NOT-REFUTED |
+
+Los dos roles derivados los ejerce el orquestador; no tienen archivo propio.
+
+**Panel de refutación.** Entre `CONVERGED` y `ai::in-review` está disponible un panel
+adversarial de tres lentes (`refuter-correctness`, `refuter-security`, `refuter-tests`) más
+`finding-verifier`, despachado por quien orquesta la revisión. Cada lente recibe exactamente
+los cuatro inputs del contrato y nunca la conversación ni la defensa del builder. El
+veredicto del panel es `REFUTED` o `NOT-REFUTED`; por hallazgo, el verifier emite
+`CONFIRMED`, `REFUTED` o `UNPROVEN`, y sólo `CONFIRMED` puede bloquear. El rol Refuter
+hereda todas las prohibiciones: es read-only (no escribe ningún archivo; su única salida es
+el veredicto), no aprueba su propio trabajo, no mueve etiquetas — y `NOT-REFUTED` no es una
+aprobación: afirma que el ataque falló, nada más.
 
 ### Prohibiciones
 

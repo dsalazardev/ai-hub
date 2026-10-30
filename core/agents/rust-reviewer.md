@@ -1,7 +1,6 @@
 ---
 name: rust-reviewer
 description: 'Rust reviewer: inspects changed code for stack-specific failure modes and reports evidence without editing. NOT C++ review or Cargo build repair.'
-role: reviewer
 tier: balanced
 skills:
   - rust

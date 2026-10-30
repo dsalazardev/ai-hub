@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.6.0 — Rol refuter y panel de refutación adversarial (2026-10-29)
+
+### Añadido
+
+- **Rol `refuter` (noveno rol):** el motor declara 9 roles. El noveno es la postura adversarial de revisión — refutar la preparación, no confirmarla —, declarado `read_only: true` (campo booleano opcional en el schema del engine): no modifica ningún archivo, su única salida es el veredicto, y no posee ningún comando Spec Kit. `crossValidate` rechaza un rol read-only que declare permisos de escritura, nombrando el rol y la violación.
+- **Panel de refutación:** cuatro agentes nuevos publicados como agentes del motor en el perfil full (35 → 39): tres lentes (`refuter-correctness`, `refuter-security`, `refuter-tests`) más `finding-verifier`. Cada lente recibe exactamente los cuatro inputs del contrato — nunca la conversación ni la defensa del builder — y ataca a ciegas antes de comparar. El veredicto del panel es REFUTED / NOT-REFUTED; por hallazgo, el verifier emite `CONFIRMED`, `REFUTED` o `UNPROVEN`, y sólo `CONFIRMED` puede bloquear. `NOT-REFUTED` no es una aprobación: afirma que el ataque falló. El panel no mueve etiquetas ni aprueba nada; el gate de marca barre ahora también `core/agents`.
+- **Validación de `role` en el catálogo:** un agente puede declarar `role` en su frontmatter; cuando está, debe existir en los roles del engine y la validación falla nombrando el agente y el rol desconocido. Las 29 declaraciones legacy (`reviewer`, `build-resolver`, `spec-miner`) que nunca fueron ids de rol quedan retiradas; el campo es opcional y no se proyecta a los destinos.
+
+### Cifras medidas
+
+Re-medidas en consumidor temporal con el CLI compilado y `uvx` real (specify-cli 1.2.5 dentro del rango soportado); la fórmula del plan las reproduce (`tests/fixtures/install-counts.json`). Los tres perfiles full-like crecen +16 destinos (4 agentes × 4 destinos de agente; cursor no declara superficie de agentes); `presetOnly` no cambia:
+
+| Instalación | Destinos en `sync.lock.json` |
+|---|---|
+| `init --yes` (`generic-ts`, full) | 6.853 |
+| `init --yes --preset-only` | 40 |
+| `init --yes --exclude rule:skill-quality` | 6.833 |
+| `init --yes --preset angular-express` | 6.868 |
+
+`full` instala 261 skills de proyecto + 17 comandos Spec Kit, 39 agentes y 6 reglas universales.
+
+### Empaquetado
+
+- `core/package.json` en `0.6.0`. No se publica en npm desde esta sesión; el release queda condicionado a la revisión del diff.
+
 ## 0.5.0 — Catálogo completo y marca de origen dsalazardev (2026-10-29)
 
 ### Ruptura

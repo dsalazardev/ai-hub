@@ -36,16 +36,16 @@ Para el mínimo de 0.1.x: `init --preset-only --yes`. Para el catálogo completo
 
 ### Contrato de instalación (0.3.0)
 
-Una instalación nueva usa `full` por defecto: **261 skills de proyecto + 17 comandos Spec Kit**, 35 agentes, las 6 reglas universales, las reglas propias del preset y la regla generada `ai-hub-speckit`. Los 17 comandos los provee Spec Kit en cuatro destinos; AI-Hub no proyecta sus cuerpos.
+Una instalación nueva usa `full` por defecto: **261 skills de proyecto + 17 comandos Spec Kit**, 39 agentes, las 6 reglas universales, las reglas propias del preset y la regla generada `ai-hub-speckit`. Los 17 comandos los provee Spec Kit en cuatro destinos; AI-Hub no proyecta sus cuerpos.
 
 Cifras medidas en copias temporales con el CLI compilado y `uvx` real (`core/tests/fixtures/install-counts.json`):
 
 | Instalación | Destinos en `sync.lock.json` |
 |---|---:|
-| `init --yes` (`generic-ts`, full) | 6.837 |
+| `init --yes` (`generic-ts`, full) | 6.853 |
 | `init --yes --preset-only` | 40 |
-| `init --yes --exclude rule:skill-quality` | 6.817 |
-| `init --yes --preset angular-express` | 6.852 |
+| `init --yes --exclude rule:skill-quality` | 6.833 |
+| `init --yes --preset angular-express` | 6.868 |
 
 - Spec Kit se instala en `claude`, `opencode`, `pi` y `cursor` (`cursor-agent`). **Copilot queda excluido de Spec Kit**: recibe agentes, reglas y la regla `ai-hub-speckit`, y `doctor` lo informa como `copilot: sin Spec Kit`.
 - `--preset-only`: 0 skills de proyecto, 6 agentes y 2 reglas base, más los 17 comandos Spec Kit.

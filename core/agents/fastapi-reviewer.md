@@ -1,7 +1,6 @@
 ---
 name: fastapi-reviewer
 description: 'FastAPI reviewer: inspects changed code for stack-specific failure modes and reports evidence without editing. NOT generic Python review or environment repair.'
-role: reviewer
 tier: balanced
 skills:
   - fastapi

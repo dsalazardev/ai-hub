@@ -116,7 +116,7 @@ describe('init', () => {
       selection: 'full',
       skillCount: MEASURED.projectSkills,
       speckitCommands: MEASURED.speckitCommands,
-      agentCount: 35,
+      agentCount: 39,
       ruleCount: 6,
       destinations: MEASURED.lock.full,
     });
@@ -138,7 +138,7 @@ describe('init', () => {
     expect(custom).toMatchObject({
       selection: 'custom',
       skillCount: MEASURED.projectSkills,
-      agentCount: 35,
+      agentCount: 39,
       ruleCount: 2,
       destinations: MEASURED.lock.customNoRubrics,
     });
@@ -173,10 +173,10 @@ describe('init', () => {
     expect(mixed).toMatchObject({
       selection: 'custom',
       skillCount: MEASURED.projectSkills - 1,
-      agentCount: 34,
+      agentCount: 38,
     });
     expect(mixed.skills).toHaveLength(MEASURED.projectSkills - 1);
-    expect(mixed.agents).toHaveLength(34);
+    expect(mixed.agents).toHaveLength(38);
     expect(mixed.ruleCount).toBe(6);
     const angular = JSON.parse(
       (await cli(['init', '--dry-run', '--preset', 'angular-express'])).out,
@@ -200,7 +200,7 @@ describe('init', () => {
     const expansion = JSON.parse((await cli(['install', '--full', '--dry-run'])).out);
     expect(expansion).toMatchObject({
       skills: MEASURED.projectSkills,
-      agents: 35,
+      agents: 39,
       rules: 7,
     });
     // El preset python suma una regla propia: 5 destinos sobre la cifra full medida.
@@ -274,7 +274,7 @@ describe('sync, drift and doctor', () => {
     const doctor = await cli(['doctor']);
     expect(doctor.err).toBe('');
     expect(doctor.code).toBe(0);
-    expect(doctor.out).toContain('8/8');
+    expect(doctor.out).toContain('9/9');
     expect(doctor.out).toContain('17/17');
     expect(doctor.out).toContain('7/7');
     expect(doctor.out).toContain('copilot');

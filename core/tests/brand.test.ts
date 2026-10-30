@@ -10,7 +10,7 @@ const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const BRAND =
   /\b(?:rsc|risco)\b|ericrisco|rsc-harness|@ericrisco\/rsc|ai-hub SDD|origin:\s*(?:risco|ai-hub)\b|02-DOCS/i;
 
-const SCAN_TREES = ['core/skills', 'rules'];
+const SCAN_TREES = ['core/skills', 'core/agents', 'rules'];
 const SCAN_ROOT_FILES = [
   'manifest.yaml',
   'README.md',
@@ -153,9 +153,16 @@ describe('brand gate', () => {
     expect(BRAND.test('read 02-DOCS/wiki/index.md first')).toBe(true);
     expect(BRAND.test('ai-hub SDD')).toBe(true);
     expect(BRAND.test('the catalog ships skills, undiscussed')).toBe(false);
+    // An unadapted upstream line reintroduced into an agent body fails the gate.
+    expect(BRAND.test('`rsc review consolidate` merges what several lenses reported')).toBe(true);
+    expect(BRAND.test('one of three adversarial lenses of the review panel')).toBe(false);
 
     const scanned = (await publishedSources()).map((file) => file.rel);
     expect(scanned).not.toContain('NOTICE.md');
+    expect(scanned).toContain('core/agents/refuter-correctness.md');
+    expect(scanned).toContain('core/agents/refuter-security.md');
+    expect(scanned).toContain('core/agents/refuter-tests.md');
+    expect(scanned).toContain('core/agents/finding-verifier.md');
     expect(EXCLUDED_FILES).toContain('NOTICE.md');
     expect(isExcluded('archive/upstream/ai-hub/README.md')).toBe(true);
     expect(isExcluded('openspec/changes/archive/x/proposal.md')).toBe(true);

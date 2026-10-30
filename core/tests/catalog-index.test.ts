@@ -21,7 +21,7 @@ describe('catalog index', () => {
       walkCount: number;
     };
     expect(index.skills).toHaveLength(261);
-    expect(index.agents).toHaveLength(35);
+    expect(index.agents).toHaveLength(39);
     expect(Object.keys(index.ruleFiles)).toHaveLength(4);
     expect(index.walkCount).toBe(1);
     const first = await catalogIndex();

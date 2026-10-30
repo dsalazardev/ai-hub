@@ -28,7 +28,7 @@ describe('engine commands point to Spec Kit (5.1)', () => {
     for (const id of ['speckit.assess.intake', 'speckit.plan', 'speckit.constitution', 'speckit.implement']) {
       expect(exits[id], id).toEqual(['DONE', 'BLOCKED']);
     }
-    expect(engine.roles).toHaveLength(8);
+    expect(engine.roles).toHaveLength(9);
     expect(engine.labels).toHaveLength(7);
   });
 

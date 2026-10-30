@@ -1,7 +1,6 @@
 ---
 name: django-reviewer
 description: 'Django reviewer: inspects changed code for stack-specific failure modes and reports evidence without editing. NOT general Python review or build repair.'
-role: reviewer
 tier: balanced
 skills:
   - django

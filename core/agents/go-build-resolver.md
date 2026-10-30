@@ -1,7 +1,6 @@
 ---
 name: go-build-resolver
 description: 'Go build resolver: reproduces a failing build and applies the minimum verified repair. NOT concurrency review or module-wide upgrades.'
-role: build-resolver
 tier: balanced
 skills:
   - go

@@ -1,7 +1,6 @@
 ---
 name: mle-reviewer
 description: 'production ML reviewer: inspects changed code for stack-specific failure modes and reports evidence without editing. NOT notebook style review or model training implementation.'
-role: reviewer
 tier: heavy
 skills:
   - machine-learning

@@ -1,7 +1,6 @@
 ---
 name: java-build-resolver
 description: 'Java and Spring build resolver: reproduces a failing build and applies the minimum verified repair. NOT code review or broad dependency upgrades.'
-role: build-resolver
 tier: balanced
 skills:
   - java

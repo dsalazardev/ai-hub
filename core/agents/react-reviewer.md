@@ -1,7 +1,6 @@
 ---
 name: react-reviewer
 description: 'React and Next.js reviewer: inspects changed code for stack-specific failure modes and reports evidence without editing. NOT Vue review or frontend build repair.'
-role: reviewer
 tier: balanced
 skills:
   - react

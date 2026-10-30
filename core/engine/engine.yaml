@@ -108,6 +108,17 @@ roles:
       - bug-test
     gate: coverage thresholds met
 
+  - id: refuter
+    canonical: refuter
+    derived: false
+    read_only: true
+    description: Refutes readiness before approval; confirms nothing and writes nothing.
+    can_modify: []
+    cannot_modify:
+      - '**'
+    commands: []
+    gate: REFUTED / NOT-REFUTED
+
 commands:
   - id: assess-intake
     name: /speckit-assess-intake
