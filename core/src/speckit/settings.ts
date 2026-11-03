@@ -41,6 +41,7 @@ export interface SpeckitSettings {
   defaultIntegration: string | null;
   /** Integraciones de Spec Kit en el mismo orden que `targets`. */
   integrations: string[];
+  /** Rango soportado de cada extensión, declarado por el paquete; única fuente de versión. */
   extensions: Record<string, string>;
 }
 

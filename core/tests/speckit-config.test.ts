@@ -21,7 +21,7 @@ describe('speckit engine data (1.1, 1.2)', () => {
       package: 'specify-cli',
       supported: '>=1.2.3 <1.3.0',
       script: 'sh',
-      extensions: { assess: '1.0.1', bug: '1.0.1' },
+      extensions: { assess: '>=1.0.1 <1.1.0', bug: '>=1.0.1 <1.1.0' },
     });
   });
 
@@ -38,6 +38,12 @@ describe('speckit engine data (1.1, 1.2)', () => {
       expect(errors).toContain(`speckit.${field}`);
       expect(errors).toContain('retirado');
     }
+    // extension-ranges (2.2): un pin exacto de extensión está tan retirado como el de specify-cli.
+    const pinned = structuredClone(engine) as EngineManifest;
+    (pinned.speckit.extensions as Record<string, string>).assess = '1.0.1';
+    const pinErrors = crossValidate(pinned).join('\n');
+    expect(pinErrors).toContain('speckit.extensions.assess');
+    expect(pinErrors).toContain('no es un rango válido');
   });
 
   it('derives the range bounds once and rejects a malformed supported range', async () => {

@@ -146,7 +146,7 @@ export async function speckitDoctorChecks(
     extensions.length === 0,
     extensions.length === 0
       ? Object.entries(settings.extensions)
-          .map(([id, version]) => `${id} ${version}`)
+          .map(([id, range]) => `${id} ${range}`)
           .join(', ') + ` en ${settings.targets.length} destinos`
       : list(extensions),
   );

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { parse } from 'yaml';
 import { TARGETS, isToolId, type SpeckitTarget, type ToolId } from '../sync/targets.js';
 import type { SpeckitSettings } from './settings.js';
+import { satisfiesRange } from './version.js';
 
 /**
  * Lectura de `.specify/` sin ejecutar Python. Los timestamps `installed_at` de los manifiestos
@@ -232,21 +233,23 @@ export function checkIntegrations(settings: SpeckitSettings, state: SpeckitState
   return problems;
 }
 
-/** speckit:extensions — extensiones fijadas, con su versión y sus comandos en cada destino con Spec Kit. */
+/** speckit:extensions — extensiones fijadas, con su versión dentro del rango y sus comandos en cada destino con Spec Kit. */
 export async function checkExtensions(
   root: string,
   settings: SpeckitSettings,
   state: SpeckitState,
 ): Promise<string[]> {
   const problems: string[] = [];
-  for (const [extension, version] of Object.entries(settings.extensions).sort()) {
+  for (const [extension, range] of Object.entries(settings.extensions).sort()) {
     if (!state.installedExtensions.includes(extension)) {
       problems.push(`${extension}: extensión no instalada`);
       continue;
     }
     const registered = state.registry[extension]?.version;
-    if (registered !== version) {
-      problems.push(`${extension}: versión ${registered ?? '(desconocida)'}; se esperaba ${version}`);
+    // La versión instalada se valida por rango (design D3), igual que speckit:version:
+    // el instalador pasa --extension sin versión y el upstream publica dentro del minor.
+    if (registered === undefined || !satisfiesRange(registered, range)) {
+      problems.push(`${extension}: versión ${registered ?? '(desconocida)'}; se admite el rango ${range}`);
     }
     const commands = await extensionCommands(root, extension);
     if (commands.length === 0) {

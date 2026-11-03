@@ -47,6 +47,7 @@ export interface EngineSpeckit {
   /** Rango soportado; única fuente de versión: la resolución toma la última estable dentro de él. */
   supported: string;
   script: SpeckitScript;
+  /** Rango soportado de cada extensión; única fuente de versión, igual que `supported`. */
   extensions: Record<string, string>;
 }
 
@@ -224,6 +225,10 @@ function validateEngineSpeckit(speckit: EngineSpeckit | undefined): string[] {
   for (const extension of REQUIRED_SPECKIT_EXTENSIONS) {
     if (typeof speckit.extensions?.[extension] !== 'string') {
       errors.push(`falta speckit.extensions.${extension}`);
+    } else if (rangeBounds(speckit.extensions[extension]) === null) {
+      errors.push(
+        `speckit.extensions.${extension} "${speckit.extensions[extension]}" no es un rango válido (se esperaba ">=x.y.z <a.b.c"); la versión se resuelve por rango, igual que speckit.supported`,
+      );
     }
   }
   if (typeof speckit.supported === 'string' && rangeBounds(speckit.supported) === null) {

@@ -87,7 +87,7 @@
         "script": { "enum": ["sh", "ps", "py"] },
         "extensions": {
           "type": "object",
-          "additionalProperties": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" }
+          "additionalProperties": { "type": "string", "minLength": 1 }
         }
       }
     }

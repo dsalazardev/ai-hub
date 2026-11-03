@@ -55,7 +55,7 @@ describe('plan (2.2, 4.1)', () => {
       script: 'sh',
       defaultIntegration: 'claude',
       integrations: ['claude', 'opencode', 'pi', 'cursor-agent'],
-      extensions: { assess: '1.0.1', bug: '1.0.1' },
+      extensions: { assess: '>=1.0.1 <1.1.0', bug: '>=1.0.1 <1.1.0' },
     });
     expect(satisfiesRange(withTools.speckit.version, engine.speckit.supported)).toBe(true);
     expect(withTools.environment).toMatchObject({ uvx: 'found', shell: 'found' });

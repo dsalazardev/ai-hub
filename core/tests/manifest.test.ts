@@ -99,7 +99,7 @@ describe('engine invariants', () => {
         package: 'specify-cli',
         supported: '>=1.2.3 <1.3.0',
         script: 'sh',
-        extensions: { assess: '1.0.1', bug: '1.0.1' },
+        extensions: { assess: '>=1.0.1 <1.1.0', bug: '>=1.0.1 <1.1.0' },
       },
     });
 
@@ -142,7 +142,7 @@ describe('engine invariants', () => {
         package: 'specify-cli',
         supported: '>=1.2.3 <1.3.0',
         script: 'sh',
-        extensions: { assess: '1.0.1', bug: '1.0.1' },
+        extensions: { assess: '>=1.0.1 <1.1.0', bug: '>=1.0.1 <1.1.0' },
       },
     });
 
