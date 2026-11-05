@@ -9,7 +9,7 @@ import { DEFAULT_SPECKIT_SCRIPTS, effectiveSpeckit } from '../speckit/settings.j
 import { probeEnvironment, probeShell, speckitPreflight, type SpeckitEnvironment } from '../speckit/commands.js';
 // Ciclo intencional con onboarding.ts (D2): ambos módulos se usan sólo a nivel de
 // función, nunca a nivel de módulo, así que los live bindings de ESM lo resuelven.
-import { cmdInit, prepareInit, printInitPlan, type PreparedInit } from './onboarding.js';
+import { cliVersion, cmdInit, prepareInit, printInitPlan, type PreparedInit } from './onboarding.js';
 import { PRE_PROMPT } from './preprompt.js';
 
 /** Opción de un prompt del asistente. */
@@ -26,7 +26,7 @@ export interface PromptOption {
  * retorna antes de cualquier escritura.
  */
 export interface AssistantPrompts {
-  intro(title: string): void;
+  intro(title: string, version: string): void;
   note(message: string): void;
   multiselect(message: string, options: PromptOption[], initial: string[]): Promise<string[] | null>;
   select(message: string, options: PromptOption[], initial?: string): Promise<string | null>;
@@ -382,7 +382,7 @@ export async function writeBacklogSeed(ctx: CliContext, idea: string): Promise<v
  */
 export async function runAssistantInit(ctx: CliContext): Promise<number> {
   const prompts = ctx.assistantPrompts ?? (await import('./assistant-clack.js')).clackPrompts;
-  prompts.intro('ai-hub init — asistente de instalación');
+  prompts.intro('ai-hub init — asistente de instalación', await cliVersion());
   const installed = await detectTools(ctx);
   const answers = await collectAnswers(prompts, ctx, installed);
   if (answers === null) {

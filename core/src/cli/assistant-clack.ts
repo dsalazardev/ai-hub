@@ -17,13 +17,25 @@ function toOptions(options: PromptOption[]): p.Option<string>[] {
  * interactivo ni lo carga. La cancelación se traduce a `null`; el mensaje de cancelación
  * lo imprime el colector, que retorna antes de cualquier escritura (R5).
  */
+
+/** Modo de color del terminal para el banner (neon-banner D1): el sondeo vive aquí. */
+function bannerMode(): 'truecolor' | '256' | 'none' {
+  if ((process.env.NO_COLOR ?? '') !== '') return 'none';
+  const colorTerm = (process.env.COLORTERM ?? '').toLowerCase();
+  if (colorTerm === 'truecolor' || colorTerm === '24bit') return 'truecolor';
+  return '256';
+}
+
 export const clackPrompts: AssistantPrompts = {
-  intro: (title) => {
-    // Banner de identidad (design D8): antes de la intro de clack. El ancho sale del
-    // terminal con fallback seguro; NO_COLOR (presente y no vacío) apaga los escapes.
-    // Este módulo sólo se carga tras el gate de TTY: ningún byte de banner en salida pipeada.
-    const noColor = (process.env.NO_COLOR ?? '') !== '';
-    process.stdout.write(`${renderBanner(process.stdout.columns ?? 80, !noColor)}\n`);
+  intro: (title, version) => {
+    // Banner de identidad (neon-banner D1–D5): antes de la intro de clack. El
+    // ancho sale del terminal con fallback seguro; el modo de color se sondea
+    // aquí (NO_COLOR apaga todo; COLORTERM truecolor/24bit sube a truecolor;
+    // el piso es 256) y la versión del paquete la pasa el colector. Este módulo
+    // sólo se carga tras el gate de TTY: ningún byte de banner en salida pipeada.
+    process.stdout.write(
+      `${renderBanner(process.stdout.columns ?? 80, bannerMode(), version)}\n`,
+    );
     p.intro(title);
   },
   note: (message) => {

@@ -52,11 +52,11 @@ Con idea, la confirmación escribe `backlog/seed.md` (la idea textual, la fecha 
 
 `@clack/prompts` ^1.8.1 es la única dependencia nueva: JS puro sin binarios nativos, 166,3 KB (170.333 bytes) de árbol en `node_modules`; el tarball publicado no incluye `node_modules` y crece sólo por los archivos nuevos de `dist`.
 
-### Conjunto de scripts y banner (0.8.0)
+### Conjunto de scripts (0.8.0) y banner neón (0.9.0)
 
 El conjunto de scripts de Spec Kit pasa a ser elegible: `--scripts py` instala sólo `.specify/scripts/python`; `--scripts py,sh --script sh` instala python y bash con `sh` activo (los `specify init` van tipo por tipo, activo al final). Sin `--scripts` — y sin `speckit.scripts` en el manifest — se instalan los tres tipos exactamente como en 0.4–0.7: la salida pipeada es byte a byte la de 0.7.0. `--script` acepta además `py` (sonda `python -c "print('ok')"`, candidatos `python`, `python3`, `py`). El activo tiene que pertenecer al conjunto: la contradicción explícita sale con código 2 antes de escribir, nombrando ambos campos; un `--script` explícito pisa al `speckit.script` del manifest. El plan hasheado incluye `speckit.scripts` sólo cuando el conjunto difiere de los tres, así `--scripts sh,ps,py` explícito produce el mismo hash que la invocación sin flags.
 
-En la TUI, el paso de scripts es un multi-select del conjunto (mínimo uno) más la elección del activo cuando selecciona más de un tipo, y el asistente abre con un **banner de identidad** — bloque azul ANSI puro ("AI-HUB — Autonomous Software Factory") con letter-spacing, sin dependencias nuevas, apagado por `NO_COLOR` y ausente de toda salida pipeada porque el adaptador sólo se carga tras el gate de TTY.
+En la TUI, el paso de scripts es un multi-select del conjunto (mínimo uno) más la elección del activo cuando selecciona más de un tipo, y el asistente abre con un **banner de identidad** neón — el arte slant de "AI-HUB" con gradiente vertical cian→azul en ANSI puro, `» Autonomous Software Factory` y la versión del paquete resuelta en runtime — sin dependencias nuevas (interpolación a mano: truecolor, 256 colores o apagado por `NO_COLOR`), con fallback de una línea por debajo de 60 columnas y ausente de toda salida pipeada porque el adaptador sólo se carga tras el gate de TTY.
 
 ### Contrato de instalación (0.3.0)
 

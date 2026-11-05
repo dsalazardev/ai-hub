@@ -85,7 +85,7 @@ function scriptedPrompts(
   const calls: PromptCall[] = [];
   const next = (): unknown => (index < replies.length ? replies[index++] : null);
   const prompts: AssistantPrompts = {
-    intro: () => {
+    intro: (_title, _version) => {
       intro = true;
     },
     note: (message) => {

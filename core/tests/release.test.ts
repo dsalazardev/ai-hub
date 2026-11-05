@@ -25,17 +25,16 @@ async function currentSection(): Promise<{ version: string; date: string; body: 
   return { version: pkg.version, date: heading[1], body: changelog.slice(start, next < 0 ? undefined : next) };
 }
 
-describe('release 0.8.0 (script-choice 7.1)', () => {
-  it('bumps the package and names the contracts that change in 0.8.0', async () => {
+describe('release 0.9.0 (neon-banner 5.1)', () => {
+  it('bumps the package and names the contracts that change in 0.9.0', async () => {
     const section = await currentSection();
-    expect(section.version).toBe('0.8.0');
-    expect(section.body).toContain('--scripts');
-    expect(section.body).toMatch(/\bpy\b/);
-    expect(section.body).toMatch(/speckit-latest/);
-    expect(section.body).toMatch(/0\.4\.0/);
-    expect(section.body).toMatch(/banner/i);
-    expect(section.body).toMatch(/mismo hash/);
+    expect(section.version).toBe('0.9.0');
+    expect(section.body).toMatch(/banner de identidad neón/i);
+    expect(section.body).toMatch(/gradiente/);
+    expect(section.body).toMatch(/fallback/i);
     expect(section.body).toMatch(/byte a byte/);
+    expect(section.body).toMatch(/cero dependencias nuevas/i);
+    expect(section.body).toMatch(/NO_COLOR/);
     expect(section.body).toContain('1.890');
   });
 

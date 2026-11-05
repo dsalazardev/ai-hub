@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.9.0 — Banner neón del CLI (2026-11-04)
+
+### Cambio
+
+- **Banner de identidad neón:** el asistente de `init` abre con el arte slant de "AI-HUB" (render canónico verificado contra `slant.flf` oficial: 5 líneas de 42/43/43/42/40 columnas) con gradiente vertical cian `#00F2FE` → azul `#0072FF` construido a mano en ANSI puro — interpolación RGB por línea en truecolor (`\x1b[38;2;R;G;Bm`), degradación al cubo 6×6×6 en 256 colores (`\x1b[38;5;Nm`) y modo sin escapes con `NO_COLOR`. Debajo, `» Autonomous Software Factory` (» en cian neón, texto en blanco brillante) y la versión del paquete en gris alineada al ancho — resuelta en runtime por `cliVersion()` y pasada por parámetro, jamás una constante (sonda anti-hardcode que lee el fuente del módulo). **Cero dependencias nuevas**: el gradiente es interpolación pura; la cláusula "pure ANSI escapes… no new dependencies" del spec y la decisión D8 de `script-choice` se conservan intactas.
+- **Fallback de ancho:** por debajo de 60 columnas el banner es una línea minimalista (`AI-HUB · Autonomous Software Factory · vX.Y.Z`) sin arte — deformar un ASCII art no tiene sentido — que degrada a `AI-HUB · vX.Y.Z` antes del clamp. Con 60 columnas o más, el arte se centra y el separador escala al ancho completo.
+- **Contratos intactos:** `renderBanner(width, mode, version)` sigue siendo una función pura (sin `process`, sin `fs`, sin clack); la detección de `COLORTERM`/`NO_COLOR` y la resolución de la versión viven en el adaptador clack, que se sigue cargando sólo tras el gate de TTY. La salida pipeada es byte a byte la de 0.8.0 (sonda de diff vacío en los cinco comandos de la línea base: bare init, `--dry-run`, `--preset`, `--yes --no-speckit` y `--dry-run` en el checkout del motor).
+
+### Cifras medidas
+
+Sin cambios respecto a 0.8.0 — el banner vive tras el gate de TTY y toda invocación existente queda byte a byte igual (diff pipeado vacío contra la línea base); la fórmula del plan las sigue reproduciendo (`core/tests/fixtures/install-counts.json`):
+
+| Instalación | Destinos en `sync.lock.json` |
+|---|---|
+| `init --yes` (`generic-ts`, full) | 6.853 |
+| `init --yes --preset-only` | 40 |
+| `init --yes --exclude rule:skill-quality` | 6.833 |
+| `init --yes --preset angular-express` | 6.868 |
+
+`full` instala 261 skills de proyecto + 17 comandos Spec Kit, 39 agentes y 6 reglas universales.
+
+### Empaquetado
+
+- `core/package.json` en `0.9.0`. Tarball: 1.890 entradas, sin cambios (todo vive en `dist/cli/banner.js` y `dist/cli/assistant-clack.js`, archivos ya empaquetados); unpacked 12.535.153 → 12.539.116 bytes (+3.963, sólo `dist`). No se publica en npm desde esta sesión; el release queda condicionado a la revisión del diff.
+
 ## 0.8.0 — Conjunto de scripts de Spec Kit elegible, `py` como activo y banner de identidad (2026-10-30)
 
 ### Cambio
