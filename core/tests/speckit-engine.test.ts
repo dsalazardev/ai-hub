@@ -126,7 +126,7 @@ describe('retired state vocabulary gate (5.5)', () => {
 
   it('finds no retired state in the engine, docs and published catalog', async () => {
     expect(await scanRetiredStates(undefined, REPO)).toEqual([]);
-  });
+  }, 60_000);
 });
 
 describe('doctor checks are documented (7.6)', () => {

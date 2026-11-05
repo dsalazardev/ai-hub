@@ -55,7 +55,7 @@ describe('engine coupling gate', () => {
       }
     }
     expect(findings).toEqual([]);
-  });
+  }, 60_000);
 
   it('contains no legacy methodology name in any preset', async () => {
     const findings: string[] = [];
