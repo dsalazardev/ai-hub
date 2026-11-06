@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.10.0 — Autorreparación de fuentes de `.ai-hub/` (2026-11-06)
+
+### Cambio
+
+- **`install` y `repair` restauran fuentes borradas (F-01, único P1):** borrar una skill o regla fuente de `.ai-hub/` dejaba el arnés sin salida — `install`, `install --full` y `repair` abortaban con "manifiesto inválido" ANTES de que `materializeSelection` (que la restauraría) pudiera correr. La validación del manifiesto pasa a **dos capas**: la de carga (schema ajv, roles, Spec Kit, targets, ids desconocidos en `publish`) sigue siempre fail-closed, y la de activos (existencia y frontmatter de las fuentes) es estricta por defecto y tolerante sólo cuando `install`/`repair` cargan para autorreparar: `loadManifestContext(root, { assets: 'strict' | 'tolerant' })`, default `'strict'` — ningún lector (doctor, list, sync, add, context) cambia.
+- **Tolerante = restaurable, nunca más:** una fuente ausente se tolera sólo si su id existe en el catálogo del motor, resuelto por la misma vía que `materializeSelection` (skills por catálogo del motor o preset; rules por rúbricas universales, preset o cadena — el fallback que los agentes ya tenían). Un id ausente de `.ai-hub/` Y del catálogo produce el mismo `ManifestError` de antes, antes de escribir, en ambos modos — el fail-closed del consumidor queda intacto (sonda: `skill-inexistente-xyz` → exit 1 sin escrituras en strict y en tolerant).
+- **Revalidación estricta post-materialización:** tras `materializeSelection`, `install` revalida el manifiesto nuevo con la validación estricta completa antes de escribirlo y antes de `runSync` — nunca se proyecta un arnés incompleto a los destinos. El frontmatter corrupto de una fuente PRESENTE sigue fallando en ambos modos: la tolerancia cubre ausencia, no corrupción.
+- **`--dry-run` sin falsos negativos:** el dry-run carga en modo tolerante, imprime el plan (`"dryRun": true`) y no escribe nada ni revalida — antes abortaba en la carga con una fuente borrada, impidiendo planificar la reparación.
+- **Hueco de test cerrado (F-17):** el único test de repair borraba un destino generado, no una fuente; ahora hay sondas de fuente borrada → repair/install exit 0 con la skill restaurada byte a byte desde el catálogo, id desconocido → exit 1 sin escrituras, doctor/sync estrictos nombrando la ausencia, y tests unitarios de los modos de `validateManifestData`. `restore` y el check `manifest` del doctor no se tocan.
+
+### Cifras medidas
+
+Sin cambios respecto a 0.9.0 — la recuperación no añade destinos y toda invocación existente queda igual (los lectores siguen estrictos byte a byte); la fórmula del plan las sigue reproduciendo (`core/tests/fixtures/install-counts.json`):
+
+| Instalación | Destinos en `sync.lock.json` |
+|---|---|
+| `init --yes` (`generic-ts`, full) | 6.853 |
+| `init --yes --preset-only` | 40 |
+| `init --yes --exclude rule:skill-quality` | 6.833 |
+| `init --yes --preset angular-express` | 6.868 |
+
+`full` instala 261 skills de proyecto + 17 comandos Spec Kit, 39 agentes y 6 reglas universales.
+
+### Empaquetado
+
+- `core/package.json` en `0.10.0`. Tarball: 1.890 entradas, sin cambios (el código nuevo vive en `dist/manifest/manifest.js` y `dist/cli/onboarding.js`, archivos ya empaquetados); unpacked 12.539.116 → 12.541.894 bytes (+2.778, sólo `dist`). No se publica en npm desde esta sesión; el release queda condicionado a la revisión del diff.
+
 ## 0.9.0 — Banner neón del CLI (2026-11-04)
 
 ### Cambio

@@ -25,16 +25,15 @@ async function currentSection(): Promise<{ version: string; date: string; body: 
   return { version: pkg.version, date: heading[1], body: changelog.slice(start, next < 0 ? undefined : next) };
 }
 
-describe('release 0.9.0 (neon-banner 5.1)', () => {
-  it('bumps the package and names the contracts that change in 0.9.0', async () => {
+describe('release 0.10.0 (repair-assets 4.3)', () => {
+  it('bumps the package and names the contracts that change in 0.10.0', async () => {
     const section = await currentSection();
-    expect(section.version).toBe('0.9.0');
-    expect(section.body).toMatch(/banner de identidad neón/i);
-    expect(section.body).toMatch(/gradiente/);
-    expect(section.body).toMatch(/fallback/i);
-    expect(section.body).toMatch(/byte a byte/);
-    expect(section.body).toMatch(/cero dependencias nuevas/i);
-    expect(section.body).toMatch(/NO_COLOR/);
+    expect(section.version).toBe('0.10.0');
+    expect(section.body).toMatch(/Autorreparaci[oó]n de fuentes/i);
+    expect(section.body).toMatch(/dos capas/);
+    expect(section.body).toMatch(/fail-closed/);
+    expect(section.body).toMatch(/falsos negativos/);
+    expect(section.body).toMatch(/revalidaci[oó]n estricta/i);
     expect(section.body).toContain('1.890');
   });
 

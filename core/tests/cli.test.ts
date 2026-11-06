@@ -6,6 +6,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { runCli, COMMAND_NAMES } from '../src/cli/run.js';
 import { writeInventory } from '../src/manifest/manifest.js';
+import { ENGINE_SKILLS_DIR } from '../src/engine/engine.js';
 import { listBackups } from '../src/backup/snapshots.js';
 import type { CliIO } from '../src/cli/types.js';
 import { seedFixture } from './fixtures.js';
@@ -450,6 +451,122 @@ describe('sync, drift and doctor', () => {
     expect((await cli(['repair', '--dry-run'])).code).toBe(0);
     await expect(fs.access(path.join(root, '.claude/agents/spec-author.md'))).rejects.toThrow();
   });
+});
+
+describe('repair restores catalog sources (repair-assets)', () => {
+  const SKILL = 'code-review';
+
+  /** Publica una skill real del catálogo con selección custom y materializa su fuente. */
+  async function publishCatalogSkill(): Promise<void> {
+    const file = path.join(root, 'manifest.yaml');
+    const manifest = await fs.readFile(file, 'utf8');
+    const needle = 'skills:\n  source: .ai-hub/skills\n  publish: []';
+    if (!manifest.includes(needle)) {
+      throw new Error('el fixture del manifiesto no contiene el bloque de skills esperado');
+    }
+    await fs.writeFile(
+      file,
+      manifest.replace(
+        needle,
+        `skills:\n  source: .ai-hub/skills\n  publish:\n    - ${SKILL}\n  selection: custom`,
+      ),
+    );
+    await fs.cp(path.join(ENGINE_SKILLS_DIR, SKILL), path.join(root, '.ai-hub', 'skills', SKILL), {
+      recursive: true,
+    });
+  }
+
+  async function deleteSkillSource(): Promise<void> {
+    await fs.rm(path.join(root, '.ai-hub', 'skills', SKILL), { recursive: true, force: true });
+  }
+
+  async function skillSourceExists(): Promise<boolean> {
+    return fs
+      .access(path.join(root, '.ai-hub', 'skills', SKILL, 'SKILL.md'))
+      .then(() => true, () => false);
+  }
+
+  it('repair restores a deleted catalog source skill', async () => {
+    await seeded();
+    await publishCatalogSkill();
+    await deleteSkillSource();
+    const result = await cli(['repair']);
+    expect(result.code).toBe(0);
+    const restored = await fs.readFile(
+      path.join(root, '.ai-hub', 'skills', SKILL, 'SKILL.md'),
+      'utf8',
+    );
+    expect(restored).toBe(
+      await fs.readFile(path.join(ENGINE_SKILLS_DIR, SKILL, 'SKILL.md'), 'utf8'),
+    );
+  }, 60_000);
+
+  it('install restores a deleted catalog source skill', async () => {
+    await seeded();
+    await publishCatalogSkill();
+    await deleteSkillSource();
+    const result = await cli(['install']);
+    expect(result.code).toBe(0);
+    const restored = await fs.readFile(
+      path.join(root, '.ai-hub', 'skills', SKILL, 'SKILL.md'),
+      'utf8',
+    );
+    expect(restored).toBe(
+      await fs.readFile(path.join(ENGINE_SKILLS_DIR, SKILL, 'SKILL.md'), 'utf8'),
+    );
+  }, 60_000);
+
+  it('install --dry-run plans the repair without writing', async () => {
+    await seeded();
+    await publishCatalogSkill();
+    await cli(['sync']);
+    await deleteSkillSource();
+    const lock = path.join(root, 'sync.lock.json');
+    const lockBefore = await fs.readFile(lock, 'utf8');
+    const result = await cli(['install', '--dry-run']);
+    expect(result.code).toBe(0);
+    expect(result.out).toContain('"dryRun": true');
+    expect(await skillSourceExists()).toBe(false);
+    expect(await fs.readFile(lock, 'utf8')).toBe(lockBefore);
+  }, 60_000);
+
+  it('unknown publish ids fail before writing in install and repair', async () => {
+    await seeded();
+    await publishCatalogSkill();
+    await deleteSkillSource();
+    const manifestPath = path.join(root, 'manifest.yaml');
+    const manifest = await fs.readFile(manifestPath, 'utf8');
+    await fs.writeFile(
+      manifestPath,
+      manifest.replace(`    - ${SKILL}`, `    - ${SKILL}\n    - skill-inexistente-xyz`),
+    );
+    const lock = path.join(root, 'sync.lock.json');
+    const lockBefore = await fs.access(lock).then(() => true, () => false);
+    const install = await cli(['install']);
+    expect(install.code).toBe(1);
+    expect(install.err).toContain('skill-inexistente-xyz');
+    const repair = await cli(['repair']);
+    expect(repair.code).toBe(1);
+    expect(repair.err).toContain('skill-inexistente-xyz');
+    expect(await skillSourceExists()).toBe(false);
+    expect(await fs.access(lock).then(() => true, () => false)).toBe(lockBefore);
+  }, 60_000);
+
+  it('doctor and sync stay strict with a deleted source', async () => {
+    await seeded();
+    await publishCatalogSkill();
+    await cli(['sync']);
+    await deleteSkillSource();
+    const doctor = await cli(['doctor']);
+    expect(doctor.code).toBe(1);
+    expect(doctor.out).toContain('skills.publish "code-review" no existe en .ai-hub/skills');
+    const lock = path.join(root, 'sync.lock.json');
+    const lockBefore = await fs.readFile(lock, 'utf8');
+    const sync = await cli(['sync']);
+    expect(sync.code).toBe(1);
+    expect(sync.err).toContain('code-review');
+    expect(await fs.readFile(lock, 'utf8')).toBe(lockBefore);
+  }, 60_000);
 });
 
 describe('add, list and uninstall', () => {

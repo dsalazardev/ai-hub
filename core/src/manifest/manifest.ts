@@ -5,11 +5,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Ajv } from 'ajv';
 import { parse } from 'yaml';
-import { ENGINE_COUNTS, loadEngine, type EngineManifest } from '../engine/engine.js';
+import { ENGINE_COUNTS, ENGINE_SKILLS_DIR, loadEngine, type EngineManifest } from '../engine/engine.js';
 import { frontmatterString, splitFrontmatter } from '../frontmatter.js';
-import { resolvePreset, type ResolvedPreset } from '../presets/resolve.js';
+import { findPresetAsset, resolvePreset, type ResolvedPreset } from '../presets/resolve.js';
 import type { PresetDangerPattern } from '../presets/schema.js';
-import type { SelectionMode } from '../catalog.js';
+import { ENGINE_RULES_DIR, normalizeRuleId, type SelectionMode } from '../catalog.js';
 import { validateProjectSpeckit, type ProjectSpeckit } from '../speckit/settings.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -71,6 +71,32 @@ async function exists(file: string): Promise<boolean> {
   );
 }
 
+/**
+ * Una skill publicada ausente de `.ai-hub/` es restaurable si el motor puede volver a
+ * materializarla: catálogo del motor (`materializeCatalog`/`materializeSkill`) o preset
+ * (`materializePreset`). Es la misma vía que usa `materializeSelection`.
+ */
+async function restorableSkill(id: string, preset: ResolvedPreset): Promise<boolean> {
+  return preset.skills.includes(id) || (await exists(path.join(ENGINE_SKILLS_DIR, id)));
+}
+
+/**
+ * Una regla publicada ausente de `.ai-hub/` es restaurable si el motor puede volver a
+ * materializarla: rúbricas universales del motor (`materializeUniversalRules`), reglas del
+ * preset (`materializePreset`) o la cadena del preset (`core.md`). Es la misma vía que usa
+ * `materializeSelection`.
+ */
+async function restorableRule(id: string, preset: ResolvedPreset): Promise<boolean> {
+  const normalized = normalizeRuleId(id);
+  if (preset.rules.some((rule) => normalizeRuleId(rule) === normalized)) {
+    return true;
+  }
+  if (await exists(path.join(ENGINE_RULES_DIR, `${normalized}.md`))) {
+    return true;
+  }
+  return (await findPresetAsset(preset.chain, `rules/${normalized}.md`)) !== null;
+}
+
 async function validateCatalogFile(
   file: string,
   errors: string[],
@@ -113,13 +139,29 @@ export async function loadManifest(root: string): Promise<ProjectManifest> {
   return (await loadManifestContext(root)).manifest;
 }
 
-export async function loadManifestContext(root: string): Promise<LoadedManifest> {
-  return validateManifestData(await readManifestFile(root), root);
+/**
+ * Modos de validación de activos de `.ai-hub/`. El default `'strict'` exige que toda fuente
+ * publicada exista (comportamiento histórico de doctor/list/sync/add/context). El modo
+ * `'tolerant'` —sólo lo piden install/repair para autorreparar— tolera una fuente ausente
+ * únicamente si el motor puede restaurarla del catálogo; un id ausente de `.ai-hub/` y del
+ * catálogo produce el mismo `ManifestError` en ambos modos, y el frontmatter de las fuentes
+ * presentes se valida siempre.
+ */
+export interface ManifestValidationOptions {
+  assets?: 'strict' | 'tolerant';
+}
+
+export async function loadManifestContext(
+  root: string,
+  options: ManifestValidationOptions = {},
+): Promise<LoadedManifest> {
+  return validateManifestData(await readManifestFile(root), root, options);
 }
 
 export async function validateManifestData(
   data: unknown,
   root: string = process.cwd(),
+  options: ManifestValidationOptions = {},
 ): Promise<LoadedManifest> {
   if (typeof data === 'object' && data !== null && 'speckit' in data) {
     // Los campos del motor se explican antes del schema, que solo diría "additional property".
@@ -163,12 +205,15 @@ export async function validateManifestData(
       errors.push(`targets "${target}" no existe en el motor`);
     }
   }
+  const tolerantAssets = options.assets === 'tolerant';
   const skillFiles = new Set<string>();
   for (const skill of manifest.skills.publish) {
     const file = path.join(root, manifest.skills.source, skill, 'SKILL.md');
     skillFiles.add(file);
     if (!(await exists(file))) {
-      errors.push(`skills.publish "${skill}" no existe en ${manifest.skills.source}`);
+      if (!tolerantAssets || !(await restorableSkill(skill, preset))) {
+        errors.push(`skills.publish "${skill}" no existe en ${manifest.skills.source}`);
+      }
     }
   }
   for (const file of skillFiles) {
@@ -202,7 +247,9 @@ export async function validateManifestData(
   for (const rule of manifest.rules.publish) {
     const file = path.join(root, manifest.rules.source, `${rule}.md`);
     if (!(await exists(file))) {
-      errors.push(`rules.publish "${rule}" no existe en ${manifest.rules.source}`);
+      if (!tolerantAssets || !(await restorableRule(rule, preset))) {
+        errors.push(`rules.publish "${rule}" no existe en ${manifest.rules.source}`);
+      }
     }
   }
   if (manifest.mcp && !(await exists(path.join(root, manifest.mcp.source)))) {

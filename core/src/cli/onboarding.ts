@@ -12,7 +12,12 @@ import {
 } from '../presets/materialize.js';
 import { resolvePreset, type ResolvedPreset } from '../presets/resolve.js';
 import { listPresetIds } from '../presets/schema.js';
-import { loadManifestContext, writeInventory, type ProjectManifest } from '../manifest/manifest.js';
+import {
+  loadManifestContext,
+  validateManifestData,
+  writeInventory,
+  type ProjectManifest,
+} from '../manifest/manifest.js';
 import { emptyState, migrateLegacyState, readState, StateNotFoundError, writeState } from '../harness/memory/state.js';
 import { runSync } from '../sync/sync.js';
 import { TOOL_IDS, assertToolIds, TARGETS } from '../sync/targets.js';
@@ -950,7 +955,9 @@ export async function cmdInstall(args: ParsedArgs, ctx: CliContext): Promise<num
   }
   let context;
   try {
-    context = await loadManifestContext(ctx.root);
+    // Tolerante a activos ausentes restaurables (F-01): install/repair autorreparan desde el
+    // catálogo del motor. Los ids desconocidos siguen fallando aquí, antes de escribir.
+    context = await loadManifestContext(ctx.root, { assets: 'tolerant' });
   } catch (error) {
     ctx.io.err((error as Error).message);
     return 1;
@@ -1025,6 +1032,15 @@ export async function cmdInstall(args: ParsedArgs, ctx: CliContext): Promise<num
     delete next.catalog;
   }
   next.speckit = speckit;
+  // Revalidación estricta (D3): tras materializar, el manifiesto nuevo debe pasar la misma
+  // validación que doctor/list/sync. Si el catálogo no restauró algún activo, el arnés
+  // incompleto no se escribe ni se proyecta a los destinos.
+  try {
+    await validateManifestData(next, ctx.root);
+  } catch (error) {
+    ctx.io.err((error as Error).message);
+    return 1;
+  }
   await writeManifest(ctx.root, next);
   if (runSpeckit && !(await installSpeckit(speckitSettings, ctx, backupId))) {
     return 1;

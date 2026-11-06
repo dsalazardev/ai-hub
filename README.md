@@ -117,7 +117,7 @@ Un preset puede extender otro (`angular-express` → `generic-ts` → `base`). L
 | Comando | Responsabilidad |
 |---|---|
 | `init` | Detecta stack, elige preset y aplica un plan reproducible |
-| `install` | Materializa el catálogo o el preset según la selección y sincroniza |
+| `install` | Materializa el catálogo o el preset según la selección, recupera fuentes de `.ai-hub/` ausentes y sincroniza |
 | `add` | Añade una skill o cualquier agente del catálogo |
 | `list` | Lista preset, targets, comandos, skills, agentes y selección |
 | `sync` | Proyecta las fuentes a los destinos; `--check` informa deriva |
@@ -129,7 +129,7 @@ Un preset puede extender otro (`angular-express` → `generic-ts` → `base`). L
 | `uninstall` | Elimina una skill, agente o regla añadida |
 | `purge` | Elimina el arnés tras crear un snapshot |
 | `upgrade` | Actualiza el paquete y re-sincroniza; completa dimensiones `full` |
-| `repair` | Reaplica solo lo que falta o está roto |
+| `repair` | Reaplica solo lo que falta o está roto; restaura fuentes de `.ai-hub/` borradas desde el catálogo del motor |
 | `worktrees` | Lista o reapea worktrees (`reap --confirm`, `--auto`) |
 | `trunk` | Muestra, cierra o abre la rama principal |
 | `memory` | Escribe, lista y reanuda el ledger (solo taller) |

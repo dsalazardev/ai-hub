@@ -126,3 +126,92 @@ describe('real catalog', () => {
     }
   });
 });
+
+describe('manifest asset validation modes (repair-assets)', () => {
+  const SKILL = 'code-review';
+
+  /** Publica una skill del catálogo sin materializar su fuente (queda ausente en .ai-hub). */
+  async function publishCatalogSkill(dir: string): Promise<void> {
+    const file = path.join(dir, 'manifest.yaml');
+    const manifest = await fs.readFile(file, 'utf8');
+    const needle = 'skills:\n  source: .ai-hub/skills\n  publish: []';
+    if (!manifest.includes(needle)) {
+      throw new Error('el fixture del manifiesto no contiene el bloque de skills esperado');
+    }
+    await fs.writeFile(
+      file,
+      manifest.replace(
+        needle,
+        `skills:\n  source: .ai-hub/skills\n  publish:\n    - ${SKILL}\n  selection: custom`,
+      ),
+    );
+  }
+
+  it('strict default rejects a restorable missing source', async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-assets-'));
+    try {
+      await seedFixture(dir);
+      await publishCatalogSkill(dir);
+      await expect(loadManifestContext(dir)).rejects.toThrow(
+        `skills.publish "${SKILL}" no existe en .ai-hub/skills`,
+      );
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('tolerant mode accepts restorable missing skill and rule sources', async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-assets-'));
+    try {
+      await seedFixture(dir);
+      await publishCatalogSkill(dir);
+      await fs.rm(path.join(dir, '.ai-hub', 'rules', 'core.md'), { force: true });
+      const context = await loadManifestContext(dir, { assets: 'tolerant' });
+      expect(context.manifest.skills.publish).toEqual([SKILL]);
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('unknown publish ids fail in strict and tolerant modes', async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-assets-'));
+    try {
+      await seedFixture(dir);
+      const file = path.join(dir, 'manifest.yaml');
+      const manifest = await fs.readFile(file, 'utf8');
+      await fs.writeFile(
+        file,
+        manifest.replace(
+          'skills:\n  source: .ai-hub/skills\n  publish: []',
+          'skills:\n  source: .ai-hub/skills\n  publish:\n    - skill-inexistente-xyz',
+        ),
+      );
+      await expect(loadManifestContext(dir)).rejects.toThrow(/skill-inexistente-xyz/);
+      await expect(loadManifestContext(dir, { assets: 'tolerant' })).rejects.toThrow(
+        /skill-inexistente-xyz/,
+      );
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('corrupt frontmatter of a present source fails in strict and tolerant modes', async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-assets-'));
+    try {
+      await seedFixture(dir);
+      await publishCatalogSkill(dir);
+      await fs.mkdir(path.join(dir, '.ai-hub', 'skills', SKILL), { recursive: true });
+      await fs.writeFile(
+        path.join(dir, '.ai-hub', 'skills', SKILL, 'SKILL.md'),
+        `---\nname: ${SKILL}\ndescription: A: B\n---\n\n# ${SKILL}\n`,
+        'utf8',
+      );
+      await expect(loadManifestContext(dir)).rejects.toThrow(/Nested mappings|frontmatter/i);
+      await expect(loadManifestContext(dir, { assets: 'tolerant' })).rejects.toThrow(
+        /Nested mappings|frontmatter/i,
+      );
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+});
