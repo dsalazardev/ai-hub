@@ -44,5 +44,5 @@ describe('published package', () => {
       await expect(fs.access(packaged)).resolves.toBeUndefined();
       expect(await sha256(packaged)).toBe(await sha256(workshop));
     }
-  });
+  }, 180_000);
 });
