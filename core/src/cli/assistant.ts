@@ -1,3 +1,4 @@
+import { offerControlStep } from '../control/onboard-step.js';
 import type { ParsedArgs } from './types.js';
 import type { CliContext } from './types.js';
 import fs from 'node:fs/promises';
@@ -438,6 +439,8 @@ export async function runAssistantInit(ctx: CliContext): Promise<number> {
   }
   if (code === 0) {
     await offerTrackerStep(prompts, ctx);
+    // control-onboarding: la última pregunta, solo con Hermes; vacío = saltar sin escribir nada.
+    return offerControlStep(prompts, ctx, resolved.idea);
   }
   return code;
 }

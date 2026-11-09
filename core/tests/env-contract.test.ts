@@ -384,7 +384,9 @@ describe('opt-in tracker step (2.8)', () => {
             return typeof reply === 'string' ? reply : null;
           },
         };
-        expect(await cmdInit(parseArgs([]), { ...ctx, interactive: true, assistantPrompts: scripted })).toBe(0);
+        // control-onboarding: sin Hermes en el host inyectado, el paso de control no pregunta ni ejecuta Hermes real.
+        const noHermes = { platform: process.platform, env: { PATH: '' }, home: dir, cwd: dir, exec: fakeRunner().run, exists: async () => false };
+        expect(await cmdInit(parseArgs([]), { ...ctx, interactive: true, assistantPrompts: scripted, controlHost: noHermes })).toBe(0);
         const out = `${sink.out.join('\n')}\n${sink.err.join('\n')}`;
         return { hash: /plan: ([0-9a-f]{64})/.exec(out)?.[1], out };
       };

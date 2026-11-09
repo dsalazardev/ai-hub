@@ -247,7 +247,8 @@ npx ai-hub control enroll --check      # credenciales de Discord del perfil, sol
 
 ### Provisión de Discord
 
-El paquete **no** crea aplicaciones, bots ni canales, ni escribe tokens: los provisiona la persona.
+El paquete **no** crea aplicaciones, bots ni canales: los provisiona la persona. El único token que escribe es el
+que la persona teclea en el paso de conexión de `init` (abajo), y solo en el `.env` del perfil `hermes-control`.
 
 1. **Aplicación:** en el portal de desarrolladores de Discord (`discord.com/developers/applications`), *New
    Application* (por ejemplo, "ai-hub control").
@@ -270,6 +271,30 @@ El paquete **no** crea aplicaciones, bots ni canales, ni escribe tokens: los pro
 
 Las variables de Discord **nunca** van en `.ai-hub/.env`, y las de GitLab nunca en el `.env` del perfil.
 Después: `npx ai-hub control enroll --check`.
+
+### Conectar desde `init`
+
+Si `init` (asistente interactivo) detecta Hermes ≥ 0.23, su última pregunta ofrece conectar el plano de control.
+Vacío = saltar, sin escribir nada. Si aceptas, todo es obligatorio y en este orden: el **token de TU bot** (entrada
+enmascarada; Discord lo valida antes de guardarlo y un token rechazado nunca se guarda), el **canal** de control
+(id o nombre; el bot tiene que verlo), **tu id de usuario** como aprobador y el TTL y la expiración (24 h y
+`block` por defecto). Cancelar en cualquier momento no deja nada escrito.
+
+Después, sin pasos manuales: crea el perfil `hermes-control` (`hermes profile create … --no-skills`, nunca un
+clon), escribe el token y las listas de canal y aprobador en el `.env` del perfil, escribe `manifest.control`,
+ejecuta `control enroll --yes`, reinicia el gateway de Hermes si está instalado y termina con un resumen de 5
+líneas. Un token que ya usa otro perfil se rechaza (el gateway no puede servir dos perfiles con el mismo bot); un
+perfil con otro bot no se sobrescribe sin tu confirmación. Si diste una idea en el asistente y no existe
+`IDEA.md`, la deja en la raíz enlazada a `backlog/seed.md`.
+
+Sin terminal, `--yes` no pregunta. Para conectar sin preguntas, el token entra **solo por stdin**:
+
+```bash
+npx ai-hub init --yes --connect-hermes --discord-channel <id> --approver <id-de-usuario> --discord-token-stdin < token.txt
+```
+
+`--discord-token <valor>` se rechaza (exit 2). Sin red para validar el token hace falta `--allow-unvalidated`;
+para sustituir otro bot del perfil, `--reconfigure-hermes`.
 
 ## Codex
 

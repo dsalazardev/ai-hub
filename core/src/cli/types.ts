@@ -1,6 +1,8 @@
 import type { AiHubSource } from '../paths.js';
 import type { ProcessRunner } from '../speckit/runner.js';
 import type { AssistantPrompts } from './assistant.js';
+import type { ResolverHost } from '../control/hermes.js';
+import type { DiscordFetch } from '../control/onboard.js';
 
 export interface CliIO {
   out(message: string): void;
@@ -18,6 +20,10 @@ export interface CliContext {
   interactive?: boolean;
   /** Prompts del asistente (design D13); ausente = adaptador clack, sólo con TTY real. */
   assistantPrompts?: AssistantPrompts;
+  /** control-onboarding: host del resolver de Hermes, API de Discord y stdin inyectables (tests). */
+  controlHost?: ResolverHost;
+  discordFetch?: DiscordFetch;
+  stdin?: () => Promise<string>;
 }
 
 export interface ParsedArgs {

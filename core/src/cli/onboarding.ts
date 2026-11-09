@@ -26,6 +26,7 @@ import { TOOL_IDS, assertToolIds, TARGETS } from '../sync/targets.js';
 import { sha256 } from '../sync/lock.js';
 import { isEngineCheckout } from '../source-checkout.js';
 import { assertExclusions, isInteractiveRequest, runAssistantInit } from './assistant.js';
+import { TOKEN_FLAG_REFUSED, connectFromFlags } from '../control/onboard-step.js';
 import {
   ENGINE_AGENTS_DIR,
   ENGINE_RULES_DIR,
@@ -785,6 +786,10 @@ export function printInitPlan(
 }
 
 export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number> {
+  if (args.flags['discord-token'] !== undefined) {
+    ctx.io.err(TOKEN_FLAG_REFUSED);
+    return 2;
+  }
   const sourceCheckout = await isEngineCheckout(ctx.root);
   // Gate del asistente (design D3): sólo instalación, sólo TTY, sólo sin flags.
   // Ni una línea del asistente corre antes de esta comprobación (R2).
@@ -889,6 +894,10 @@ export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number
   }
   ctx.io.out(speckitSummary(prepared.speckitSettings, resolved));
   ctx.io.out(`plan: ${plan.hash}`);
+  // control-onboarding (D7): conexión explícita sin preguntas, después del init aplicado; el plan no cambia.
+  if (args.flags['connect-hermes']) {
+    return connectFromFlags(args.flags, ctx);
+  }
   return 0;
 }
 

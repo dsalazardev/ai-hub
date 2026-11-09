@@ -49,7 +49,8 @@ describe('published package', () => {
     // engine/templates/hermes/control-poll.sh). Fase 2: +3 (control/ingest × 2; gitlab-route.sh).
     // Fase 3: +5 (control/{apply,reply} × 2; engine/templates/hermes/SKILL.md).
     // Fase 4: +6 (control/{doctor,enroll,hermes} × 2).
-    expect(pkg.entryCount).toBe(1981);
+    // control-onboarding: +4 (control/{onboard,onboard-step} × 2).
+    expect(pkg.entryCount).toBe(1985);
     expect(paths.some((file) => file.includes('upstream-watch'))).toBe(false);
     expect(paths).toContain('SECURITY.md');
     expect(paths).toEqual(expect.arrayContaining(['engine/templates/env.example', 'engine/templates/gitlab-ci.yml']));
