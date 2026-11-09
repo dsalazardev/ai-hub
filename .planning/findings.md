@@ -639,3 +639,8 @@ barre `rules/`). Todo reescrito al vocabulario del motor.
 - Evidencia: `node scripts/upstream-watch.mjs` → `Spec Kit: última v1.3.2 · rango soportado >=1.2.3 <1.3.0 · FUERA DEL RANGO` (exit 1).
 - Impacto: las instalaciones siguen resolviendo la última 1.2.x; 1.3.x no está verificada.
 - Decisión pendiente del propietario: abrir un change para ampliar `speckit.supported` tras probar 1.3.x. No se toca en factory-evolution.
+
+## 2026-11-09 — Falso positivo del filtro de secretos de `runs` (hermes-control, fase 1)
+
+- Evidencia: `ai-hub runs event --from-status "AI-HUB-STATUS: CONVERGED | artifact=specs/001-recurring-invoices/tasks.md | reason=-"` → `"artifact" parece contener un secreto; no se registra`.
+- Impacto: una feature con nombre largo no puede registrar su estado. Pendiente de decisión del propietario (fuera de hermes-control).

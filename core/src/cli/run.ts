@@ -9,7 +9,7 @@ import { cmdJudge } from './legacy.js';
 import { cmdGate } from './gate.js';
 import { cmdHook } from './hook.js';
 import { cmdRuns } from '../harness/runs.js';
-import { cmdControl } from '../control/tick.js';
+import { cmdControl } from '../control/cli.js';
 import { cmdReview } from '../review/consolidate.js';
 import { cmdAdopt } from '../adopt/convert.js';
 import { cmdSeal } from './seal.js';
@@ -158,7 +158,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
   hooks: { summary: 'Instala hooks de git que fallan abiertos', handler: cmdHooks },
   gate: { summary: 'Verifica artefactos, WIP, sello y comandos del manifiesto', handler: cmdGate },
   runs: { summary: 'Telemetría de ejecuciones con esquema cerrado (start|event|note|end|list)', handler: cmdRuns },
-  control: { summary: 'Plano de control en observación: control tick --dry-run propone, no aplica', handler: cmdControl },
+  control: { summary: 'Plano de control: tick --dry-run propone; decide, ingest, apply, expire y enroll (hermes-control)', handler: cmdControl },
   review: { summary: 'review consolidate <informes…>: consolida el panel por stdout', handler: cmdReview },
   seal: { summary: 'seal review --verdict <V>: liga el veredicto de revisión al diff real', handler: cmdSeal },
   adopt: { summary: 'Adopta un arnés heredado por fases (--dry-run primero)', handler: cmdAdopt },

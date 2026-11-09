@@ -48,6 +48,8 @@ const ARTIFACTS = [
   '- Assessment: `.specify/assessments/<slug>/{intake,research,problem,concept,decision}.md`',
   '- Feature: `specs/<feature>/{spec,plan,tasks}.md` (Spec Kit crea `<feature>` como `NNN-slug`)',
   '- Bug: `.specify/bugs/<slug>/{assessment,fix,test}.md`',
+  '- Issue de la feature: su descripción lleva `ai-hub:feature=<NNN-slug>` (lo pone el Spec-Author); sin',
+  '  ese marcador el plano de control no liga la issue con su feature y no propone nada para ella.',
 ];
 
 const SEAL = [

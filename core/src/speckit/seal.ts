@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -24,12 +25,30 @@ function canonicalContent(bytes: Buffer): Buffer {
  * por archivo `ruta + "\n" + bytes` normalizados a LF y sin BOM; SHA-256 sobre la secuencia.
  */
 export async function featureSeal(root: string, featureDir: string): Promise<string> {
+  return sealWith(featureDir, (rel) => fs.readFile(path.join(root, ...rel.split('/'))).catch(() => null));
+}
+
+/**
+ * Mismo sello que `featureSeal`, leyendo los tres archivos de `ref` del repositorio git (`git show ref:ruta`)
+ * en lugar del árbol de trabajo (D3): el plano de control revalida contra la rama del MR sin hacer checkout.
+ */
+export async function featureSealAtRef(root: string, ref: string, featureDir: string): Promise<string> {
+  if (!/^[A-Za-z0-9._/-]+$/.test(ref) || ref.startsWith('-')) {
+    throw new Error(`ref no válida para el sello: ${ref}`);
+  }
+  return sealWith(featureDir, async (rel) => {
+    const result = spawnSync('git', ['show', `${ref}:${rel}`], { cwd: root, windowsHide: true, maxBuffer: 64 * 1024 * 1024 });
+    return result.status === 0 && result.stdout ? Buffer.from(result.stdout) : null;
+  });
+}
+
+async function sealWith(featureDir: string, read: (rel: string) => Promise<Buffer | null>): Promise<string> {
   const dir = featureDir.replace(/\\/g, '/').replace(/\/+$/, '');
   const rels = SEALED_FILES.map((name) => `${dir}/${name}`).sort();
   const contents: Array<[string, Buffer]> = [];
   const missing: string[] = [];
   for (const rel of rels) {
-    const bytes = await fs.readFile(path.join(root, ...rel.split('/'))).catch(() => null);
+    const bytes = await read(rel);
     if (bytes === null) {
       missing.push(rel);
     } else {

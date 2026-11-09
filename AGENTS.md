@@ -44,7 +44,7 @@ El motor no contiene nombres de lenguajes, frameworks, empresas ni módulos. Esa
 | `harness/guards` | `runPreflight` puro: danger, trunk, branch y ship |
 | `harness/worktree` | Reaper conservador de worktrees |
 | `harness/memory` | `.planning/state.json` y ledger JSONL |
-| `hermes-control` | Plano de control event-driven (fuera de alcance de este repo) |
+| `hermes-control` | Plano de control: el lado del arnés vive aquí (`ai-hub control tick/decide/ingest/apply/expire/enroll`); el runtime de Hermes y Discord es externo y opcional |
 
 ### Dos ambientes, una frontera
 
@@ -184,6 +184,10 @@ Cada comando termina en un estado normalizado desde la salida de Spec Kit (en ma
 | `FAILED` | ai::blocked con motivo y evidencia |
 
 La tabla se genera desde `exit_effects` de `core/engine/engine.yaml`; un test exige que coincidan. Los estados retirados (los que usaban los cuerpos propios de 0.2.x) los rechaza el gate `engine:retired-states`.
+
+### Aplicación por `hermes-control` (lado del arnés: `ai-hub control`)
+
+La persona aprueba **solo por Discord**, con una gramática estricta: `aprobar <iid> <hash>` (≥ 8 hex del hash de la decisión; en la aprobación de una spec, el sello de arriba), `rechazar <iid> <motivo>` o `detalle <iid>`; cualquier otro texto se ignora. Solo cuentan los ids de `manifest.control.approvers` (lista vacía = aprobaciones desactivadas). `ai-hub control apply` relee la etiqueta (si cambió, la decisión se anula: manda GitLab), revalida el sello y el WIP, y escribe una sola actualización de etiqueta que retira las demás `ai::`; la aprobación de una spec deja además la nota `ai-hub:approved-hash=<sello>`, de la que el tick toma el hash. Una decisión sin respuesta caduca a las `ttlHours` (24): con `expire: block` la issue pasa a `ai::blocked` con `approval_expired` —la única escritura sin respuesta humana— y con `notify` solo se avisa.
 
 ---
 

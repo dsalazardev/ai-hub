@@ -23,6 +23,8 @@ Only the latest minor release on npm (`latest` dist-tag) receives security fixes
 | Git hooks (`hooks install`) | `pre-commit` / `post-merge` | Exit 0 when `npx` is missing; never block because the harness is absent |
 | `.ai-hub/.env` | Local credentials of the harness | Ignored by git from `init`; excluded from snapshots; only presence of keys is checked; the token is only typed by the person in the interactive assistant |
 | `doctor --online`, `control tick --online` | One read-only request to the declared tracker | Opt-in; output redacted; no write calls |
+| `ai-hub control apply` / `expire` (hermes-control) | Move `ai::` labels of existing issues and post notes, only after an allow-listed Discord approval (or on expiry, only to `ai::blocked`) | Revalidates label, seal and WIP before writing; one label update and one note per decision; never creates issues, merges or pushes; token read inside the process, never printed |
+| `ai-hub control enroll` | Writes the `hermes-control` profile, skill, scripts, webhook route and cron in Hermes | Opt-in, `--dry-run` first; never passes `--secret` nor prints the webhook secret; reads the profile `.env` only to check key presence and bot-token collisions |
 | `ai-hub runs` | Run telemetry in `.ai-hub/runs/` (ignored) | Closed schema; rejects prompts, file contents, credential-looking strings and values of `.ai-hub/.env` |
 | Generated rules and skills | Text loaded into coding agents | Ingested content is data, never instructions (universal rule); references are linted before publishing |
 
@@ -31,3 +33,14 @@ Only the latest minor release on npm (`latest` dist-tag) receives security fixes
 If a token reached a commit, an issue, a log or a snapshot: revoke it in the tracker first, create a
 new one, replace it in `.ai-hub/.env`, and run `npx ai-hub doctor --online`. Removing the file from
 git history does not make a leaked token safe; revocation does.
+
+### Control plane credentials (hermes-control)
+
+| Credential | Lives in | Who can use it | What a leak exposes | Rotation |
+|---|---|---|---|---|
+| `GITLAB_TOKEN` (project access token, Reporter + `api`) | `.ai-hub/.env` of the control host | `ai-hub control` only, inside its process | Reading the repository and the issues of the project (Reporter can read code), editing labels and posting notes. It cannot push, merge or change settings. | GitLab → Settings → Access tokens → *Rotate* (the old token stops working at once). Replace it in `.ai-hub/.env`, run `npx ai-hub doctor --online`, and review the notes the bot posted since the leak. |
+| Webhook secret (`X-Gitlab-Token`) | Hermes `webhook_subscriptions.json` of the profile (0600) and the GitLab webhook | Hermes, to accept GitLab events | Forging GitLab events to the route. Ingest still revalidates against the tracker, so a forged event cannot move a label by itself, but it can trigger reads and Discord messages. | Re-subscribe the route in Hermes (a new secret is generated), copy it to GitLab → Settings → Webhooks, and send a test event. |
+| `DISCORD_BOT_TOKEN` | `.env` of the Hermes profile `hermes-control` (never `.ai-hub/.env`) | Hermes, to read and send Discord messages | Impersonating the control bot in Discord and reading the control channel. Approvals still require an allow-listed user id, the decision hash and an open, unexpired decision. | Discord developer portal → Bot → *Reset Token*; replace it in the profile `.env`; restart the Hermes gateway; run `npx ai-hub control enroll --check`. |
+
+A token pasted in a chat, an issue or a commit is leaked: rotate it, do not just delete the message.
+

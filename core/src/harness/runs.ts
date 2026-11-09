@@ -149,7 +149,8 @@ export async function readRunEvents(root: string, run: string): Promise<RunEvent
 export async function listRuns(root: string): Promise<string[]> {
   const entries = await fs.readdir(runsDir(root), { withFileTypes: true }).catch(() => []);
   return entries
-    .filter((entry) => entry.isDirectory() && entry.name !== 'scope')
+    // `scope/` (guardia de alcance) y `control/` (registro de decisiones) no son runs ni caducan.
+    .filter((entry) => entry.isDirectory() && entry.name !== 'scope' && entry.name !== 'control')
     .map((entry) => entry.name)
     .sort();
 }

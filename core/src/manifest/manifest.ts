@@ -54,6 +54,8 @@ export interface ProjectManifest {
   speckit?: ProjectSpeckit;
   /** Tracker opcional (PD-1): solo nombres de variables, jamás valores. */
   tracker?: { kind: 'gitlab'; urlEnv: string; tokenEnv: string };
+  /** Plano de control (hermes-control): aprobadores de Discord, TTL y política de expiración. */
+  control?: { approvers?: string[]; ttlHours?: number; expire?: 'block' | 'notify'; pollMinutes?: number };
   /** Modelo por destino y tier (A3); sin correspondencia, el host hereda el de la sesión. */
   agentModels?: Record<string, Record<string, string>>;
   /** Región reservada en el AGENTS.md raíz y en el de cada área (E2). */

@@ -842,6 +842,9 @@ export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number
   if (prepared.existing?.agentMemory) {
     manifest.agentMemory = prepared.existing.agentMemory;
   }
+  if (prepared.existing?.control) {
+    manifest.control = prepared.existing.control;
+  }
   await writeManifest(ctx.root, manifest);
   await writeInventory(ctx.root);
   if (prepared.runSpeckit && !(await installSpeckit(prepared.speckitSettings, ctx, backupId))) {

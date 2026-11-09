@@ -117,3 +117,71 @@ export async function checkTrackerToken(
     return { id: 'tracker:token', ok: false, detail: `sin respuesta del tracker (${code})` };
   }
 }
+
+/** Roles de GitLab por `access_level` (permisos de proyecto). */
+const ACCESS_LEVELS: Record<number, string> = { 10: 'Guest', 15: 'Planner', 20: 'Reporter', 30: 'Developer', 40: 'Maintainer', 50: 'Owner' };
+const EXPIRY_WARNING_DAYS = 14;
+
+export interface TrackerScopeOptions extends EnvDoctorOptions {
+  now?: Date;
+}
+
+/**
+ * `tracker:scope` (hermes-control 5.3): solo con `--online`. Introspecciona el token (solo GET) y avisa si puede
+ * hacer push (`write_repository` o rol Developer o superior) o si caduca en menos de 14 días. Sin endpoint de
+ * introspección, lo dice y no inventa nada. Nunca imprime el token.
+ */
+export async function checkTrackerScope(root: string, manifest: ProjectManifest | null, options: TrackerScopeOptions): Promise<EnvCheck> {
+  const id = 'tracker:scope';
+  if (!options.online) {
+    return { id, ok: true, detail: 'omitido (sin --online, doctor no usa la red)' };
+  }
+  const tracker = manifest?.tracker;
+  if (!tracker) {
+    return { id, ok: true, detail: 'tracker no configurado' };
+  }
+  const values = (await readHarnessEnv(root)) ?? {};
+  const url = values[tracker.urlEnv];
+  const token = values[tracker.tokenEnv];
+  if (!url || !token) {
+    return { id, ok: false, detail: `faltan ${tracker.urlEnv} o ${tracker.tokenEnv} en ${HARNESS_ENV_FILE}` };
+  }
+  const doFetch: FetchLike = options.fetch ?? ((target, init) => fetch(target, init));
+  const base = `${url.replace(/\/+$/, '')}/api/v4`;
+  const get = (pathname: string) => doFetch(`${base}${pathname}`, { headers: { 'PRIVATE-TOKEN': token }, signal: AbortSignal.timeout(10_000) });
+  try {
+    const self = await get('/personal_access_tokens/self');
+    if (self.status !== 200) {
+      return { id, ok: true, detail: `introspección no disponible (HTTP ${self.status}): solo se comprueba la identidad (tracker:token)` };
+    }
+    const body = ((await self.json().catch(() => null)) ?? {}) as { scopes?: unknown; expires_at?: unknown; user_id?: unknown };
+    const scopes = Array.isArray(body.scopes) ? body.scopes.filter((scope): scope is string => typeof scope === 'string') : [];
+    const expires = typeof body.expires_at === 'string' ? body.expires_at : null;
+    const warnings: string[] = [];
+    if (scopes.includes('write_repository')) {
+      warnings.push('el scope write_repository permite hacer push');
+    }
+    let role: string | null = null;
+    const project = values.GITLAB_PROJECT_PATH;
+    if (project && typeof body.user_id === 'number') {
+      const segment = project.includes('/') ? encodeURIComponent(project) : project;
+      const member = await get(`/projects/${segment}/members/all/${body.user_id}`);
+      if (member.status === 200) {
+        const level = Number(((await member.json().catch(() => null)) as { access_level?: unknown } | null)?.access_level);
+        role = ACCESS_LEVELS[level] ?? `nivel ${level}`;
+        if (level >= 30) {
+          warnings.push(`rol ${role}: puede hacer push (el plano de control solo necesita Reporter)`);
+        }
+      }
+    }
+    const now = options.now ?? new Date();
+    if (expires !== null && Date.parse(`${expires}T00:00:00Z`) - now.getTime() < EXPIRY_WARNING_DAYS * 86_400_000) {
+      warnings.push(`caduca el ${expires} (menos de ${EXPIRY_WARNING_DAYS} días): rótalo`);
+    }
+    const summary = `scopes ${scopes.join(',') || '-'}${role ? ` · rol ${role}` : ''} · caduca ${expires ?? 'sin fecha declarada'}`;
+    return { id, ok: true, detail: warnings.length > 0 ? `aviso: ${warnings.join('; ')} · ${summary}` : summary };
+  } catch (error) {
+    const code = (error as { name?: string }).name ?? 'error';
+    return { id, ok: false, detail: `sin respuesta del tracker (${code})` };
+  }
+}

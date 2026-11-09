@@ -144,6 +144,133 @@ specs/              features de Spec Kit: spec.md, plan.md, tasks.md (versionado
 
 Una instalación no crea `.planning/`: es estado del checkout de desarrollo del motor.
 
+## Plano de control (hermes-control)
+
+Opcional: sin `manifest.control` nada cambia. El arnés **verifica y redacta** cada decisión; una persona
+**aprueba por Discord**; Hermes solo transporta el mensaje y la respuesta. El tablero es GitLab: las
+7 etiquetas `ai::*`.
+
+```yaml
+# manifest.yaml
+tracker: { kind: gitlab, urlEnv: GITLAB_URL, tokenEnv: GITLAB_TOKEN }
+control:
+  approvers: ["<id de usuario de Discord>"]   # sin aprobadores no se aplica nada
+  ttlHours: 24                               # caducidad de cada decisión
+  expire: block                              # block -> ai::blocked (approval_expired) | notify
+```
+
+`.ai-hub/.env` (nunca versionado) lleva `GITLAB_URL`, `GITLAB_TOKEN` y `GITLAB_PROJECT_PATH`. Cada issue
+de feature lleva en su descripción `ai-hub:feature=<NNN-slug>`.
+
+- `ai-hub control tick --dry-run --online` lista el tablero (solo GET), liga issues y features por el
+  marcador e informa las issues sin él.
+- `ai-hub control decide --online [--format discord|json]` publica las decisiones nuevas en
+  `.ai-hub/runs/control/decisions.jsonl` (ignorado) e imprime **una por ejecución** en formato Discord:
+  transición, resumen, impacto, evidencia con su fuente, `aprobar <iid> <hash>` / `rechazar <iid> <motivo>` /
+  `detalle <iid>` y caducidad. Repetir sin cambios no imprime nada. Una spec completa se publica para
+  aprobación con su sello como hash (§5).
+- Sondeo sin agente: `engine/templates/hermes/control-poll.sh`, que `ai-hub control enroll` instala en el
+  perfil de Hermes y programa con `hermes -p hermes-control cron create "every 15m" --no-agent --script
+  control-poll.sh --deliver discord`. Su salida es un mensaje de Discord o nada.
+
+### Webhook de GitLab → Discord
+
+`ai-hub control ingest` recibe el payload por stdin desde la ruta de Hermes (sin agente: un script), acepta
+solo eventos de issues y merge requests del proyecto de `GITLAB_PROJECT_PATH`, descarta duplicados por
+contenido y, si una persona movió la etiqueta a mano, anula lo pendiente de esa issue: manda GitLab.
+
+- Ruta en Hermes: `hermes -p hermes-control webhook subscribe ai-hub-gitlab --events "Issue Hook,Merge
+  Request Hook" --script gitlab-route.sh --prompt "{script_output}" --deliver discord --deliver-only`
+  (plantilla `engine/templates/hermes/gitlab-route.sh`). Un stdout vacío descarta el evento.
+- En GitLab (Settings > Webhooks del proyecto): URL `https://<host-de-hermes>:8644/webhooks/ai-hub-gitlab`,
+  eventos **Issues events** (work items) y **Merge request events**, y el secreto en **Secret token**: GitLab
+  lo envía en `X-Gitlab-Token` y Hermes lo compara.
+- El secreto lo genera Hermes al suscribir la ruta y lo guarda en `webhook_subscriptions.json` (permisos
+  0600) del perfil; `ai-hub` nunca lo imprime ni lo guarda. Cópialo de ahí a GitLab.
+- Sin webhook alcanzable (sin VPS ni túnel), el cron de sondeo hace el mismo trabajo cada `pollMinutes`.
+
+### Aprobaciones por Discord
+
+Gramática estricta (cualquier otro texto se ignora):
+
+| Respuesta | Efecto |
+|---|---|
+| `aprobar <iid> <hash>` | ≥ 8 hex del hash de la decisión (en una spec, su sello); aplica la transición |
+| `rechazar <iid> <motivo>` | cierra la decisión; la etiqueta no cambia |
+| `detalle <iid>` | devuelve la evidencia completa |
+
+- Solo cuentan los ids de `manifest.control.approvers`; con la lista vacía, `apply` sale 2.
+- `ai-hub control apply --approver <id> -- aprobar 42 3f9c2a71` (la skill de Hermes pasa las palabras tras
+  `--`, sin comillas) o `--reply "<texto>"` a mano. Antes de escribir relee la etiqueta (si cambió, la
+  decisión se anula), revalida el sello y el WIP, y hace **un** `PUT` que añade el destino y retira las demás
+  `ai::` (correcto con o sin etiquetas con alcance de GitLab Premium). Un 429 (con `Retry-After`) o una caída
+  dejan la decisión pendiente, sin escritura parcial.
+- Aprobar una spec deja la nota `ai-hub:approved-hash=<sello>`; el paso a `ai::in-dev` queda **preaprobado**
+  por ese hash y lo ejecuta `apply --preapproved` (desde el cron) tras revalidar sello y WIP.
+- Caducidad: `ttlHours` (24). `ai-hub control expire` (desde el cron): con `expire: block`, la issue pasa a
+  `ai::blocked` con `approval_expired` y una nota; con `notify`, solo un aviso.
+- Plantilla de la skill de respuestas: `engine/templates/hermes/SKILL.md` (solo ejecuta `apply` y devuelve su
+  salida sin parafrasear).
+
+### Evidencia, sello y endurecimiento
+
+- **Rango de la evidencia.** Un run local (`.ai-hub/runs`) manda. Si no hay, el tick lee la última línea
+  `AI-HUB-STATUS` válida de las notas de la issue o de sus MR (motor en otro host) y la marca `remote`:
+  el mensaje dice "declarado por el motor, no verificado por el arnés". Un `VERIFIED` remoto no propone
+  `ai::done` hasta que el pipeline del MR está en `success` (rango `pipeline`). Una línea mal formada se ignora.
+- **`--ref <rama>`** (`tick`, `decide`, `apply`): el sello se calcula con `git show <rama>:specs/<feature>/…` en el
+  espejo, sin checkout; mismo algoritmo y mismo vector de §5.
+- **`doctor --online`** añade `tracker:scope`: avisa si el token tiene `write_repository`, un rol Developer o
+  superior (puede hacer push) o caduca en menos de 14 días; sin endpoint de introspección lo dice y no supone.
+- **`apply --verify-message`** no está disponible: releer el mensaje en Discord exige un endpoint que no se ha
+  verificado (PENDIENTE). La aprobación se valida con la gramática, el hash y `manifest.control.approvers`.
+- Rotación de las tres credenciales del plano de control: `SECURITY.md`.
+
+### Enrolar Hermes
+
+`ai-hub control enroll` instala el lado operativo en Hermes (≥ 0.23.0). Sin `--yes` ni `--check` solo imprime
+el plan. Busca el CLI en este orden: `--hermes <ruta>` (exclusivo), `HERMES_BIN`, el `PATH` (en Windows también
+`.exe`, `.cmd`, `.bat`) y las ubicaciones de instalación (instalador nativo `%LOCALAPPDATA%\hermes\bin\hermes.exe`
+o `~/.hermes/bin/hermes`, pipx, pip `--user`, npm). Si no lo encuentra, sale 2 listando todas las rutas
+probadas; con una versión más antigua, sale 1 nombrando la encontrada y la mínima.
+
+```bash
+npx ai-hub control enroll              # plan, sin cambios
+npx ai-hub control enroll --yes        # crea solo lo que falta: perfil, skill, scripts, webhook, cron
+npx ai-hub control enroll --check      # credenciales de Discord del perfil, solo por presencia
+```
+
+- Perfil propio: `hermes profile create hermes-control --no-skills`, con su propio bot de Discord. `enroll`
+  se niega si el perfil comparte `DISCORD_BOT_TOKEN` con otro perfil (dos perfiles con un mismo bot colisionan).
+- Imprime la ruta del `.env` del perfil (`<hogar de Hermes>/profiles/hermes-control/.env`), nunca su contenido.
+- Nunca pasa `--secret` ni imprime la salida de `webhook subscribe`: el secreto lo genera Hermes.
+
+### Provisión de Discord
+
+El paquete **no** crea aplicaciones, bots ni canales, ni escribe tokens: los provisiona la persona.
+
+1. **Aplicación:** en el portal de desarrolladores de Discord (`discord.com/developers/applications`), *New
+   Application* (por ejemplo, "ai-hub control").
+2. **Bot:** pestaña *Bot*; activa *Message Content Intent* (Hermes lee el texto de las respuestas).
+3. **Token:** *Reset Token* y cópialo una sola vez a `DISCORD_BOT_TOKEN` en el `.env` del perfil. No lo pegues
+   en el chat, en issues ni en `.ai-hub/.env`.
+4. **Invitar el bot:** *OAuth2 → URL Generator* con el scope `bot` y los permisos *View Channels*, *Send
+   Messages* y *Read Message History*; abre la URL e invítalo al servidor. Crea un canal solo para el control.
+5. **Ids:** activa el *Modo desarrollador* de Discord (Ajustes → Avanzado). Clic derecho en el canal → *Copiar
+   ID* → `DISCORD_ALLOWED_CHANNELS`. Clic derecho en cada aprobador → *Copiar ID de usuario* →
+   `DISCORD_ALLOWED_USERS` y, con los mismos ids, `manifest.control.approvers`.
+
+| Variable | Dónde va | Quién la escribe |
+|---|---|---|
+| `DISCORD_BOT_TOKEN` | `.env` del perfil `hermes-control` | la persona (paso 3) |
+| `DISCORD_ALLOWED_USERS` | `.env` del perfil `hermes-control` | la persona (paso 5) |
+| `DISCORD_ALLOWED_CHANNELS` | `.env` del perfil `hermes-control` | la persona (pasos 4 y 5) |
+| `manifest.control.approvers` | `manifest.yaml` del proyecto (versionado; no es secreto) | la persona |
+| `GITLAB_URL`, `GITLAB_TOKEN`, `GITLAB_PROJECT_PATH` | `.ai-hub/.env` (ignorado) | la persona |
+
+Las variables de Discord **nunca** van en `.ai-hub/.env`, y las de GitLab nunca en el `.env` del perfil.
+Después: `npx ai-hub control enroll --check`.
+
 ## Codex
 
 Cobertura parcial: con `agentsMd: true`, `sync` mantiene la región gestionada del `AGENTS.md`

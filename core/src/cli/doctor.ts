@@ -28,7 +28,8 @@ import { speckitDoctorChecks, speckitNotApplicable } from '../speckit/doctor.js'
 import type { CliContext } from './types.js';
 import { missingClaudeHooks } from '../sync/hooks.js';
 import { checkAgentCapabilities } from '../agents/doctor.js';
-import { checkEnvIgnored, checkEnvKeys, checkTrackerToken, type EnvDoctorOptions } from '../env/doctor.js';
+import { checkEnvIgnored, checkEnvKeys, checkTrackerScope, checkTrackerToken, type EnvDoctorOptions } from '../env/doctor.js';
+import { checkControl } from '../control/doctor.js';
 
 export interface DoctorCheck {
   id: string;
@@ -264,7 +265,7 @@ export async function diagnose(ctx: CliContext, options: DoctorOptions = {}): Pr
           (await exists(path.join(ctx.root, 'core', 'skills', 'shared'))),
         'core/agents + core/presets + core/skills',
       );
-      for (const id of ['env:ignored', 'env:keys', 'tracker:token']) {
+      for (const id of ['env:ignored', 'env:keys', 'tracker:token', 'control']) {
         add(id, true, 'no aplica en el checkout del motor');
       }
     } else {
@@ -331,6 +332,9 @@ export async function diagnose(ctx: CliContext, options: DoctorOptions = {}): Pr
         await checkEnvIgnored(ctx.root),
         await checkEnvKeys(ctx.root, manifest),
         await checkTrackerToken(ctx.root, manifest, options),
+        // 5.3: los privilegios del token solo se miran con --online (sin red, la salida no cambia).
+        ...(options.online ? [await checkTrackerScope(ctx.root, manifest, options)] : []),
+        checkControl(manifest),
       ]) {
         add(check.id, check.ok, check.detail);
       }

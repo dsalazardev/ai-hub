@@ -45,7 +45,11 @@ describe('published package', () => {
     // Lote F: +11 (SECURITY.md; engine/templates/{examples-good,examples-bad}.md y devcontainer.json;
     // presets/php/{preset.yaml,rules/php.md,rules/modules.md}; cli/seal y harness/review-seal × 2).
     // scripts/upstream-watch.mjs (M-28) vive en la raíz del taller y no viaja.
-    expect(pkg.entryCount).toBe(1956);
+    // hermes-control fase 1: +11 (control/{cli,decide,ledger,render,tracker} × 2 en dist;
+    // engine/templates/hermes/control-poll.sh). Fase 2: +3 (control/ingest × 2; gitlab-route.sh).
+    // Fase 3: +5 (control/{apply,reply} × 2; engine/templates/hermes/SKILL.md).
+    // Fase 4: +6 (control/{doctor,enroll,hermes} × 2).
+    expect(pkg.entryCount).toBe(1981);
     expect(paths.some((file) => file.includes('upstream-watch'))).toBe(false);
     expect(paths).toContain('SECURITY.md');
     expect(paths).toEqual(expect.arrayContaining(['engine/templates/env.example', 'engine/templates/gitlab-ci.yml']));
