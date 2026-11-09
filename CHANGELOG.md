@@ -1,5 +1,60 @@
 # Changelog
 
+## 0.12.0 — hermes-control: plano de control opt-in (2026-11-09)
+
+El lado del arnés de `hermes-control`: GitLab es el tablero (las 7 etiquetas `ai::`), una persona aprueba por
+Discord y el arnés verifica, redacta cada decisión y aplica solo lo aprobado. **Opt-in:** sin `manifest.control`
+nada cambia. El runtime de Hermes y Discord es **externo y opcional**; el paquete no gana dependencias.
+
+### Cambio
+
+- `ai-hub control` gana `decide` (publica decisiones deterministas e idempotentes, una por mensaje de Discord),
+  `ingest` (evento de GitLab por stdin, sin LLM: solo issues y MR del proyecto, deduplicado, un cambio manual de
+  etiqueta anula lo pendiente), `apply` (gramática `aprobar <iid> <hash>` / `rechazar` / `detalle`, lista de
+  aprobadores, relectura de la etiqueta, sello y WIP; un PUT que añade el destino y retira las demás `ai::`, más
+  una nota de evidencia con marcador), `expire` (caducidad → `ai::blocked` con `approval_expired`, o solo aviso) y
+  `enroll` (perfil `hermes-control`, skill, scripts, webhook y cron en Hermes ≥ 0.23; `--dry-run` primero,
+  `--check` de credenciales de Discord por presencia; nunca pasa ni imprime secretos). `help` sigue en 28.
+- `control tick --online` lista el tablero, liga issue ↔ feature por `ai-hub:feature=`, toma el hash aprobado
+  solo de la nota del plano de control y acepta líneas de estado de un motor remoto como evidencia de rango
+  inferior (`remote`; `ai::done` exige gate local o pipeline verde). `--ref <rama>` para el sello (mismo vector §5).
+- `doctor`: check `control` (`no configurado` sin el bloque, sin degradar) y, con `--online`, `tracker:scope`
+  (aviso si el token puede hacer push o caduca en < 14 días). `SECURITY.md`: rotación de las tres credenciales.
+- Specs: capability nueva `hermes-control` (23 requisitos) y 4 deltas en `spec-kit-pipeline` (1 modificado,
+  3 añadidos).
+- `npm test` del paquete pasa a ser serial (`vitest run --maxWorkers=1`, el mismo comando que el gate de
+  publicación); `npm run test:fast` queda para iterar.
+
+### Sin cambios en los caminos sin Hermes
+
+Sin `manifest.control`, `init` y `control tick --dry-run --json` dan la misma salida que 0.11.0 y `doctor` el mismo
+código; solo gana la línea `[OK] control: no configurado`. La regla `ai-hub-speckit` incluye el marcador
+`ai-hub:feature=`: un consumidor de 0.11.0 ve 5 destinos desactualizados hasta su próximo `sync`.
+
+### Cifras medidas
+
+Re-medidas con el CLI compilado de 0.12.0 en copias temporales (`--no-speckit`); idénticas a 0.11.0:
+
+| Instalación | Destinos en `sync.lock.json` |
+|---|---|
+| `init --yes` (`generic-ts`, full) | 6.872 |
+| `init --yes --preset-only` | 66 |
+| `init --yes --exclude rule:skill-quality` | 6.852 |
+| `init --yes --preset angular-express` | 6.887 |
+
+`full` instala 262 skills de proyecto + 17 comandos Spec Kit, 40 agentes y 6 reglas universales.
+
+### Empaquetado
+
+- `core/package.json` en `0.12.0`. Tarball: **1.956 → 1.981 entradas** (+25: `dist/control/{apply,cli,decide,
+  doctor,enroll,hermes,ingest,ledger,render,reply,tracker}` × 2 y `engine/templates/hermes/{control-poll.sh,
+  gitlab-route.sh,SKILL.md}`).
+
+### Pendiente del propietario
+
+Verificación en vivo, fuera de los fixtures: entrega real a Discord, webhook alcanzable desde GitLab (VPS o túnel)
+y `hermes cron run` del sondeo. Publicar (`npm publish --access public` desde `core/`) es del propietario.
+
 ## 0.11.0 — factory-evolution: credenciales, guardias reales, persistencia, contrato del bucle, adopción e inventario (2026-11-08)
 
 Seis lotes aplicados en orden (D → B → C → A → E → F), con la suite en verde entre lotes. Sin breaking

@@ -26,20 +26,21 @@ async function currentSection(): Promise<{ version: string; date: string; body: 
   return { version: pkg.version, date: heading[1], body: changelog.slice(start, next < 0 ? undefined : next) };
 }
 
-describe('release 0.11.0 (factory-evolution 8.3)', () => {
-  it('bumps the package and names the six lots, the closed findings and what stays out', async () => {
+describe('release 0.12.0 (hermes-control)', () => {
+  it('bumps the package and names the control plane, its specs, the package delta and what stays pending', async () => {
     const section = await currentSection();
-    expect(section.version).toBe('0.11.0');
-    for (const lot of ['Lote D', 'Lote B', 'Lote C', 'Lote A', 'Lote E', 'Lote F']) {
-      expect(section.body).toContain(`### ${lot}`);
+    expect(section.version).toBe('0.12.0');
+    expect(section.date).toBe('2026-11-09');
+    for (const sub of ['decide', 'ingest', 'apply', 'expire', 'enroll']) {
+      expect(section.body).toContain('`' + sub + '`');
     }
-    for (const finding of ['G-01', 'G-02', 'G-03', 'G-04', 'G-05', 'F-03', 'F-04', 'F-12', 'F-17b', 'F-16']) {
-      expect(section.body).toContain(finding);
-    }
-    expect(section.body).toContain('hermes-control');
-    expect(section.body).toContain('npm dist-tag rm @dsalazardev/ai-hub-cli next');
-    expect(section.body).toContain('1.956 entradas');
-    expect(section.body).toContain('scripts/upstream-watch.mjs');
+    expect(section.body).toContain('23 requisitos');
+    expect(section.body).toContain('spec-kit-pipeline');
+    expect(section.body).toContain('externo y opcional');
+    expect(section.body).toContain('1.956 → 1.981 entradas');
+    expect(section.body).toContain('Sin cambios en los caminos sin Hermes');
+    expect(section.body).toMatch(/Discord[\s\S]*webhook[\s\S]*cron/);
+    expect(section.body).not.toMatch(/telegram/i);
   });
 
   // El ritual iguala versión y fixture: la comprobación de cifras es estricta, sin omisión.

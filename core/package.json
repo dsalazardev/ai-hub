@@ -1,6 +1,6 @@
 {
   "name": "@dsalazardev/ai-hub-cli",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "author": "Daner Alejandro Salazar Colorado",
   "license": "MIT",
   "type": "module",
@@ -41,7 +41,8 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "vitest run",
+    "test": "vitest run --maxWorkers=1",
+    "test:fast": "vitest run",
     "typecheck": "tsc --noEmit",
     "manifest:build": "node dist/manifest/cli.js",
     "manifest:check": "node dist/manifest/cli.js --check",

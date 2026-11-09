@@ -224,7 +224,7 @@ describe('fase 4 — notas de evidencia (4.1)', () => {
 });
 
 describe('fase 4 — doctor y CLI de enroll (4.2, 4.4)', () => {
-  it('doctor reports control as not configured without degrading, and summarises it when present', async () => {
+  it('doctor reports control as not configured without degrading, and summarises it when present', { timeout: 60_000 }, async () => {
     await h.consumer({ control: false });
     const without = await h.cli(['doctor']);
     expect(without.out).toMatch(/^\[OK\]\s+control: no configurado/m);

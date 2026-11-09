@@ -277,6 +277,16 @@ Cobertura parcial: con `agentsMd: true`, `sync` mantiene la región gestionada d
 raíz, que Codex lee. Skills, agentes, hooks y comandos de Spec Kit no llegan a Codex; el destino
 completo está en el roadmap (P4).
 
+## Verificación (taller)
+
+- `npm test` es el gate: `vitest run --maxWorkers=1`, el mismo comando que corre `prepublishOnly`
+  (`build` + `manifest:build` + `npm test`). Serial a propósito: la verificación no depende de la carga de la
+  máquina.
+- En un checkout dentro de OneDrive el gate completo tarda **~20 min**. No lo lances en paralelo con otra suite
+  (ni con otra copia del gate): los tests que hacen `init` de un consumidor y un `doctor` completo compiten por
+  disco y memoria y expiran.
+- `npm run test:fast` (`vitest run`, en paralelo) es solo para iterar en local; no sustituye al gate.
+
 ## Lo que no viaja en el paquete
 
 Todo lo que el consumidor usa llega con `npm i`. La única excepción declarada es

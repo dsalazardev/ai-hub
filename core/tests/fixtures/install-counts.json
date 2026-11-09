@@ -1,7 +1,7 @@
 {
   "description": "Cifras medidas en copias temporales con el CLI compilado (node dist/bin/ai-hub.js init --yes [...]); no se calculan a mano. Desde 0.11.0 se miden con --no-speckit: los archivos de Spec Kit no entran en sync.lock.json.",
-  "measuredAt": "2026-11-08",
-  "package": "0.11.0 (factory-evolution; cifras sin cambios desde el Lote A, reconfirmadas en el Lote F)",
+  "measuredAt": "2026-11-09",
+  "package": "0.12.0 (hermes-control; re-medidas con el CLI de 0.12.0, idénticas a 0.11.0)",
   "commands": {
     "full": "init --yes",
     "presetOnly": "init --yes --preset-only",

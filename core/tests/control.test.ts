@@ -127,7 +127,7 @@ describe('fase 1 — tick lee el tablero (1.2, 1.3)', () => {
 });
 
 describe('fase 1 — manifest.control (1.4)', () => {
-  it('an unknown property fails naming it; without the block decide exits 2 and doctor has no control line', async () => {
+  it('an unknown property fails naming it; without the block decide exits 2 and doctor has no control line', { timeout: 60_000 }, async () => {
     await consumer({ control: false });
     const before = await cli(['doctor']);
     const decide = await cli(['control', 'decide', '--online']);
