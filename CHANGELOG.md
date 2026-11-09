@@ -1,5 +1,66 @@
 # Changelog
 
+## 0.13.0 — control-onboarding: conexión automática del plano de control (2026-11-09)
+
+`ai-hub init` deja el plano de control **completo y funcionando en una sola pasada opt-in**, con un bot propio
+por proyecto, cuando detecta Hermes ≥ 0.23 y hay terminal. Antes había que editar `manifest.control` a mano,
+crear el bot, pegar el token en el `.env` de un perfil y ejecutar `control enroll`. **Opt-in:** sin Hermes, o si
+la persona salta el paso, nada cambia. Hermes y Discord siguen siendo **externos y opcionales**.
+
+### Cambio
+
+- **Nuevo paso al final del asistente de `init`** (mismo patrón que el del tracker): una pregunta de entrada
+  (vacío = saltar) y, si se acepta, todo obligatorio en este orden: token del bot de Discord (enmascarado),
+  canal de control, id del aprobador, TTL y expiración con valores por defecto seguros. Cancelar en cualquier
+  punto deja **cero** escrituras del bloque.
+- **Validación antes de guardar**: el token y el canal se comprueban contra la API de Discord; un 401 nunca se
+  guarda y se vuelve a preguntar. Sin red, guarda solo con `--allow-unvalidated`.
+- **El arnés escribe, la persona no toca YAML ni `.env`**: `manifest.control`, el perfil `hermes-control`
+  (`hermes profile create … --no-skills`, sin clonar), su `.env` con el token tecleado y la proyección del canal
+  y de los aprobadores; después `control enroll --yes` y el reinicio del gateway si está instalado.
+- **Perfil independiente con bot propio**: un token ya usado por otro perfil se rechaza nombrando el perfil, sin
+  imprimir nada secreto. Un perfil con otro bot no se sobrescribe sin `--reconfigure-hermes`.
+- **Siembra de la idea**: con idea y sin `IDEA.md`, lo deja en la raíz enlazado a `backlog/seed.md`, que sigue
+  siendo la fuente. Sin idea, no escribe nada.
+- **Resumen de cinco líneas**: perfil, canal, aprobador, TTL y `ai-hub control enroll --check`.
+- **Modo no interactivo explícito**: `init --connect-hermes` con `--discord-channel`, `--approver`, `--ttl-hours`
+  y `--expire` por flags y el token **solo por stdin** (`--discord-token-stdin`); `--discord-token <valor>` sale
+  con código 2 antes de escribir nada.
+- **Idempotencia**: una segunda corrida con las mismas respuestas no crea nada y deja el `.env` del perfil
+  idéntico. El hash del plan no cambia al aceptar o saltar el paso.
+- Specs: capability nueva `control-onboarding` (15 requisitos, 27 escenarios) y **dos requisitos modificados**:
+  `hermes-control` (el único token que el paquete escribe es el que la persona teclea, y solo en el `.env` del
+  perfil) e `interactive-onboarding` (la excepción de credenciales cubre **dos** pasos opt-in, tracker y control).
+
+### Sin cambios en los caminos sin Hermes
+
+Sin Hermes, `init` da **0 líneas de diferencia** y el mismo hash de plan que 0.12.0; `doctor` solo cambia la ruta
+del directorio y mantiene el código de salida. No se escriben ni `IDEA.md` ni `manifest.control`.
+
+### Cifras medidas
+
+Re-medidas con el CLI compilado de 0.13.0 en copias temporales (`--no-speckit`); idénticas a 0.12.0:
+
+| Instalación | Destinos en `sync.lock.json` |
+|---|---|
+| `init --yes` (`generic-ts`, full) | 6.872 |
+| `init --yes --preset-only` | 66 |
+| `init --yes --exclude rule:skill-quality` | 6.852 |
+| `init --yes --preset angular-express` | 6.887 |
+
+`full` instala 262 skills de proyecto + 17 comandos Spec Kit, 40 agentes y 6 reglas universales.
+
+### Empaquetado
+
+- `core/package.json` en `0.13.0`. Tarball: **1.981 → 1.985 entradas** (+4: `dist/control/onboard` y
+  `dist/control/onboard-step`, en `.js` y `.d.ts`). Es el único delta respecto de 0.12.0: el paso vive dentro de
+  `onboarding.ts` y `assistant.ts`, sin archivos nuevos fuera de `dist/control/`.
+
+### Pendiente del propietario
+
+Verificación en vivo con un token y un canal reales: el diseño asume `GET /users/@me` para validar el bot y
+`hermes gateway restart` para conectarlo. Publicar (`npm publish --access public` desde `core/`) es del propietario.
+
 ## 0.12.0 — hermes-control: plano de control opt-in (2026-11-09)
 
 El lado del arnés de `hermes-control`: GitLab es el tablero (las 7 etiquetas `ai::`), una persona aprueba por
