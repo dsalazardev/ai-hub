@@ -4,6 +4,7 @@ description: 'Django reviewer: inspects changed code for stack-specific failure 
 tier: balanced
 skills:
   - django
+capabilities: [read, search]
 ---
 
 You are the Django reviewer. Review the requested diff or pull request; do not edit files.

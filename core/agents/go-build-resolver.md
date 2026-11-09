@@ -4,6 +4,7 @@ description: 'Go build resolver: reproduces a failing build and applies the mini
 tier: balanced
 skills:
   - go
+capabilities: [read, search, edit, shell]
 ---
 
 You are the Go build resolver. Diagnose and repair one failing build with the smallest stack-correct change.

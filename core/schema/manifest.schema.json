@@ -40,7 +40,7 @@
     "stack": {
       "type": "object",
       "required": ["languages"],
-      "additionalProperties": false,
+      "additionalProperties": { "type": "string" },
       "properties": {
         "languages": { "type": "array", "items": { "type": "string" } },
         "frontend": { "type": "string" },
@@ -67,7 +67,21 @@
       "properties": {
         "source": { "type": "array", "items": { "type": "string" } },
         "tests": { "type": "array", "items": { "type": "string" } },
-        "docs": { "type": "array", "items": { "type": "string" } }
+        "docs": { "type": "array", "items": { "type": "string" } },
+        "areas": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "paths", "role"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+              "paths": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+              "role": { "type": "string" },
+              "rules": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
       }
     },
     "targets": {
@@ -85,6 +99,24 @@
         "guardMode": { "enum": ["shadow", "enforce"] },
         "worktrees": { "type": "boolean" },
         "optOuts": { "type": "array", "items": { "type": "string" } },
+        "maxRounds": { "type": "integer", "minimum": 1 },
+        "wip": { "type": "integer", "minimum": 1 },
+        "requireEars": { "type": "boolean" },
+        "requireTraceability": { "type": "boolean" },
+        "runs": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": { "keep": { "type": "integer", "minimum": 1, "maximum": 500 } }
+        },
+        "legacy": {
+          "type": "object",
+          "required": ["openspec", "until"],
+          "additionalProperties": false,
+          "properties": {
+            "openspec": { "const": "archive" },
+            "until": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" }
+          }
+        },
         "dangerPatterns": {
           "type": "array",
           "items": {
@@ -146,6 +178,27 @@
       "additionalProperties": false,
       "properties": {
         "source": { "type": "string", "minLength": 1 }
+      }
+    },
+    "agentsMd": { "type": "boolean" },
+    "agentMemory": { "enum": ["versioned", "ignored"] },
+    "agentModels": {
+      "type": "object",
+      "propertyNames": { "enum": ["claude", "opencode", "pi", "cursor", "copilot"] },
+      "additionalProperties": {
+        "type": "object",
+        "propertyNames": { "enum": ["light", "balanced", "heavy"] },
+        "additionalProperties": { "type": "string", "minLength": 1 }
+      }
+    },
+    "tracker": {
+      "type": "object",
+      "required": ["kind", "urlEnv", "tokenEnv"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "enum": ["gitlab"] },
+        "urlEnv": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" },
+        "tokenEnv": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" }
       }
     },
     "speckit": {

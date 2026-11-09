@@ -11,6 +11,7 @@ import { probeEnvironment, probeShell, speckitPreflight, type SpeckitEnvironment
 // función, nunca a nivel de módulo, así que los live bindings de ESM lo resuelven.
 import { cliVersion, cmdInit, prepareInit, printInitPlan, type PreparedInit } from './onboarding.js';
 import { PRE_PROMPT } from './preprompt.js';
+import { HARNESS_ENV_FILE, formatDotenv } from '../env/dotenv.js';
 
 /** Opción de un prompt del asistente. */
 export interface PromptOption {
@@ -32,6 +33,11 @@ export interface AssistantPrompts {
   select(message: string, options: PromptOption[], initial?: string): Promise<string | null>;
   text(message: string): Promise<string | null>;
   confirm(message: string): Promise<boolean | null>;
+  /**
+   * Entrada enmascarada (PD-1). Opcional: sin ella el asistente no ofrece el paso del tracker,
+   * porque un token jamás se pide por un prompt que lo muestre en claro.
+   */
+  password?(message: string): Promise<string | null>;
 }
 
 /** Decisiones que hoy son flags de init; la idea es la única que no lo es (design D6). */
@@ -430,5 +436,51 @@ export async function runAssistantInit(ctx: CliContext): Promise<number> {
     await writeBacklogSeed(ctx, resolved.idea);
     ctx.io.out('backlog: seed.md + pre-prompt.md escritos; ejecuta el pre-prompt en tu agente');
   }
+  if (code === 0) {
+    await offerTrackerStep(prompts, ctx);
+  }
   return code;
+}
+
+/**
+ * Paso opt-in del tracker (PD-1, la última pregunta): solo el usuario en su terminal escribe su
+ * token. Vacío o cancelación = saltar sin escribir nada. Escribe únicamente `.ai-hub/.env`
+ * (ya ignorado por `init`), no toca el manifiesto, el plan ni ningún otro archivo, y jamás
+ * imprime el valor. Un `.env` existente nunca se sobrescribe.
+ */
+export async function offerTrackerStep(prompts: AssistantPrompts, ctx: CliContext): Promise<boolean> {
+  if (!prompts.password) {
+    return false;
+  }
+  const reply = await prompts.text(
+    '¿Quieres configurar tu tracker de GitLab ahora? (opcional: escribe "s" para configurarlo; vacío = saltar)',
+  );
+  if (reply === null || !/^(s|si|sí|y|yes)$/i.test((reply ?? '').trim())) {
+    ctx.io.out('tracker: paso saltado; puedes crear .ai-hub/.env desde .ai-hub/.env.example cuando quieras');
+    return false;
+  }
+  const envFile = path.join(ctx.root, HARNESS_ENV_FILE);
+  if (await fs.access(envFile).then(() => true, () => false)) {
+    ctx.io.out('tracker: .ai-hub/.env ya existe; edítalo a mano (no se sobrescribe)');
+    return false;
+  }
+  const url = await prompts.text('URL de tu GitLab (sin /api; vacío = saltar)');
+  if (url === null || (url ?? '').trim() === '') {
+    ctx.io.out('tracker: paso saltado; no se escribió nada');
+    return false;
+  }
+  const token = await prompts.password('Token personal de GitLab (scope api; no se mostrará)');
+  if (token === null || (token ?? '').trim() === '') {
+    ctx.io.out('tracker: paso saltado; no se escribió nada');
+    return false;
+  }
+  await fs.mkdir(path.dirname(envFile), { recursive: true });
+  await fs.writeFile(envFile, formatDotenv({ GITLAB_URL: url.trim(), GITLAB_TOKEN: token.trim() }), {
+    encoding: 'utf8',
+    mode: 0o600,
+  });
+  ctx.io.out(
+    'tracker: .ai-hub/.env escrito (ignorado por git). Declara manifest.tracker {kind: gitlab, urlEnv: GITLAB_URL, tokenEnv: GITLAB_TOKEN} y comprueba con ai-hub doctor --online',
+  );
+  return true;
 }

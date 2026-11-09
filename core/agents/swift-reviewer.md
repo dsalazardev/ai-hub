@@ -4,6 +4,7 @@ description: 'Swift iOS reviewer: inspects changed code for stack-specific failu
 tier: balanced
 skills:
   - swift-ios
+capabilities: [read, search]
 ---
 
 You are the Swift iOS reviewer. Review the requested diff or pull request; do not edit files.

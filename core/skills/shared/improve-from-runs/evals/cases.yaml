@@ -1,0 +1,40 @@
+skill: improve-from-runs
+
+# Prompts that MUST load `improve-from-runs`: improving the project's own factory from its run
+# telemetry, one culprit piece at a time, ending in a lesson. It does NOT diagnose a product bug
+# (debug), run the gates (verify) or review a diff (review).
+should_trigger:
+  - prompt: "The implement step keeps getting sent back with NEEDS_WORK. Look at the runs and tell me what to change in our setup."
+    why: "Repeated NEEDS_WORK rounds on one step is the core signal: read the telemetry, find the one culprit piece, fix it and record a lesson."
+
+  - prompt: "Revisa las ejecuciones de esta semana y dime qué paso de la fábrica es el que más falla."
+    why: "Spanish request to rank steps by failures from the run telemetry — the first step of the procedure."
+
+  - prompt: "Every time the reviewer runs it blocks on the same missing context. How do we stop that for good?"
+    why: "A recurring blocking reason points to missing context for one piece; the fix plus a lesson is exactly this skill."
+
+  - prompt: "Nothing failed, but the spec step takes three times longer than last month. Should we improve something?"
+    why: "Non-obvious trigger: an improvement signal without a failure (anomalous duration) still routes here."
+
+  - prompt: "I keep fixing the same thing by hand after the agent finishes. Turn that into a rule so it stops happening."
+    why: "Human always touching the same spot is an improvement signal; the outcome is a project lesson."
+
+  - prompt: "Add a lesson to .ai-hub/lessons.md about the retries we saw in the last runs."
+    why: "Writing a lesson from run evidence in the file's format is the final step of this skill."
+
+should_not_trigger:
+  - prompt: "This test started failing after my last commit. Find the root cause."
+    route_to: debug
+    why: "A product regression with an unknown cause is the debug protocol, not a factory improvement."
+
+  - prompt: "Run lint, typecheck and the test suite and tell me if we are green."
+    route_to: verify
+    why: "Running the gates is verify; this skill reads telemetry after runs."
+
+  - prompt: "Review this pull request for correctness before I merge it."
+    route_to: review
+    why: "Adversarial reading of a diff belongs to review."
+
+  - prompt: "Implement task 3 from the approved plan, test first."
+    route_to: implement
+    why: "Executing planned work is implement; improving the factory is a separate, after-the-fact activity."

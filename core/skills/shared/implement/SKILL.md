@@ -191,11 +191,12 @@ test output. You merge the branches, then run the *combined* test suite before t
 green-in-isolation is not green-together. Hand the orchestration to `parallel`; keep the TDD
 discipline inside each branch.
 
-**Dispatch implementation work to the `developer` subagent.** ai-hub installs a `developer` agent
-pinned to the balanced tier (Sonnet by default, chosen at onboarding, never `light`). When you
-delegate a task or fan out via `parallel`, dispatch it to that agent (e.g. Claude Code
-`subagent_type: developer`) so the bulk of TDD execution runs on the cheaper-but-capable model
-while you stay on the session model to orchestrate. Full rationale: `../sdd/references/model-routing.md`.
+**Dispatch implementation work to the implementer of the task's area.** ai-hub installs the role
+agents `implementer-frontend` and `implementer-backend`; each one may only write inside its own
+area. When you delegate a task or fan out via `parallel`, dispatch it to the implementer that owns
+the files the task touches (e.g. Claude Code `subagent_type: implementer-backend`), so the TDD
+execution stays inside the role's write scope while you stay on the session model to orchestrate.
+Model tiers: `../sdd/references/model-routing.md`.
 
 ### The dispatch contract (carriers, statuses, escalation)
 
@@ -208,7 +209,7 @@ each dispatch self-sufficient and make its return machine-checkable:
   `scripts/task-brief` and `scripts/review-package`, below) — pasted briefs and diffs stay resident
   in your context and get re-read every turn.
 - **Model is REQUIRED on every dispatch.** Always set the subagent's model explicitly (the
-  `developer` agent already pins balanced). An omitted model silently inherits the session's model —
+  project maps tiers to models; implementation work is `balanced`). An omitted model silently inherits the session's model —
   usually the most expensive one — which is the quiet way fan-out cost explodes.
 - **The worker reports one of four statuses** (it does not guess when unsure):
   - `DONE` — done-check green, `Produces` contract met.

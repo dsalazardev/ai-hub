@@ -1,13 +1,13 @@
 # planning-with-files: resolve active plan directory (PowerShell mirror).
 #
 # Resolution order matches scripts/resolve-plan-dir.sh:
-#   1. $env:PLAN_ID -> .\.planning\$PLAN_ID\
-#   2. .\.planning\.active_plan content
-#   3. Newest .\.planning\<dir>\ by LastWriteTime
+#   1. $env:PLAN_ID -> .\.ai-hub/work/plans\$PLAN_ID\
+#   2. .\.ai-hub/work/plans\.active_plan content
+#   3. Newest .\.ai-hub/work/plans\<dir>\ by LastWriteTime
 #   4. Empty (legacy fallback to .\task_plan.md handled by caller)
 
 param(
-    [string]$PlanRoot = (Join-Path (Get-Location) ".planning")
+    [string]$PlanRoot = (Join-Path (Get-Location) ".ai-hub/work/plans")
 )
 
 $activeFile = Join-Path $PlanRoot ".active_plan"

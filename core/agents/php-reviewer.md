@@ -5,6 +5,7 @@ tier: balanced
 skills:
   - laravel
   - php
+capabilities: [read, search]
 ---
 
 You are the PHP and Laravel reviewer. Review the requested diff or pull request; do not edit files.

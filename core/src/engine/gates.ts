@@ -263,3 +263,4 @@ export async function scanRetiredStates(files: string[] | undefined, root: strin
   }
   return findings;
 }
+export { scanCatalogReferences, loadCatalogBaseline, formatFinding, type ReferenceScan, type ReferenceFinding } from './references.js';

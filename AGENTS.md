@@ -56,6 +56,7 @@ Este repositorio es el **ambiente de desarrollo**. Un repositorio consumidor es 
 | `.ai-hub/` | No existe | **Obligatoria**, siempre |
 | Metodología | La del mantenedor: OpenSpec | Spec Kit, única de runtime |
 | `openspec/`, `.planning/`, `.github/` | Artefactos del taller; gitignoreados | No existen, salvo `.github/workflows` |
+| Estado de trabajo | `.planning/` | `.ai-hub/work/` (versionado), `.ai-hub/lessons.md` (versionado), `.ai-hub/runs/` (ignorado, con retención) |
 | `.claude/`, `.opencode/`, `.pi/`, `.codex/` | Herramientas del taller, con lo que el mantenedor necesite | Salida generada por `sync`, sólo en los `targets` elegidos |
 | `sync`, `install`, `upgrade` | Se niegan a escribir sin `--force` | Escriben los destinos del consumidor |
 | `drift`, `sync --check-lock` | No aplican: no hay destinos que comparar | Deben estar en verde |
@@ -103,13 +104,13 @@ OpenSpec no forma parte del runtime. El directorio `openspec/` de este repositor
 | Rol | Canonical | Puede escribir | No puede escribir | Gate |
 |---|---|---|---|---|
 | Prompt-Explorer | orchestrator (derivado) | — | Todo | — |
-| Spec-Explorer | explorer-domain | `.planning/findings.md`, `.specify/assessments/**` | Código | — |
+| Spec-Explorer | explorer-domain | `.ai-hub/work/**/findings.md`, `.specify/assessments/**` | Código | — |
 | Reviewer-Exploration | orchestrator (derivado) | — | Todo | convergencia ≥ 95 % |
-| Spec-Author | spec-author | `.specify/**`, `specs/**`, `.planning/**` | Código | spec sin preguntas abiertas |
+| Spec-Author | spec-author | `.specify/**`, `specs/**`, `.ai-hub/work/**` | Código | spec sin preguntas abiertas |
 | Implementer-Frontend | implementer-frontend | Frontend del proyecto | Backend | build + tests |
 | Implementer-Backend | implementer-backend | Backend del proyecto | Frontend | typecheck + tests |
-| Reviewer-Architecture | reviewer-architecture | `.planning/review_arch_*.md` | Código | PASS / NEEDS_FIX / BLOCKED |
-| Reviewer-Tests | reviewer-tests | `.planning/review_tests_*.md` | Código | cobertura declarada |
+| Reviewer-Architecture | reviewer-architecture | `.ai-hub/work/**/review-arch.md` | Código | PASS / NEEDS_FIX / BLOCKED |
+| Reviewer-Tests | reviewer-tests | `.ai-hub/work/**/review-tests.md` | Código | cobertura declarada |
 | Refuter | refuter | — (read-only) | Todo | REFUTED / NOT-REFUTED |
 
 Los dos roles derivados los ejerce el orquestador; no tienen archivo propio.
@@ -123,6 +124,10 @@ veredicto del panel es `REFUTED` o `NOT-REFUTED`; por hallazgo, el verifier emit
 hereda todas las prohibiciones: es read-only (no escribe ningún archivo; su única salida es
 el veredicto), no aprueba su propio trabajo, no mueve etiquetas — y `NOT-REFUTED` no es una
 aprobación: afirma que el ataque falló, nada más.
+
+### Contrato de cierre y cabeceras
+
+Todo rol cierra su respuesta final con `AI-HUB-STATUS: <STATE> | artifact=<ruta|-> | reason=<código>[: <frase>]`; el contrato (estados, `reason` obligatorio, límite de rondas de `converge` y escalado por baja confianza) se genera desde `engine.yaml` en la regla `ai-hub-speckit`. Los agentes declaran `capabilities`, `max_turns` y `tier`, abstractos y sin proveedor; cada destino los proyecta desde su `agentFormat` y `manifest.agentModels` pone el modelo. El panel de refutación y `narrator` viajan en el preset `base`; `ai-hub review consolidate` consolida el panel por stdout.
 
 ### Prohibiciones
 
@@ -210,7 +215,23 @@ MCP es del consumidor: `mcp-manifest.yaml` en la raíz es la única fuente. Los 
 
 ---
 
-## 7. Persistencia obligatoria (solo taller)
+## 7. Persistencia obligatoria
+
+**Regla (PD-2):** `.planning/` es solo del taller; el consumidor usa `.ai-hub/{work,lessons,runs}`.
+
+### Consumidor
+
+`init`/`install` materializan, resueltos con `resolveAiHubDir()`:
+
+| Ruta | Versionado | Contenido |
+|---|---|---|
+| `.ai-hub/work/<feature>/` | sí | Hallazgos, notas de implementación, informes de revisión, devoluciones y el informe del narrador |
+| `.ai-hub/lessons.md` | sí (del proyecto; se crea una vez) | Lecciones; `sync` la proyecta como la regla `ai-hub-lessons` |
+| `.ai-hub/runs/<run>/events.jsonl` | no (ignorado) | Telemetría de ejecuciones con esquema cerrado; retención `policy.runs.keep` (50) |
+
+`ai-hub runs` es el único escritor de la telemetría y nunca guarda prompts, respuestas, contenido de archivos, tokens ni variables de entorno.
+
+### Taller
 
 `.planning/` pertenece al checkout de desarrollo. Una instalación no lo crea; `init --migrate` sale 2 y `memory`/`context` salen 0 con `no aplica en instalación`. El chat no es un almacén. En el taller, todo estado va a `.planning/`:
 
@@ -240,6 +261,8 @@ El ledger nunca escribe prompts, respuestas, contenido de archivos, tokens ni va
 
 El runner de Hermes es autoritativo; los hooks locales son adaptadores finos. `guardMode` es `shadow` por defecto y `enforce` opt-in. Un adaptador que no puede construir el contexto falla abierto.
 
+En el consumidor, `sync` proyecta los adaptadores como hooks **ejecutables** (`ai-hub hook pre|post|stop`): entradas gestionadas mezcladas por clave en `.claude/settings.json` (fuera del lock; nunca se sobrescribe ni se borra) y el plugin `.opencode/plugins/ai-hub.js`. Cursor, Copilot y Pi no admiten hooks y conservan la regla en prosa; `doctor` comprueba los hooks reales, no el markdown. `ask` llega al mecanismo de confirmación del host. El hook `post` compara el árbol antes y después de un paso de rol (`AI_HUB_ROLE` o el tipo de subagente del host), incluidos archivos sin rastrear y hashes, contra su `can_modify`: informa la violación y jamás revierte. La instantánea vive en `.ai-hub/runs/scope/` (ignorado); los hooks `pre`/`stop` registran además la ejecución de la sesión en `.ai-hub/runs/` (inicio, fin y duración).
+
 ---
 
 ## 9. Bloqueos y secretos
@@ -247,6 +270,8 @@ El runner de Hermes es autoritativo; los hooks locales son adaptadores finos. `g
 Ante un fallo: mover a `ai::blocked` o proponerlo, comentar motivo y evidencia, registrar en `.planning/current.md` y esperar decisión humana.
 
 `.env` y credenciales nunca se versionan. El PAT de GitLab se inyecta por entorno (`GITLAB_TOKEN`); nunca se escribe en artefactos, comentarios ni logs.
+
+En el consumidor, las credenciales del arnés viven en `.ai-hub/.env`, que `init` ignora antes de que exista; el paquete solo materializa `.ai-hub/.env.example` con `CHANGEME` y jamás escribe un `.env` por su cuenta. Lo crea la persona, a mano o en el paso opcional del asistente interactivo (saltable, enmascarado, nunca con `--yes`). Ningún agente pide tokens. Los comandos que los necesitan se ejecutan con `ai-hub env exec -- <cmd>`; `doctor` comprueba solo presencia (`env:ignored`, `env:keys`) y, con `--online`, la identidad redactada (`tracker:token`). Los snapshots de `.backups/` excluyen `.ai-hub/.env` y `.ai-hub/runs/`.
 
 ---
 

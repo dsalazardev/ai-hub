@@ -61,4 +61,9 @@ export const clackPrompts: AssistantPrompts = {
     const value = await p.confirm({ message });
     return isCancel(value) ? null : value === true;
   },
+  // Paso opt-in del tracker (PD-1): entrada enmascarada; el valor no se muestra ni se registra.
+  password: async (message) => {
+    const value = await p.password({ message });
+    return isCancel(value) ? null : (value ?? '');
+  },
 };

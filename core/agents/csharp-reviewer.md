@@ -4,6 +4,7 @@ description: 'C# and .NET reviewer: inspects changed code for stack-specific fai
 tier: balanced
 skills:
   - csharp-dotnet
+capabilities: [read, search]
 ---
 
 You are the C# and .NET reviewer. Review the requested diff or pull request; do not edit files.

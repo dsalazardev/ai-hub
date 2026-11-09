@@ -47,7 +47,7 @@ Cada módulo puede **extender** el perfil A con operaciones extra (ej. `Products
 | 5 | Anexo del módulo si existe: `fichajes-migration-notes.md`, `users-migration-notes.md` |
 | 6 | Módulo legacy actual (si es migración) — inventario de archivos y rutas |
 
-**Salida escrita** (en `.planning/` o en el change Spec Kit):
+**Salida escrita** (en `.ai-hub/work/<feature>/` o en el change Spec Kit):
 
 - `findings.md` — endpoints reales, campos Dolibarr, permisos, deuda legacy
 - `entity-map.md` — nombres ES→EN si aplica (fichajes)

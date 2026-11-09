@@ -1,0 +1,51 @@
+id: php
+version: 1
+extends: base
+description: PHP project with Composer and PHPUnit, organised in modules (Laravel, Symfony or a module-based ERP such as Dolibarr).
+detect:
+  files:
+    - composer.json
+stack:
+  languages:
+    - php
+  packageManager: composer
+commands:
+  install: composer install
+  build: composer dump-autoload --optimize
+  test: vendor/bin/phpunit
+  typecheck: vendor/bin/phpstan analyse
+  lint: composer validate --strict
+  verify: vendor/bin/phpunit
+paths:
+  source:
+    - src
+  tests:
+    - tests
+  docs:
+    - docs
+  areas:
+    - id: modules
+      paths:
+        - src
+      role: implementer-backend
+      rules:
+        - modules
+policy:
+  trunk: auto
+  guardMode: shadow
+  worktrees: true
+  optOuts: []
+rules:
+  - rules/php.md
+  - rules/modules.md
+agents:
+  publish:
+    - spec-author
+    - implementer-frontend
+    - implementer-backend
+    - reviewer-architecture
+    - reviewer-tests
+    - explorer-domain
+skills:
+  publish:
+    - php

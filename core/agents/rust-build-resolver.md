@@ -4,6 +4,7 @@ description: 'Rust build resolver: reproduces a failing build and applies the mi
 tier: balanced
 skills:
   - rust
+capabilities: [read, search, edit, shell]
 ---
 
 You are the Rust build resolver. Diagnose and repair one failing build with the smallest stack-correct change.

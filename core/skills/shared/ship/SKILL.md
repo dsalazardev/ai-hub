@@ -62,27 +62,24 @@ git diff main...HEAD | grep -icE 'api[_-]?key|secret|password|token|BEGIN .*PRIV
   | sed 's/^/secret-hits: /'
 ```
 
-### Automated guard (PreToolUse) — you cannot quietly abandon a feature
+### Automated guard — you cannot quietly abandon a feature
 
-When ai-hub is installed for Claude Code, a `PreToolUse` hook (`.ai-hub/ship-guard.mjs`) enforces this
-phase at the one deterministic moment it matters: it **denies** any Bash command that switches to
-`main`/`master` or merges while the current feature branch has **uncommitted changes** or **commits
-that were never pushed**. The denial reason names the branch and routes you here. The guard is
-local-only (no network), **fail-open** (any ambiguity — detached HEAD, no repo, git error — allows
-the command), and can be disabled per project with `.ai-hub/.no-ship-guard`. It guarantees the
-commit → push step; opening the PR is still this skill's job (and its hard rule). If the guard
-blocks you, do not work around it — run ship.
+When ai-hub projects its hooks (`ai-hub hook pre`, wired by `sync` into Claude Code and OpenCode),
+the `ship` rule of the preflight guard enforces this phase at the one deterministic moment it
+matters: it **denies** any command that switches to the trunk or merges while the current feature
+branch has **uncommitted changes** or **commits that were never pushed**. The denial reason routes
+you here. The guard is local-only (no network) and **fail-open** (detached HEAD, no repo, git error
+— the command is allowed). With `guardMode: shadow` (the default in `.ai-hubrc.json`) it reports;
+with `guardMode: enforce` it blocks. It guarantees the commit → push step; opening the PR is still
+this skill's job (and its hard rule). If the guard blocks you, do not work around it — run ship.
 
-The same guard also enforces the **sello** where it was opted into — per project
-(`.ai-hub/sello-config.json`) or for all of them (`~/.ai-hub/sello-config.json` via
-`sello on --global`, with the project switch always winning; `ai-hub sello status` prints which
-scope decided): commit, push and PR are denied unless the change's exact bytes match the
-sealed, approved review — one byte of drift, a moved base, or a missing review on a risk>0 change
-all block, and every denial names its way out (re-run `review`, or `npx ai-hub sello off`).
-Risk-0 changes (docs/copy) always pass silently. Off by default; the flow lives in the `review`
-skill. Note `.ai-hub/.no-ship-guard` opts out of the branch-hygiene rules above but **not** of the
-sello, which has its own switch. The sello binds bytes, not intent — it proves what ships is what
-was reviewed, never that the review was any good.
+The same rule also enforces the **review seal** once the project sealed a verdict with
+`npx ai-hub seal review --verdict <APPROVE|APPROVE_WITH_NITS|CHANGES_REQUESTED>`: returning to the
+trunk is denied (`ship:review-seal`) when the current diff is no longer byte for byte the reviewed
+one, or when the sealed verdict is `CHANGES_REQUESTED`. The way out is always the same: re-run
+`review` and seal again. Without a sealed verdict the rule does not apply. The review seal binds
+bytes, not intent — it proves what ships is what was reviewed, never that the review was any good —
+and it never touches the specification seal of the human gate.
 
 ## The three landing options — always present exactly three
 

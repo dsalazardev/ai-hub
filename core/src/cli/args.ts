@@ -16,11 +16,18 @@ const BOOLEAN_FLAGS = new Set([
   'auto',
   'migrate',
   'no-speckit',
+  'online',
+  'pre-commit',
+  'post-merge',
+  'quick',
+  'collisions',
+  'archive-planning',
 ]);
 
 export function parseArgs(argv: string[]): ParsedArgs {
   const positionals: string[] = [];
   const flags: Record<string, string | boolean> = {};
+  let passthrough: string[] | undefined;
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
     if (!token.startsWith('--')) {
@@ -29,7 +36,11 @@ export function parseArgs(argv: string[]): ParsedArgs {
     }
     const body = token.slice(2);
     if (body === '') {
+      // `--` conserva su comportamiento posicional y además entrega, intacto, todo lo que
+      // le sigue: los comandos que ejecutan otro proceso (`env exec -- <cmd> --flag`) no
+      // deben reinterpretar las banderas del hijo.
       positionals.push(token);
+      passthrough ??= argv.slice(index + 1);
       continue;
     }
     const eq = body.indexOf('=');
@@ -49,7 +60,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     }
     flags[body] = true;
   }
-  return { positionals, flags };
+  return passthrough === undefined ? { positionals, flags } : { positionals, flags, passthrough };
 }
 
 export function flagString(args: ParsedArgs, name: string): string | null {

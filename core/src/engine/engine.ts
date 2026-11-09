@@ -63,6 +63,12 @@ export interface EngineManifest {
   labels: string[];
   targets: string[];
   speckit: EngineSpeckit;
+  /** Contrato de cierre (A1): última línea no vacía de la respuesta final de todo rol. */
+  status_line: { prefix: 'AI-HUB-STATUS'; panel: string[]; reason_required: string[]; reason_max: number };
+  /** Bucle acotado (A2): agotadas las rondas de converge, el estado es BLOCKED. */
+  loop: { converge: { max_rounds: number; on_exhaust: 'BLOCKED' } };
+  /** Límites que el proyecto solo puede endurecer (E4). */
+  policy_limits: { wip: number };
 }
 
 /** Estados de salida que el vocabulario normalizado de Spec Kit retiró. */

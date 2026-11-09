@@ -1,14 +1,14 @@
 # planning-with-files: set or display the active plan pointer (PowerShell).
 #
 # Usage:
-#   .\set-active-plan.ps1 <plan_id>   — pin .planning\.active_plan to plan_id
+#   .\set-active-plan.ps1 <plan_id>   — pin .ai-hub/work/plans\.active_plan to plan_id
 #   .\set-active-plan.ps1             — print the current active plan (if any)
 
 param(
     [string]$PlanId = ""
 )
 
-$PlanRoot  = Join-Path (Get-Location) ".planning"
+$PlanRoot  = Join-Path (Get-Location) ".ai-hub/work/plans"
 $ActiveFile = Join-Path $PlanRoot ".active_plan"
 
 if ($PlanId -eq "") {
@@ -33,7 +33,7 @@ $PlanDir = Join-Path $PlanRoot $PlanId
 
 if (-not (Test-Path $PlanDir)) {
     Write-Error "Error: plan directory not found: $PlanDir"
-    Write-Error "Run: init-session.sh `"$PlanId`" to create it, or check .planning\ for available plans."
+    Write-Error "Run: init-session.sh `"$PlanId`" to create it, or check .ai-hub/work/plans\ for available plans."
     exit 1
 }
 

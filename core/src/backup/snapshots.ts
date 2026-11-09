@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { readLock } from '../sync/lock.js';
+import { isHarnessPrivate } from '../harness/local.js';
 
 export const BACKUP_DIR = '.backups';
 export const SNAPSHOT_FILE = 'snapshot.json';
@@ -70,7 +71,10 @@ async function managedFiles(root: string): Promise<string[]> {
     files.add(rel);
   }
   for (const rel of await walkRelative(root, '.ai-hub')) {
-    files.add(rel);
+    // Credenciales y telemetría no viajan a `.backups/` (PD-1): el snapshot puede versionarse.
+    if (!isHarnessPrivate(rel)) {
+      files.add(rel);
+    }
   }
   // Estado de Spec Kit que un nuevo `specify init` podría tocar: constitución y configuración.
   for (const rel of await walkRelative(root, '.specify/memory')) {

@@ -13,6 +13,13 @@ export const AGENT_IDS = [
   'reviewer-architecture',
   'reviewer-tests',
   'explorer-domain',
+  // Preset base (factory-evolution C4): el narrador lo hereda todo preset.
+  'narrator',
+  // Panel de refutación en el preset base (factory-evolution A4).
+  'refuter-correctness',
+  'refuter-security',
+  'refuter-tests',
+  'finding-verifier',
 ];
 
 export const FIXTURE_TARGETS = ['claude', 'opencode', 'pi', 'cursor', 'copilot'];

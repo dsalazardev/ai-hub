@@ -241,7 +241,10 @@ describe('preflight', () => {
       context(),
       'enforce',
     );
-    expect(claude?.permissionDecision).toBe('deny');
+    // factory-evolution B4: `ask` llega al mecanismo de confirmación de Claude; OpenCode no tiene
+    // confirmación y bloquea. Ambos parten de la misma decisión del preflight.
+    expect(runner.result.decision).toBe('ask');
+    expect(claude?.permissionDecision).toBe('ask');
     expect(opencode?.blocked).toBe(true);
     expect(runner.result.rule).toBe('danger:force-push');
     expect(claude?.permissionDecisionReason).toContain('danger:force-push');

@@ -4,6 +4,7 @@ description: 'production ML reviewer: inspects changed code for stack-specific f
 tier: heavy
 skills:
   - machine-learning
+capabilities: [read, search]
 ---
 
 You are the production ML reviewer. Review the requested diff or pull request; do not edit files.

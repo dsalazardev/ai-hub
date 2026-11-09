@@ -1,6 +1,6 @@
 # Fichajes → workdays + punches — Índice rápido
 
-> **No duplicar este archivo.** La fuente operativa es [`.planning/fichajes-migration-master-plan.md`](../../.planning/fichajes-migration-master-plan.md).
+> **No duplicar este archivo.** La fuente operativa es `.ai-hub/work/fichajes-migration/master-plan.md`.
 >
 > **Estado**: planning completado — sin `/speckit.implement` hasta aprobación humana.
 
@@ -8,8 +8,8 @@
 
 ## Lectura obligatoria del agente
 
-1. [`.planning/fichajes-migration-master-plan.md`](../../.planning/fichajes-migration-master-plan.md) — decisiones, nombres, permisos, 9 changes, riesgos
-2. [`.planning/handoff_fichajes-migration.md`](../../.planning/handoff_fichajes-migration.md) — estado del programa
+1. `.ai-hub/work/fichajes-migration/master-plan.md` — decisiones, nombres, permisos, 9 changes, riesgos
+2. `.ai-hub/work/fichajes-migration/handoff.md` — estado del programa
 3. Guías G2 (track fichajes, autocontenidas): `guia-migracion-monorepo2.md`, `backend/guia-migracion-backend2.md`, `frontend/guia-migracion-frontend2.md`
 4. Plantilla código: [products-module-blueprint.md](./products-module-blueprint.md)
 

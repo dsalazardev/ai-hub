@@ -20,6 +20,12 @@ policy:
 rules:
   - rules/core.md
 agents:
-  publish: []
+  publish:
+    - narrator
+    # Panel de refutación (A4): todo preset lo hereda; se despacha entre CONVERGED y ai::in-review.
+    - refuter-correctness
+    - refuter-security
+    - refuter-tests
+    - finding-verifier
 skills:
   publish: []

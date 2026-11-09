@@ -4,6 +4,7 @@ description: 'PostgreSQL reviewer: inspects changed code for stack-specific fail
 tier: balanced
 skills:
   - postgresdb
+capabilities: [read, search]
 ---
 
 You are the PostgreSQL reviewer. Review the requested diff or pull request; do not edit files.

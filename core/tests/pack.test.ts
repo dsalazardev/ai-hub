@@ -35,7 +35,20 @@ describe('published package', () => {
     expect(paths).toEqual(
       expect.arrayContaining(RUBRICS.map((file) => `rules/skill-quality/${file}`)),
     );
-    expect(pkg.entryCount).toBe(1890);
+    // factory-evolution Lote D: +14 (6 módulos × .js/.d.ts en dist + 2 plantillas en engine/templates).
+    // Lote B: +14 (command-names, references, gate, hook, sync/hooks, catalog/collisions × 2;
+    // engine/catalog-baseline.json; engine/templates/opencode-plugin.js).
+    // Lote C: +9 (harness/runs, control/tick × 2; schema/runs.schema.json; engine/templates/lessons.md;
+    // agents/narrator.md; skills/shared/improve-from-runs/{SKILL.md,evals/cases.yaml}).
+    // Lote A: +8 (speckit/status, agents/header, agents/doctor, review/consolidate × 2).
+    // Lote E: +10 (engine/scopes, sync/region, adopt/{detect,mcp,convert} × 2).
+    // Lote F: +11 (SECURITY.md; engine/templates/{examples-good,examples-bad}.md y devcontainer.json;
+    // presets/php/{preset.yaml,rules/php.md,rules/modules.md}; cli/seal y harness/review-seal × 2).
+    // scripts/upstream-watch.mjs (M-28) vive en la raíz del taller y no viaja.
+    expect(pkg.entryCount).toBe(1956);
+    expect(paths.some((file) => file.includes('upstream-watch'))).toBe(false);
+    expect(paths).toContain('SECURITY.md');
+    expect(paths).toEqual(expect.arrayContaining(['engine/templates/env.example', 'engine/templates/gitlab-ci.yml']));
     expect(paths.filter((file) => file.startsWith('skills/shared/speckit-'))).toEqual([]);
 
     for (const file of RUBRICS) {

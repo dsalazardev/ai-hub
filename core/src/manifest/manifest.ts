@@ -7,6 +7,8 @@ import { Ajv } from 'ajv';
 import { parse } from 'yaml';
 import { ENGINE_COUNTS, ENGINE_SKILLS_DIR, loadEngine, type EngineManifest } from '../engine/engine.js';
 import { frontmatterString, splitFrontmatter } from '../frontmatter.js';
+import { validateAgentHeader } from '../agents/header.js';
+import { validateAreas, type AreaSpec } from '../engine/scopes.js';
 import { findPresetAsset, resolvePreset, type ResolvedPreset } from '../presets/resolve.js';
 import type { PresetDangerPattern } from '../presets/schema.js';
 import { ENGINE_RULES_DIR, normalizeRuleId, type SelectionMode } from '../catalog.js';
@@ -24,9 +26,9 @@ export interface ProjectManifest {
   version: 2;
   project: { id: string; name: string };
   preset: { id: string; version: number; source: 'package' };
-  stack: { languages: string[]; frontend?: string; backend?: string; packageManager?: string };
+  stack: { languages: string[]; frontend?: string; backend?: string; packageManager?: string; [key: string]: string | string[] | undefined };
   commands: Record<string, string>;
-  paths: { source: string[]; tests: string[]; docs: string[] };
+  paths: { source: string[]; tests: string[]; docs: string[]; areas?: AreaSpec[] };
   targets: string[];
   policy: {
     trunk: 'auto' | 'closed' | 'open';
@@ -34,6 +36,15 @@ export interface ProjectManifest {
     worktrees: boolean;
     optOuts: string[];
     dangerPatterns?: PresetDangerPattern[];
+    /** Solo restrictivo (A2): nunca por encima de `loop.converge.max_rounds` del motor. */
+    maxRounds?: number;
+    /** Solo restrictivo (E4): nunca por encima de `policy_limits.wip` del motor. */
+    wip?: number;
+    requireEars?: boolean;
+    requireTraceability?: boolean;
+    runs?: { keep?: number };
+    /** Convivencia temporal con la metodología anterior (E1 F2). */
+    legacy?: { openspec: 'archive'; until: string };
   };
   skills: { source: string; publish: string[]; selection?: SelectionMode };
   agents: { source: string; publish: string[]; selection?: SelectionMode };
@@ -41,6 +52,14 @@ export interface ProjectManifest {
   catalog?: { version: string; hash: string };
   mcp?: { source: string };
   speckit?: ProjectSpeckit;
+  /** Tracker opcional (PD-1): solo nombres de variables, jamás valores. */
+  tracker?: { kind: 'gitlab'; urlEnv: string; tokenEnv: string };
+  /** Modelo por destino y tier (A3); sin correspondencia, el host hereda el de la sesión. */
+  agentModels?: Record<string, Record<string, string>>;
+  /** Región reservada en el AGENTS.md raíz y en el de cada área (E2). */
+  agentsMd?: boolean;
+  /** Memoria de agente (M-26): ignorada por defecto; `versioned` la deja fuera de los ignores. */
+  agentMemory?: 'versioned' | 'ignored';
 }
 
 export class ManifestError extends Error {
@@ -200,6 +219,17 @@ export async function validateManifestData(
     ]);
   }
   const errors: string[] = [];
+  errors.push(...validateAreas(manifest.paths.areas, 'manifest.yaml'));
+  const wip = manifest.policy.wip;
+  if (wip !== undefined && wip > engine.policy_limits.wip) {
+    errors.push(`policy.wip ${wip} supera el límite del motor (policy_limits.wip = ${engine.policy_limits.wip}); el proyecto solo puede bajarlo`);
+  }
+  const maxRounds = manifest.policy.maxRounds;
+  if (maxRounds !== undefined && maxRounds > engine.loop.converge.max_rounds) {
+    errors.push(
+      `policy.maxRounds ${maxRounds} supera el límite del motor (loop.converge.max_rounds = ${engine.loop.converge.max_rounds}); el proyecto solo puede bajarlo`,
+    );
+  }
   for (const target of manifest.targets) {
     if (!engine.targets.includes(target)) {
       errors.push(`targets "${target}" no existe en el motor`);
@@ -235,6 +265,9 @@ export async function validateManifestData(
       continue;
     }
     const frontmatter = await validateCatalogFile(file, errors);
+    if (frontmatter !== null) {
+      errors.push(...validateAgentHeader(frontmatter, `agents.publish "${agent}"`));
+    }
     if (frontmatter !== null && 'role' in frontmatter) {
       const role = frontmatter.role;
       if (typeof role !== 'string' || !roleIds.has(role)) {

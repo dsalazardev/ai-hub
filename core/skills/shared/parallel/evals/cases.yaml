@@ -39,6 +39,6 @@ capability:
       - "Writes one self-contained brief per parallel unit (scope/files owned, goal, done-check, the FastAPI testing constraint, report-back) that does not say 'see the other unit'"
       - "Freezes any shared contract/type/schema in the serial spine BEFORE dispatching, rather than letting subagents coordinate it live"
       - "Each unit keeps its own red→green→refactor (delegated to implement + the FastAPI testing reference); parallel does not relax the TDD discipline inside a unit"
-      - "Gathers ALL units, checks each against its done-check before merge, then reconciles: merges, resolves conflicts by hand, folds decision logs into .planning/history.md"
+      - "Gathers ALL units, checks each against its done-check before merge, then reconciles: merges, resolves conflicts by hand, folds decision logs into docs/sdd/decisions.md"
       - "Runs the COMBINED suite across the merged result and refuses to call it done on green-in-isolation; if the seam is red, routes to debug rather than guessing"
       - "Reports briefly in technical terms (the partition, frozen contracts, and each reconcile conflict with its fix, one line each) and hands the green result back to implement → verify"

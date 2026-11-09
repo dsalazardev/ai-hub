@@ -70,5 +70,5 @@ capability:
       - "HYPOTHESIZE: states ONE falsifiable root cause ('X because Y; changing Z flips the result') before touching the fix."
       - "FIX: encodes the bug as a test that fails for the RIGHT reason first (e.g. a transactional-rollback fixture or deterministic ordering), then makes the smallest change to the CAUSE — not a sleep/retry/timeout bump."
       - "VERIFY: re-runs the repro until the failure rate is zero (not merely lower), confirms the new test is green and the surrounding suite stayed green, then hands the whole-gate re-run back to verify."
-      - "Produces the non-obvious-cause decision entry for .planning/history.md (appending it where the workspace exists, or delivering the entry inline and noting it would append rather than writing a stray file into an absent tree) and resumes implement at the interrupted task; does not declare 'done' itself."
+      - "Produces the non-obvious-cause decision entry for docs/sdd/decisions.md (appending it where the workspace exists, or delivering the entry inline and noting it would append rather than writing a stray file into an absent tree) and resumes implement at the interrupted task; does not declare 'done' itself."
       - "Never disables/skips/deletes the failing test to make the suite green, and does not claim 'fixed' on a vanished symptom without a regression test."

@@ -1,3 +1,5 @@
+import type { AgentFormat } from '../agents/header.js';
+
 export const TOOL_IDS = ['claude', 'opencode', 'pi', 'cursor', 'copilot'] as const;
 
 export type ToolId = (typeof TOOL_IDS)[number];
@@ -5,6 +7,12 @@ export type ToolId = (typeof TOOL_IDS)[number];
 export type SkillShape = 'dir' | 'file';
 export type RuleShape = 'md' | 'mdc' | 'instructions';
 export type HookKind = 'markdown' | 'cursor-mdc' | 'copilot-instructions';
+/**
+ * Hooks ejecutables del host (G-01): `settings-json` mezcla entradas gestionadas en el JSON de
+ * ajustes del usuario (nunca lo sobrescribe); `plugin` genera un archivo propio; `none` = el host
+ * no admite hooks y queda la regla en prosa (doctor lo declara).
+ */
+export type HookFormat = 'settings-json' | 'plugin' | 'none';
 
 /**
  * Integración de Spec Kit que sirve a un destino. `commandsDir` es donde Spec Kit escribe
@@ -26,6 +34,11 @@ export interface ToolTargets {
   skillShape: SkillShape;
   ruleShape: RuleShape;
   hookKind: HookKind;
+  hookFormat: HookFormat;
+  /** Archivo del hook ejecutable; `null` con `hookFormat: none`. */
+  hookPath: string | null;
+  /** Cabecera de agentes del host (A3); `null`: el destino no recibe agentes. */
+  agentFormat: AgentFormat | null;
   /** `null`: el destino no recibe Spec Kit (Copilot). */
   speckit: SpeckitTarget | null;
 }
@@ -43,6 +56,18 @@ export const TARGETS: Record<ToolId, ToolTargets> = {
     skillShape: 'dir',
     ruleShape: 'md',
     hookKind: 'markdown',
+    hookFormat: 'settings-json',
+    hookPath: '.claude/settings.json',
+    agentFormat: {
+      path: '.claude/agents',
+      extension: '.md',
+      style: 'tool-list',
+      names: { read: ['Read'], search: ['Grep', 'Glob'], edit: ['Edit', 'Write'], shell: ['Bash'], web: ['WebFetch', 'WebSearch'], delegate: ['Task'] },
+      turnsKey: 'maxTurns',
+      includeName: true,
+      fixed: {},
+      passthrough: ['color', 'memory'],
+    },
     speckit: { integration: 'claude', separator: '-', commandsDir: '.claude/skills', layout: 'skill-dir' },
   },
   opencode: {
@@ -53,26 +78,54 @@ export const TARGETS: Record<ToolId, ToolTargets> = {
     skillShape: 'dir',
     ruleShape: 'md',
     hookKind: 'markdown',
+    hookFormat: 'plugin',
+    hookPath: '.opencode/plugins/ai-hub.js',
+    agentFormat: {
+      path: '.opencode/agents',
+      extension: '.md',
+      style: 'deny-permissions',
+      names: { read: ['read'], search: ['glob', 'grep'], edit: ['edit'], shell: ['shell'], web: ['webfetch', 'websearch'], delegate: ['subagent'] },
+      turnsKey: 'steps',
+      includeName: false,
+      fixed: { mode: 'subagent' },
+      passthrough: [],
+    },
     speckit: { integration: 'opencode', separator: '.', commandsDir: '.opencode/commands', layout: 'command-file' },
   },
   pi: {
     skills: '.pi/skills',
-    agents: '.pi/agents',
+    // El núcleo de Pi no tiene subagentes (A3): sin destino de agentes; doctor lo declara.
+    agents: null,
     rules: '.pi/prompts',
     hook: '.pi/prompts/preflight.md',
     skillShape: 'dir',
     ruleShape: 'md',
     hookKind: 'markdown',
+    hookFormat: 'none',
+    hookPath: null,
+    agentFormat: null,
     speckit: { integration: 'pi', separator: '.', commandsDir: '.pi/prompts', layout: 'command-file' },
   },
   cursor: {
     skills: '.cursor/rules',
-    agents: null,
+    agents: '.cursor/agents',
     rules: '.cursor/rules',
     hook: '.cursor/rules/preflight.mdc',
     skillShape: 'file',
     ruleShape: 'mdc',
     hookKind: 'cursor-mdc',
+    hookFormat: 'none',
+    hookPath: null,
+    agentFormat: {
+      path: '.cursor/agents',
+      extension: '.md',
+      style: 'readonly',
+      names: { read: [], search: [], edit: [], shell: [], web: [], delegate: [] },
+      turnsKey: null,
+      includeName: true,
+      fixed: {},
+      passthrough: [],
+    },
     speckit: { integration: 'cursor-agent', separator: '-', commandsDir: '.cursor/skills', layout: 'skill-dir' },
   },
   copilot: {
@@ -83,6 +136,18 @@ export const TARGETS: Record<ToolId, ToolTargets> = {
     skillShape: 'dir',
     ruleShape: 'instructions',
     hookKind: 'copilot-instructions',
+    hookFormat: 'none',
+    hookPath: null,
+    agentFormat: {
+      path: '.github/agents',
+      extension: '.agent.md',
+      style: 'tool-list',
+      names: { read: ['read'], search: ['search'], edit: ['edit'], shell: ['execute'], web: ['web'], delegate: ['agent'] },
+      turnsKey: null,
+      includeName: true,
+      fixed: {},
+      passthrough: [],
+    },
     speckit: null,
   },
 };

@@ -4,6 +4,7 @@ description: 'PyTorch build resolver: reproduces a failing build and applies the
 tier: balanced
 skills:
   - machine-learning
+capabilities: [read, search, edit, shell]
 ---
 
 You are the PyTorch build resolver. Diagnose and repair one failing build with the smallest stack-correct change.

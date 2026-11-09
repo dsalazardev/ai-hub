@@ -6,6 +6,8 @@ import type { SyncConfig } from './config.js';
 import { loadSyncConfig, resolveSourcePath } from './config.js';
 import { ownedBySpeckit, readSpeckitState, speckitOwnedPaths } from '../speckit/state.js';
 import { normalize, renderAll, type RenderedFile, type RenderedFiles } from './render.js';
+import { projectSettingsHooks } from './hooks.js';
+import { extractRegion, removeRegion, replaceRegion } from './region.js';
 import {
   GENERATOR_VERSION,
   readLock,
@@ -94,6 +96,7 @@ export async function runSync(root: string, options: SyncOptions): Promise<SyncR
     result.problems.push(...symlinks.map((rel) => `enlace simbólico no permitido: ${rel}`));
     result.problems.push(...obsolete.map((rel) => `destino obsoleto: ${rel}`));
     result.problems.push(...transferred.map((rel) => `propiedad transferida a Spec Kit (ejecuta ai-hub sync): ${rel}`));
+    result.problems.push(...(await projectSettingsHooks(root, config.tools, true)).problems);
     return result;
   }
 
@@ -104,6 +107,15 @@ export async function runSync(root: string, options: SyncOptions): Promise<SyncR
     result.removed.push(rel);
   }
   for (const rel of obsolete) {
+    if (previous?.files[rel]?.region !== undefined) {
+      // Archivo del usuario: se quita solo la región; el archivo jamás se borra.
+      const text = await readCopy(path.join(root, rel));
+      if (text !== null) {
+        await fs.writeFile(path.join(root, rel), removeRegion(text), 'utf8');
+      }
+      result.removed.push(rel);
+      continue;
+    }
     await fs.rm(path.join(root, rel), { force: true });
     result.removed.push(rel);
   }
@@ -114,6 +126,14 @@ export async function runSync(root: string, options: SyncOptions): Promise<SyncR
   const written = await mapLimit(sortedEntries(rendered), 24, async ([rel, file]) => {
     const abs = path.join(root, rel);
     const current = await readCopy(abs);
+    if (file.region !== undefined) {
+      if (current !== null && extractRegion(current) === file.content) {
+        return null;
+      }
+      await fs.mkdir(path.dirname(abs), { recursive: true });
+      await fs.writeFile(abs, replaceRegion(current ?? '', file.content), 'utf8');
+      return rel;
+    }
     if (current === file.content) {
       return null;
     }
@@ -123,6 +143,10 @@ export async function runSync(root: string, options: SyncOptions): Promise<SyncR
   });
   result.written.push(...written.filter((rel): rel is string => rel !== null));
   await writeLock(root, nextLock);
+  // Hooks en ajustes del usuario: fuera del lock (jamás se borran como destino obsoleto).
+  const hooks = await projectSettingsHooks(root, config.tools, false);
+  result.written.push(...hooks.written);
+  result.problems.push(...hooks.problems);
   return result;
 }
 
@@ -134,7 +158,9 @@ function sourceDescription(source: string): string {
 
 async function checkCopies(root: string, rendered: RenderedFiles, previous: SyncLock | null): Promise<string[]> {
   const problems = await mapLimit(sortedEntries(rendered), 24, async ([rel, file]) => {
-    const current = await readCopy(path.join(root, rel));
+    const raw = await readCopy(path.join(root, rel));
+    // Región (E2): solo cuenta el interior; editar fuera de la región no es deriva.
+    const current = file.region !== undefined ? (raw === null ? null : extractRegion(raw)) : raw;
     if (current === null) {
       return `falta ${rel} (${sourceDescription(file.source)})`;
     }
@@ -158,6 +184,9 @@ export async function buildLock(root: string, rendered: RenderedFiles): Promise<
   const files: SyncLock['files'] = {};
   for (const [rel, file] of sortedEntries(rendered)) {
     const entry: LockFileEntry = { sha256: sha256(file.content), source: file.source };
+    if (file.region !== undefined) {
+      entry.region = file.region;
+    }
     if (file.markerSource !== undefined) {
       entry.markerSource = file.markerSource;
     }

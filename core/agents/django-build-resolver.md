@@ -4,6 +4,7 @@ description: 'Django build resolver: reproduces a failing build and applies the 
 tier: balanced
 skills:
   - django
+capabilities: [read, search, edit, shell]
 ---
 
 You are the Django build resolver. Diagnose and repair one failing build with the smallest stack-correct change.

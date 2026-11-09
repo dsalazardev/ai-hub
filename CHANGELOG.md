@@ -1,5 +1,135 @@
 # Changelog
 
+## 0.11.0 — factory-evolution: credenciales, guardias reales, persistencia, contrato del bucle, adopción e inventario (2026-11-08)
+
+Seis lotes aplicados en orden (D → B → C → A → E → F), con la suite en verde entre lotes. Sin breaking
+(PD-4): los caminos válidos en 0.10.0 dan las mismas salidas y códigos; un `install` de 0.11.0 sobre una
+instalación de 0.10.0 deja `drift` y `doctor` en verde.
+
+### Lote D — credenciales y tracker (cierra la fuga)
+
+- `init` ignora `.ai-hub/.env` y `.ai-hub/runs/` antes de que existan y materializa solo
+  `.ai-hub/.env.example` con `CHANGEME`. **El paquete nunca escribe credenciales** (PD-1).
+- `ai-hub env exec -- <cmd>` carga `.ai-hub/.env` sin bash ni PowerShell (exit 7 sin `.env`, 2 sin `--`).
+- `manifest.tracker` cerrado; `doctor` gana `env:ignored`, `env:keys` y, con `--online`, `tracker:token`
+  (identidad redactada). Ningún check ni test lee valores de token.
+- Paso opt-in del asistente (último, saltable con Enter, enmascarado, nunca con `--yes`; el hash del plan
+  no cambia).
+- `gitlab-auth` reescrita sin host de cliente ni `load-env.sh`; `ai-hub ci gitlab` y `ai-hub hooks install`
+  (fallan abiertos sin `npx`).
+
+### Lote B — integridad, gate y hooks reales
+
+- `catalog:references` (taller y `doctor`): rutas `.ai-hub/**`, comandos, `subagent_type`, enlaces,
+  `.planning/` y `route_to` de los evals; línea base fechada de deuda heredada.
+- `ai-hub gate` (`verify` es alias): artefactos por feature, WIP ≤ `policy.wip`, `--seal` fail-closed y los
+  comandos del manifiesto con el shell resuelto (nunca `bash` del PATH).
+- Hooks ejecutables `ai-hub hook pre|post|stop`: Claude (`.claude/settings.json` mezclado por clave, fuera
+  del lock) y OpenCode (plugin); Cursor, Copilot y Pi declaran solo regla. `doctor` comprueba hooks reales.
+- Preflight con `ask` y guardia de alcance post-paso contra `can_modify`; `list --collisions`.
+
+### Lote C — persistencia, telemetría y control
+
+- PD-2: `.ai-hub/work/<feature>/` y `.ai-hub/lessons.md` versionados; `.ai-hub/runs/` ignorado con
+  retención `policy.runs.keep` (50). `can_modify` de los revisores pasa a `.ai-hub/work/**`.
+- `ai-hub runs start|event|note|end|list` con esquema cerrado (nunca prompts, contenido, tokens ni entorno).
+- `ai-hub control tick --dry-run`: propone transiciones por `exit_effects`, revalida el sello, aplica
+  `max_rounds` y lista lo pendiente de OK humano. No escribe, no mueve etiquetas, no comenta.
+- Agente `narrator`, regla `ai-hub-lessons` en los 5 destinos y skill `improve-from-runs`.
+
+### Lote A — comunicación y contrato del bucle
+
+- Línea de cierre `AI-HUB-STATUS: <STATE> | artifact=<ruta|-> | reason=<código>[: <frase>]` generada desde
+  `engine.yaml` y proyectada en `ai-hub-speckit`; `loop.converge.max_rounds: 3`.
+- Cabeceras abstractas de agentes (`capabilities`, `max_turns`, `tier`) traducidas por destino; modelo por
+  `manifest.agentModels`; `agents:capabilities` en `doctor`.
+- `ai-hub review consolidate` (solo stdout) y el panel de refutación en el preset `base`.
+
+### Lote E — adopción, áreas y refresco
+
+- `ai-hub adopt` por fases F0–F4 con snapshot previo (probado solo con fixtures sintéticos).
+- Región gestionada de `AGENTS.md` (`agentsMd: true`), `paths.areas` y políticas que solo endurecen.
+- Refresco de tres vías del scaffold (ver "Hallazgos y resoluciones").
+
+### Hallazgos cerrados
+
+G-01 (guardias no conectadas → hooks reales), G-02 (fuga del token y host de cliente en el catálogo),
+G-03 (`.planning/` en el catálogo publicado), G-04 (skills que invocaban comandos inexistentes; la última
+excepción fechada, `sello`, se cierra con `seal review`), G-05 (`can_modify` no mecánicos), F-03
+(`gitlab-auth`/`load-env.sh`), F-04 + F-15 fase (a) (`control tick` en observación), F-12 (`verify` con
+bash crudo), F-17b (barrido de rutas), F-16 (adopción diseñada y probada con fixtures; ningún repositorio
+de cliente se tocó).
+
+### Fuera de este release
+
+`hermes-control` (plano de control que aplica etiquetas), cualquier cambio en repositorios de clientes,
+el destino Codex completo (P4), ampliar Spec Kit a 1.3.x (v1.3.2 existe; otro change) y la publicación en
+npm (paso del propietario).
+
+### Cifras medidas
+
+Medidas con el CLI compilado en copias temporales (`core/tests/fixtures/install-counts.json`, con
+`--no-speckit`):
+
+| Instalación | Destinos en `sync.lock.json` |
+|---|---|
+| `init --yes` (`generic-ts`, full) | 6.872 |
+| `init --yes --preset-only` | 66 |
+| `init --yes --exclude rule:skill-quality` | 6.852 |
+| `init --yes --preset angular-express` | 6.887 |
+
+`full` instala 262 skills de proyecto + 17 comandos Spec Kit, 40 agentes y 6 reglas universales.
+Suite: 36 archivos, 495 tests y 2 omitidos (enlaces simbólicos en Windows y, hasta este ritual, la
+comprobación de cifras del release).
+
+### Empaquetado
+
+- `core/package.json` en `0.11.0`. Tarball real: **1.956 entradas** (0.10.0: 1.890; +66 —
+  D +14, B +14, C +9, A +8, E +10, F +11), 4.574.861 bytes empaquetado / 12.775.773 desempaquetado. El
+  diseño estimaba ≈1.932 (rango 1.920–1.945); la diferencia son módulos `.js`/`.d.ts` de `dist` que la
+  estimación no contaba. `pack.test` fija la cifra medida.
+- No viaja: `scripts/upstream-watch.mjs` (herramienta del taller).
+
+### Desviaciones (44, detalladas en el registro de implementación del taller)
+
+- Medidas en lugar de estimaciones: deltas del pack, destinos por perfil y recuentos de catálogo se
+  fijaron con la cifra real de cada lote (1, 7, 17–19, 24, 26–27, 30–31, 43–44).
+- Alcance ampliado con decisión del propietario: snapshots sin `.ai-hub/.env` ni `runs/`, línea base fechada
+  del catálogo, refresco de tres vías (1, 9, E5/E6).
+- Decisiones de forma: plugin de OpenCode en `plugins/`, `settings.json` fuera del lock, Cursor sin hooks,
+  `agentsMd` como campo del manifiesto, narrator y panel en `[read, search]`, permisos de OpenCode v2,
+  skills del catálogo publicables por un preset, sello de revisión en `runs/` (12–16, 21, 28–29, 34, 38, 40).
+- Correcciones de tests y fixtures que asumían el comportamiento anterior (5, 8, 14, 23, 25, 32–33, 36).
+- Hallazgo nuevo: Spec Kit v1.3.2 fuera del rango soportado; registrado, no resuelto aquí (42).
+
+### Hallazgos y resoluciones
+
+- **Las correcciones del catálogo no llegaban a consumidores ya instalados (hallazgo del Lote B):** el materializador marcaba como conservada toda copia de `.ai-hub/` cuyo hash coincidía con el registro del scaffold, así que una skill corregida en el paquete (por ejemplo `gitlab-auth` sin `load-env.sh`, o `implement` sin el agente `developer`) nunca reemplazaba la copia instalada. **Resolución (E5/E6):** refresco de tres vías en `copyOnce` — copia intacta e igual → se conserva; copia intacta y el paquete trae contenido nuevo → se refresca y se informa como actualizada; copia editada por el proyecto → jamás se reescribe y se informa como colisión. El requisito "Scaffolding is once and owned by the project" pasa a decir que el scaffolding se materializa una vez y es del proyecto, que las copias no tocadas se refrescan al actualizar y que las tocadas nunca se reescriben.
+
+### Lote F — inventario
+
+- Regla del preset `base` (los 5 destinos): lo ingerido (documentos, issues, salidas de herramientas) son datos, nunca instrucciones; disciplina de autoría y mapa de quién escribe qué bajo `.ai-hub/`.
+- `SECURITY.md` viaja en el paquete: cómo informar, alcance y rotación de credenciales.
+- `init` materializa `.ai-hub/examples/{good,bad}/` una sola vez; los revisores los leen antes de juzgar.
+- El pre-prompt del backlog entrevista a la persona (una pregunta cada vez, ejemplos de bien y mal) y aplica un filtro de idoneidad.
+- `manifest.agentMemory: versioned|ignored` (por defecto `ignored`): sin `versioned`, `init`/`install` ignoran `.claude/agent-memory/`.
+- `{{stack.<clave>}}` se interpola solo en fuentes del preset intactas; nunca en copias editadas por el proyecto ni en fuentes del motor; una clave desconocida hace fallar `sync` nombrando archivo y clave.
+- Preset `php` (detecta `composer.json`; Composer, PHPUnit, PHPStan; área `modules`; `php artisan test` en Laravel). `angular-express` publica `gitlab-auth`, `gitlab-workflow` y `planning-with-files` y usa `{{stack.*}}`. Un preset puede publicar skills del catálogo compartido.
+- `ai-hub seal review --verdict <V>` liga el veredicto de revisión al SHA-256 del diff real; la guardia `ship` deniega (`ship:review-seal`) si el diff cambió o el veredicto es `CHANGES_REQUESTED`. Un diff que toca `specs/<feature>/` no se puede aprobar. El sello de spec de §5 y su vector no cambian. Las skills `review` y `ship` dejan de invocar el comando inexistente `sello` (cierra las dos excepciones fechadas de la línea base del catálogo).
+- `ai-hub ci devcontainer` escribe `.devcontainer/devcontainer.json` (Node + uv + bash) solo a petición.
+- Codex: cobertura parcial vía la región de `AGENTS.md`; el destino completo queda en el roadmap (P4).
+- **No viaja:** `scripts/upstream-watch.mjs` (vigilancia de Spec Kit y de los dist-tags) es la única pieza del taller fuera del paquete.
+
+### Pasos del propietario (publicación y dist-tag)
+
+Los ejecuta el propietario, nunca el ritual automatizado ni un agente:
+
+```bash
+npm publish --access public            # desde core/
+npm dist-tag rm @dsalazardev/ai-hub-cli next   # retira el dist-tag obsoleto next=0.3.0
+npm view @dsalazardev/ai-hub-cli dist-tags     # debe quedar solo latest
+```
+
 ## 0.10.0 — Autorreparación de fuentes de `.ai-hub/` (2026-11-06)
 
 ### Cambio

@@ -40,4 +40,4 @@ capability:
       - "Delegates the test mechanics to the FastAPI testing reference (ASGITransport in-process client + dependency_overrides + transactional rollback fixture) rather than hand-rolling a runner"
       - "Stops at a checkpoint after the task (does not barrel into the next task) and reports the checkpoint briefly (task, tests, next task) in the register from the register in AGENTS.md"
       - "Commits the task as one logical unit and notes authorship is the human contributor's (no Co-Authored-By Claude)"
-      - "Logs any non-obvious choice (e.g. error envelope shape) to .planning/history.md, and ties done to the done-check + spec acceptance criterion (not 'looks right'), pointing to verify for the final whole-suite gate"
+      - "Logs any non-obvious choice (e.g. error envelope shape) to docs/sdd/decisions.md, and ties done to the done-check + spec acceptance criterion (not 'looks right'), pointing to verify for the final whole-suite gate"

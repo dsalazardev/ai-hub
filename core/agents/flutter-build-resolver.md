@@ -4,6 +4,7 @@ description: 'Flutter build resolver: reproduces a failing build and applies the
 tier: balanced
 skills:
   - flutter
+capabilities: [read, search, edit, shell]
 ---
 
 You are the Flutter build resolver. Diagnose and repair one failing build with the smallest stack-correct change.

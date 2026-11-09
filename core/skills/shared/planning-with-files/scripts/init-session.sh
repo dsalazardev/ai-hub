@@ -4,14 +4,14 @@
 # Usage:
 #   ./init-session.sh                              # legacy: root-level task_plan.md, findings.md, progress.md
 #   ./init-session.sh [--template TYPE]            # legacy with template choice
-#   ./init-session.sh "Backend Refactor"           # slug mode: .planning/<date>-backend-refactor/
+#   ./init-session.sh "Backend Refactor"           # slug mode: .ai-hub/work/plans/<date>-backend-refactor/
 #   ./init-session.sh --plan-dir                   # slug mode with auto-generated untitled-<short> name
 #   ./init-session.sh --plan-dir "Quick Spike"     # slug mode, explicit slug
 #
 # Legacy mode (zero positional args, no --plan-dir) preserves v1.x behavior so
 # upgrades stay non-breaking. Slug mode addresses parallel multi-task isolation
-# (issue #148) by writing each plan under .planning/<date>-<slug>/ and pinning
-# .planning/.active_plan so resolve-plan-dir.sh can find it.
+# (issue #148) by writing each plan under .ai-hub/work/plans/<date>-<slug>/ and pinning
+# .ai-hub/work/plans/.active_plan so resolve-plan-dir.sh can find it.
 
 set -e
 
@@ -257,7 +257,7 @@ if [ "$SLUG_MODE" -eq 1 ]; then
     fi
     BASE_ID="${DATE}-${SLUG}"
     PLAN_ID="$BASE_ID"
-    PLAN_ROOT="${PWD}/.planning"
+    PLAN_ROOT="${PWD}/.ai-hub/work/plans"
     counter=2
     while [ -d "${PLAN_ROOT}/${PLAN_ID}" ]; do
         PLAN_ID="${BASE_ID}-${counter}"

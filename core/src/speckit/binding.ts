@@ -1,6 +1,8 @@
 import type { EngineManifest } from '../engine/engine.js';
 import { TARGETS, type ToolId } from '../sync/targets.js';
 import { invocationFor } from './commands.js';
+import { closingContractSection } from './status.js';
+import type { ProjectPolicyKnobs } from '../sync/config.js';
 
 /**
  * Regla generada que enlaza Spec Kit con AI-Hub: roles por comando, invocación en la notación
@@ -58,7 +60,31 @@ const SEAL = [
 ];
 
 /** Cuerpo de la regla para un destino. Copilot no tiene Spec Kit y su copia no invoca comandos. */
-export function bindingRule(engine: EngineManifest, tool: ToolId): string {
+export function bindingRule(engine: EngineManifest, tool: ToolId, policy: ProjectPolicyKnobs = {}): string {
+  return [baseBindingRule(engine, tool), ...projectPolicySection(engine, policy)].join('\n');
+}
+
+/** Política del proyecto (E4): solo aparece si el proyecto declara algún knob (el hash no cambia si no). */
+export function projectPolicySection(engine: EngineManifest, policy: ProjectPolicyKnobs): string[] {
+  const lines: string[] = [];
+  if (policy.wip !== undefined) {
+    lines.push(`- Como máximo ${policy.wip} feature(s) en curso a la vez (\`ai-hub gate\` lo comprueba).`);
+  }
+  if (policy.maxRounds !== undefined) {
+    lines.push(
+      `- \`converge\` admite como máximo ${Math.min(policy.maxRounds, engine.loop.converge.max_rounds)} rondas \`NEEDS_WORK\` en este proyecto.`,
+    );
+  }
+  if (policy.requireEars) {
+    lines.push('- Los requisitos se redactan en notación EARS; reviewer-tests rechaza los que no la siguen.');
+  }
+  if (policy.requireTraceability) {
+    lines.push('- Cada requisito se traza a al menos un test y cada task cita los requisitos que cubre.');
+  }
+  return lines.length === 0 ? [] : ['## Política del proyecto', '', ...lines, ''];
+}
+
+function baseBindingRule(engine: EngineManifest, tool: ToolId): string {
   const speckit = TARGETS[tool].speckit;
   const lines: string[] = ['# Spec Kit en AI-Hub: roles, estados y etiquetas', ''];
   if (speckit === null) {
@@ -68,6 +94,8 @@ export function bindingRule(engine: EngineManifest, tool: ToolId): string {
       'Esta regla solo informa de cómo se interpretan sus resultados.',
       '',
       ...stateTable(engine),
+      '',
+      ...closingContractSection(engine),
       '',
       ...ARTIFACTS,
       '',
@@ -92,6 +120,8 @@ export function bindingRule(engine: EngineManifest, tool: ToolId): string {
     'Un agente solo invoca los comandos asignados a su rol; un comando de otro rol se rechaza.',
     '',
     ...stateTable(engine),
+    '',
+    ...closingContractSection(engine),
     '',
     ...ARTIFACTS,
     '',

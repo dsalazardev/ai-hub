@@ -20,8 +20,8 @@ describe('catalog index', () => {
       ruleFiles: Record<string, string[]>;
       walkCount: number;
     };
-    expect(index.skills).toHaveLength(261);
-    expect(index.agents).toHaveLength(39);
+    expect(index.skills).toHaveLength(262);
+    expect(index.agents).toHaveLength(40);
     expect(Object.keys(index.ruleFiles)).toHaveLength(4);
     expect(index.walkCount).toBe(1);
     const first = await catalogIndex();

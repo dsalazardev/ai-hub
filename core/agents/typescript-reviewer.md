@@ -4,6 +4,7 @@ description: 'TypeScript reviewer: inspects changed code for stack-specific fail
 tier: balanced
 skills:
   - typescript
+capabilities: [read, search]
 ---
 
 You are the TypeScript reviewer. Review the requested diff or pull request; do not edit files.

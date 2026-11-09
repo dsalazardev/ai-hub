@@ -6,9 +6,9 @@
 # attested hash, surfacing a "[PLAN TAMPERED]" warning instead.
 #
 # Resolution:
-#   1. $PLAN_ID env var → ./.planning/$PLAN_ID/
-#   2. ./.planning/.active_plan
-#   3. Newest ./.planning/<dir>/ by mtime
+#   1. $PLAN_ID env var → ./.ai-hub/work/plans/$PLAN_ID/
+#   2. ./.ai-hub/work/plans/.active_plan
+#   3. Newest ./.ai-hub/work/plans/<dir>/ by mtime
 #   4. Legacy ./task_plan.md at project root
 #
 # Usage:

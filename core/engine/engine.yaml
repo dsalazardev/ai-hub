@@ -18,7 +18,7 @@ roles:
     derived: false
     description: Investigates the domain and produces verifiable findings.
     can_modify:
-      - .planning/findings.md
+      - .ai-hub/work/**/findings.md
       - .specify/assessments/**
     cannot_modify:
       - src/**
@@ -46,7 +46,8 @@ roles:
     description: Authors requirements, design and tasks.
     can_modify:
       - .specify/**
-      - .planning/**
+      - specs/**
+      - .ai-hub/work/**
     cannot_modify:
       - src/**
     commands:
@@ -88,7 +89,7 @@ roles:
     derived: false
     description: Reviews architecture, conventions and bug diagnosis.
     can_modify:
-      - .planning/review_arch_*.md
+      - .ai-hub/work/**/review-arch.md
     cannot_modify:
       - src/**
     commands:
@@ -101,7 +102,7 @@ roles:
     derived: false
     description: Reviews coverage, traceability and test verdicts.
     can_modify:
-      - .planning/review_tests_*.md
+      - .ai-hub/work/**/review-tests.md
     cannot_modify:
       - src/**
     commands:
@@ -263,6 +264,25 @@ exit_effects:
   NOT_APPLIED: ai::blocked con motivo y evidencia
   VERIFIED: ai::done a través de la revisión
   FAILED: ai::blocked con motivo y evidencia
+
+# Contrato de cierre (factory-evolution A1). La última línea no vacía de la respuesta final de todo
+# rol es: AI-HUB-STATUS: <STATE> | artifact=<ruta|-> | reason=<código>[: <frase>].
+# STATE: una clave de exit_effects o un veredicto del panel. La regla ai-hub-speckit se genera desde aquí.
+status_line:
+  prefix: AI-HUB-STATUS
+  panel: [REFUTED, NOT-REFUTED]
+  reason_required: [BLOCKED, NEEDS_CLARIFICATION, NEEDS_WORK, NEEDS_REPRODUCTION, FAILED, NOT_APPLIED]
+  reason_max: 200
+
+# Bucle acotado (A2): un proyecto solo puede BAJAR max_rounds (policy.maxRounds).
+loop:
+  converge:
+    max_rounds: 3
+    on_exhaust: BLOCKED
+
+# Límites que el proyecto solo puede endurecer (E4): un valor más permisivo hace fallar el manifiesto.
+policy_limits:
+  wip: 1
 
 labels:
   - ai::todo

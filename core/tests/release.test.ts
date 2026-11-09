@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import fs from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { MEASURED } from './measured.js';
@@ -25,16 +26,26 @@ async function currentSection(): Promise<{ version: string; date: string; body: 
   return { version: pkg.version, date: heading[1], body: changelog.slice(start, next < 0 ? undefined : next) };
 }
 
-describe('release 0.10.0 (repair-assets 4.3)', () => {
-  it('bumps the package and names the contracts that change in 0.10.0', async () => {
+describe('release 0.11.0 (factory-evolution 8.3)', () => {
+  it('bumps the package and names the six lots, the closed findings and what stays out', async () => {
     const section = await currentSection();
-    expect(section.version).toBe('0.10.0');
-    expect(section.body).toMatch(/Autorreparaci[oó]n de fuentes/i);
-    expect(section.body).toMatch(/dos capas/);
-    expect(section.body).toMatch(/fail-closed/);
-    expect(section.body).toMatch(/falsos negativos/);
-    expect(section.body).toMatch(/revalidaci[oó]n estricta/i);
-    expect(section.body).toContain('1.890');
+    expect(section.version).toBe('0.11.0');
+    for (const lot of ['Lote D', 'Lote B', 'Lote C', 'Lote A', 'Lote E', 'Lote F']) {
+      expect(section.body).toContain(`### ${lot}`);
+    }
+    for (const finding of ['G-01', 'G-02', 'G-03', 'G-04', 'G-05', 'F-03', 'F-04', 'F-12', 'F-17b', 'F-16']) {
+      expect(section.body).toContain(finding);
+    }
+    expect(section.body).toContain('hermes-control');
+    expect(section.body).toContain('npm dist-tag rm @dsalazardev/ai-hub-cli next');
+    expect(section.body).toContain('1.956 entradas');
+    expect(section.body).toContain('scripts/upstream-watch.mjs');
+  });
+
+  // El ritual iguala versión y fixture: la comprobación de cifras es estricta, sin omisión.
+  it('the measured fixture belongs to the released version', () => {
+    const version = (JSON.parse(readFileSync(path.join(CORE, 'package.json'), 'utf8')) as { version: string }).version;
+    expect(String((MEASURED as unknown as { package?: string }).package ?? '').startsWith(version)).toBe(true);
   });
 
   it('publishes the measured figures, not computed ones', async () => {

@@ -9,9 +9,9 @@
     attested hash, surfacing a "[PLAN TAMPERED]" warning instead.
 
     Plan resolution:
-      1. $env:PLAN_ID  -> ./.planning/$PLAN_ID/
-      2. ./.planning/.active_plan
-      3. Newest ./.planning/<dir>/ by LastWriteTime
+      1. $env:PLAN_ID  -> ./.ai-hub/work/plans/$PLAN_ID/
+      2. ./.ai-hub/work/plans/.active_plan
+      3. Newest ./.ai-hub/work/plans/<dir>/ by LastWriteTime
       4. Legacy ./task_plan.md at project root
 
 .PARAMETER Show
@@ -32,7 +32,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 function Resolve-PlanFile {
-    $planRoot = Join-Path (Get-Location) ".planning"
+    $planRoot = Join-Path (Get-Location) ".ai-hub/work/plans"
 
     if ($env:PLAN_ID) {
         $candidate = Join-Path $planRoot $env:PLAN_ID

@@ -4,6 +4,7 @@ description: 'FastAPI reviewer: inspects changed code for stack-specific failure
 tier: balanced
 skills:
   - fastapi
+capabilities: [read, search]
 ---
 
 You are the FastAPI reviewer. Review the requested diff or pull request; do not edit files.

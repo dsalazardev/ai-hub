@@ -617,3 +617,25 @@ barre `rules/`). Todo reescrito al vocabulario del motor.
   §7.3.
 - **Dato para el futuro:** si specify-cli retira el compañero en una versión futura del rango,
   el escenario del compañero queda como hecho medido de 1.2.5, no como contrato.
+
+## 2026-11-08 — factory-evolution: conflictos normativos registrados antes de aplicar
+
+- **Conflicto PD-1 frente a spec vigente:** el paso opt-in del tracker (la TUI pregunta URL y
+  token y escribe `.ai-hub/.env` solo si el usuario acepta) contradice el requisito vigente
+  `interactive-onboarding` → "The assistant verifies tools without touching credentials"
+  ("MUST NEVER ask for, store, or touch API keys"). **Resolución:** instrucción explícita del
+  propietario (AGENTS.md §1, nivel 1) sobre la spec (nivel 5 descriptivo / contrato de
+  capability). Se aplica como `## MODIFIED` en
+  `openspec/changes/factory-evolution/specs/interactive-onboarding/spec.md`: la prohibición se
+  mantiene salvo el paso opt-in, saltable, solo con TTY, enmascarado, que escribe únicamente
+  `.ai-hub/.env` (ya ignorado). Ningún agente pide tokens.
+- **Errata 1 del texto de partida:** D2 decía `GITLAB_TOKEN=CHANGE`; se usa `CHANGEME`,
+  coherente con PD-1 ("valores CHANGEME").
+- **Errata 2 del texto de partida:** C1 decía `.aiai-hub/lessons.md`; se trata como
+  `.ai-hub/lessons.md`.
+
+## 2026-11-08 — Spec Kit fuera del rango soportado (upstream-watch, Lote F)
+
+- Evidencia: `node scripts/upstream-watch.mjs` → `Spec Kit: última v1.3.2 · rango soportado >=1.2.3 <1.3.0 · FUERA DEL RANGO` (exit 1).
+- Impacto: las instalaciones siguen resolviendo la última 1.2.x; 1.3.x no está verificada.
+- Decisión pendiente del propietario: abrir un change para ampliar `speckit.supported` tras probar 1.3.x. No se toca en factory-evolution.

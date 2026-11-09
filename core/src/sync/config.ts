@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import type { AreaSpec } from '../engine/scopes.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadManifestContext } from '../manifest/manifest.js';
@@ -41,6 +42,23 @@ export interface SyncConfig {
   rules: { source: string; publish: string[]; targets: Record<string, RuleTarget> };
   mcp: { source: string } | null;
   opencode: { instructions: string[] };
+  /** `manifest.agentModels.<target>.<tier>` (A3): el modelo lo pone el proyecto, nunca el motor. */
+  agentModels: Record<string, Record<string, string>>;
+  /** Knobs restrictivos del proyecto (E4) que la regla ai-hub-speckit proyecta. */
+  projectPolicy: ProjectPolicyKnobs;
+  /** Áreas de implementación (E3): una regla por área y destino. */
+  areas: AreaSpec[];
+  /** Escribir la región reservada de AGENTS.md (E2). */
+  agentsMd: boolean;
+  /** Valores de `manifest.stack` para `{{stack.*}}` en fuentes del preset (M-27). */
+  stack: Record<string, string>;
+}
+
+export interface ProjectPolicyKnobs {
+  wip?: number;
+  maxRounds?: number;
+  requireEars?: boolean;
+  requireTraceability?: boolean;
 }
 
 export class SyncConfigError extends Error {
@@ -121,6 +139,18 @@ export async function loadSyncConfig(root: string): Promise<SyncConfig> {
     tools,
     skills: { sources, targets: skillTargets },
     agents: { source: manifest.agents.source, publish: manifest.agents.publish, targets: agentTargets },
+    agentModels: manifest.agentModels ?? {},
+    areas: manifest.paths.areas ?? [],
+    agentsMd: manifest.agentsMd === true,
+    stack: Object.fromEntries(
+      Object.entries(manifest.stack).map(([key, value]) => [key, Array.isArray(value) ? value.join(', ') : String(value)]),
+    ),
+    projectPolicy: {
+      ...(manifest.policy.wip !== undefined ? { wip: manifest.policy.wip } : {}),
+      ...(manifest.policy.maxRounds !== undefined ? { maxRounds: manifest.policy.maxRounds } : {}),
+      ...(manifest.policy.requireEars !== undefined ? { requireEars: manifest.policy.requireEars } : {}),
+      ...(manifest.policy.requireTraceability !== undefined ? { requireTraceability: manifest.policy.requireTraceability } : {}),
+    },
     rules: { source: manifest.rules.source, publish: manifest.rules.publish, targets: ruleTargets },
     mcp,
     opencode: { instructions },

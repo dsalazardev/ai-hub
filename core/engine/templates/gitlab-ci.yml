@@ -1,0 +1,11 @@
+# Generado por `ai-hub ci gitlab` a petición. Inclúyelo desde tu .gitlab-ci.yml:
+#   include:
+#     - local: .gitlab-ci.ai-hub.yml
+# Solo usa Node: sin shell POSIX ni herramientas GNU.
+ai-hub-check:
+  image: node:22
+  stage: test
+  script:
+    - npx --yes @dsalazardev/ai-hub-cli doctor
+    - npx --yes @dsalazardev/ai-hub-cli sync --check-lock
+    - npx --yes @dsalazardev/ai-hub-cli gate

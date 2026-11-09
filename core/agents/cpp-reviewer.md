@@ -4,6 +4,7 @@ description: 'C++ reviewer: inspects changed code for stack-specific failure mod
 tier: balanced
 skills:
   - cpp
+capabilities: [read, search]
 ---
 
 You are the C++ reviewer. Review the requested diff or pull request; do not edit files.

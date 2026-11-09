@@ -76,8 +76,8 @@ skills:
     - clickhouse-analytics
     - client-onboarding
     - cloudflare
-    - codebase-onboarding
     - code-review
+    - codebase-onboarding
     - cold-outreach
     - community
     - competitor-watch
@@ -116,6 +116,7 @@ skills:
     - drizzle-orm
     - duckdb
     - dynamodb
+    - e-signature
     - e2e-testing
     - electron
     - elixir
@@ -123,7 +124,6 @@ skills:
     - email-deliverability
     - embeddings-search
     - error-handling
-    - e-signature
     - expo
     - fable-operator
     - fal
@@ -138,18 +138,18 @@ skills:
     - ftd
     - fundraising
     - game-design
+    - game-storytelling
     - gamedev-multiplayer
     - gamedev-pathing
     - gamedev-physics
     - gamedev-shaders
     - gamedev-shipping
-    - game-storytelling
     - gcp-essentials
     - gdpr-privacy
+    - git-workflow
     - github-actions
     - gitlab-auth
     - gitlab-workflow
-    - git-workflow
     - go
     - godot
     - google-workspace
@@ -160,6 +160,7 @@ skills:
     - htmx
     - huggingface
     - idea-refinement
+    - improve-from-runs
     - init
     - instagram-api
     - inventory
@@ -183,8 +184,8 @@ skills:
     - logistics-ops
     - machine-learning
     - make
-    - marketing
     - market-research
+    - marketing
     - medium-publishing
     - medium-strategy
     - medium-writing
@@ -331,6 +332,7 @@ agents:
     - kotlin-build-resolver
     - kotlin-reviewer
     - mle-reviewer
+    - narrator
     - php-reviewer
     - postgres-reviewer
     - python-reviewer
@@ -365,7 +367,7 @@ rules:
 
 catalog:
   version: 0.6.0
-  hash: 568d0d128d4954499b759c097e835362ae188b21e9b37719243422323694151f
+  hash: 336f0f7fbe64ccd6b3308583275f0ef6d61ca0ad86e54dca5a8c5d6833f356fd
 
 mcp:
   source: mcp-manifest.yaml

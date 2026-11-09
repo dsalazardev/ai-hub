@@ -81,14 +81,37 @@ npx @dsalazardev/ai-hub-cli install --targets claude
 
 | Comando | Qué hace |
 |---|---|
-| `init` | Detecta el repo, elige preset e imprime el plan; `--yes` lo aplica |
-| `install` | Materializa el preset y sincroniza destinos |
+| `init` | Detecta el repo, elige preset e imprime el plan; `--yes` lo aplica, `--preset <id>`, `--preset-only`, `--targets`, `--no-speckit` |
+| `install` | Materializa el preset y sincroniza destinos; refresca copias de `.ai-hub/` no tocadas |
+| `add` | Añade una skill o agente del catálogo al proyecto |
+| `list` | Preset, destinos, comandos, skills y agentes; `--collisions` |
 | `sync` | Reproyecta; `--check` no escribe, `--check-lock` verifica integridad |
 | `drift` | Informa diferencias entre fuentes y destinos |
-| `doctor` / `check` | Diagnóstico completo del arnés |
-| `add` | Añade una skill o agente del catálogo al proyecto |
-| `context` | Regenera `.planning/context-next.md` |
-| `purge` | Retira los destinos generados, con snapshot previo |
+| `doctor` / `check` | Diagnóstico completo del arnés; `--online` comprueba la identidad del tracker (redactada) |
+| `backups` / `restore` | Lista y restaura snapshots (sin `.ai-hub/.env` ni `.ai-hub/runs/`) |
+| `uninstall` / `purge` | Retira un activo añadido / los destinos generados, con snapshot previo |
+| `upgrade` / `repair` | Actualiza y re-sincroniza / reaplica solo lo que falta o está roto |
+| `worktrees` / `trunk` | Reaper conservador de worktrees / estado de la rama principal |
+| `memory` / `context` | Ledger y `.planning/context-next.md` (solo taller) |
+| `env` | `env exec -- <cmd>`: ejecuta con `.ai-hub/.env` cargado, sin bash ni PowerShell |
+| `ci` | `ci gitlab` / `ci devcontainer` (Node + uv + bash): plantillas solo a petición, `--force` |
+| `hooks` | `hooks install --pre-commit|--post-merge`: hooks de git que fallan abiertos |
+| `gate` | Artefactos por feature, WIP, `--seal <hash>` fail-closed y comandos del manifiesto; `--quick` |
+| `runs` | Telemetría cerrada en `.ai-hub/runs/`: `start`, `event` (`--from-status`), `note`, `end`, `list` |
+| `control` | `control tick --dry-run [--json] [--issue] [--labels-from] [--online]`: propone, no aplica |
+| `review` | `review consolidate <informes…>`: consolida el panel de refutación por stdout |
+| `seal` | `seal review --verdict <APPROVE|APPROVE_WITH_NITS|CHANGES_REQUESTED> [--base <ref>]`: liga el veredicto al diff real; la guardia `ship` lo exige |
+| `adopt` | Adopta un arnés heredado por fases: `--dry-run` primero, `--yes` con snapshot |
+| `hook` | Hook de host `pre|post|stop` (stdin); siempre sale 0 |
+
+`ai-hub help` lista los 28 comandos. `verify` es alias de `gate`.
+
+### Credenciales (opt-in)
+
+`init` ignora `.ai-hub/.env` y escribe solo `.ai-hub/.env.example` con `CHANGEME`. El `.env` real lo
+crea la persona: a mano o en el último paso del asistente interactivo (saltable con Enter, enmascarado,
+nunca con `--yes`). Ningún agente pide tokens; los comandos que los necesitan van por
+`ai-hub env exec -- <cmd>`.
 
 ## Checks de Spec Kit en `doctor`
 
@@ -120,6 +143,22 @@ specs/              features de Spec Kit: spec.md, plan.md, tasks.md (versionado
 ```
 
 Una instalación no crea `.planning/`: es estado del checkout de desarrollo del motor.
+
+## Codex
+
+Cobertura parcial: con `agentsMd: true`, `sync` mantiene la región gestionada del `AGENTS.md`
+raíz, que Codex lee. Skills, agentes, hooks y comandos de Spec Kit no llegan a Codex; el destino
+completo está en el roadmap (P4).
+
+## Lo que no viaja en el paquete
+
+Todo lo que el consumidor usa llega con `npm i`. La única excepción declarada es
+`scripts/upstream-watch.mjs`, la vigilancia del upstream (Spec Kit y dist-tags de npm): es una
+herramienta del taller del mantenedor, vive fuera de `core/` y no está en `files`.
+
+## Seguridad
+
+Ver `SECURITY.md`: cómo informar una vulnerabilidad, alcance y rotación de credenciales.
 
 ## Procedencia de activos
 

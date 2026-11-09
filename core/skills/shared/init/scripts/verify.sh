@@ -7,7 +7,7 @@
 #     1. docs/user-profile.md exists and carries technical_level
 #        line — the one dial (technical, or with analogies). The accompaniment dial
 #        is retired: an old profile that still carries it is not flagged.
-#     2. .planning/history.md exists (append-only decisions log).
+#     2. docs/harness/decisions.md exists (append-only decisions log).
 #     3. Root AGENTS.md exists and its "## Knowledge map" section links the profile.
 #   Everything is detect-or-skip: a missing workspace piece is a WARNING, never a
 #   failure — `init` may simply not have run yet. The script never fails the build;
@@ -59,7 +59,7 @@ if [ ! -e "$ROOT" ]; then
 fi
 
 PROFILE="$ROOT/docs/user-profile.md"
-DECISIONS="$ROOT/.planning/history.md"
+DECISIONS="$ROOT/docs/harness/decisions.md"
 CLAUDE_MD="$ROOT/AGENTS.md"
 
 # has <file> <pattern>: true if a non-empty file contains a case-insensitive match.
@@ -84,7 +84,7 @@ fi
 
 # --- 2. decisions log -------------------------------------------------------
 if [ ! -s "$DECISIONS" ]; then
-  warn "no decisions log at .planning/history.md — significant decisions should be appended here"
+  warn "no decisions log at docs/harness/decisions.md — significant decisions should be appended here"
 else
   ok "decisions log present: $DECISIONS"
 fi

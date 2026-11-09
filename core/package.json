@@ -1,6 +1,6 @@
 {
   "name": "@dsalazardev/ai-hub-cli",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "author": "Daner Alejandro Salazar Colorado",
   "license": "MIT",
   "type": "module",
@@ -36,7 +36,8 @@
     "skills",
     "LICENSE",
     "NOTICE.md",
-    "README.md"
+    "README.md",
+    "SECURITY.md"
   ],
   "scripts": {
     "build": "tsc",

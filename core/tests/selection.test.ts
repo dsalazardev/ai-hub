@@ -164,7 +164,8 @@ describe('catalog selection', () => {
       const audit = await auditSelection(root, data, preset, engine);
       expect(audit.errors.join('\n')).toContain('skills.publish incompleto: faltan');
       expect(audit.expectedSkills).toHaveLength(preset.skills.length);
-      expect(preset.skills.length).toBe(7);
+      // Lote F (M-29): +3 skills del catálogo (gitlab-auth, gitlab-workflow, planning-with-files).
+      expect(preset.skills.length).toBe(10);
     } finally {
       await fs.rm(root, { recursive: true, force: true });
     }

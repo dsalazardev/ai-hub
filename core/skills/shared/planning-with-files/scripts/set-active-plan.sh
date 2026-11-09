@@ -2,15 +2,15 @@
 # planning-with-files: set or display the active plan pointer.
 #
 # Usage:
-#   set-active-plan.sh <plan_id>   — pin .planning/.active_plan to plan_id
+#   set-active-plan.sh <plan_id>   — pin .ai-hub/work/plans/.active_plan to plan_id
 #   set-active-plan.sh             — print the current active plan (if any)
 #
-# The active plan is stored in .planning/.active_plan and is read by
+# The active plan is stored in .ai-hub/work/plans/.active_plan and is read by
 # resolve-plan-dir.sh when no $PLAN_ID env var is set.
 
 set -e
 
-PLAN_ROOT="${PWD}/.planning"
+PLAN_ROOT="${PWD}/.ai-hub/work/plans"
 ACTIVE_FILE="${PLAN_ROOT}/.active_plan"
 
 # No args → show current active plan
@@ -36,7 +36,7 @@ PLAN_DIR="${PLAN_ROOT}/${PLAN_ID}"
 
 if [ ! -d "${PLAN_DIR}" ]; then
     echo "Error: plan directory not found: ${PLAN_DIR}" >&2
-    echo "Run: init-session.sh \"${PLAN_ID}\" to create it, or check .planning/ for available plans." >&2
+    echo "Run: init-session.sh \"${PLAN_ID}\" to create it, or check .ai-hub/work/plans/ for available plans." >&2
     exit 1
 fi
 

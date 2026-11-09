@@ -1,4 +1,6 @@
-# Architecture — Angular + Express
+# Architecture — {{stack.frontend}} + {{stack.backend}}
+
+Stack: {{stack.languages}} · package manager: {{stack.packageManager}}.
 
 - Domain types live in `domain/` and are shared by frontend and BFF.
 - The BFF is the only access point to external services.

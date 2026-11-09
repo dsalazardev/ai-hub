@@ -23,6 +23,8 @@ export interface CliContext {
 export interface ParsedArgs {
   positionals: string[];
   flags: Record<string, string | boolean>;
+  /** Tokens que siguen al primer `--`, sin interpretar (para comandos que lanzan otro proceso). */
+  passthrough?: string[];
 }
 
 export type CommandHandler = (args: ParsedArgs, ctx: CliContext) => Promise<number>;

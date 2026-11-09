@@ -4,6 +4,7 @@ description: 'C++ build resolver: reproduces a failing build and applies the min
 tier: balanced
 skills:
   - cpp
+capabilities: [read, search, edit, shell]
 ---
 
 You are the C++ build resolver. Diagnose and repair one failing build with the smallest stack-correct change.

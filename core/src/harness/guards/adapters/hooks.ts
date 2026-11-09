@@ -7,7 +7,7 @@ export interface ClaudePreToolUseInput {
 }
 
 export interface ClaudeHookOutput {
-  permissionDecision: 'allow' | 'deny';
+  permissionDecision: 'allow' | 'ask' | 'deny';
   permissionDecisionReason?: string;
   systemMessage?: string;
 }
@@ -61,8 +61,10 @@ export function claudePreToolUse(
   if (outcome.result.decision === 'allow') {
     return { permissionDecision: 'allow' };
   }
+  // `ask` (confirmación humana explícita) se traduce al mecanismo de confirmación del host;
+  // `deny`/`block` deniegan.
   return {
-    permissionDecision: 'deny',
+    permissionDecision: outcome.result.decision === 'ask' ? 'ask' : 'deny',
     permissionDecisionReason: text,
     systemMessage: text,
   };

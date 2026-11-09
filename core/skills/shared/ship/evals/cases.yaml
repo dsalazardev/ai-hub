@@ -41,4 +41,4 @@ capability:
       - "Confirms git author is the human contributor (checks git config user.email) and never passes --author for an agent identity."
       - "Presents exactly THREE landing options (direct merge / pull request / park-or-discard) and recommends the PR option BECAUSE main is protected / the repo has a PR culture (.github + prior PRs)."
       - "Writes a spec-linked commit message and PR body (What/Why/How/Verification referencing specs/<slug>/spec.md) that contains NO AI attribution — no Co-Authored-By, no generated-with footer."
-      - "Logs the landing decision to .planning/history.md and keeps the sdd/ Knowledge-map rows honest; verifies authorship clean (the git log grep) before claiming the branch is shipped."
+      - "Logs the landing decision to docs/sdd/decisions.md and keeps the sdd/ Knowledge-map rows honest; verifies authorship clean (the git log grep) before claiming the branch is shipped."

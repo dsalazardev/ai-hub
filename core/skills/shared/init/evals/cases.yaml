@@ -58,7 +58,7 @@ capability:
     must_include:
       - "Asks ONE first-contact question FIRST, before any discovery or recommendation ('¿Te hablo en lenguaje técnico o con analogías?'), and records the register as technical or non-technical"
       - "Asks no second calibration question (no accompaniment/verbosity level); given a silent or unclear answer, records non-technical and speaks with plain words and analogies"
-      - "Persists the profile to docs/user-profile.md and an append-only .planning/history.md, and links both from a ## Knowledge map section in root AGENTS.md (creating AGENTS.md if absent, additive only)"
+      - "Persists the profile to docs/user-profile.md and an append-only docs/harness/decisions.md, and links both from a ## Knowledge map section in root AGENTS.md (creating AGENTS.md if absent, additive only)"
       - "Detects greenfield vs brownfield rather than assuming, and runs DISCOVER (goals, audience, constraints, surfaces) before recommending"
       - "Recommends specific catalog skills matched to discovery (at minimum harness; nextjs/flutter + design if app surfaces justify it) and PRINTS the exact install commands (ai-hub add skill <id>, one id per command)"
       - "Does NOT install anything itself and does NOT scaffold the workspace docs — it hands off to the harness skill as the final step"
@@ -69,6 +69,6 @@ capability:
       - "Still asks the one register question first — profile before anything, even on brownfield"
       - "Detects brownfield via manifests (package.json / pyproject.toml / pubspec.yaml / go.mod / Cargo.toml), source files, legacy XX-* folders, or existing docs/tools, with a read-only scan that ignores node_modules/.venv/.next/.git/dist/build"
       - "Summarizes the detected stack and current state and CONFIRMS with the user instead of assuming"
-      - "Writes docs/user-profile.md and .planning/history.md and adds the Knowledge-map link to AGENTS.md without deleting existing content"
+      - "Writes docs/user-profile.md and docs/harness/decisions.md and adds the Knowledge-map link to AGENTS.md without deleting existing content"
       - "Recommends skills matched to the detected stack and prints the exact install commands, recommending only what was justified"
       - "Hands off to the harness skill for the actual workspace scaffolding/migration rather than doing it inside init"

@@ -152,7 +152,7 @@
   },
   "catalog": {
     "version": "0.6.0",
-    "hash": "568d0d128d4954499b759c097e835362ae188b21e9b37719243422323694151f"
+    "hash": "336f0f7fbe64ccd6b3308583275f0ef6d61ca0ad86e54dca5a8c5d6833f356fd"
   },
   "agents": [
     "cpp-build-resolver",
@@ -174,6 +174,7 @@
     "kotlin-build-resolver",
     "kotlin-reviewer",
     "mle-reviewer",
+    "narrator",
     "php-reviewer",
     "postgres-reviewer",
     "python-reviewer",
@@ -310,6 +311,7 @@
     "htmx",
     "huggingface",
     "idea-refinement",
+    "improve-from-runs",
     "init",
     "instagram-api",
     "inventory",
@@ -470,8 +472,8 @@
     "commands": 17,
     "labels": 7,
     "targets": 5,
-    "agents": 39,
-    "skills": 261,
+    "agents": 40,
+    "skills": 262,
     "rules": 5
   }
 }

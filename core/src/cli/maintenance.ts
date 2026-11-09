@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { COLLISION_THRESHOLD, findCollisions, readSkillDescriptions } from '../catalog/collisions.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createBackup, listBackups, purgeGenerated, restoreBackup } from '../backup/snapshots.js';
@@ -50,6 +51,20 @@ export async function cmdList(args: ParsedArgs, ctx: CliContext): Promise<number
     return 1;
   }
   const { manifest, engine, preset } = context;
+  if (args.flags.collisions) {
+    // M-21: pares de skills publicadas cuyas descripciones compiten por el mismo disparo.
+    const descriptions = await readSkillDescriptions(ctx.root, manifest.skills.source, manifest.skills.publish);
+    const collisions = findCollisions(descriptions);
+    if (args.flags.json) {
+      ctx.io.out(JSON.stringify({ threshold: COLLISION_THRESHOLD, collisions }, null, 2));
+    } else {
+      ctx.io.out(`colisiones de descripción (umbral ${COLLISION_THRESHOLD}): ${collisions.length}`);
+      for (const item of collisions) {
+        ctx.io.out(`  ${item.score.toFixed(3)}  ${item.left} ↔ ${item.right}`);
+      }
+    }
+    return 0;
+  }
   const mode = manifest.skills.selection ?? 'preset';
   const data = {
     project: manifest.project,

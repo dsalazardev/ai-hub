@@ -103,29 +103,28 @@ End every review you give with one of three, and nothing mushy in between:
 - **`APPROVE WITH NITS`** — mergeable; the nits are the author's call.
 - **`CHANGES REQUESTED`** — one or more blockers/should-fix. List exactly what unblocks it.
 
-### The sello — when this project opted in
+### The review seal — binding the verdict to the reviewed bytes
 
-If the sello is on — `.ai-hub/sello-config.json` in the project, or `~/.ai-hub/sello-config.json` for
-every project (`sello on --global`; the project switch always wins) — the review's verdict is
-**sealed to the exact bytes reviewed**, and the ship gate refuses commit/push/PR on anything else.
-
-**What the sello does and does not prove.** It binds bytes, not intent: it guarantees *what ships
-is what was reviewed*, never *the review was good*. You are the one calling `sello approve`, so it
-is self-attested — drift protection between review and delivery, not tamper-evidence. Sealing
-without actually running the lenses produces a valid sello and a worthless one.
-
-Every state transition is deterministic CLI, never tokens:
+Once you decide, seal the verdict to the exact diff you reviewed:
 
 ```text
-1. npx ai-hub sello freeze      → hashes the candidate, prints risk tier + lens count
-2. Run the lenses (below), filter findings, decide
-3a. approved → npx ai-hub sello approve --lenses correctness,security,tests
-3b. blocked  → npx ai-hub sello block --reason "<the blocking finding>"
+npx ai-hub seal review --verdict APPROVE            # or APPROVE_WITH_NITS / CHANGES_REQUESTED
 ```
 
-`approve` refuses to seal with fewer lenses than the tier requires — pass them all, or accept the
-gap deliberately with `--accept-partial-lenses` (it is recorded). Every approval also appends to
-`.ai-hub/sello-log.jsonl`, so what shipped under which verdict survives the next freeze.
+It hashes the real diff against the merge-base with the default branch (`--base <ref>` to change
+it), including untracked files, and records the verdict in `.ai-hub/runs/review-seal.json` (ignored).
+From then on the ship guard denies returning to the trunk if one byte of that diff changes, or if
+the sealed verdict is `CHANGES_REQUESTED`.
+
+**A diff that touches `specs/<feature>/` cannot be approved.** The spec was approved by a human
+against its own seal (the human gate); changing it during implementation invalidates that approval.
+`seal review` refuses to approve such a diff and names the files: the spec goes back through the
+human gate first.
+
+**What the review seal does and does not prove.** It binds bytes, not intent: it guarantees *what
+ships is what was reviewed*, never *the review was good*. You are the one sealing, so it is
+self-attested — drift protection between review and delivery, not tamper-evidence. Sealing without
+actually running the lenses produces a valid seal and a worthless one.
 
 **Lenses by risk tier** — tier 0 never reaches you (the gate passes docs/copy silently);
 tier 1 → run the single most relevant pass from the table above yourself; tier 2 → dispatch
@@ -189,18 +188,16 @@ before it blocks.
 **A finding blocks only if it survives all three filters** — no exceptions, and eagerness to
 find something is not evidence:
 
-1. **Causal** — introduced by *this* change. Pre-existing defects → note with
-   `--note "<finding>"` (they land in `.ai-hub/sello-findings.md`, surfaced by `doctor`) and
-   suggest an issue; they never block this delivery.
-2. **Severity** — only `blocker` blocks. `should-fix`/`nit` → `--note`.
+1. **Causal** — introduced by *this* change. Pre-existing defects → record them as a note in the
+   review report (`.ai-hub/work/<feature>/`) and suggest an issue; they never block this delivery.
+2. **Severity** — only `blocker` blocks. `should-fix`/`nit` → a note in the report.
 3. **Evidence** — `finding-verifier` returned **CONFIRMED** with its proof. REFUTED is dropped (with
    its reason in the report); UNPROVEN is a `[question]`, and questions don't block.
 
 **Fixing a blocker is budgeted, one attempt.** Before touching anything: estimate the fix and
-declare it — `npx ai-hub sello budget --lines <N>`. After the fix:
-`sello budget-check` (over budget → justify with `--justify "…"` or shrink; an unexplained
-overrun is how over-engineering enters disguised as a fix). Then `sello freeze` + re-review
-**only the divergence**, and approve. Still broken after one attempt → stop, hand it to the human.
+declare it in the review report (`.ai-hub/work/<feature>/`): the number of lines you expect to
+change. After the fix, compare: over budget → justify it in the report or shrink (an unexplained
+overrun is how over-engineering enters disguised as a fix). Then re-review **only the divergence**, and approve. Still broken after one attempt → stop, hand it to the human.
 
 ---
 

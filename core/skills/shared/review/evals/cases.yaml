@@ -44,7 +44,7 @@ capability:
       - "Declines to change the working code (no performative 'good catch' edit)."
       - "Replies to the reviewer with the evidence/trace (require_auth raises 401), not just an assertion of disagreement."
       - "Adds or proposes a regression test (e.g. unauthenticated request asserts 401) so the guarantee stays true, strengthening the diff while declining the change."
-      - "Logs the declined finding + reasoning to .planning/history.md."
+      - "Logs the declined finding + reasoning to docs/sdd/decisions.md."
   - scenario: "Giving review: review this diff before ship — `@router.get('/invoices/{invoice_id}') def get(invoice_id: int, db=Depends(get_db)): return db.get(Invoice, invoice_id)`, behind login. Spec said 'a user can view their own invoices'."
     must_include:
       - "Flags a [blocker]: authenticated != authorized — any logged-in user reads any invoice by id (IDOR / broken access control), and ties it to the spec ('their OWN invoices') as a fidelity failure."

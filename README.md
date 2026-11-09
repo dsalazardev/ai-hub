@@ -60,19 +60,19 @@ En la TUI, el paso de scripts es un multi-select del conjunto (mínimo uno) más
 
 ### Contrato de instalación (0.3.0)
 
-Una instalación nueva usa `full` por defecto: **261 skills de proyecto + 17 comandos Spec Kit**, 39 agentes, las 6 reglas universales, las reglas propias del preset y la regla generada `ai-hub-speckit`. Los 17 comandos los provee Spec Kit en cuatro destinos; AI-Hub no proyecta sus cuerpos.
+Una instalación nueva usa `full` por defecto: **262 skills de proyecto + 17 comandos Spec Kit**, 40 agentes, las 6 reglas universales, las reglas propias del preset y la regla generada `ai-hub-speckit`. Los 17 comandos los provee Spec Kit en cuatro destinos; AI-Hub no proyecta sus cuerpos.
 
 Cifras medidas en copias temporales con el CLI compilado y `uvx` real (`core/tests/fixtures/install-counts.json`):
 
 | Instalación | Destinos en `sync.lock.json` |
 |---|---:|
-| `init --yes` (`generic-ts`, full) | 6.853 |
-| `init --yes --preset-only` | 40 |
-| `init --yes --exclude rule:skill-quality` | 6.833 |
-| `init --yes --preset angular-express` | 6.868 |
+| `init --yes` (`generic-ts`, full) | 6.872 |
+| `init --yes --preset-only` | 66 |
+| `init --yes --exclude rule:skill-quality` | 6.852 |
+| `init --yes --preset angular-express` | 6.887 |
 
 - Spec Kit se instala en `claude`, `opencode`, `pi` y `cursor` (`cursor-agent`). **Copilot queda excluido de Spec Kit**: recibe agentes, reglas y la regla `ai-hub-speckit`, y `doctor` lo informa como `copilot: sin Spec Kit`.
-- `--preset-only`: 0 skills de proyecto, 6 agentes y 2 reglas base, más los 17 comandos Spec Kit.
+- `--preset-only`: 0 skills de proyecto, 11 agentes (los 6 de rol, `narrator` y el panel de refutación) y 2 reglas base, más los 17 comandos Spec Kit.
 - `--exclude skill:<id>,agent:<id>,rule:<id>`: selección `custom`.
 - `full` es dinámico: `doctor` compara contra el catálogo instalado y `upgrade` incorpora activos nuevos. Un catálogo actualizado avisa con exit 0; un `publish` editado falla con exit 1.
 - Las 11 skills de la tercera cadena SDD llevan `runtime: false`: siguen en el paquete pero no se instalan.
@@ -107,22 +107,25 @@ El motor no nombra lenguajes, frameworks, empresas ni módulos. El contenido de 
 | `generic-ts` | `package.json`, `tsconfig.json` | TypeScript + npm |
 | `angular-express` | `angular.json`, `@angular/core`, `express` | Angular + Express BFF |
 | `python` | `pyproject.toml`, `requirements.txt` | Python + pytest/mypy/ruff |
+| `php` | `composer.json` | PHP + Composer/PHPUnit, área `modules` (Laravel: `php artisan test`) |
 
 Un preset puede extender otro (`angular-express` → `generic-ts` → `base`). La resolución sigue el orden: `--preset` > `.ai-hubrc.json` > detección > `base`.
 
+Un preset publica skills propias o del catálogo compartido (la del preset gana). Sus reglas y skills pueden usar `{{stack.<clave>}}`: `sync` lo resuelve con `manifest.stack` solo en las fuentes del preset que siguen intactas; una copia editada por el proyecto o una fuente del motor no se interpola, y una clave desconocida hace fallar `sync` nombrando archivo y clave.
+
 ---
 
-## CLI: 18 comandos
+## CLI: 28 comandos
 
 | Comando | Responsabilidad |
 |---|---|
 | `init` | Detecta stack, elige preset y aplica un plan reproducible |
 | `install` | Materializa el catálogo o el preset según la selección, recupera fuentes de `.ai-hub/` ausentes y sincroniza |
 | `add` | Añade una skill o cualquier agente del catálogo |
-| `list` | Lista preset, targets, comandos, skills, agentes y selección |
+| `list` | Lista preset, targets, comandos, skills, agentes y selección; `--collisions` informa pares de skills con descripciones casi iguales (umbral 0,80) |
 | `sync` | Proyecta las fuentes a los destinos; `--check` informa deriva |
 | `drift` | Informa deriva de hash sin escribir |
-| `doctor` | Valida motor, preset, manifiesto, completitud, targets, hooks y deriva |
+| `doctor` | Valida motor, preset, manifiesto, completitud, targets, hooks reales, referencias del catálogo y deriva |
 | `check` | Alias solo de `doctor` para CI |
 | `backups` | Lista snapshots |
 | `restore` | Restaura un snapshot |
@@ -134,8 +137,57 @@ Un preset puede extender otro (`angular-express` → `generic-ts` → `base`). L
 | `trunk` | Muestra, cierra o abre la rama principal |
 | `memory` | Escribe, lista y reanuda el ledger (solo taller) |
 | `context` | Regenera `.planning/context-next.md` (solo taller) |
+| `env` | `env exec -- <cmd>`: ejecuta un comando con `.ai-hub/.env` cargado, sin bash ni PowerShell |
+| `ci` | `ci gitlab` escribe `.gitlab-ci.ai-hub.yml`; `ci devcontainer` escribe `.devcontainer/devcontainer.json` (Node + uv + bash). Solo a petición, `init` nunca los escribe (`--force` para sobrescribir) |
+| `hooks` | `hooks install --pre-commit|--post-merge`: hooks de git que salen 0 si falta `npx` |
+| `gate` | Verifica el trabajo: artefactos por feature (`specs/NNN-*/`), WIP ≤ 1, `--seal <hash>` (fail-closed) y los comandos `typecheck`/`lint`/`test`/`verify` del manifiesto con el shell resuelto (nunca `bash` del PATH); `--quick` omite los comandos |
+| `runs` | Telemetría de ejecuciones en `.ai-hub/runs/` (ignorado) con esquema cerrado: `start`, `event` (`--from-status`), `note` (`decision`, `warn`, `awaiting-ok`, `lesson`), `end`, `list`; único escritor; nunca guarda prompts, contenido, tokens ni variables de entorno; retención `policy.runs.keep` (50) |
+| `control` | `control tick --dry-run [--json] [--issue] [--labels-from] [--online]`: propone transiciones de etiqueta según `exit_effects`, revalida el sello antes de `ai::in-dev`, aplica `max_rounds` y lista lo pendiente de OK humano. No escribe, no mueve etiquetas, no comenta, no lanza agentes; nunca propone `ai::spec-ready` |
+| `review` | `review consolidate <informes…>`: consolida los bloques ```json findings``` del panel (une a ±3 líneas o por evidencia, degrada a `question` lo que no trae archivo, línea o escenario); solo escribe por stdout |
+| `seal` | `seal review --verdict <APPROVE|APPROVE_WITH_NITS|CHANGES_REQUESTED> [--base <ref>]`: liga el veredicto de revisión al SHA-256 del diff real (en `.ai-hub/runs/`, ignorado). La guardia `ship` deniega volver a la trunk si el diff cambió o el veredicto es `CHANGES_REQUESTED`; un diff que toca `specs/<feature>/` no se puede aprobar (invalida la aprobación humana de §5). El sello de spec no cambia |
+| `adopt` | Adopta un arnés heredado (núcleo copiado, manifiesto y lock v1, MCP dentro de `.ai-hub/`, metodología anterior) por fases; ver "Adopción de un arnés heredado" |
+| `hook` | Hook de host (`pre`/`post`/`stop`): lee el payload por stdin, aplica el preflight y la guardia de alcance; siempre sale 0 (falla abierto) |
 
-`ai-hub help` lista exactamente estos 18. Un comando desconocido sale con 2. `verify` y `judge` se mantienen como compatibilidad.
+`ai-hub help` lista exactamente estos 28. `verify` es alias de `gate`. Un comando desconocido sale con 2. `verify` y `judge` se mantienen como compatibilidad.
+
+### Adopción de un arnés heredado
+
+`ai-hub adopt` se ejecuta en la raíz del repositorio:
+
+1. **F0 — `adopt --dry-run`** (el único paso que no necesita snapshot): detecta el núcleo copiado en `.ai-hub/core/`, el manifiesto y el lock v1, el MCP dentro de `.ai-hub/`, `openspec/`, `.planning/`, los scripts `ai:*` y `.githooks/`; imprime el plan y no escribe nada.
+2. **F1 — `adopt --yes`** toma un snapshot en `.backups/` antes de tocar nada (sin `.ai-hub/.env` ni `.ai-hub/runs/`), archiva los artefactos v1 en `.ai-hub/legacy/`, crea el manifiesto v2 (las reglas v1 pasan a `rules.publish` y `agents.can_modify` a `paths.areas`) y el `.ai-hubrc.json`, y mueve el MCP a `mcp-manifest.yaml` en la raíz. `ai-hub restore <snapshot>` lo revierte.
+3. **F2 — convivencia:** `policy.legacy.openspec: archive` con fecha (`--legacy-until`, 90 días por defecto); hasta entonces los artefactos de la metodología anterior son aviso en `doctor`, no fallo. `openspec/` queda como histórico.
+4. **F3 — retirada:** se elimina `.ai-hub/core/`. `package.json` y `.githooks/` nunca se editan: se imprime el diff sugerido. `--archive-planning` mueve `.planning/` a `.ai-hub/work/legacy-planning/`.
+5. **F4 — verificación:** `doctor` y `drift`.
+
+### Áreas, región de AGENTS.md y políticas
+
+- `paths.areas` (`[{id, paths, role, rules}]`, en el manifiesto o en el preset) reparte el `can_modify` de `implementer-frontend` e `implementer-backend` por áreas; la guardia de alcance lo aplica. `sync` genera la regla `ai-hub-area-<id>` en cada destino (`globs` en Cursor, `applyTo` en Copilot).
+- Con `agentsMd: true`, `sync` mantiene una región entre `<!-- ai-hub:start -->` y `<!-- ai-hub:end -->` en el `AGENTS.md` raíz (índice de reglas, lecciones y contrato de cierre; lo leen Codex y Copilot coding agent) y en el `AGENTS.md` de cada área. El resto del archivo es del proyecto; el lock registra solo el hash de la región. `doctor` avisa si el `AGENTS.md` raíz supera 32 KB.
+- `policy.wip`, `policy.maxRounds`, `policy.requireEars` y `policy.requireTraceability` solo endurecen: un valor más permisivo que el motor hace fallar el manifiesto. Los declarados aparecen en la regla `ai-hub-speckit`.
+- Las copias de `.ai-hub/` que el proyecto no tocó se refrescan con la versión nueva al ejecutar `install`/`upgrade`; las editadas se conservan y se informan como colisión.
+
+### Contrato de cierre y cabeceras de agentes
+
+- Todo rol termina su respuesta con una línea `AI-HUB-STATUS: <STATE> | artifact=<ruta|-> | reason=<código>[: <frase>]`. Los estados admitidos (los de `exit_effects` más `REFUTED`/`NOT-REFUTED`), la obligación de `reason` y el límite de rondas de `converge` (3; el proyecto solo puede bajarlo con `policy.maxRounds`) se generan desde `engine.yaml` en la regla `ai-hub-speckit`.
+- Los agentes del catálogo declaran `capabilities` (`read`, `search`, `edit`, `shell`, `web`, `delegate`), `max_turns` y `tier`, sin nombres de proveedor. Cada destino los traduce: Claude (`tools` reales y `maxTurns`), OpenCode (permisos que solo deniegan y `steps`), Copilot (`.github/agents/*.agent.md` con alias de herramientas), Cursor (`.cursor/agents` con `readonly`). El núcleo de Pi no tiene subagentes. El modelo lo pone el proyecto con `manifest.agentModels.<destino>.<tier>`; sin correspondencia, el host hereda el de la sesión. `doctor` (`agents:capabilities`) lista lo que cada destino no puede expresar y falla si un revisor o refuter declara `edit` o `shell`.
+- El preset `base` publica el panel de refutación (`refuter-correctness`, `refuter-security`, `refuter-tests`, `finding-verifier`) y `narrator`: todo preset los hereda.
+
+### Estado de trabajo del consumidor
+
+`init` materializa `.ai-hub/work/` (versionado: hallazgos, notas, revisiones, devoluciones e informes por feature), `.ai-hub/lessons.md` (versionado, del proyecto; `sync` lo proyecta como la regla `ai-hub-lessons` en cada destino) y `.ai-hub/runs/` (ignorado). `.planning/` es solo del taller. El agente `narrator` (preset `base`, solo lectura) redacta el comentario de la issue de una ejecución en la que no participó; quien lo invoca lo guarda en `.ai-hub/work/<feature>/report.md` y `control tick` lo enumera. La skill `improve-from-runs` mejora la fábrica a partir de la telemetría: una pieza culpable, un arreglo, una lección.
+
+### Hooks reales y referencias del catálogo
+
+- `sync` proyecta hooks **ejecutables**: en Claude mezcla por clave entradas `npx --no-install ai-hub hook pre|post|stop` en `.claude/settings.json` (nunca lo sobrescribe ni lo registra en el lock; un JSON inválido no se toca) y en OpenCode genera `.opencode/plugins/ai-hub.js`. Cursor, Copilot y Pi no admiten hooks: conservan la regla en prosa y `doctor` lo dice. Con hooks reales, `guardMode: enforce` deniega o pide confirmación (`ask`) de verdad.
+- `doctor` ejecuta `catalog:references`: toda ruta `.ai-hub/**`, todo `npx ai-hub <cmd>`, todo `subagent_type` y todo enlace relativo de las skills, agentes y reglas que el proyecto escribió o editó debe resolver. Las referencias heredadas conocidas viven en `core/engine/catalog-baseline.json` con fecha de caducidad.
+
+### Credenciales del arnés
+
+- `init` añade `.ai-hub/.env` y `.ai-hub/runs/` a `.gitignore` y materializa solo `.ai-hub/.env.example` (valores `CHANGEME`). El paquete **nunca** escribe credenciales por su cuenta.
+- El `.env` real lo creas tú: a mano desde el ejemplo, o en el paso **opcional** que el asistente interactivo ofrece al final (`Enter` vacío lo salta; el token se escribe enmascarado; con `--yes` no hay pregunta). Ningún agente pide tokens.
+- Declara el tracker en `manifest.yaml` (`tracker: {kind: gitlab, urlEnv: GITLAB_URL, tokenEnv: GITLAB_TOKEN}`); `doctor` comprueba `env:ignored` y `env:keys` (solo presencia de claves) y, con `--online`, `tracker:token` (una lectura de identidad, salida redactada).
+- Los snapshots de `.backups/` nunca copian `.ai-hub/.env`.
 
 ### Contrato de `.ai-hubrc.json`
 
@@ -206,6 +258,8 @@ El reaper de worktrees solo elimina un worktree propio, limpio e integrado, y ex
 | Cursor | `.cursor/rules/*.mdc` | — | `.cursor/rules/*.mdc` | `.cursor/rules/preflight.mdc` | `cursor-agent` en `.cursor/skills` |
 | Copilot | `.github/skills` | `.github/agents` | `.github/instructions` | `.github/instructions/preflight.instructions.md` | — (excluido) |
 
+**Codex (parcial).** Codex lee el `AGENTS.md` raíz: con `agentsMd: true`, `sync` le proyecta la región gestionada (índice de reglas, lecciones y contrato de cierre). No recibe skills, agentes, hooks ni comandos de Spec Kit; un destino `codex` completo queda en el roadmap (P4).
+
 Añadir un target es una fila en `core/src/sync/targets.ts` y un id en `core/engine/engine.yaml`. Los comandos `speckit-*` / `speckit.*` dentro del directorio de Spec Kit de cada destino pertenecen a Spec Kit; `sync` nunca los escribe ni los borra.
 
 ---
@@ -222,7 +276,10 @@ npm run ai:doctor       # diagnóstico completo
 npm run manifest:build  # regenera core/manifest.json
 npm run manifest:check  # verifica inventario
 node core/scripts/measure-install.mjs --preset generic-ts --budget 60000
+node scripts/upstream-watch.mjs    # vigila Spec Kit y los dist-tags de npm (solo taller)
 ```
+
+`scripts/upstream-watch.mjs` es la **única pieza que no viaja** en el paquete: vive en la raíz del taller, fuera de `core/` y de `files`. Solo lee (GitHub y el registro de npm, sin credenciales) y sale 1 si hay una versión estable de Spec Kit fuera de `speckit.supported`.
 
 ---
 

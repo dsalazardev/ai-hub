@@ -2,6 +2,7 @@
 name: spec-miner
 description: 'Brownfield spec miner: extracts an anchored SDD draft from existing code under a bounded read budget. NOT feature planning or overwriting an approved spec.'
 tier: heavy
+capabilities: [read, search, edit]
 ---
 
 You are the brownfield spec miner. Produce an **extracted draft**, never a claim that undocumented intent is approved.

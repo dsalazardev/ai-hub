@@ -7,6 +7,7 @@ import { ALLOW_RULE, type GuardContext, type GuardMode, type GuardResult } from 
 export const GUARD_RULE_IDS = [
   ...DANGER_RULE_IDS,
   'ship:unpushed',
+  'ship:review-seal',
   'trunk:closed',
   'branch:checked-out-elsewhere',
   ALLOW_RULE,

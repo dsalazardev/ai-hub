@@ -1,0 +1,306 @@
+{
+  "version": 1,
+  "expires": "2027-02-08",
+  "entries": [
+    {
+      "key": "@engine/skills/shared/competitor-watch/references/tracker-schema.md",
+      "kind": "link",
+      "ref": "./beta.md",
+      "reason": "enlace ilustrativo heredado de rsc-harness (ejemplo dentro del texto); limpieza pendiente"
+    },
+    {
+      "key": "@engine/skills/shared/content-engine/references/brief-and-pipeline.md",
+      "kind": "link",
+      "ref": "../brand-voice.md",
+      "reason": "enlace ilustrativo heredado de rsc-harness (ejemplo dentro del texto); limpieza pendiente"
+    },
+    {
+      "key": "@engine/skills/shared/git-workflow/references/gitmoji.md",
+      "kind": "harness-path",
+      "ref": ".ai-hub/.no-gitmoji",
+      "reason": "harness-path heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/harness/SKILL.md",
+      "kind": "command",
+      "ref": "consult",
+      "reason": "command heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/harness/SKILL.md",
+      "kind": "command",
+      "ref": "ingest",
+      "reason": "command heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/harness/SKILL.md",
+      "kind": "harness-path",
+      "ref": ".ai-hub/.no-claudemd-check",
+      "reason": "harness-path heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/harness/SKILL.md",
+      "kind": "harness-path",
+      "ref": ".ai-hub/.no-harness",
+      "reason": "harness-path heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/harness/references/wiki-article-template.md",
+      "kind": "link",
+      "ref": "../other-topic/other-article.md",
+      "reason": "enlace ilustrativo heredado de rsc-harness (ejemplo dentro del texto); limpieza pendiente"
+    },
+    {
+      "key": "@engine/skills/shared/harness/references/wiki-article-template.md",
+      "kind": "link",
+      "ref": "./other-article.md",
+      "reason": "enlace ilustrativo heredado de rsc-harness (ejemplo dentro del texto); limpieza pendiente"
+    },
+    {
+      "key": "@engine/skills/shared/harness/references/wiki-protocol.md",
+      "kind": "command",
+      "ref": "ingest",
+      "reason": "command heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/harness/references/wiki-protocol.md",
+      "kind": "harness-path",
+      "ref": ".ai-hub/worklog-checkpoint.mjs",
+      "reason": "harness-path heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/harness/references/wiki-protocol.md",
+      "kind": "link",
+      "ref": "../other-topic/page.md",
+      "reason": "enlace ilustrativo heredado de rsc-harness (ejemplo dentro del texto); limpieza pendiente"
+    },
+    {
+      "key": "@engine/skills/shared/harness/references/wiki-protocol.md",
+      "kind": "link",
+      "ref": "./same-topic.md",
+      "reason": "enlace ilustrativo heredado de rsc-harness (ejemplo dentro del texto); limpieza pendiente"
+    },
+    {
+      "key": "@engine/skills/shared/harness/references/wiki-protocol.md",
+      "kind": "link",
+      "ref": "docs/topic/article.md",
+      "reason": "enlace ilustrativo heredado de rsc-harness (ejemplo dentro del texto); limpieza pendiente"
+    },
+    {
+      "key": "@engine/skills/shared/implement/SKILL.md",
+      "kind": "command",
+      "ref": "registry",
+      "reason": "command heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/implement/SKILL.md",
+      "kind": "harness-path",
+      "ref": ".ai-hub/skill-registry.json",
+      "reason": "harness-path heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/init/SKILL.md",
+      "kind": "command",
+      "ref": "audit",
+      "reason": "command heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/init/SKILL.md",
+      "kind": "harness-path",
+      "ref": ".ai-hub/.no-auto-update",
+      "reason": "harness-path heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/init/SKILL.md",
+      "kind": "harness-path",
+      "ref": ".ai-hub/.no-context7",
+      "reason": "harness-path heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/init/SKILL.md",
+      "kind": "harness-path",
+      "ref": ".ai-hub/.no-danger-guard",
+      "reason": "harness-path heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/init/SKILL.md",
+      "kind": "harness-path",
+      "ref": ".ai-hub/.no-git",
+      "reason": "harness-path heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/init/SKILL.md",
+      "kind": "harness-path",
+      "ref": ".ai-hub/.no-harness",
+      "reason": "harness-path heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/init/SKILL.md",
+      "kind": "harness-path",
+      "ref": ".ai-hub/developer.json",
+      "reason": "harness-path heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/knowledge-ops/SKILL.md",
+      "kind": "link",
+      "ref": "../auth/oauth-setup.md",
+      "reason": "enlace ilustrativo heredado de rsc-harness (ejemplo dentro del texto); limpieza pendiente"
+    },
+    {
+      "key": "@engine/skills/shared/knowledge-ops/SKILL.md",
+      "kind": "link",
+      "ref": "./refund-sla-and-escalation.md",
+      "reason": "enlace ilustrativo heredado de rsc-harness (ejemplo dentro del texto); limpieza pendiente"
+    },
+    {
+      "key": "@engine/skills/shared/knowledge-ops/references/gardening-playbook.md",
+      "kind": "link",
+      "ref": "./stripe-webhook-retry-policy.md",
+      "reason": "enlace ilustrativo heredado de rsc-harness (ejemplo dentro del texto); limpieza pendiente"
+    },
+    {
+      "key": "@engine/skills/shared/knowledge-ops/references/gardening-playbook.md",
+      "kind": "link",
+      "ref": "./winner.md",
+      "reason": "enlace ilustrativo heredado de rsc-harness (ejemplo dentro del texto); limpieza pendiente"
+    },
+    {
+      "key": "@engine/skills/shared/linkedin-strategy/references/wiki-records.md",
+      "kind": "link",
+      "ref": "./pillars.md",
+      "reason": "enlace ilustrativo heredado de rsc-harness (ejemplo dentro del texto); limpieza pendiente"
+    },
+    {
+      "key": "@engine/skills/shared/medium-strategy/references/wiki-records.md",
+      "kind": "link",
+      "ref": "./pubs.md",
+      "reason": "enlace ilustrativo heredado de rsc-harness (ejemplo dentro del texto); limpieza pendiente"
+    },
+    {
+      "key": "@engine/skills/shared/medium-writing/SKILL.md",
+      "kind": "link",
+      "ref": "./what-worked.md",
+      "reason": "enlace ilustrativo heredado de rsc-harness (ejemplo dentro del texto); limpieza pendiente"
+    },
+    {
+      "key": "@engine/skills/shared/parallel/SKILL.md",
+      "kind": "harness-path",
+      "ref": ".ai-hub/skill-registry.json",
+      "reason": "harness-path heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/sdd-init/SKILL.md",
+      "kind": "command",
+      "ref": "consult",
+      "reason": "command heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/sdd-init/SKILL.md",
+      "kind": "command",
+      "ref": "registry",
+      "reason": "command heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/sdd-init/SKILL.md",
+      "kind": "harness-path",
+      "ref": ".ai-hub/skill-registry.json",
+      "reason": "harness-path heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/sdd-init/SKILL.md",
+      "kind": "harness-path",
+      "ref": ".ai-hub/skill-registry.md",
+      "reason": "harness-path heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/sdd/SKILL.md",
+      "kind": "harness-path",
+      "ref": ".ai-hub/skill-registry",
+      "reason": "harness-path heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/sdd/SKILL.md",
+      "kind": "harness-path",
+      "ref": ".ai-hub/skill-registry.json",
+      "reason": "harness-path heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/sdd/SKILL.md",
+      "kind": "harness-path",
+      "ref": ".ai-hub/skill-registry.md",
+      "reason": "harness-path heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/sdd/references/model-routing.md",
+      "kind": "harness-path",
+      "ref": ".ai-hub/developer.json",
+      "reason": "harness-path heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/ship/SKILL.md",
+      "kind": "command",
+      "ref": "main",
+      "reason": "command heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/skill-scout/SKILL.md",
+      "kind": "harness-path",
+      "ref": ".ai-hub/automation-gaps.md",
+      "reason": "harness-path heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/suggest/SKILL.md",
+      "kind": "command",
+      "ref": "capabilities",
+      "reason": "command heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/suggest/SKILL.md",
+      "kind": "command",
+      "ref": "catalog",
+      "reason": "command heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/suggest/SKILL.md",
+      "kind": "command",
+      "ref": "consult",
+      "reason": "command heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/suggest/SKILL.md",
+      "kind": "harness-path",
+      "ref": ".ai-hub/.no-harness",
+      "reason": "harness-path heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/suggest/SKILL.md",
+      "kind": "harness-path",
+      "ref": ".ai-hub/.profile-offered",
+      "reason": "harness-path heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/worktrees/SKILL.md",
+      "kind": "command",
+      "ref": "isolation",
+      "reason": "command heredado de rsc-harness sin equivalente en AI-Hub; limpieza pendiente (deuda nombrada)"
+    },
+    {
+      "key": "@engine/skills/shared/youtube-api/references/wiki-schema.md",
+      "kind": "link",
+      "ref": "./file.md",
+      "reason": "enlace ilustrativo heredado de rsc-harness (ejemplo dentro del texto); limpieza pendiente"
+    },
+    {
+      "key": "@engine/skills/shared/youtube-strategy/references/wiki-records.md",
+      "kind": "link",
+      "ref": "./file.md",
+      "reason": "enlace ilustrativo heredado de rsc-harness (ejemplo dentro del texto); limpieza pendiente"
+    },
+    {
+      "key": "@engine/skills/shared/youtube-thumbnails/references/experiment-log-format.md",
+      "kind": "link",
+      "ref": "./file.md",
+      "reason": "enlace ilustrativo heredado de rsc-harness (ejemplo dentro del texto); limpieza pendiente"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 {
-  "description": "Cifras medidas en copias temporales con el CLI compilado (node dist/bin/ai-hub.js init --yes [...]) y uvx real; no se calculan a mano.",
-  "measuredAt": "2026-10-29",
-  "package": "0.6.0",
+  "description": "Cifras medidas en copias temporales con el CLI compilado (node dist/bin/ai-hub.js init --yes [...]); no se calculan a mano. Desde 0.11.0 se miden con --no-speckit: los archivos de Spec Kit no entran en sync.lock.json.",
+  "measuredAt": "2026-11-08",
+  "package": "0.11.0 (factory-evolution; cifras sin cambios desde el Lote A, reconfirmadas en el Lote F)",
   "commands": {
     "full": "init --yes",
     "presetOnly": "init --yes --preset-only",
@@ -9,13 +9,13 @@
     "angularExpress": "init --yes --preset angular-express"
   },
   "lock": {
-    "full": 6853,
-    "presetOnly": 40,
-    "customNoRubrics": 6833,
-    "angularExpress": 6868
+    "full": 6872,
+    "presetOnly": 66,
+    "customNoRubrics": 6852,
+    "angularExpress": 6887
   },
-  "projectSkills": 261,
-  "angularProjectSkills": 268,
-  "agents": 39,
+  "projectSkills": 262,
+  "angularProjectSkills": 269,
+  "agents": 40,
   "speckitCommands": 17
 }

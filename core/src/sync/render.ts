@@ -1,12 +1,17 @@
 import fs from 'node:fs/promises';
+import { renderAgentHeader } from '../agents/header.js';
+import { areaGlob } from '../engine/scopes.js';
+import { readScaffold } from '../presets/materialize.js';
+import { sha256 } from './lock.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse, stringify } from 'yaml';
 import { frontmatterString, splitFrontmatter } from '../frontmatter.js';
 import { resolveSourcePath, type SyncConfig } from './config.js';
-import { TARGETS } from './targets.js';
+import { TARGETS, type ToolId } from './targets.js';
 import { loadEngine } from '../engine/engine.js';
 import { BINDING_MARKER_SOURCE, BINDING_RULE_ID, BINDING_SOURCE, bindingRule } from '../speckit/binding.js';
+import { closingContractSection } from '../speckit/status.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -14,25 +19,162 @@ export interface RenderedFile {
   content: string;
   source: string;
   markerSource?: string;
+  /** Región reservada (E2): `content` es solo el interior de la región del archivo del usuario. */
+  region?: string;
 }
 
 export type RenderedFiles = Map<string, RenderedFile>;
 
 const MANIFEST_SOURCE = 'manifest.yaml';
-const CLAUDE_AGENT_KEYS = ['name', 'description', 'tools', 'model', 'color', 'memory'];
 
 const PREFLIGHT_SOURCE = '@engine/engine/preflight.md';
 const PREFLIGHT_MARKER_SOURCE = 'engine/preflight.md';
 
 export async function renderAll(root: string, config: SyncConfig): Promise<RenderedFiles> {
+  interpolation = { scaffold: (await readScaffold(root)).files, stack: config.stack };
+  try {
+    return await renderAllWith(root, config);
+  } finally {
+    interpolation = null;
+  }
+}
+
+async function renderAllWith(root: string, config: SyncConfig): Promise<RenderedFiles> {
   const out: RenderedFiles = new Map();
   await renderSkills(root, config, out);
   await renderAgents(root, config, out);
   await renderRules(root, config, out);
   await renderPreflight(root, config, out);
+  await renderHookPlugins(config, out);
+  await renderLessons(root, config, out);
+  renderAreaRules(config, out);
+  await renderAgentsMd(config, out);
   await renderSpeckitBinding(config, out);
   await renderMcp(root, config, out);
   return out;
+}
+
+const HOOK_PLUGIN_SOURCE = '@engine/engine/templates/opencode-plugin.js';
+
+/** Hooks ejecutables de tipo plugin (G-01): archivo propio del destino, versionado por el lock. */
+async function renderHookPlugins(config: SyncConfig, out: RenderedFiles): Promise<void> {
+  const sourcePath = path.join(__dirname, '..', '..', 'engine', 'templates', 'opencode-plugin.js');
+  const content = normalize(await fs.readFile(sourcePath, 'utf8'));
+  for (const tool of config.tools) {
+    const spec = TARGETS[tool];
+    if (spec.hookFormat === 'plugin' && spec.hookPath !== null) {
+      putRendered(out, spec.hookPath, { content, source: HOOK_PLUGIN_SOURCE });
+    }
+  }
+}
+
+const AGENTS_MD = 'AGENTS.md';
+const AGENTS_MD_REGION = 'ai-hub';
+
+/**
+ * Región reservada de AGENTS.md (E2, M-17): índice de reglas, lecciones y contrato de cierre en el
+ * AGENTS.md raíz (lo leen Codex y Copilot coding agent sin destino propio) y el resumen de cada área
+ * en `<ruta del área>/AGENTS.md`. Solo con `agentsMd: true`; el resto del archivo es del usuario.
+ */
+async function renderAgentsMd(config: SyncConfig, out: RenderedFiles): Promise<void> {
+  if (!config.agentsMd) {
+    return;
+  }
+  const engine = await loadEngine();
+  const ruleDirs = [...new Set(config.tools.map((tool) => TARGETS[tool].rules))];
+  const body = [
+    '# AI-Hub',
+    '',
+    'Este bloque lo mantiene `ai-hub sync`; el resto del archivo es del proyecto.',
+    '',
+    `- Reglas del proyecto proyectadas en: ${ruleDirs.map((dir) => `\`${dir}\``).join(', ')}.`,
+    '- Lecciones del proyecto: `.ai-hub/lessons.md` (regla `ai-hub-lessons`).',
+    '- Metodología: Spec Kit (regla `ai-hub-speckit`).',
+    '',
+    ...closingContractSection(engine),
+    '',
+  ].join('\n');
+  putRendered(out, AGENTS_MD, { content: body, source: BINDING_SOURCE, region: AGENTS_MD_REGION });
+  for (const area of config.areas) {
+    const first = area.paths[0]?.replace(/\\/g, '/').replace(/\/+$/, '').replace(/\/\*.*$/, '');
+    if (!first) {
+      continue;
+    }
+    const content = [
+      `# Área ${area.id}`,
+      '',
+      `- Rol: \`${area.role}\`; solo escribe en ${area.paths.map(areaGlob).map((glob) => `\`${glob}\``).join(', ')}.`,
+      '- Contrato de cierre y reglas generales: ver el `AGENTS.md` de la raíz.',
+      '',
+    ].join('\n');
+    putRendered(out, `${first}/${AGENTS_MD}`, { content, source: 'manifest.yaml', region: AGENTS_MD_REGION });
+  }
+}
+
+/** Una regla por área (E3): rol, rutas de escritura y reglas del área. Fuente: manifest.yaml. */
+function renderAreaRules(config: SyncConfig, out: RenderedFiles): void {
+  for (const area of config.areas) {
+    const globs = area.paths.map(areaGlob);
+    const body = [
+      `# Área ${area.id}`,
+      '',
+      `- Rol: \`${area.role}\`; solo escribe dentro de estas rutas.`,
+      `- Rutas: ${globs.map((glob) => `\`${glob}\``).join(', ')}.`,
+      ...(area.rules && area.rules.length > 0
+        ? [`- Reglas del área: ${area.rules.map((rule) => `\`${rule}\``).join(', ')} (en \`.ai-hub/rules/\`).`]
+        : []),
+      '',
+    ].join('\n');
+    for (const tool of config.tools) {
+      const spec = TARGETS[tool];
+      const id = `ai-hub-area-${area.id}`;
+      if (spec.ruleShape === 'mdc') {
+        putRendered(out, `${spec.rules}/${id}.mdc`, {
+          source: 'manifest.yaml',
+          content: withMarker(frontmatter({ description: `Área ${area.id}`, globs: globs.join(','), alwaysApply: false }) + body, 'manifest.yaml'),
+        });
+        continue;
+      }
+      if (spec.ruleShape === 'instructions') {
+        putRendered(out, `${spec.rules}/${id}.instructions.md`, {
+          source: 'manifest.yaml',
+          content: withMarker(frontmatter({ applyTo: globs.join(',') }) + body, 'manifest.yaml'),
+        });
+        continue;
+      }
+      putRendered(out, `${spec.rules}/${id}.md`, { source: 'manifest.yaml', content: withMarker(body, 'manifest.yaml') });
+    }
+  }
+}
+
+export const LESSONS_RULE_ID = 'ai-hub-lessons';
+const LESSONS_SOURCE = '.ai-hub/lessons.md';
+
+/** Lecciones del proyecto (M-12): `.ai-hub/lessons.md` proyectado como regla en cada destino. */
+async function renderLessons(root: string, config: SyncConfig, out: RenderedFiles): Promise<void> {
+  const text = await fs.readFile(path.join(root, ...LESSONS_SOURCE.split('/')), 'utf8').catch(() => null);
+  if (text === null) {
+    return;
+  }
+  const body = normalize(text);
+  for (const tool of config.tools) {
+    const spec = TARGETS[tool];
+    if (spec.ruleShape === 'mdc') {
+      putRendered(out, `${spec.rules}/${LESSONS_RULE_ID}.mdc`, {
+        source: LESSONS_SOURCE,
+        content: withMarker(frontmatter({ description: 'Lecciones del proyecto', alwaysApply: true }) + body, LESSONS_SOURCE),
+      });
+      continue;
+    }
+    if (spec.ruleShape === 'instructions') {
+      putRendered(out, `${spec.rules}/${LESSONS_RULE_ID}.instructions.md`, {
+        source: LESSONS_SOURCE,
+        content: withMarker(frontmatter({ applyTo: '**' }) + body, LESSONS_SOURCE),
+      });
+      continue;
+    }
+    putRendered(out, `${spec.rules}/${LESSONS_RULE_ID}.md`, { source: LESSONS_SOURCE, content: withMarker(body, LESSONS_SOURCE) });
+  }
 }
 
 /** Regla de enlace con Spec Kit, generada desde engine.yaml en cada destino declarado. */
@@ -40,7 +182,7 @@ async function renderSpeckitBinding(config: SyncConfig, out: RenderedFiles): Pro
   const engine = await loadEngine();
   for (const tool of config.tools) {
     const spec = TARGETS[tool];
-    const body = bindingRule(engine, tool);
+    const body = bindingRule(engine, tool, config.projectPolicy);
     const file = { source: BINDING_SOURCE, markerSource: BINDING_MARKER_SOURCE };
     if (spec.ruleShape === 'mdc') {
       putRendered(out, `${spec.rules}/${BINDING_RULE_ID}.mdc`, {
@@ -141,11 +283,38 @@ function frontmatter(data: Record<string, unknown>): string {
   return `---\n${stringify(data)}---\n`;
 }
 
+interface InterpolationContext {
+  scaffold: Record<string, { sha256: string; source: string }>;
+  stack: Record<string, string>;
+}
+
+/** Contexto de interpolación de la pasada de render en curso (M-27); `null` fuera de `renderAll`. */
+let interpolation: InterpolationContext | null = null;
+
+/**
+ * `{{stack.<clave>}}` se resuelve SOLO en fuentes que vienen de un preset y siguen intactas (hash del
+ * scaffold); una copia editada por el proyecto o una fuente del motor no se interpola. Una clave
+ * desconocida hace fallar sync nombrando archivo y clave.
+ */
+function interpolate(sourcePath: string, raw: string, text: string): string {
+  const record = interpolation?.scaffold[sourcePath];
+  if (interpolation === null || !record || !record.source.startsWith('@preset/') || record.sha256 !== sha256(raw)) {
+    return text;
+  }
+  const stack = interpolation.stack;
+  return text.replace(/{{s*stack.([A-Za-z0-9_]+)s*}}/g, (_match, key: string) => {
+    if (!(key in stack)) {
+      throw new Error(`${sourcePath}: {{stack.${key}}} no existe en manifest.stack`);
+    }
+    return stack[key];
+  });
+}
+
 async function readSource(root: string, sourcePath: string): Promise<string> {
-  const text = await fs.readFile(resolveSourcePath(root, sourcePath), 'utf8').catch(() => {
+  const raw = await fs.readFile(resolveSourcePath(root, sourcePath), 'utf8').catch(() => {
     throw new Error(`fuente no encontrada: ${sourcePath}`);
   });
-  return normalize(text);
+  return interpolate(sourcePath, raw, normalize(raw));
 }
 
 async function listFiles(dir: string): Promise<string[]> {
@@ -207,16 +376,17 @@ async function renderAgents(root: string, config: SyncConfig, out: RenderedFiles
     const { data, body } = splitFrontmatter(await readSource(root, sourcePath), sourcePath);
     frontmatterString(data, 'name', sourcePath);
     const description = frontmatterString(data, 'description', sourcePath);
-    const claudeData = Object.fromEntries(
-      CLAUDE_AGENT_KEYS.filter((key) => key in data).map((key) => [key, data[key]]),
-    );
-    const subagentData = { description, mode: 'subagent' };
-    for (const [tool, target] of Object.entries(targets)) {
-      putRendered(out, `${target.path}/${name}.md`, {
-        content:
-          tool === 'claude'
-            ? withMarker(frontmatter(claudeData) + body, sourcePath)
-            : withMarker(frontmatter(subagentData) + body, sourcePath),
+    const tier = typeof data.tier === 'string' ? data.tier : null;
+    // A3: la cabecera de cada destino sale de su `agentFormat` declarativo; sin ramas por destino.
+    for (const tool of Object.keys(targets) as ToolId[]) {
+      const format = TARGETS[tool].agentFormat;
+      if (format === null) {
+        continue;
+      }
+      const model = tier === null ? null : (config.agentModels[tool]?.[tier] ?? null);
+      const header = renderAgentHeader(format, { name, description }, data, model);
+      putRendered(out, `${format.path}/${name}${format.extension}`, {
+        content: withMarker(frontmatter(header.data) + body, sourcePath),
         source: sourcePath,
       });
     }

@@ -2,7 +2,7 @@
 version: 1
 extends: generic-ts
 description: Angular frontend with an Express BFF, Vitest and an optional Dolibarr-style REST backend.
-# Sin detect: preset de cliente. SÃ³lo se elige con --preset angular-express.
+# Sin detect: preset de cliente. Sólo se elige con --preset angular-express.
 stack:
   languages:
     - typescript
@@ -15,7 +15,7 @@ commands:
   test: npm test
   typecheck: npx tsc --noEmit
   lint: npm run lint
-  verify: bash .ai-hub/harness/run-all.sh
+  verify: sh .ai-hub/harness/run-all.sh
 paths:
   source:
     - frontend/src
@@ -51,3 +51,6 @@ skills:
     - onna-architecture-bff
     - onna-architecture-common
     - onna-design-system
+    - gitlab-auth
+    - gitlab-workflow
+    - planning-with-files

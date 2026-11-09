@@ -42,7 +42,7 @@ async function seeded(): Promise<void> {
 }
 
 describe('dispatch', () => {
-  it('help lists exactly the 18 commands', async () => {
+  it('help lists exactly the 28 commands', async () => {
     const result = await cli(['help']);
     expect(result.code).toBe(0);
     const expected = [
@@ -64,13 +64,23 @@ describe('dispatch', () => {
       'trunk',
       'memory',
       'context',
+      'env',
+      'ci',
+      'hooks',
+      'gate',
+      'runs',
+      'control',
+      'review',
+      'seal',
+      'adopt',
+      'hook',
     ];
     expect(COMMAND_NAMES).toEqual(expected);
     for (const name of expected) {
       expect(result.out).toContain(name);
     }
     const rows = result.out.split('\n').filter((line) => /^ {2}[a-z]+ {2,}/.test(line));
-    expect(rows).toHaveLength(18);
+    expect(rows).toHaveLength(28);
   });
 
   it('unknown commands exit 2 and no arguments exit 2', async () => {
@@ -117,7 +127,7 @@ describe('init', () => {
       selection: 'full',
       skillCount: MEASURED.projectSkills,
       speckitCommands: MEASURED.speckitCommands,
-      agentCount: 39,
+      agentCount: MEASURED.agents,
       ruleCount: 6,
       destinations: MEASURED.lock.full,
     });
@@ -129,7 +139,7 @@ describe('init', () => {
     expect(presetOnly).toMatchObject({
       selection: 'preset',
       skillCount: 0,
-      agentCount: 6,
+      agentCount: 11,
       ruleCount: 2,
       destinations: MEASURED.lock.presetOnly,
     });
@@ -139,7 +149,7 @@ describe('init', () => {
     expect(custom).toMatchObject({
       selection: 'custom',
       skillCount: MEASURED.projectSkills,
-      agentCount: 39,
+      agentCount: MEASURED.agents,
       ruleCount: 2,
       destinations: MEASURED.lock.customNoRubrics,
     });
@@ -174,10 +184,10 @@ describe('init', () => {
     expect(mixed).toMatchObject({
       selection: 'custom',
       skillCount: MEASURED.projectSkills - 1,
-      agentCount: 38,
+      agentCount: MEASURED.agents - 1,
     });
     expect(mixed.skills).toHaveLength(MEASURED.projectSkills - 1);
-    expect(mixed.agents).toHaveLength(38);
+    expect(mixed.agents).toHaveLength(MEASURED.agents - 1);
     expect(mixed.ruleCount).toBe(6);
     const angular = JSON.parse(
       (await cli(['init', '--dry-run', '--preset', 'angular-express'])).out,
@@ -201,7 +211,7 @@ describe('init', () => {
     const expansion = JSON.parse((await cli(['install', '--full', '--dry-run'])).out);
     expect(expansion).toMatchObject({
       skills: MEASURED.projectSkills,
-      agents: 39,
+      agents: MEASURED.agents,
       rules: 7,
     });
     // El preset python suma una regla propia: 5 destinos sobre la cifra full medida.
@@ -232,7 +242,11 @@ describe('init', () => {
     for (const entry of ['.claude/', '.opencode/', '.pi/', '.cursor/', '.github/skills/', '.mcp.json', '.vscode/mcp.json', 'opencode.json']) {
       expect(ignore.split('\n').filter((line) => line === entry)).toHaveLength(1);
     }
-    expect(ignore).not.toContain('.ai-hub/');
+    // La carpeta del arnés se versiona; solo sus archivos locales (credenciales, telemetría) se ignoran.
+    const lines = ignore.split('\n').map((line) => line.trim());
+    expect(lines).not.toContain('.ai-hub/');
+    expect(lines.filter((line) => line === '.ai-hub/.env')).toHaveLength(1);
+    expect(lines.filter((line) => line === '.ai-hub/runs/')).toHaveLength(1);
     expect(ignore).not.toContain('sync.lock.json');
   });
 

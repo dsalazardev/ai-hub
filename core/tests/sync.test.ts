@@ -264,15 +264,16 @@ describe('checkLock', () => {
   it('reports a clean fixture with the category breakdown', async () => {
     const result = await checkLock(root);
     expect(result.ok).toBe(true);
-    expect(result.expectedCount).toBe(43);
-    expect(result.actualCount).toBe(43);
+    // +1 plugin de hooks de OpenCode (B3, other) · narrator (C4) y panel (A4) × 4 destinos con agentes.
+    expect(result.expectedCount).toBe(64);
+    expect(result.actualCount).toBe(64);
     expect(result.breakdown).toEqual({
       skills: 0,
-      agents: 24,
+      agents: 44,
       rules: 10,
       preflight: 5,
       mcp: 4,
-      other: 0,
+      other: 1,
     });
   });
 

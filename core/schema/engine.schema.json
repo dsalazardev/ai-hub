@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "AiHubEngineV2",
   "type": "object",
-  "required": ["version", "roles", "commands", "exit_effects", "labels", "targets", "speckit"],
+  "required": ["version", "roles", "commands", "exit_effects", "labels", "targets", "speckit", "status_line", "loop", "policy_limits"],
   "additionalProperties": false,
   "properties": {
     "version": { "const": 2 },
@@ -52,6 +52,39 @@
     "exit_effects": {
       "type": "object",
       "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+    "status_line": {
+      "type": "object",
+      "required": ["prefix", "panel", "reason_required", "reason_max"],
+      "additionalProperties": false,
+      "properties": {
+        "prefix": { "const": "AI-HUB-STATUS" },
+        "panel": { "type": "array", "items": { "type": "string", "pattern": "^[A-Z][A-Z_-]+$" }, "uniqueItems": true },
+        "reason_required": { "type": "array", "items": { "type": "string", "pattern": "^[A-Z][A-Z_-]+$" }, "uniqueItems": true },
+        "reason_max": { "type": "integer", "minimum": 1, "maximum": 500 }
+      }
+    },
+    "loop": {
+      "type": "object",
+      "required": ["converge"],
+      "additionalProperties": false,
+      "properties": {
+        "converge": {
+          "type": "object",
+          "required": ["max_rounds", "on_exhaust"],
+          "additionalProperties": false,
+          "properties": {
+            "max_rounds": { "type": "integer", "minimum": 1, "maximum": 20 },
+            "on_exhaust": { "const": "BLOCKED" }
+          }
+        }
+      }
+    },
+    "policy_limits": {
+      "type": "object",
+      "required": ["wip"],
+      "additionalProperties": false,
+      "properties": { "wip": { "type": "integer", "minimum": 1 } }
     },
     "labels": {
       "type": "array",

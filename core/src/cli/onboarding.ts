@@ -2,6 +2,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { stringify } from 'yaml';
 import { createBackup } from '../backup/snapshots.js';
+import { materializeHarnessLocal } from '../harness/local.js';
+import { installGitHook } from './githooks.js';
 import { readAiHubRc, writeAiHubRc, type AiHubRc } from '../paths.js';
 import { detectPreset } from '../presets/detect.js';
 import {
@@ -499,11 +501,12 @@ function manifestFromSelection(
 }
 
 function mergeMaterialized(
-  target: { written: string[]; kept: string[]; collisions: string[] },
-  source: { written: string[]; kept: string[]; collisions: string[] },
+  target: { written: string[]; kept: string[]; updated: string[]; collisions: string[] },
+  source: { written: string[]; kept: string[]; updated: string[]; collisions: string[] },
 ): void {
   target.written.push(...source.written);
   target.kept.push(...source.kept);
+  target.updated.push(...source.updated);
   target.collisions.push(...source.collisions);
 }
 
@@ -511,8 +514,8 @@ async function materializeSelection(
   root: string,
   preset: ResolvedPreset,
   selection: SelectionSpec,
-): Promise<{ written: string[]; kept: string[]; collisions: string[] }> {
-  const result = { written: [] as string[], kept: [] as string[], collisions: [] as string[] };
+): Promise<{ written: string[]; kept: string[]; updated: string[]; collisions: string[] }> {
+  const result = { written: [] as string[], kept: [] as string[], updated: [] as string[], collisions: [] as string[] };
   mergeMaterialized(result, await materializePreset(root, preset, selection.rules));
   if (selection.modes.rules !== 'preset') {
     mergeMaterialized(result, await materializeUniversalRules(root, preset, selection.rules));
@@ -541,6 +544,7 @@ async function buildAssetPlan(
   engine: Awaited<ReturnType<typeof loadEngine>>,
   targets: string[],
   includeMcp: boolean,
+  areaCount = 0,
 ): Promise<AssetPlan> {
   const index = await catalogIndex();
   // Los 17 comandos los proyecta Spec Kit; AI-Hub solo proyecta las skills de proyecto.
@@ -561,7 +565,11 @@ async function buildAssetPlan(
     if (target.agents) {
       destinations += selection.agents.length;
     }
-    destinations += selection.rules.length + 2; // reglas materializadas + preflight + regla de enlace de Spec Kit
+    destinations += selection.rules.length + 3; // reglas materializadas + preflight + regla de enlace de Spec Kit + lecciones (PD-2)
+    destinations += areaCount; // una regla por área (E3)
+    if (target.hookFormat === 'plugin') {
+      destinations += 1; // hook ejecutable generado (G-01); los hooks en ajustes del usuario no van al lock
+    }
   }
   if (includeMcp) {
     destinations += 3;
@@ -615,13 +623,20 @@ const GENERATED_IGNORES = [
   '.cursor/mcp.json',
   '.vscode/mcp.json',
   'opencode.json',
+  // Locales del arnés (PD-1/PD-2): credenciales y telemetría nunca se versionan.
+  '.ai-hub/.env',
+  '.ai-hub/runs/',
 ];
 
-async function ensureProjectIgnores(root: string): Promise<void> {
+/** Memoria de agente (M-26): ignorada salvo `agentMemory: versioned`. */
+export const AGENT_MEMORY_IGNORES = ['.claude/agent-memory/'];
+
+async function ensureProjectIgnores(root: string, agentMemory?: 'versioned' | 'ignored'): Promise<void> {
   const file = path.join(root, '.gitignore');
   const current = await fs.readFile(file, 'utf8').catch(() => '');
   const present = new Set(current.split(/\r?\n/).map((line) => line.trim()));
-  const missing = GENERATED_IGNORES.filter((entry) => !present.has(entry));
+  const wanted = agentMemory === 'versioned' ? GENERATED_IGNORES : [...GENERATED_IGNORES, ...AGENT_MEMORY_IGNORES];
+  const missing = wanted.filter((entry) => !present.has(entry));
   if (missing.length === 0) {
     return;
   }
@@ -630,21 +645,7 @@ async function ensureProjectIgnores(root: string): Promise<void> {
 }
 
 async function installPostMergeHook(root: string): Promise<{ installed: boolean; reason: string }> {
-  if (!(await exists(path.join(root, '.git')))) {
-    return { installed: false, reason: 'not a git repository' };
-  }
-  const hook = path.join(root, '.git', 'hooks', 'post-merge');
-  if (await exists(hook)) {
-    return { installed: false, reason: 'a post-merge hook already exists; chain ai-hub manually' };
-  }
-  await fs.mkdir(path.dirname(hook), { recursive: true });
-  await fs.writeFile(
-    hook,
-    '#!/bin/sh\n# ai-hub managed worktree cleanup\nnpx --no-install ai-hub worktrees reap --auto >/dev/null 2>&1 || true\n',
-    'utf8',
-  );
-  await fs.chmod(hook, 0o755);
-  return { installed: true, reason: 'installed' };
+  return installGitHook(root, 'post-merge');
 }
 
 async function resolveSelection(
@@ -726,7 +727,7 @@ export async function prepareInit(args: ParsedArgs, ctx: CliContext): Promise<Pr
   assertScriptCoherence(scriptFlag, scriptsFlag, existing?.speckit, 'init');
   const spec = await buildSelection(args, selection.preset, engine, existing);
   const includeMcp = await exists(path.join(ctx.root, 'mcp-manifest.yaml'));
-  const assets = await buildAssetPlan(spec, engine, selection.targets, includeMcp);
+  const assets = await buildAssetPlan(spec, engine, selection.targets, includeMcp, selection.preset.paths.areas?.length ?? 0);
   const speckit = speckitBlock(existing?.speckit, !args.flags['no-speckit'], scriptFlag, scriptsFlag);
   const speckitSettings = speckitSettingsFor(selection.targets, speckit, engine);
   // El taller nunca ejecuta Spec Kit: su .specify/ es del mantenedor.
@@ -817,6 +818,7 @@ export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number
       ? (await createBackup(ctx.root, 'init')).id
       : null;
   const materialized = await materializeSelection(ctx.root, prepared.selection.preset, prepared.spec);
+  await materializeHarnessLocal(ctx.root);
   const manifest = manifestFromSelection(
     prepared.id,
     prepared.selection.preset,
@@ -827,6 +829,19 @@ export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number
     prepared.spec,
     prepared.speckit,
   );
+  // Campos opcionales del proyecto: re-ejecutar init no los pierde.
+  if (prepared.existing?.tracker) {
+    manifest.tracker = prepared.existing.tracker;
+  }
+  if (prepared.existing?.agentsMd !== undefined) {
+    manifest.agentsMd = prepared.existing.agentsMd;
+  }
+  if (prepared.existing?.agentModels) {
+    manifest.agentModels = prepared.existing.agentModels;
+  }
+  if (prepared.existing?.agentMemory) {
+    manifest.agentMemory = prepared.existing.agentMemory;
+  }
   await writeManifest(ctx.root, manifest);
   await writeInventory(ctx.root);
   if (prepared.runSpeckit && !(await installSpeckit(prepared.speckitSettings, ctx, backupId))) {
@@ -858,13 +873,13 @@ export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number
       await migrateLegacyState(ctx.root, prepared.id, prepared.selection.preset.id);
     }
   }
-  await ensureProjectIgnores(ctx.root);
+  await ensureProjectIgnores(ctx.root, manifest.agentMemory);
   if (args.flags.hooks) {
     const hook = await installPostMergeHook(ctx.root);
     ctx.io.out(`hooks: ${hook.installed ? 'post-merge instalado' : hook.reason}`);
   }
   ctx.io.out(
-    `init: ${prepared.selection.preset.id} · skills=${prepared.spec.modes.skills} agents=${prepared.spec.modes.agents} rules=${prepared.spec.modes.rules} · ${prepared.spec.skills.length} skills de proyecto + ${prepared.engine.commands.length} comandos Spec Kit · ${prepared.spec.agents.length} agentes · ${prepared.spec.rules.length + 1} reglas · ${prepared.assets.destinations} destinos · ${sync.written.length} sincronizados · ${materialized.written.length} nuevos, ${materialized.kept.length} conservados, ${materialized.collisions.length} colisiones`,
+    `init: ${prepared.selection.preset.id} · skills=${prepared.spec.modes.skills} agents=${prepared.spec.modes.agents} rules=${prepared.spec.modes.rules} · ${prepared.spec.skills.length} skills de proyecto + ${prepared.engine.commands.length} comandos Spec Kit · ${prepared.spec.agents.length} agentes · ${prepared.spec.rules.length + 1} reglas · ${prepared.assets.destinations} destinos · ${sync.written.length} sincronizados · ${materialized.written.length} nuevos, ${materialized.kept.length} conservados${materialized.updated.length > 0 ? `, ${materialized.updated.length} actualizados` : ''}, ${materialized.collisions.length} colisiones`,
   );
   if (materialized.collisions.length > 0) {
     ctx.io.err(`colisiones (no se sobrescribieron): ${materialized.collisions.join(', ')}`);
@@ -981,7 +996,7 @@ export async function cmdInstall(args: ParsedArgs, ctx: CliContext): Promise<num
   const speckitSettings = speckitSettingsFor(context.manifest.targets, speckit, context.engine);
   const runSpeckit = speckitSettings.managed && !(await isEngineCheckout(ctx.root));
   if (args.flags['dry-run']) {
-    const assets = await buildAssetPlan(spec, context.engine, context.manifest.targets, includeMcp);
+    const assets = await buildAssetPlan(spec, context.engine, context.manifest.targets, includeMcp, context.manifest.paths.areas?.length ?? 0);
     const environment = await environmentFor(speckitSettings, ctx);
     const resolved = 'version' in environment ? environment.version : null;
     ctx.io.out(
@@ -1010,6 +1025,7 @@ export async function cmdInstall(args: ParsedArgs, ctx: CliContext): Promise<num
   }
   const backupId = runSpeckit ? (await createBackup(ctx.root, 'install')).id : null;
   const materialized = await materializeSelection(ctx.root, context.preset, spec);
+  await materializeHarnessLocal(ctx.root);
   // Migración: las skills `runtime: false` salen de .ai-hub/ si las escribió ai-hub;
   // sync retira después sus copias de los destinos.
   for (const id of await retiredCatalogSkills(context.manifest.skills.publish)) {
@@ -1052,13 +1068,13 @@ export async function cmdInstall(args: ParsedArgs, ctx: CliContext): Promise<num
   }
   const sync = await runSync(ctx.root, { check: false });
   await writeInventory(ctx.root);
-  await ensureProjectIgnores(ctx.root);
+  await ensureProjectIgnores(ctx.root, next.agentMemory);
   if (args.flags.hooks) {
     const hook = await installPostMergeHook(ctx.root);
     ctx.io.out(`hooks: ${hook.installed ? 'post-merge instalado' : hook.reason}`);
   }
   ctx.io.out(
-    `install: skills=${spec.modes.skills} agents=${spec.modes.agents} rules=${spec.modes.rules} · ${spec.skills.length} skills de proyecto + ${context.engine.commands.length} comandos Spec Kit · ${spec.agents.length} agentes · ${spec.rules.length + 1} reglas · ${materialized.written.length} nuevos · ${materialized.kept.length} conservados · ${sync.written.length} sincronizados`,
+    `install: skills=${spec.modes.skills} agents=${spec.modes.agents} rules=${spec.modes.rules} · ${spec.skills.length} skills de proyecto + ${context.engine.commands.length} comandos Spec Kit · ${spec.agents.length} agentes · ${spec.rules.length + 1} reglas · ${materialized.written.length} nuevos · ${materialized.kept.length} conservados${materialized.updated.length > 0 ? ` · ${materialized.updated.length} actualizados` : ''} · ${sync.written.length} sincronizados`,
   );
   if (!Object.values(spec.modes).includes('full')) {
     ctx.io.out('full: no aplica; usa install --full para expandir el catálogo');

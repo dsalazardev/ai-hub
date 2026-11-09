@@ -4,6 +4,7 @@ description: 'Flutter reviewer: inspects changed code for stack-specific failure
 tier: balanced
 skills:
   - flutter
+capabilities: [read, search]
 ---
 
 You are the Flutter reviewer. Review the requested diff or pull request; do not edit files.

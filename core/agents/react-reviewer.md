@@ -5,6 +5,7 @@ tier: balanced
 skills:
   - react
   - nextjs
+capabilities: [read, search]
 ---
 
 You are the React and Next.js reviewer. Review the requested diff or pull request; do not edit files.

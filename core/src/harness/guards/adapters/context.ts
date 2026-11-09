@@ -3,6 +3,8 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { evaluatePreflight, type PreflightOutcome } from '../preflight.js';
 import type { GuardContext, GuardMode, PresetDangerPattern } from '../types.js';
+import { readReviewDiff, readReviewSealRecord } from '../../review-seal.js';
+import { reviewSeal } from '../../../speckit/seal.js';
 
 export interface GuardBuildInput {
   root: string;
@@ -152,6 +154,23 @@ export async function buildGuardContext(input: GuardBuildInput): Promise<GuardCo
     session: input.session,
     policy: trunkPolicy(input.root, input.policy),
     preset: { dangerPatterns: input.presetPatterns ?? [] },
+    ...reviewContext(input.root),
+  };
+}
+
+/** M-31: solo con un sello de revisión registrado; el diff actual se lee contra la misma base. */
+function reviewContext(root: string): Pick<GuardContext, 'review'> {
+  const record = readReviewSealRecord(root);
+  if (record === null) {
+    return {};
+  }
+  const diff = readReviewDiff(root, record.base);
+  return {
+    review: {
+      verdict: record.verdict,
+      sealed: record.diff,
+      current: diff === null ? null : reviewSeal(diff, record.verdict).diff,
+    },
   };
 }
 

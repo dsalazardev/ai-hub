@@ -45,6 +45,14 @@ export interface GuardContext {
   preset?: {
     dangerPatterns: PresetDangerPattern[];
   };
+  /** Sello de revisión (M-31): presente solo si el proyecto selló un veredicto. */
+  review?: {
+    verdict: string;
+    /** Hash del diff sellado. */
+    sealed: string;
+    /** Hash del diff actual contra la misma base; `null` si no se pudo leer. */
+    current: string | null;
+  };
 }
 
 export interface GuardResult {

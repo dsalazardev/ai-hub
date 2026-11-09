@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import { validateAreas, type AreaSpec } from '../engine/scopes.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Ajv } from 'ajv';
@@ -43,7 +44,7 @@ export interface Preset {
     packageManager?: string;
   };
   commands?: Record<string, string>;
-  paths?: { source?: string[]; tests?: string[]; docs?: string[] };
+  paths?: { source?: string[]; tests?: string[]; docs?: string[]; areas?: AreaSpec[] };
   policy?: PresetPolicy;
   rules?: string[];
   agents?: { publish?: string[] };
@@ -118,5 +119,10 @@ export async function validatePresetData(data: unknown, label = 'preset'): Promi
       ),
     );
   }
-  return data as Preset;
+  const preset = data as Preset;
+  const areaErrors = validateAreas(preset.paths?.areas, `${label}/preset.yaml`);
+  if (areaErrors.length > 0) {
+    throw new PresetError(areaErrors);
+  }
+  return preset;
 }

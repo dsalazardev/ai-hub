@@ -1,11 +1,11 @@
 ---
 name: gitlab-auth
-description: "GitLab self-managed (gitlab.v3.onnadigital.com) authentication for agents: PAT from .ai-hub/.env, smoke test, security rules, Playwright fallback for UI-only flows."
+description: "GitLab self-managed authentication for agents: personal access token in .ai-hub/.env loaded with ai-hub env exec, smoke test with ai-hub doctor --online, security rules and a user-driven fallback for UI-only flows."
 license: MIT
-compatibility: Requires curl or Node and a GitLab personal access token with the "api" scope.
+compatibility: Requires Node (no bash, curl or PowerShell needed) and a GitLab personal access token with the "api" scope.
 metadata:
   author: ai-hub
-  version: "1.0"
+  version: "2.0"
 origin: dsalazardev
 ---
 
@@ -13,87 +13,81 @@ origin: dsalazardev
 
 ## Cuándo usar esta skill
 
-- Antes de cualquier operación de GitLab (issues, MRs, pipelines): cargar el entorno y verificar identidad.
+- Antes de cualquier operación de GitLab (issues, MRs, pipelines): verificar identidad.
 - Para diagnosticar 401/403 y para rotar tokens.
 - El día a día de operaciones vive en `gitlab-workflow`.
 
 ## Contrato de credenciales
 
-Ruta: `.ai-hub/.env` (local; NUNCA versionado — patrón `*.env` del `.gitignore`).
-Plantilla: `.ai-hub/.env.example`.
+- Ruta: `.ai-hub/.env`. Es local: `ai-hub init` la añade a `.gitignore` antes de que exista.
+- Plantilla versionada: `.ai-hub/.env.example` (valores `CHANGEME`).
+- **El agente nunca pide, lee en voz alta ni escribe credenciales.** Quien crea `.ai-hub/.env` es
+  la persona: a mano desde la plantilla, o en el paso opcional del asistente interactivo de
+  `ai-hub init`, en su propia terminal.
 
 | Variable | Obligatoria | Uso |
 |---|---|---|
-| `GITLAB_URL` | sí | Base sin `/api` (por defecto `https://gitlab.v3.onnadigital.com`) |
+| `GITLAB_URL` | sí | Base de la instancia, sin `/api` |
 | `GITLAB_TOKEN` | sí | PAT con scope `api` |
 | `GITLAB_PROJECT_PATH` | sí (workflow) | Path URL-encoded del proyecto (por ejemplo, `group%2Fproject`) |
-| `GITLAB_USER` | no | Solo fallback UI (Playwright) |
-| `GITLAB_PASSWORD` | no | Solo fallback UI (Playwright) |
 
-Crear el PAT: GitLab → avatar → Edit profile → Access Tokens
-(`https://gitlab.v3.onnadigital.com/-/user_settings/personal_access_tokens`),
-nombre `ai-hub-agent`, expiración 90-180 días, scope `api`. El valor `glpat-...`
-se muestra UNA sola vez.
+Para que `doctor` compruebe la presencia de las claves, declara el tracker en `manifest.yaml`:
 
-## Cargar el entorno
-
-bash / git-bash:
-
-```
-source .ai-hub/bootstrap/load-env.sh
+```yaml
+tracker:
+  kind: gitlab
+  urlEnv: GITLAB_URL
+  tokenEnv: GITLAB_TOKEN
 ```
 
-PowerShell:
+Crear el PAT (lo hace la persona): en GitLab, avatar → Edit profile → Access Tokens
+(`${GITLAB_URL}/-/user_settings/personal_access_tokens`), nombre `ai-hub-agent`, expiración
+90-180 días, scope `api`. El valor se muestra UNA sola vez.
+
+## Ejecutar con el entorno cargado
+
+`ai-hub env exec` carga `.ai-hub/.env` en el proceso hijo, en cualquier sistema operativo y sin
+shell. Las variables no se expanden en la línea de comandos: léelas desde el propio proceso.
 
 ```
-Get-Content .ai-hub/.env | ForEach-Object {
-  if ($_ -match '^\s*([A-Z_]+)\s*=\s*(.*)\s*$') {
-    [Environment]::SetEnvironmentVariable($matches[1], $matches[2].Trim('"'), 'Process')
-  }
-}
+npx ai-hub env exec -- node -e "fetch(process.env.GITLAB_URL + '/api/v4/user', { headers: { 'PRIVATE-TOKEN': process.env.GITLAB_TOKEN } }).then((r) => console.log(r.status))"
 ```
 
 ## Prueba de humo (obligatoria antes de operar)
 
-bash:
-
 ```
-curl -s -H "PRIVATE-TOKEN: $GITLAB_TOKEN" "$GITLAB_URL/api/v4/user"
+npx ai-hub doctor --online
 ```
 
-PowerShell:
-
-```
-curl.exe -s -H "PRIVATE-TOKEN: $env:GITLAB_TOKEN" "$env:GITLAB_URL/api/v4/user"
-```
-
-- 200 → JSON con `id`, `username`, `name`: token válido.
-- 401 → token inválido, revocado o caducado: reponer uno nuevo.
-- 403 → falta scope `api` (o el usuario no tiene permiso en el recurso).
+- `[OK] tracker:token` → token válido; la identidad sale redactada.
+- `HTTP 401` → token inválido, revocado o caducado: la persona debe reponer uno nuevo.
+- `HTTP 403` → falta scope `api` (o el usuario no tiene permiso en el recurso).
+- `env:keys` en rojo → faltan claves en `.ai-hub/.env`; pídele a la persona que las complete.
 
 ## Reglas de seguridad (duras)
 
 1. NUNCA imprimir, loggear, citar ni pegar el token en chats, prompts, informes o `.md`.
-2. NUNCA escribirlo en archivos versionados; su único sitio es `.ai-hub/.env`.
-3. No usar `curl -v` ni `--trace` con cabeceras de autenticación (filtran el header).
-4. Ante un error, reportar «token inválido o caducado» sin incluir su valor.
-5. Rotación: revocar en Access Tokens y sustituirlo en `.env`; repetir la prueba de humo.
+2. NUNCA pedir el token, la contraseña ni ningún secreto en el chat: la persona los escribe en
+   `.ai-hub/.env` por su cuenta.
+3. NUNCA escribirlos en archivos versionados; su único sitio es `.ai-hub/.env`.
+4. No usar modos verbosos ni trazas que impriman cabeceras de autenticación.
+5. Ante un error, reportar «token inválido o caducado» sin incluir su valor.
+6. Rotación: la persona revoca el token en Access Tokens, lo sustituye en `.ai-hub/.env` y se
+   repite la prueba de humo.
 
-## Fallback de navegador (Playwright) — solo flujos UI-only
+## Flujos solo de interfaz web
 
-Solo cuando la operación no exista en la API (ajustes de UI o formularios sin endpoint).
-
-1. Verificar `GITLAB_USER` y `GITLAB_PASSWORD` en el entorno; si faltan, pedirlos al usuario.
-2. Abrir `https://gitlab.v3.onnadigital.com/users/sign_in`, rellenar y enviar.
-3. Nunca escribir la contraseña en logs ni capturas con el campo visible.
-4. Si hay 2FA/passkey, pedir al usuario que complete el login manualmente.
+Cuando la operación no exista en la API (ajustes de UI o formularios sin endpoint), el agente no
+inicia sesión con credenciales: describe a la persona los pasos en `${GITLAB_URL}` y espera su
+confirmación. Si hay automatización de navegador disponible, la persona inicia sesión
+manualmente (incluido 2FA/passkey) y solo entonces el agente continúa en esa sesión.
 
 ## Troubleshooting
 
 | Síntoma | Causa probable | Acción |
 |---|---|---|
-| 401 en API | Token inválido o caducado | Reponer PAT y actualizar `.env` |
+| 401 en API | Token inválido o caducado | La persona repone el PAT en `.ai-hub/.env` |
 | 403 en API | Scope insuficiente | PAT con scope `api` |
 | 404 en proyecto | Path mal codificado | Codificar el path en `GITLAB_PROJECT_PATH` (por ejemplo, `group%2Fproject`) |
-| Error SSL | Certificado interno | Pedir al usuario el certificado raíz |
-| `glab` ausente | No instalado | Usar curl/Node (no requiere glab) |
+| Error SSL | Certificado interno | Pedir a la persona el certificado raíz |
+| `env:ignored` en rojo | `.ai-hub/.env` sin ignorar o versionado | Seguir el remedio que imprime `doctor` y rotar el token |

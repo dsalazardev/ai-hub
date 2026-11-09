@@ -9,6 +9,8 @@ export interface LockFileEntry {
   sha256: string;
   source: string;
   markerSource?: string;
+  /** Región reservada (E2): el hash es el de la región, no el del archivo. */
+  region?: string;
 }
 
 export interface SyncLock {

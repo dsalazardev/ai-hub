@@ -2,9 +2,9 @@
 # planning-with-files: resolve active plan directory.
 #
 # Resolution order:
-#   1. $PLAN_ID env var → ./.planning/$PLAN_ID/ if exists
-#   2. ./.planning/.active_plan content → matching dir if exists
-#   3. Newest ./.planning/<dir>/ by mtime
+#   1. $PLAN_ID env var → ./.ai-hub/work/plans/$PLAN_ID/ if exists
+#   2. ./.ai-hub/work/plans/.active_plan content → matching dir if exists
+#   3. Newest ./.ai-hub/work/plans/<dir>/ by mtime
 #   4. Otherwise empty stdout (caller falls back to legacy ./task_plan.md)
 #
 # Always exits 0. Never errors out the agent loop.
@@ -15,7 +15,7 @@
 
 set -u
 
-PLAN_ROOT="${1:-${PWD}/.planning}"
+PLAN_ROOT="${1:-${PWD}/.ai-hub/work/plans}"
 ACTIVE_FILE="${PLAN_ROOT}/.active_plan"
 
 resolve_from_env() {

@@ -27,6 +27,8 @@ export interface ScaffoldRecord {
 export interface MaterializeResult {
   written: string[];
   kept: string[];
+  /** Copias intactas refrescadas con la versión nueva del paquete (E5). */
+  updated: string[];
   collisions: string[];
 }
 
@@ -88,10 +90,19 @@ async function copyOnce(
     const previous = record.files[destination];
     const current = sha256(await fs.readFile(abs, 'utf8').catch(() => ''));
     if (previous && previous.sha256 === current) {
-      previous.source = sourceKey;
-      result.kept.push(destination);
+      // E5: la copia está intacta (el proyecto no la tocó). Igual al paquete → se conserva;
+      // distinta → se refresca con la versión nueva y se actualiza el registro.
+      if (hash === current) {
+        previous.source = sourceKey;
+        result.kept.push(destination);
+        return;
+      }
+      await fs.writeFile(abs, content, 'utf8');
+      record.files[destination] = { sha256: hash, source: sourceKey };
+      result.updated.push(destination);
       return;
     }
+    // Editada por el proyecto (o ajena a ai-hub): jamás se reescribe.
     result.collisions.push(destination);
     return;
   }
@@ -106,7 +117,7 @@ export async function materializePreset(
   preset: ResolvedPreset,
   selectedRules?: string[],
 ): Promise<MaterializeResult> {
-  const result: MaterializeResult = { written: [], kept: [], collisions: [] };
+  const result: MaterializeResult = { written: [], kept: [], updated: [], collisions: [] };
   const record = await readScaffold(root);
   const wantedRules = selectedRules === undefined ? null : new Set(selectedRules);
 
@@ -160,9 +171,12 @@ export async function materializePreset(
   }
 
   for (const skill of preset.skills) {
-    const dir = await findPresetAsset(preset.chain, `skills/${skill}`);
+    // Como los agentes: la skill del preset gana; si el preset no la trae, la del catálogo compartido.
+    const presetDir = await findPresetAsset(preset.chain, `skills/${skill}`);
+    const engineDir = path.join(ENGINE_SKILLS_DIR, skill);
+    const dir = presetDir ?? ((await exists(engineDir)) ? engineDir : null);
     if (dir === null) {
-      throw new Error(`la skill "${skill}" no existe en el preset "${preset.id}"`);
+      throw new Error(`la skill "${skill}" no existe en el preset "${preset.id}" ni en el catálogo`);
     }
     const files = await walk(dir);
     for (const source of files) {
@@ -173,7 +187,9 @@ export async function materializePreset(
         `.ai-hub/skills/${skill}/${relative}`,
         record,
         result,
-        `@preset/${preset.id}/skills/${skill}/${relative}`,
+        presetDir !== null
+          ? `@preset/${preset.id}/skills/${skill}/${relative}`
+          : `@engine/skills/shared/${skill}/${relative}`,
       );
     }
   }
@@ -189,7 +205,7 @@ export async function materializeSkill(
   sourceDir: string = path.join(ENGINE_SKILLS_DIR, id),
   sourceKey: string = `@engine/skills/shared/${id}`,
 ): Promise<MaterializeResult> {
-  const result: MaterializeResult = { written: [], kept: [], collisions: [] };
+  const result: MaterializeResult = { written: [], kept: [], updated: [], collisions: [] };
   const record = await readScaffold(root);
   if (!(await exists(sourceDir))) {
     throw new Error(`la skill "${id}" no existe en ${sourceDir}`);
@@ -216,7 +232,7 @@ export async function materializeAgent(
   sourceFile: string = path.join(ENGINE_AGENTS, `${id}.md`),
   sourceKey: string = `@engine/agents/${id}.md`,
 ): Promise<MaterializeResult> {
-  const result: MaterializeResult = { written: [], kept: [], collisions: [] };
+  const result: MaterializeResult = { written: [], kept: [], updated: [], collisions: [] };
   const record = await readScaffold(root);
   if (!(await exists(sourceFile))) {
     throw new Error(`el agente "${id}" no existe en ${sourceFile}`);
@@ -232,7 +248,7 @@ export async function materializeUniversalRules(
   preset: ResolvedPreset,
   selectedRules: string[] = [...RUBRIC_RULE_IDS],
 ): Promise<MaterializeResult> {
-  const result: MaterializeResult = { written: [], kept: [], collisions: [] };
+  const result: MaterializeResult = { written: [], kept: [], updated: [], collisions: [] };
   const record = await readScaffold(root);
   const core = await findPresetAsset(preset.chain, 'rules/core.md');
   if (core === null) {
@@ -267,7 +283,7 @@ export async function materializeCatalog(
   skillIds: string[],
   agentIds: string[],
 ): Promise<MaterializeResult> {
-  const result: MaterializeResult = { written: [], kept: [], collisions: [] };
+  const result: MaterializeResult = { written: [], kept: [], updated: [], collisions: [] };
   const record = await readScaffold(root);
   const copies: Array<{ source: string; destination: string; sourceKey: string }> = [];
   for (const id of [...skillIds].sort()) {

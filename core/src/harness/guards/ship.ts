@@ -17,6 +17,34 @@ function movesIntoTrunk(command: string, ctx: GuardContext): boolean {
   return isTrunk(ctx.git.branch) && /\bgit\s+merge\b/i.test(cleaned);
 }
 
+/**
+ * M-31: si el proyecto selló un veredicto de revisión, volver a la trunk exige que el diff actual
+ * sea byte a byte el revisado y que el veredicto apruebe. Sin sello no hay regla (opt-in); un diff
+ * ilegible falla abierto, como el resto de adaptadores.
+ */
+function classifyReviewSeal(ctx: GuardContext): GuardResult | null {
+  const review = ctx.review;
+  if (!review || review.current === null) {
+    return null;
+  }
+  if (review.current !== review.sealed) {
+    return {
+      decision: 'deny',
+      rule: 'ship:review-seal',
+      reason:
+        'el diff cambió después de sellar la revisión (sello de revisión no coincide); vuelve a revisar y ejecuta ai-hub seal review.',
+    };
+  }
+  if (review.verdict === 'CHANGES_REQUESTED') {
+    return {
+      decision: 'deny',
+      rule: 'ship:review-seal',
+      reason: 'el veredicto sellado es CHANGES_REQUESTED; corrige, vuelve a revisar y sella de nuevo.',
+    };
+  }
+  return null;
+}
+
 export function classifyShip(command: string, ctx: GuardContext): GuardResult | null {
   if (!movesIntoTrunk(command, ctx)) {
     return null;
@@ -29,7 +57,7 @@ export function classifyShip(command: string, ctx: GuardContext): GuardResult | 
     pending.push(`${ctx.git.ahead} commit(s) sin push`);
   }
   if (pending.length === 0) {
-    return null;
+    return classifyReviewSeal(ctx);
   }
   return {
     decision: 'deny',

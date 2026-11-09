@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ai-hub.local/schema/runs.schema.json",
+  "title": "Evento de telemetría de ejecución (.ai-hub/runs/<run>/events.jsonl)",
+  "description": "Esquema cerrado: sin prompts, respuestas, contenido de archivos, tokens ni variables de entorno. Una cifra, un escritor.",
+  "type": "object",
+  "required": ["v", "ts", "run", "kind"],
+  "additionalProperties": false,
+  "properties": {
+    "v": { "const": 1 },
+    "ts": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$" },
+    "run": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$" },
+    "kind": { "enum": ["start", "step", "status", "note", "metric", "end"] },
+    "step": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]{0,63}$" },
+    "attempt": { "type": "integer", "minimum": 1, "maximum": 1000 },
+    "duration_ms": { "type": "integer", "minimum": 0, "maximum": 604800000 },
+    "state": { "type": "string", "pattern": "^[A-Z][A-Z_-]{1,30}$" },
+    "artifact": { "type": "string", "maxLength": 200, "pattern": "^(?!.*\\.\\.)(?!/)[A-Za-z0-9._/<>-]+$" },
+    "reason_code": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,39}$" },
+    "note_type": { "enum": ["decision", "warn", "awaiting-ok", "lesson"] },
+    "note": { "type": "string", "maxLength": 200 },
+    "metric": {
+      "type": "object",
+      "required": ["key", "value"],
+      "additionalProperties": false,
+      "properties": {
+        "key": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,39}$" },
+        "value": { "type": "number" }
+      }
+    }
+  }
+}

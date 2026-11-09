@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import type { AreaSpec } from '../engine/scopes.js';
 import path from 'node:path';
 import { loadPreset, PresetError, presetDir, type Preset, type PresetDangerPattern } from './schema.js';
 
@@ -9,7 +10,7 @@ export interface ResolvedPreset {
   chain: string[];
   stack: { languages: string[]; frontend?: string; backend?: string; packageManager?: string };
   commands: Record<string, string>;
-  paths: { source: string[]; tests: string[]; docs: string[] };
+  paths: { source: string[]; tests: string[]; docs: string[]; areas?: AreaSpec[] };
   policy: {
     trunk: 'auto' | 'closed' | 'open';
     guardMode: 'shadow' | 'enforce';
@@ -90,6 +91,8 @@ export async function resolvePresetWith(
       source: mergeList(resolved.paths.source, preset.paths?.source),
       tests: mergeList(resolved.paths.tests, preset.paths?.tests),
       docs: mergeList(resolved.paths.docs, preset.paths?.docs),
+      // Áreas (E3): el preset más específico que las declara las sustituye enteras.
+      ...(preset.paths?.areas ?? resolved.paths.areas ? { areas: preset.paths?.areas ?? resolved.paths.areas } : {}),
     };
     resolved.policy = {
       trunk: preset.policy?.trunk ?? resolved.policy.trunk,

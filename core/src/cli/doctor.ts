@@ -5,7 +5,14 @@ import { fileURLToPath } from 'node:url';
 import { readAiHubRc } from '../paths.js';
 import { auditSelection } from '../catalog.js';
 import { ENGINE_COUNTS, ENGINE_LANES } from '../engine/engine.js';
-import { scanCoupling, scanLegacyArtifacts, scanReservedNamespace, scanRetiredStates } from '../engine/gates.js';
+import {
+  formatFinding,
+  scanCatalogReferences,
+  scanCoupling,
+  scanLegacyArtifacts,
+  scanReservedNamespace,
+  scanRetiredStates,
+} from '../engine/gates.js';
 import {
   checkInventory,
   loadManifestContext,
@@ -19,6 +26,9 @@ import { TARGETS, TOOL_IDS, isToolId } from '../sync/targets.js';
 import { sourceCheckout } from './source.js';
 import { speckitDoctorChecks, speckitNotApplicable } from '../speckit/doctor.js';
 import type { CliContext } from './types.js';
+import { missingClaudeHooks } from '../sync/hooks.js';
+import { checkAgentCapabilities } from '../agents/doctor.js';
+import { checkEnvIgnored, checkEnvKeys, checkTrackerToken, type EnvDoctorOptions } from '../env/doctor.js';
 
 export interface DoctorCheck {
   id: string;
@@ -34,6 +44,8 @@ export interface DoctorReport {
 }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+/** Presupuesto del AGENTS.md raíz (E2): por encima, doctor avisa. */
+export const AGENTS_MD_BUDGET = 32 * 1024;
 const COUPLING_FILE = path.join(__dirname, '..', '..', 'engine', 'coupling.json');
 
 interface CouplingRules {
@@ -102,7 +114,9 @@ function versionedDestinations(root: string): { applicable: boolean; tracked: st
   };
 }
 
-export async function diagnose(ctx: CliContext): Promise<DoctorReport> {
+export interface DoctorOptions extends EnvDoctorOptions {}
+
+export async function diagnose(ctx: CliContext, options: DoctorOptions = {}): Promise<DoctorReport> {
   const checks: DoctorCheck[] = [];
   const add = (id: string, ok: boolean, detail: string): void => {
     checks.push({ id, ok, detail });
@@ -250,18 +264,48 @@ export async function diagnose(ctx: CliContext): Promise<DoctorReport> {
           (await exists(path.join(ctx.root, 'core', 'skills', 'shared'))),
         'core/agents + core/presets + core/skills',
       );
+      for (const id of ['env:ignored', 'env:keys', 'tracker:token']) {
+        add(id, true, 'no aplica en el checkout del motor');
+      }
     } else {
+      // G-01: hooks REALES (ejecutables) por destino; la regla en prosa no cuenta como hook.
       const missingHooks: string[] = [];
+      const surfaces: string[] = [];
       for (const target of manifest.targets) {
         if (!isToolId(target)) {
           continue;
         }
-        const hook = TARGETS[target].hook;
-        if (!(await exists(path.join(ctx.root, hook)))) {
-          missingHooks.push(hook);
+        const spec = TARGETS[target];
+        if (spec.hookFormat === 'none' || spec.hookPath === null) {
+          surfaces.push(`${target}: solo regla (el host no admite hooks)`);
+          if (!(await exists(path.join(ctx.root, spec.hook)))) {
+            missingHooks.push(spec.hook);
+          }
+          continue;
         }
+        if (spec.hookFormat === 'plugin') {
+          surfaces.push(`${target}: plugin`);
+          if (!(await exists(path.join(ctx.root, spec.hookPath)))) {
+            missingHooks.push(spec.hookPath);
+          }
+          continue;
+        }
+        surfaces.push(`${target}: hooks en ${spec.hookPath}`);
+        const raw = await fs.readFile(path.join(ctx.root, spec.hookPath), 'utf8').catch(() => null);
+        let settings: Record<string, unknown> = {};
+        try {
+          settings = raw === null ? {} : (JSON.parse(raw) as Record<string, unknown>);
+        } catch {
+          missingHooks.push(`${spec.hookPath} (JSON inválido)`);
+          continue;
+        }
+        missingHooks.push(...missingClaudeHooks(settings).map((item) => `${spec.hookPath}: ${item}`));
       }
-      add('hooks', missingHooks.length === 0, missingHooks.length === 0 ? 'superficies presentes' : missingHooks.join(', '));
+      add(
+        'hooks',
+        missingHooks.length === 0,
+        missingHooks.length === 0 ? surfaces.join('; ') : `faltan: ${missingHooks.join(', ')} (ejecuta ai-hub sync)`,
+      );
       // Aviso del backlog (design D11): informativo como el de la constitución
       // (speckit/doctor.ts), nunca un gate. La semilla es un activo opcional del
       // proyecto: su ausencia no puede fallar doctor.
@@ -272,7 +316,45 @@ export async function diagnose(ctx: CliContext): Promise<DoctorReport> {
           ? 'semilla presente; ejecuta el pre-prompt de backlog/pre-prompt.md en tu agente'
           : 'sin semilla de backlog (opcional: el asistente de init la escribe con una idea)',
       );
+      // E2: presupuesto de contexto del AGENTS.md raíz; aviso informativo, nunca degrada.
+      const agentsMdSize = await fs.stat(path.join(ctx.root, 'AGENTS.md')).then((stat) => stat.size, () => null);
+      add(
+        'agents-md:size',
+        true,
+        agentsMdSize === null
+          ? 'sin AGENTS.md raíz'
+          : agentsMdSize > AGENTS_MD_BUDGET
+            ? `aviso: AGENTS.md ocupa ${Math.round(agentsMdSize / 1024)} KB (presupuesto ${AGENTS_MD_BUDGET / 1024} KB); cada agente lo carga entero en su contexto`
+            : `AGENTS.md ${Math.round(agentsMdSize / 1024)} KB (dentro del presupuesto)`,
+      );
+      for (const check of [
+        await checkEnvIgnored(ctx.root),
+        await checkEnvKeys(ctx.root, manifest),
+        await checkTrackerToken(ctx.root, manifest, options),
+      ]) {
+        add(check.id, check.ok, check.detail);
+      }
     }
+
+    if (manifest) {
+      const capabilities = await checkAgentCapabilities({
+        root: source.isSource ? null : ctx.root,
+        source: source.isSource ? null : manifest.agents.source,
+        agents: manifest.agents.publish,
+        targets: manifest.targets,
+      });
+      add(capabilities.id, capabilities.ok, capabilities.detail);
+    }
+
+    const references = await scanCatalogReferences(ctx.root, source.isSource ? 'published' : 'project');
+    const broken = [...references.violations, ...references.expired];
+    add(
+      'catalog:references',
+      broken.length === 0,
+      broken.length === 0
+        ? `rutas, comandos, agentes y enlaces resuelven${references.baselined.length > 0 ? ` · ${references.baselined.length} heredadas en línea base (caducan ${references.nextExpiry})` : ''}`
+        : broken.slice(0, 5).map(formatFinding).join('; ') + (broken.length > 5 ? ` (+${broken.length - 5})` : '') + (references.expired.length > 0 ? ` · ${references.expired.length} excepciones caducadas` : ''),
+    );
 
     const reserved = await scanReservedNamespace();
     add(
@@ -284,7 +366,17 @@ export async function diagnose(ctx: CliContext): Promise<DoctorReport> {
     );
 
     const legacy = await scanLegacyArtifacts(ctx.root);
-    add(
+    // E1 F2: convivencia temporal declarada (policy.legacy.openspec: archive) → aviso hasta la fecha.
+    const coexistence = manifest?.policy.legacy;
+    const today = new Date().toISOString().slice(0, 10);
+    if (legacy.length > 0 && coexistence !== undefined && !source.isSource) {
+      const active = today <= coexistence.until;
+      add(
+        'engine:no-legacy-prefix',
+        active,
+        `${active ? 'aviso' : 'caducada'}: convivencia con la metodología anterior hasta ${coexistence.until} (policy.legacy.openspec: archive); ${legacy.length} artefactos: ${legacy.slice(0, 3).join('; ')}${legacy.length > 3 ? ` (+${legacy.length - 3})` : ''}`,
+      );
+    } else add(
       'engine:no-legacy-prefix',
       legacy.length === 0,
       legacy.length === 0

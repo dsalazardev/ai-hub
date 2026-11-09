@@ -5,7 +5,14 @@ import { diagnose, printReport } from './doctor.js';
 import { parseArgs } from './args.js';
 import { cmdContext } from './context.js';
 import { cmdDrift } from './drift.js';
-import { cmdJudge, cmdVerify } from './legacy.js';
+import { cmdJudge } from './legacy.js';
+import { cmdGate } from './gate.js';
+import { cmdHook } from './hook.js';
+import { cmdRuns } from '../harness/runs.js';
+import { cmdControl } from '../control/tick.js';
+import { cmdReview } from '../review/consolidate.js';
+import { cmdAdopt } from '../adopt/convert.js';
+import { cmdSeal } from './seal.js';
 import { cmdMemory } from './memory.js';
 import {
   cmdAdd,
@@ -18,6 +25,9 @@ import {
 } from './maintenance.js';
 import { cmdInit, cmdInstall, cmdRepair } from './onboarding.js';
 import { cmdTrunk } from './trunk.js';
+import { cmdEnv } from '../env/exec.js';
+import { cmdCi } from '../ci/templates.js';
+import { cmdHooks } from './githooks.js';
 import { cmdWorktrees } from './worktrees.js';
 import { cliVersion } from './onboarding.js';
 import { sourceCheckout } from './source.js';
@@ -114,8 +124,8 @@ async function cmdSync(args: ParsedArgs, ctx: CliContext): Promise<number> {
   }
 }
 
-async function cmdDoctor(_args: ParsedArgs, ctx: CliContext): Promise<number> {
-  const report = await diagnose(ctx);
+async function cmdDoctor(args: ParsedArgs, ctx: CliContext): Promise<number> {
+  const report = await diagnose(ctx, { online: Boolean(args.flags.online) });
   printReport(report, ctx);
   return report.ok ? 0 : 1;
 }
@@ -143,12 +153,23 @@ export const COMMANDS: Record<string, CommandSpec> = {
   trunk: { summary: 'Muestra, cierra o abre la rama trunk', handler: cmdTrunk },
   memory: { summary: 'Escribe, lista y reanuda el ledger de .planning', handler: cmdMemory },
   context: { summary: 'Regenera .planning/context-next.md', handler: cmdContext },
+  env: { summary: 'Ejecuta un comando con .ai-hub/.env cargado (env exec -- <cmd>)', handler: cmdEnv },
+  ci: { summary: 'Escribe una plantilla a petición (ci gitlab|devcontainer)', handler: cmdCi },
+  hooks: { summary: 'Instala hooks de git que fallan abiertos', handler: cmdHooks },
+  gate: { summary: 'Verifica artefactos, WIP, sello y comandos del manifiesto', handler: cmdGate },
+  runs: { summary: 'Telemetría de ejecuciones con esquema cerrado (start|event|note|end|list)', handler: cmdRuns },
+  control: { summary: 'Plano de control en observación: control tick --dry-run propone, no aplica', handler: cmdControl },
+  review: { summary: 'review consolidate <informes…>: consolida el panel por stdout', handler: cmdReview },
+  seal: { summary: 'seal review --verdict <V>: liga el veredicto de revisión al diff real', handler: cmdSeal },
+  adopt: { summary: 'Adopta un arnés heredado por fases (--dry-run primero)', handler: cmdAdopt },
+  hook: { summary: 'Hook de host: lee el payload por stdin (pre|post|stop)', handler: (args, ctx) => cmdHook(args, ctx) },
 };
 
 export const COMMAND_NAMES = Object.keys(COMMANDS);
 
 const LEGACY_COMMANDS: Record<string, CommandHandler> = {
-  verify: (_args, ctx) => cmdVerify(ctx),
+  // Alias de `gate` (F-12): misma salida y código; nunca bash crudo del PATH.
+  verify: (args, ctx) => cmdGate(args, ctx),
   judge: (_args, ctx) => cmdJudge(ctx),
 };
 
@@ -162,7 +183,7 @@ export function printHelp(io: CliIO): void {
   io.out('');
   io.out('add agent acepta cualquier agente del catálogo, no solo los del preset.');
   io.out('Publicación: prepublishOnly ejecuta build, manifest:build y npm test (unit + integración).');
-  io.out('Compatibilidad: verify, judge (fuera del catálogo).');
+  io.out('Compatibilidad: verify (alias de gate), judge (fuera del catálogo).');
 }
 
 export interface ContextExtras {

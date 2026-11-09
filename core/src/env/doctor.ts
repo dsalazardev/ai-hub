@@ -1,0 +1,119 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import type { ProjectManifest } from '../manifest/manifest.js';
+import { HARNESS_ENV_FILE, readHarnessEnv } from './dotenv.js';
+
+export interface EnvCheck {
+  id: string;
+  ok: boolean;
+  detail: string;
+}
+
+/** `fetch` inyectable: los tests espían las llamadas y nunca tocan la red. */
+export type FetchLike = (url: string, init: { headers: Record<string, string>; signal?: AbortSignal }) => Promise<{
+  status: number;
+  json(): Promise<unknown>;
+}>;
+
+export interface EnvDoctorOptions {
+  online?: boolean;
+  fetch?: FetchLike;
+}
+
+const ROTATION = 'rota el token: ya pudo salir en el historial';
+
+function git(root: string, args: string[]): { status: number; text: string } {
+  const result = spawnSync('git', args, { cwd: root, encoding: 'utf8', shell: false, windowsHide: true });
+  return { status: result.error ? -1 : result.status ?? 1, text: (result.stdout ?? '').trim() };
+}
+
+async function exists(file: string): Promise<boolean> {
+  return fs.access(file).then(
+    () => true,
+    () => false,
+  );
+}
+
+/**
+ * `env:ignored`: el archivo de credenciales, si existe, debe estar ignorado y jamás versionado.
+ * Fuera de un repositorio git no hay riesgo de versionado y el check no aplica.
+ */
+export async function checkEnvIgnored(root: string): Promise<EnvCheck> {
+  if (!(await exists(path.join(root, HARNESS_ENV_FILE)))) {
+    return { id: 'env:ignored', ok: true, detail: `${HARNESS_ENV_FILE} no existe (créalo desde .ai-hub/.env.example cuando lo necesites)` };
+  }
+  const inside = git(root, ['rev-parse', '--is-inside-work-tree']);
+  if (inside.status !== 0 || inside.text !== 'true') {
+    return { id: 'env:ignored', ok: true, detail: 'no aplica (sin repositorio git)' };
+  }
+  const tracked = git(root, ['ls-files', '--', HARNESS_ENV_FILE]);
+  if (tracked.status === 0 && tracked.text !== '') {
+    return {
+      id: 'env:ignored',
+      ok: false,
+      detail: `${HARNESS_ENV_FILE} está VERSIONADO: git rm --cached ${HARNESS_ENV_FILE} y añádelo a .gitignore; ${ROTATION}`,
+    };
+  }
+  const ignored = git(root, ['check-ignore', '-q', '--', HARNESS_ENV_FILE]);
+  return ignored.status === 0
+    ? { id: 'env:ignored', ok: true, detail: `${HARNESS_ENV_FILE} ignorado` }
+    : { id: 'env:ignored', ok: false, detail: `${HARNESS_ENV_FILE} no está ignorado: añade "${HARNESS_ENV_FILE}" a .gitignore` };
+}
+
+/** `env:keys`: presencia de las claves del tracker declarado; jamás imprime un valor. */
+export async function checkEnvKeys(root: string, manifest: ProjectManifest | null): Promise<EnvCheck> {
+  const tracker = manifest?.tracker;
+  if (!tracker) {
+    return { id: 'env:keys', ok: true, detail: 'tracker no configurado (manifest.tracker opcional)' };
+  }
+  const values = (await readHarnessEnv(root)) ?? {};
+  const keys = [tracker.urlEnv, tracker.tokenEnv];
+  const missing = keys.filter((key) => !values[key] || values[key] === 'CHANGEME');
+  return missing.length === 0
+    ? { id: 'env:keys', ok: true, detail: `claves presentes: ${keys.join(', ')}` }
+    : { id: 'env:keys', ok: false, detail: `faltan en ${HARNESS_ENV_FILE}: ${missing.join(', ')}` };
+}
+
+function redactIdentity(value: unknown): string {
+  if (typeof value !== 'string' || value === '') {
+    return '***';
+  }
+  return `${value[0]}***`;
+}
+
+/** `tracker:token`: solo con `--online`; una lectura de identidad, salida redactada. */
+export async function checkTrackerToken(
+  root: string,
+  manifest: ProjectManifest | null,
+  options: EnvDoctorOptions,
+): Promise<EnvCheck> {
+  const tracker = manifest?.tracker;
+  if (!options.online) {
+    return { id: 'tracker:token', ok: true, detail: 'omitido (sin --online, doctor no usa la red)' };
+  }
+  if (!tracker) {
+    return { id: 'tracker:token', ok: true, detail: 'tracker no configurado' };
+  }
+  const values = (await readHarnessEnv(root)) ?? {};
+  const url = values[tracker.urlEnv];
+  const token = values[tracker.tokenEnv];
+  if (!url || !token) {
+    return { id: 'tracker:token', ok: false, detail: `faltan ${tracker.urlEnv} o ${tracker.tokenEnv} en ${HARNESS_ENV_FILE}` };
+  }
+  const doFetch: FetchLike = options.fetch ?? ((target, init) => fetch(target, init));
+  try {
+    const response = await doFetch(`${url.replace(/\/+$/, '')}/api/v4/user`, {
+      headers: { 'PRIVATE-TOKEN': token },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (response.status !== 200) {
+      return { id: 'tracker:token', ok: false, detail: `el tracker respondió HTTP ${response.status}` };
+    }
+    const body = (await response.json().catch(() => null)) as { username?: unknown } | null;
+    return { id: 'tracker:token', ok: true, detail: `autenticado como ${redactIdentity(body?.username)}` };
+  } catch (error) {
+    const code = (error as { name?: string }).name ?? 'error';
+    return { id: 'tracker:token', ok: false, detail: `sin respuesta del tracker (${code})` };
+  }
+}
