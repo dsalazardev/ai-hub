@@ -159,7 +159,8 @@ describe('fase 3 — perfil independiente y escritura (3.1–3.4)', () => {
     expect(result.text).not.toContain(BOT_TOKEN);
   });
 
-  it('a fresh profile is created with exactly profile create hermes-control --no-skills', async () => {
+  // idea-input (desviación 10): 30 s; con la máquina cargada superó los 10 s del proyecto unit (10,9 s).
+  it('a fresh profile is created with exactly profile create hermes-control --no-skills', { timeout: 30_000 }, async () => {
     const result = await step(ACCEPT);
     expect(result.code, result.text).toBe(0);
     expect(creating(hermes.calls)[0]).toEqual(['profile', 'create', 'hermes-control', '--no-skills']);
@@ -361,5 +362,57 @@ describe('fase 4 — documentación (4.5)', () => {
     for (const text of [readme, security]) {
       expect(text).not.toMatch(/telegram/i);
     }
+  });
+});
+
+describe('idea-input 5.3 — IDEA.md con el mismo fence y la idea en --connect-hermes', () => {
+  const markdownIdea = `## Encabezado de la idea\n\n${'`'.repeat(4)}md\nfence de cuatro\n${'`'.repeat(4)}\nfin`;
+
+  function fencedIdea(text: string): string | null {
+    const lines = text.split('\n');
+    const open = lines.findIndex((line) => /^`{3,}markdown$/.test(line));
+    if (open < 0) {
+      return null;
+    }
+    const fence = lines[open].replace('markdown', '');
+    const close = lines.findIndex((line, index) => index > open && line === fence);
+    return close < 0 ? null : lines.slice(open + 1, close).join('\n');
+  }
+
+  it('el paso interactivo escribe IDEA.md con un fence más largo que la racha interna', async () => {
+    expect((await step(ACCEPT, markdownIdea)).code).toBe(0);
+    const ideaFile = await fs.readFile(path.join(h.root, 'IDEA.md'), 'utf8');
+    expect(ideaFile).toContain('[backlog/seed.md](backlog/seed.md)');
+    expect(ideaFile.split('\n').find((line) => /^`{3,}markdown$/.test(line))).toBe(`${'`'.repeat(5)}markdown`);
+    expect(fencedIdea(ideaFile)).toBe(markdownIdea);
+  });
+
+  it('init --yes --idea-file … --connect-hermes --discord-token-stdin lleva la idea del archivo a IDEA.md y a seed.md', async () => {
+    const ideaPath = path.join(h.root, '..', `idea-${path.basename(h.root)}.md`);
+    await fs.writeFile(ideaPath, markdownIdea);
+    const sink = { out: [] as string[], err: [] as string[] };
+    const code = await cmdInit(
+      parseArgs([
+        '--preset-only',
+        '--yes',
+        '--idea-file',
+        ideaPath,
+        '--connect-hermes',
+        '--discord-channel',
+        CHANNEL,
+        '--approver',
+        APPROVER,
+        '--discord-token-stdin',
+      ]),
+      { ...stepContext(h, sink), controlHost: hermes.host, discordFetch: discord.fetch, stdin: async () => `${BOT_TOKEN}\n` },
+    );
+    const text = [...sink.out, ...sink.err].join('\n');
+    expect(code, text).toBe(0);
+    expect(sink.out.at(-1)).toBe('control: comprueba con ai-hub control enroll --check');
+    expect(sink.out).toContain('backlog: seed.md escrito');
+    expect(fencedIdea(await fs.readFile(path.join(h.root, 'IDEA.md'), 'utf8'))).toBe(markdownIdea);
+    expect(fencedIdea(await fs.readFile(path.join(h.root, 'backlog', 'seed.md'), 'utf8'))).toBe(markdownIdea);
+    expect(text).not.toContain(BOT_TOKEN);
+    await fs.rm(ideaPath, { force: true });
   });
 });

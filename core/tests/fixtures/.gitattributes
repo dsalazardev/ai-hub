@@ -1,0 +1,4 @@
+# idea-input: fixtures comparados por SHA-256 byte a byte (seeds y pre-prompts publicados). Sin conversión de
+# saltos de línea en ningún checkout (core.autocrlf=true en Windows los convertiría a CRLF).
+idea-0.7.0/** -text
+idea-0.13.0/** -text

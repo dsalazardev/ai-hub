@@ -50,7 +50,8 @@ describe('published package', () => {
     // Fase 3: +5 (control/{apply,reply} × 2; engine/templates/hermes/SKILL.md).
     // Fase 4: +6 (control/{doctor,enroll,hermes} × 2).
     // control-onboarding: +4 (control/{onboard,onboard-step} × 2).
-    expect(pkg.entryCount).toBe(1985);
+    // idea-input fase 2: +2 (cli/idea × 2).
+    expect(pkg.entryCount).toBe(1987);
     expect(paths.some((file) => file.includes('upstream-watch'))).toBe(false);
     expect(paths).toContain('SECURITY.md');
     expect(paths).toEqual(expect.arrayContaining(['engine/templates/env.example', 'engine/templates/gitlab-ci.yml']));
@@ -62,5 +63,11 @@ describe('published package', () => {
       await expect(fs.access(packaged)).resolves.toBeUndefined();
       expect(await sha256(packaged)).toBe(await sha256(workshop));
     }
+    expect(paths.some((file) => file.includes('node-pty'))).toBe(false);
   }, 180_000);
+
+  it('never declares node-pty: the Windows terminal probe is opt-in with npm install --no-save (idea-input D9)', async () => {
+    const manifest = await fs.readFile(path.join(CORE_ROOT, 'package.json'), 'utf8');
+    expect(manifest).not.toContain('node-pty');
+  });
 });

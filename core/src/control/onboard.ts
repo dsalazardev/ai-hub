@@ -6,6 +6,7 @@ import { loadManifestContext, readManifestFile, writeInventory } from '../manife
 import { PROFILE, runEnroll } from './enroll.js';
 import { hermesHome, resolveHermes, type HermesCli, type ResolverHost } from './hermes.js';
 import { DEFAULT_POLL_MINUTES } from './ledger.js';
+import { fenceIdea } from '../cli/idea.js';
 
 /**
  * Onboarding del plano de control (control-onboarding): conecta un bot de Discord PROPIO al perfil independiente
@@ -203,7 +204,7 @@ async function seedIdea(root: string, idea: string | null, now: Date): Promise<s
   }
   await fs.writeFile(
     path.join(root, 'IDEA.md'),
-    `# Idea del proyecto\n\n> Registrada por \`ai-hub init\` el ${dateOf(now)}. Fuente: [backlog/seed.md](backlog/seed.md).\n\n${idea}\n`,
+    `# Idea del proyecto\n\n> Registrada por \`ai-hub init\` el ${dateOf(now)}. Fuente: [backlog/seed.md](backlog/seed.md).\n\n${fenceIdea(idea)}\n`,
     'utf8',
   );
   return 'IDEA.md';

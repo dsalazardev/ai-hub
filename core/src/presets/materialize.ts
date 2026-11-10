@@ -84,16 +84,35 @@ async function copyOnce(
   sourceKey: string = source,
 ): Promise<void> {
   const content = await fs.readFile(source, 'utf8');
+  await threeWay(root, content, destination, record, result, sourceKey, []);
+}
+
+/**
+ * Núcleo de tres vías de los scaffolds (E5/E6), con el contenido en memoria: intacto e igual → `kept`; intacto con
+ * contenido nuevo → `updated`; editado o ajeno → colisión, jamás se reescribe. `knownHashes` (idea-input D13):
+ * hashes de plantillas publicadas que cuentan como intactas aunque no estén registradas (instalaciones antiguas).
+ */
+async function threeWay(
+  root: string,
+  content: string,
+  destination: string,
+  record: ScaffoldRecord,
+  result: MaterializeResult,
+  sourceKey: string,
+  knownHashes: readonly string[],
+): Promise<void> {
   const hash = sha256(content);
   const abs = path.join(root, destination);
   if (await exists(abs)) {
-    const previous = record.files[destination];
     const current = sha256(await fs.readFile(abs, 'utf8').catch(() => ''));
+    const previous =
+      record.files[destination] ?? (knownHashes.includes(current) ? { sha256: current, source: sourceKey } : undefined);
     if (previous && previous.sha256 === current) {
       // E5: la copia está intacta (el proyecto no la tocó). Igual al paquete → se conserva;
       // distinta → se refresca con la versión nueva y se actualiza el registro.
       if (hash === current) {
         previous.source = sourceKey;
+        record.files[destination] = previous;
         result.kept.push(destination);
         return;
       }
@@ -329,6 +348,33 @@ export async function materializeCatalog(
  * Borra un activo materializado solo si lo escribió ai-hub (registro de scaffold o marcador);
  * un archivo del proyecto se conserva.
  */
+export type TemplateRefresh = 'written' | 'kept' | 'updated' | 'collision';
+
+/**
+ * idea-input D13: refresca una plantilla del motor que vive fuera de `.ai-hub/` (hoy `backlog/pre-prompt.md`) con
+ * las tres vías de los scaffolds, registrada en `.ai-hub/.scaffold.json`. `removeOwned` solo recibe rutas bajo
+ * `manifest.{skills,agents,rules}.source`, así que nunca la borra (test de no destrucción en idea-input 5.2).
+ */
+export async function refreshTemplateFile(
+  root: string,
+  destination: string,
+  content: string,
+  sourceKey: string,
+  knownHashes: readonly string[] = [],
+): Promise<TemplateRefresh> {
+  const record = await readScaffold(root);
+  const result: MaterializeResult = { written: [], kept: [], updated: [], collisions: [] };
+  await threeWay(root, content, destination, record, result, sourceKey, knownHashes);
+  await writeScaffold(root, record);
+  if (result.written.length > 0) {
+    return 'written';
+  }
+  if (result.updated.length > 0) {
+    return 'updated';
+  }
+  return result.kept.length > 0 ? 'kept' : 'collision';
+}
+
 export async function removeOwned(root: string, relative: string, directory: boolean): Promise<void> {
   const absolute = path.join(root, relative);
   if (!(await exists(absolute))) {

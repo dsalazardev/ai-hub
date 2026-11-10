@@ -1,5 +1,49 @@
 # Changelog
 
+## Sin publicar — idea-input: captura de la idea sin truncar ni fugas al shell
+
+### Seguridad
+
+**Vulnerabilidad de entrada en el paso de la idea (desde 0.7.0; afecta a 0.7.0–0.13.0).** Pegar texto multilínea en
+«¿Cuál es la idea del proyecto?» resuelve el prompt en el primer salto de línea. El resto se queda en el buffer de
+la terminal:
+
+- puede contestar la confirmación del plan sin que la persona confirme: una `y` antes que cualquier `n` en el texto
+  restante la contesta «Sí» y aplica el plan;
+- al salir el proceso, el shell lo ejecuta como comandos.
+
+Medido en PowerShell 5.1 bajo ConPTY: 400 líneas pegadas contestaron la confirmación con «No» sin intervención, y las
+líneas 19–399 llegaron al shell, con 42 errores de PowerShell.
+
+**Mitigación en versiones anteriores:** escribir la idea a mano, una frase; no pegarla.
+
+**Arreglo:** la entrada multilínea de esta versión. Detalle en `core/SECURITY.md` › Known vulnerabilities.
+
+### Idea del proyecto
+
+- **Entrada multilínea propia en el paso de la idea** (sin dependencias nuevas):
+  - Enter ya no envía; se termina con Ctrl+D o una línea con solo `.`, y con la entrada vacía se salta.
+  - Esc y Ctrl+C cancelan el init sin escribir nada.
+  - Activa bracketed paste y drena el pegado antes de devolver.
+  - El render está acotado (contador + últimas 3 líneas), y la terminal se restaura en toda salida.
+  - Se descartó `p.multiline` de clack con lo medido: envía con dos Enter seguidos, borra los tabuladores pegados,
+    no activa bracketed paste, no tiene límite y su CPU crece de forma cuadrática.
+- **Cuatro fuentes**:
+  - pegado;
+  - tu editor (Ctrl+E o `--idea-editor`; Notepad de Windows 11 pide confirmación porque vuelve al instante);
+  - `--idea-file` (vía canónica de `init --yes`);
+  - `--idea-stdin`.
+
+  Precedencia archivo > stdin > editor. Normalización única, límite de 4 MiB (`AI_HUB_MAX_IDEA`) y errores con
+  salida 2 que nunca contienen el texto.
+- **Semilla fiel**:
+  - `backlog/seed.md` e `IDEA.md` guardan la idea en un fence dinámico con su procedencia.
+  - Un seed existente nunca se sobrescribe; uno de 0.13.0 migra solo si coincide.
+  - `backlog/pre-prompt.md` se refresca como un scaffold, registrado en `.ai-hub/.scaffold.json`.
+- **`--connect-hermes`** recibe la idea de `--idea-file`.
+- `--idea-stdin`, `--idea-editor` y `--discord-token-stdin` son flags booleanos: ya no se tragan el argumento
+  siguiente.
+
 ## 0.13.0 — control-onboarding: conexión automática del plano de control (2026-11-09)
 
 `ai-hub init` deja el plano de control **completo y funcionando en una sola pasada opt-in**, con un bot propio

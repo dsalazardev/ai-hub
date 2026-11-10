@@ -45,7 +45,9 @@ El asistente es una **generadora de flags**, no un camino paralelo: cada decisi�
 3. **Perfil** — `full` / `preset-only` / `custom` con excludes guiados.
 4. **Scripts** — multi-select del conjunto (`py`/`sh`/`ps`, mínimo uno, preseleccionado con los tres) y elección del activo cuando selecciona más de un tipo; informa el shell resuelto para `sh` y el intérprete para `py`.
 5. **Entorno** — verificación de herramientas (informativa: si falta una, nombra cómo instalarla y loguearse; el login jamás se verifica) y preflight de Spec Kit (fail-closed: si falla, exit 2 antes de escribir).
-6. **Idea del proyecto** — opcional, saltable.
+6. **Idea del proyecto** — opcional, saltable. Entrada multilínea: Enter no envía; termina con Ctrl+D o una línea con solo `.`; Ctrl+E abre tu editor. Sin asistente: `init --yes --idea-file <ruta>` o `--idea-stdin`.
+
+> **Aviso de seguridad (0.7.0–0.13.0).** En esas versiones, pegar texto multilínea en este paso resolvía el prompt en el primer salto de línea: el resto podía contestar la confirmación del plan y, al salir, el shell lo ejecutaba como comandos. Mientras uses una de ellas, escribe la idea a mano, una frase. Detalle y medición en [core/SECURITY.md](core/SECURITY.md#known-vulnerabilities).
 7. **Plan** — el mismo JSON de `--dry-run` con el entorno real, y confirmación. Al confirmar aplica por el mismo camino que `--yes`; al cancelar en cualquier paso no se escribe un byte.
 
 Con idea, la confirmación escribe `backlog/seed.md` (la idea textual, la fecha y un apuntador) y `backlog/pre-prompt.md`, una plantilla bilingüe (español/inglés) que instruye al **agente del cliente** — no al CLI — a convertir la idea en items de backlog con criterio de aceptación verificable, priorizarlos y arrancar con `/speckit.constitution` y `/speckit-assess-intake`. La semilla es un activo versionable del proyecto: no entra al hash del plan, `sync` no la lockea y el `.gitignore` generado no la ignora. `doctor` la reporta como aviso informativo (`[OK] backlog: …`), nunca como gate.

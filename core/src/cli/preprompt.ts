@@ -58,3 +58,15 @@ answer and let them correct it; close each block with a two-line summary):
 5. Start the assessment lane with the first /speckit-assess-intake
    (OpenCode and Pi: /speckit.assess.intake) on the prioritized item.
 `;
+
+/**
+ * idea-input D13: SHA-256 de cada plantilla del pre-prompt publicada. Un `backlog/pre-prompt.md` sin registrar en
+ * `.ai-hub/.scaffold.json` (instalaciones ≤ 0.13.0) cuyo hash está aquí cuenta como intacto y se actualiza; un test
+ * exige que la plantilla actual esté siempre en la lista. Añade el hash nuevo cuando cambies `PRE_PROMPT`.
+ */
+export const PRE_PROMPT_HISTORY: readonly string[] = [
+  // 0.7.0–0.10.0 (commit e094141; texto en core/tests/fixtures/idea-0.7.0/pre-prompt.md)
+  '43924063aceaf9eeab7bb4a07e8e43f20d9cc87ca4d532e5727588da3b72dd95',
+  // 0.11.0–0.13.0 (commit e063383; capturado en core/tests/fixtures/idea-0.13.0/pre-prompt.sha256)
+  '5c266356c52ff161a9431020ff87fdb7344cf52ab42caf9c2e08328fd3e784cb',
+];

@@ -3,6 +3,7 @@ import type { ProcessRunner } from '../speckit/runner.js';
 import type { AssistantPrompts } from './assistant.js';
 import type { ResolverHost } from '../control/hermes.js';
 import type { DiscordFetch } from '../control/onboard.js';
+import type { EditorHost, IdeaStdin } from './idea.js';
 
 export interface CliIO {
   out(message: string): void;
@@ -24,6 +25,9 @@ export interface CliContext {
   controlHost?: ResolverHost;
   discordFetch?: DiscordFetch;
   stdin?: () => Promise<string>;
+  /** idea-input: entrada estándar de `--idea-stdin` y host del editor de `--idea-editor`, inyectables (tests). */
+  ideaStdin?: IdeaStdin;
+  editorHost?: EditorHost;
 }
 
 export interface ParsedArgs {

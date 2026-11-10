@@ -106,6 +106,37 @@ npx @dsalazardev/ai-hub-cli install --targets claude
 
 `ai-hub help` lista los 28 comandos. `verify` es alias de `gate`.
 
+### Idea del proyecto
+
+La idea alimenta `backlog/seed.md` y nunca entra al plan, al lock, al manifiesto ni a `.ai-hub/runs/`. Hay cuatro
+fuentes, con un solo contrato:
+
+| Fuente | Cómo | Cuándo usarla |
+|---|---|---|
+| Pegado en el asistente | `npx ai-hub init` (sin flags), paso de la idea | Textos cortos o pegados en Windows Terminal, iTerm, GNOME… |
+| Tu editor | **Ctrl+E** dentro de la entrada, o `init --yes --idea-editor` | Textos largos; usa `$VISUAL`, luego `$EDITOR`, luego `code --wait` o Notepad/`vi` |
+| Archivo | `init --yes --idea-file idea.md` | La vía canónica no interactiva |
+| Entrada estándar | `cat idea.md \| npx ai-hub init --yes --idea-stdin` | Tuberías y CI |
+
+En la entrada del asistente **Enter no envía**: termina con **Ctrl+D** o con una línea que contenga solo `.`.
+Con la entrada vacía, cualquiera de los dos salta el paso; **Esc** o **Ctrl+C** cancelan el init entero sin
+escribir nada. La entrada activa *bracketed paste*, consume todo el pegado antes de devolver y no reimprime el
+texto: muestra un contador y las últimas tres líneas.
+
+Si se dan varias fuentes se usa una sola, en el orden `--idea-file` > `--idea-stdin` > `--idea-editor`, y una
+línea dice cuál se ignoró. `--idea-stdin` no se combina con `--discord-token-stdin` (el token es lo único que viaja
+por esa entrada). Todas normalizan igual: fuera el BOM, CRLF/CR → LF, fuera los saltos finales; el byte NUL o el
+UTF-8 inválido salen con 2. El límite es 4 MiB, ajustable en bytes con `AI_HUB_MAX_IDEA`; nunca se trunca.
+
+`backlog/seed.md` guarda la idea en un fence más largo que cualquier racha de backticks que contenga, con la fecha
+y la fuente. Si ya existe con otra idea, no se sobrescribe y se informa la colisión; uno de 0.13.0 (idea sin fence)
+migra solo si su texto coincide. `backlog/pre-prompt.md` es plantilla del motor: se refresca si no la editaste.
+
+> **Windows:** la consola entrega un pegado a unos 15 KB/s (medido sobre ConPTY, con el render activado o no), así
+> que para textos de más de ~64 KiB usa **Ctrl+E** o `--idea-file`. El límite de 4 MiB es de memoria, no de pegado.
+> En conhost (la consola clásica de Windows 10) además no hay *bracketed paste*: también ahí, Ctrl+E o `--idea-file`.
+> Detalle del fallo que esto corrige en [SECURITY.md](SECURITY.md#known-vulnerabilities).
+
 ### Credenciales (opt-in)
 
 `init` ignora `.ai-hub/.env` y escribe solo `.ai-hub/.env.example` con `CHANGEME`. El `.env` real lo
@@ -311,6 +342,12 @@ completo está en el roadmap (P4).
   (ni con otra copia del gate): los tests que hacen `init` de un consumidor y un `doctor` completo compiten por
   disco y memoria y expiran.
 - `npm run test:fast` (`vitest run`, en paralelo) es solo para iterar en local; no sustituye al gate.
+- **Sondas de terminal real (Windows).** `tests/idea-input-pty.test.ts` (proyecto `integration`) usa `node-pty`,
+  que **no se declara en `package.json`**: en `devDependencies` un fallo de node-gyp abortaría `npm install`, y
+  en `optionalDependencies` viajaría al consumidor. Para habilitar la cobertura de ConPTY:
+  `npm install --no-save node-pty` (no toca `package.json` ni `package-lock.json`). Sin el módulo, esas sondas se
+  saltan con el motivo exacto. Toda sonda PTY pasa por `withPty` (`tests/pty-harness.ts`): timeout de 45 s, kill
+  del hijo y comprobación de que no queda proceso vivo (`taskkill /F /T` en Windows).
 
 ## Lo que no viaja en el paquete
 

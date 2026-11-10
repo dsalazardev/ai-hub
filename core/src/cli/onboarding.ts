@@ -25,7 +25,17 @@ import { runSync } from '../sync/sync.js';
 import { TOOL_IDS, assertToolIds, TARGETS } from '../sync/targets.js';
 import { sha256 } from '../sync/lock.js';
 import { isEngineCheckout } from '../source-checkout.js';
-import { assertExclusions, isInteractiveRequest, runAssistantInit } from './assistant.js';
+import { assertExclusions, isInteractiveRequest, runAssistantInit, writeBacklogSeed } from './assistant.js';
+import {
+  IdeaCancelled,
+  IdeaInputError,
+  describeIdea,
+  ideaFromEditor,
+  processIdeaStdin,
+  realEditorHost,
+  resolveIdeaFromFlags,
+  type IdeaOutcome,
+} from './idea.js';
 import { TOKEN_FLAG_REFUSED, connectFromFlags } from '../control/onboard-step.js';
 import {
   ENGINE_AGENTS_DIR,
@@ -796,6 +806,30 @@ export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number
   if (!sourceCheckout && isInteractiveRequest(args, ctx)) {
     return runAssistantInit(ctx);
   }
+  // idea-input (R12, D3): la idea por flags se lee y valida antes de cualquier escritura; nunca entra al plan.
+  let idea: IdeaOutcome | null = null;
+  try {
+    const resolved = await resolveIdeaFromFlags(args.flags, {
+      cwd: ctx.cwd,
+      env: process.env,
+      stdin: ctx.ideaStdin ?? processIdeaStdin(),
+      editor: (maxBytes) => ideaFromEditor(ctx.editorHost ?? realEditorHost(ctx.root), maxBytes),
+    });
+    idea = resolved.outcome;
+    if (resolved.notice !== null) {
+      ctx.io.err(resolved.notice);
+    }
+  } catch (error) {
+    if (error instanceof IdeaCancelled) {
+      ctx.io.out('init cancelado; no se escribió nada');
+      return 0;
+    }
+    if (error instanceof IdeaInputError) {
+      ctx.io.err(error.message);
+      return 2;
+    }
+    throw error;
+  }
   let prepared: PreparedInit;
   try {
     prepared = await prepareInit(args, ctx);
@@ -807,6 +841,10 @@ export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number
   if (!args.flags.yes || args.flags['dry-run']) {
     const environment = await environmentFor(prepared.speckitSettings, ctx);
     printInitPlan(prepared, ctx, environment);
+    if (idea !== null) {
+      // Fuera del JSON del plan (stdout): una línea en stderr, sin el texto (D12).
+      ctx.io.err(describeIdea(idea));
+    }
     if (!args.flags['dry-run']) {
       ctx.io.out('Nada escrito. Repite con --yes para aplicar este plan.');
     }
@@ -894,9 +932,15 @@ export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number
   }
   ctx.io.out(speckitSummary(prepared.speckitSettings, resolved));
   ctx.io.out(`plan: ${plan.hash}`);
+  // idea-input (R12): la semilla se escribe solo tras el apply; antes de la conexión del plano de control.
+  if (idea?.kind === 'idea') {
+    for (const line of await writeBacklogSeed(ctx, idea.text, idea.note)) {
+      ctx.io.out(line);
+    }
+  }
   // control-onboarding (D7): conexión explícita sin preguntas, después del init aplicado; el plan no cambia.
   if (args.flags['connect-hermes']) {
-    return connectFromFlags(args.flags, ctx);
+    return connectFromFlags(args.flags, ctx, idea?.kind === 'idea' ? idea.text : null);
   }
   return 0;
 }

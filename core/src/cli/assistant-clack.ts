@@ -2,6 +2,7 @@ import * as p from '@clack/prompts';
 import { isCancel } from '@clack/prompts';
 import { renderBanner } from './banner.js';
 import type { AssistantPrompts, PromptOption } from './assistant.js';
+import { ideaFromEditor, readIdeaFromTerminal, realEditorHost } from './idea.js';
 
 function toOptions(options: PromptOption[]): p.Option<string>[] {
   return options.map((option) => ({
@@ -66,4 +67,11 @@ export const clackPrompts: AssistantPrompts = {
     const value = await p.password({ message });
     return isCancel(value) ? null : (value ?? '');
   },
+  // idea-input (D1): lector propio con bracketed paste, render acotado y drenado; Ctrl+E abre el editor (D7).
+  longText: async (message, { maxBytes, root }) =>
+    readIdeaFromTerminal(process.stdin, process.stdout, {
+      message,
+      maxBytes,
+      editor: () => ideaFromEditor(realEditorHost(root), maxBytes),
+    }),
 };

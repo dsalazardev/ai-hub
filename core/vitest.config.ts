@@ -32,6 +32,9 @@ export default defineConfig({
             'tests/consumer-state.test.ts',
             'tests/agent-contract.test.ts',
             'tests/adoption.test.ts',
+            // idea-input D9: las sondas de terminal real viven en integration (withPty corta a 45 s; cada it, 90 s).
+            'tests/idea-input-pty.test.ts',
+            'tests/idea-input-e2e.test.ts',
           ],
           testTimeout: 10000,
           hookTimeout: 10000,
@@ -60,6 +63,8 @@ export default defineConfig({
             'tests/consumer-state.test.ts',
             'tests/agent-contract.test.ts',
             'tests/adoption.test.ts',
+            'tests/idea-input-pty.test.ts',
+            'tests/idea-input-e2e.test.ts',
           ],
           testTimeout: 60000,
           hookTimeout: 60000,

@@ -22,6 +22,11 @@ const BOOLEAN_FLAGS = new Set([
   'quick',
   'collisions',
   'archive-planning',
+  // idea-input (design D3): booleanos; si no, `init --idea-stdin x` se tragaría `x` como valor.
+  'idea-stdin',
+  'idea-editor',
+  // control-onboarding D7: el token llega por stdin; el flag no lleva valor.
+  'discord-token-stdin',
 ]);
 
 export function parseArgs(argv: string[]): ParsedArgs {

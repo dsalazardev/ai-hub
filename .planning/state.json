@@ -1,15 +1,1 @@
-{
-  "version": 1,
-  "project": "ai-hub",
-  "preset": "generic-ts",
-  "activeChange": "catalogo-completo",
-  "lane": "feature",
-  "phase": "implemented",
-  "tasks": {
-    "total": 18,
-    "done": 18
-  },
-  "branch": null,
-  "worktree": null,
-  "updatedAt": "2026-10-29T19:45:00.000Z"
-}
+{"version":1,"project":"ai-hub","preset":"generic-ts","activeChange":"idea-input","lane":"feature","phase":"pendiente-checklist-5.8","tasks":{"total":36,"done":35},"branch":null,"worktree":null,"updatedAt":"2026-11-10T15:23:12.846Z"}

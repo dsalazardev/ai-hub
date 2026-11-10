@@ -213,7 +213,11 @@ export const TOKEN_FLAG_REFUSED =
  * `init --connect-hermes` (D7): sin preguntas. Canal, aprobador, TTL y expiración por flags; el token solo por stdin.
  * Mismas validaciones que el paso interactivo; sin red, guarda solo con `--allow-unvalidated`.
  */
-export async function connectFromFlags(flags: Record<string, string | boolean>, ctx: CliContext): Promise<number> {
+export async function connectFromFlags(
+  flags: Record<string, string | boolean>,
+  ctx: CliContext,
+  idea: string | null = null,
+): Promise<number> {
   const text = (name: string): string | null => (typeof flags[name] === 'string' ? (flags[name] as string).trim() : null);
   const channelInput = text('discord-channel');
   const approver = text('approver');
@@ -266,7 +270,7 @@ export async function connectFromFlags(flags: Record<string, string | boolean>, 
     const outcome = await connectControlPlane(
       ctx.root,
       { token, channelId, channelName, approver, ttlHours, expire: expireRaw },
-      { host: contextHost(ctx), idea: null, reconfigure: async () => Boolean(flags['reconfigure-hermes']) },
+      { host: contextHost(ctx), idea, reconfigure: async () => Boolean(flags['reconfigure-hermes']) },
     );
     for (const line of outcome.lines) {
       (outcome.code === 0 ? ctx.io.out : ctx.io.err)(line);

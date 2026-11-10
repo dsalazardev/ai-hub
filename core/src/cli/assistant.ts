@@ -11,7 +11,17 @@ import { probeEnvironment, probeShell, speckitPreflight, type SpeckitEnvironment
 // Ciclo intencional con onboarding.ts (D2): ambos módulos se usan sólo a nivel de
 // función, nunca a nivel de módulo, así que los live bindings de ESM lo resuelven.
 import { cliVersion, cmdInit, prepareInit, printInitPlan, type PreparedInit } from './onboarding.js';
-import { PRE_PROMPT } from './preprompt.js';
+import { PRE_PROMPT, PRE_PROMPT_HISTORY } from './preprompt.js';
+import {
+  IdeaInputError,
+  extractFencedIdea,
+  fenceIdea,
+  isBlankIdea,
+  maxIdeaBytes,
+  normalizeIdea,
+  type IdeaOutcome,
+} from './idea.js';
+import { refreshTemplateFile } from '../presets/materialize.js';
 import { HARNESS_ENV_FILE, formatDotenv } from '../env/dotenv.js';
 
 /** Opción de un prompt del asistente. */
@@ -39,6 +49,11 @@ export interface AssistantPrompts {
    * porque un token jamás se pide por un prompt que lo muestre en claro.
    */
   password?(message: string): Promise<string | null>;
+  /**
+   * idea-input (D1): entrada multilínea de la idea, con bracketed paste, render acotado y drenado. Opcional: sin
+   * ella el paso 6 usa `text` (los prompts inyectados de los tests). `null` = cancelación.
+   */
+  longText?(message: string, options: { maxBytes: number; root: string }): Promise<IdeaOutcome | null>;
 }
 
 /** Decisiones que hoy son flags de init; la idea es la única que no lo es (design D6). */
@@ -363,23 +378,110 @@ function seedDate(now: Date = new Date()): string {
   return now.toISOString().slice(0, 10);
 }
 
+/** Plantilla exacta con la que 0.7.0–0.13.0 escribían la semilla (idea cruda, sin fence). */
+const SEED_013 =
+  /^# Semilla del proyecto\n\n> Registrada por `ai-hub init` el \d{4}-\d{2}-\d{2}\. La idea es textual: el arnés no\n> añade requisitos\. Siguiente paso: abre `backlog\/pre-prompt\.md` en tu agente\.\n\n## Idea\n\n/;
+
+/** Semilla nueva (design D6): la idea en un fence dinámico, con la fecha y la procedencia. */
+export function renderSeed(idea: string, note: string, now: Date = new Date()): string {
+  return (
+    `# Semilla del proyecto\n\n` +
+    `> Registrada por \`ai-hub init\` el ${seedDate(now)} desde ${note}. La idea es textual: el arnés no\n` +
+    `> añade requisitos. Siguiente paso: abre \`backlog/pre-prompt.md\` en tu agente.\n\n` +
+    `## Idea\n\n${fenceIdea(idea)}\n`
+  );
+}
+
+export type SeedState = 'written' | 'unchanged' | 'migrated' | 'collision';
+
 /**
- * Escritor de la semilla (design D6/D9/D10): `backlog/seed.md` con la idea textual,
- * la fecha y el apuntador, más `backlog/pre-prompt.md` con la plantilla bilingüe del
- * motor. Se llama sólo tras la confirmación y un apply exitoso; la semilla es un
- * activo versionable del proyecto, no estado del arnés (fuera del plan, del lock y
- * de `sync`). El CLI no ejecuta el pre-prompt ni llama a ningún modelo (R4).
+ * Clasifica un `seed.md` existente frente a la idea nueva (D5): con fence → igual o colisión; plantilla exacta de
+ * 0.13.0 → migra solo si su texto coincide con la idea; cualquier otra forma → colisión.
  */
-export async function writeBacklogSeed(ctx: CliContext, idea: string): Promise<void> {
+export function classifySeed(existing: string, idea: string): Exclude<SeedState, 'written'> {
+  const legacy = SEED_013.exec(existing);
+  if (legacy !== null) {
+    const raw = existing.slice(legacy[0].length);
+    if (!raw.endsWith('\n') || /^`{3,}markdown$/m.test(raw)) {
+      return 'collision';
+    }
+    return normalizeIdea(raw, 'backlog/seed.md') === idea ? 'migrated' : 'collision';
+  }
+  const section = existing.split('\n## Idea\n')[1];
+  const fenced = section === undefined ? null : extractFencedIdea(section);
+  return fenced !== null && fenced === idea ? 'unchanged' : 'collision';
+}
+
+const SEED_LINES: Record<SeedState, string> = {
+  written: 'backlog: seed.md escrito',
+  unchanged: 'backlog: seed.md sin cambios',
+  migrated: 'backlog: seed.md migrado al formato con fence',
+  collision: 'backlog: seed.md existe y difiere; no se sobrescribió',
+};
+
+const PRE_PROMPT_LINES = {
+  written: 'backlog: pre-prompt.md escrito',
+  kept: 'backlog: pre-prompt.md sin cambios',
+  updated: 'backlog: pre-prompt.md actualizado a la plantilla nueva',
+  collision: 'backlog: pre-prompt.md editado por el proyecto; no se sobrescribió',
+} as const;
+
+/**
+ * Escritor de la semilla (design D5/D6/D13). `seed.md` es contenido de la persona: se escribe con fence si no
+ * existe, nunca se sobrescribe y solo migra desde 0.13.0 si coincide. `pre-prompt.md` es plantilla del motor:
+ * tres vías sobre `.ai-hub/.scaffold.json`. Se llama solo tras un apply exitoso; la semilla queda fuera del plan,
+ * del lock y de `sync`. El CLI no ejecuta el pre-prompt ni llama a ningún modelo (R4). Devuelve las líneas a
+ * imprimir, sin el texto de la idea.
+ */
+export async function writeBacklogSeed(
+  ctx: CliContext,
+  idea: string,
+  note: string,
+  now: Date = new Date(),
+): Promise<string[]> {
   const dir = path.join(ctx.root, 'backlog');
   await fs.mkdir(dir, { recursive: true });
-  const seed =
-    `# Semilla del proyecto\n\n` +
-    `> Registrada por \`ai-hub init\` el ${seedDate()}. La idea es textual: el arnés no\n` +
-    `> añade requisitos. Siguiente paso: abre \`backlog/pre-prompt.md\` en tu agente.\n\n` +
-    `## Idea\n\n${idea}\n`;
-  await fs.writeFile(path.join(dir, 'seed.md'), seed, 'utf8');
-  await fs.writeFile(path.join(dir, 'pre-prompt.md'), PRE_PROMPT, 'utf8');
+  const seedPath = path.join(dir, 'seed.md');
+  const existing = await fs.readFile(seedPath, 'utf8').catch(() => null);
+  let state: SeedState;
+  if (existing === null) {
+    state = 'written';
+  } else {
+    state = classifySeed(existing, idea);
+  }
+  if (state === 'written' || state === 'migrated') {
+    await fs.writeFile(seedPath, renderSeed(idea, note, now), 'utf8');
+  }
+  const prePrompt = await refreshTemplateFile(
+    ctx.root,
+    'backlog/pre-prompt.md',
+    PRE_PROMPT,
+    'engine:backlog/pre-prompt.md',
+    PRE_PROMPT_HISTORY,
+  );
+  const lines = [SEED_LINES[state], PRE_PROMPT_LINES[prePrompt]];
+  if (state === 'written' || state === 'migrated') {
+    lines.push('backlog: ejecuta backlog/pre-prompt.md en tu agente');
+  }
+  return lines;
+}
+
+const IDEA_QUESTION = '¿Cuál es la idea del proyecto? Pégala o escríbela; puede ocupar varias líneas';
+
+/**
+ * Paso 6 (idea-input): entrada multilínea si el adaptador la tiene; si no, el `text` de siempre (prompts
+ * inyectados). `null` = cancelación; `skip` = sin idea.
+ */
+async function askIdea(prompts: AssistantPrompts, ctx: CliContext, maxBytes: number): Promise<IdeaOutcome | null> {
+  if (prompts.longText) {
+    return prompts.longText(IDEA_QUESTION, { maxBytes, root: ctx.root });
+  }
+  const reply = await prompts.text('¿Cuál es la idea del proyecto? Una frase basta (vacío = saltar)');
+  if (reply === null) {
+    return null;
+  }
+  const text = normalizeIdea(reply, 'entrada');
+  return isBlankIdea(text) ? { kind: 'skip', source: 'paste' } : { kind: 'idea', text, source: 'paste', note: 'pegado en el asistente' };
 }
 
 /**
@@ -402,16 +504,25 @@ export async function runAssistantInit(ctx: CliContext): Promise<number> {
     ctx.io.err('preflight de Spec Kit fallido; no se escribió nada');
     return 2;
   }
-  // Paso 6 (D12): idea opcional (D6). No es flag: alimenta la semilla tras confirmar;
-  // vacío = saltar (sin backlog); null = cancelación (R5).
-  const ideaReply = await prompts.text(
-    '¿Cuál es la idea del proyecto? Una frase basta (vacío = saltar)',
-  );
-  if (ideaReply === null) {
+  // Paso 6 (D12, idea-input): idea opcional (D6). No es flag: alimenta la semilla tras confirmar;
+  // vacío = saltar (sin backlog); null = cancelación (R5). Entrada multilínea con bracketed paste (D1).
+  let maxBytes: number;
+  try {
+    maxBytes = maxIdeaBytes();
+  } catch (error) {
+    if (error instanceof IdeaInputError) {
+      ctx.io.err(`${error.message}; no se escribió nada`);
+      return 2;
+    }
+    throw error;
+  }
+  const ideaOutcome = await askIdea(prompts, ctx, maxBytes);
+  if (ideaOutcome === null) {
     ctx.io.out('init cancelado; no se escribió nada');
     return 0;
   }
-  const resolved: AssistantAnswers = { ...answers, idea: ideaReply === '' ? null : ideaReply };
+  const resolved: AssistantAnswers = { ...answers, idea: ideaOutcome.kind === 'idea' ? ideaOutcome.text : null };
+  const ideaNote = ideaOutcome.kind === 'idea' ? ideaOutcome.note : '';
   // Paso 7 (D12): el mismo JSON de `--dry-run` (plan + entorno real del paso 5) y
   // confirmación. Al confirmar, aplica por el mismo camino que `--yes` con los flags
   // resueltos (cmdInit recursivo: con `yes` el gate se apaga solo); al cancelar,
@@ -434,8 +545,9 @@ export async function runAssistantInit(ctx: CliContext): Promise<number> {
   // La semilla se escribe sólo tras un apply exitoso (D5/D6): activo del proyecto,
   // nunca estado del plan.
   if (code === 0 && resolved.idea !== null) {
-    await writeBacklogSeed(ctx, resolved.idea);
-    ctx.io.out('backlog: seed.md + pre-prompt.md escritos; ejecuta el pre-prompt en tu agente');
+    for (const line of await writeBacklogSeed(ctx, resolved.idea, ideaNote)) {
+      ctx.io.out(line);
+    }
   }
   if (code === 0) {
     await offerTrackerStep(prompts, ctx);
