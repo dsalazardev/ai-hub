@@ -401,7 +401,14 @@ export async function diagnose(ctx: CliContext, options: DoctorOptions = {}): Pr
       add('inventory', false, error instanceof Error ? error.message : String(error));
     }
 
-    if (source.isSource) {
+    // ci-verde 4.6: `.planning/` está gitignoreado; un clon limpio del motor (CI, o cualquiera que clone el repo)
+    // no lo trae. Sin `.planning/` el contexto no aplica; con él, falta de archivo, de hash o hash viejo son fallo.
+    const hasPlanning = source.isSource
+      ? await fs.stat(path.join(ctx.root, '.planning')).then((stat) => stat.isDirectory(), () => false)
+      : false;
+    if (source.isSource && !hasPlanning) {
+      add('context', true, 'no aplica: sin .planning/; ai-hub context lo crea');
+    } else if (source.isSource) {
       try {
         const content = await fs.readFile(path.join(ctx.root, CONTEXT_RELATIVE), 'utf8').catch(() => null);
         if (content === null) {

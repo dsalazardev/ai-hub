@@ -771,6 +771,32 @@ describe('memory, context and trunk', () => {
     expect((await cli(['doctor'])).code).toBe(0);
   });
 
+  it('doctor treats context as not applicable in an engine clone without .planning/ (ci-verde 4.6)', async () => {
+    // Un clon limpio del motor (CI o cualquiera que clone el repo) no trae .planning/: está gitignoreado.
+    await seeded();
+    const coreDir = path.join(root, 'core');
+    for (const dir of ['agents', 'presets', path.join('skills', 'shared'), 'src', path.join('dist', 'bin')]) {
+      await fs.mkdir(path.join(coreDir, dir), { recursive: true });
+    }
+    await fs.writeFile(
+      path.join(coreDir, 'package.json'),
+      JSON.stringify({
+        name: PACKAGE_NAME,
+        files: ['dist', 'schema', 'manifest.json', 'engine', 'presets', 'rules', 'agents', 'skills'],
+      }),
+    );
+    await fs.writeFile(path.join(coreDir, 'src', 'paths.ts'), 'export {};\n');
+    await fs.writeFile(path.join(coreDir, 'dist', 'bin', 'ai-hub.js'), '');
+    await writeInventory(root);
+    await fs.rm(path.join(root, '.planning'), { recursive: true, force: true });
+
+    const doctor = await cli(['doctor']);
+    expect(doctor.out).toMatch(/\[OK\]\s+context: no aplica: sin \.planning\//);
+    expect(doctor.out).not.toContain('[FAIL]');
+    expect(doctor.code).toBe(0);
+    await expect(fs.access(path.join(root, '.planning'))).rejects.toThrow();
+  });
+
   it('trunk lock and unlock persist state', async () => {
     await seeded();
     expect((await cli(['trunk', 'lock', 'main'])).code).toBe(0);
