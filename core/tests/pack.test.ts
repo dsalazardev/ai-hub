@@ -4,7 +4,9 @@ import { describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { packEntry } from './pack-entry.js';
 
+const PACKAGE = '@dsalazardev/ai-hub-cli';
 const CORE_ROOT = fileURLToPath(new URL('..', import.meta.url));
 const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const RUBRICS = [
@@ -18,6 +20,30 @@ async function sha256(file: string): Promise<string> {
   return createHash('sha256').update(await fs.readFile(file)).digest('hex');
 }
 
+describe('npm pack --json shapes (ci-verde 1.4)', () => {
+  const entry = { name: PACKAGE, files: [{ path: 'package.json' }], entryCount: 1 };
+
+  it('reads the npm 10 array output', () => {
+    expect(packEntry([entry], PACKAGE)).toEqual(entry);
+    expect(packEntry([{ ...entry, name: 'otro' }, entry], PACKAGE)).toEqual(entry);
+  });
+
+  it('reads the npm 11+ object output keyed by package name', () => {
+    expect(packEntry({ [PACKAGE]: entry }, PACKAGE)).toEqual(entry);
+  });
+
+  it('fails naming the package for an empty object, an empty array or an array without it', () => {
+    for (const data of [{}, [], [{ ...entry, name: 'otro' }]]) {
+      expect(() => packEntry(data, PACKAGE)).toThrow(PACKAGE);
+    }
+  });
+
+  it('fails naming the package for a single-element array without a name, never undefined', () => {
+    const { name: _omitted, ...nameless } = entry;
+    expect(() => packEntry([nameless], PACKAGE)).toThrow(PACKAGE);
+  });
+});
+
 describe('published package', () => {
   it('contains the four skill-quality rubrics and they match the workshop copy', async () => {
     const raw = execFileSync('npm', ['pack', '--dry-run', '--json'], {
@@ -25,11 +51,7 @@ describe('published package', () => {
       encoding: 'utf8',
       shell: process.platform === 'win32',
     });
-    const data = JSON.parse(raw) as Record<
-      string,
-      { files: Array<{ path: string }>; entryCount: number }
-    >;
-    const pkg = data['@dsalazardev/ai-hub-cli'];
+    const pkg = packEntry(JSON.parse(raw), PACKAGE);
     expect(pkg).toBeDefined();
     const paths = pkg.files.map((file) => file.path);
     expect(paths).toEqual(

@@ -42,6 +42,9 @@ export function speckitSequence(settings: SpeckitSettings): string[][] {
     '--here',
     '--force',
     '--non-interactive',
+    // ci-verde D1: los destinos son opcionales; sin esto `specify init` aborta si la CLI del agente no está
+    // instalada ("Agent Detection Error"), como en CI, un servidor o un contenedor limpio.
+    '--ignore-agent-tools',
     '--integration',
     defaultIntegration,
     '--script',

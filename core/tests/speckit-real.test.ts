@@ -266,6 +266,88 @@ describe('end to end (10.1)', () => {
   });
 });
 
+/** Directorios del PATH que contienen alguna CLI de agente de un destino de Spec Kit (ci-verde 1.2). */
+const AGENT_CLIS = ['claude', 'opencode', 'pi', 'cursor-agent'];
+
+async function hasExecutable(dir: string, name: string): Promise<boolean> {
+  const exts = process.platform === 'win32' ? ['', ...(process.env.PATHEXT ?? '.EXE;.CMD;.BAT;.COM').split(';')] : [''];
+  for (const ext of exts) {
+    if (await fs.access(path.join(dir, `${name}${ext.toLowerCase()}`)).then(() => true, () => false)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+async function countMatching(dir: string, pattern: RegExp): Promise<number> {
+  const names = await fs.readdir(path.join(root, ...dir.split('/'))).catch(() => [] as string[]);
+  return names.filter((name) => pattern.test(name)).length;
+}
+
+describe('without the coding agent CLI (ci-verde 1.2)', () => {
+  it(
+    'installs Spec Kit with every declared integration and its commands when no agent CLI is on PATH',
+    { timeout: 300_000 },
+    async ({ skip }) => {
+      const entries = (process.env.PATH ?? '').split(path.delimiter).filter((entry) => entry !== '');
+      const kept: string[] = [];
+      for (const entry of entries) {
+        let agent = false;
+        for (const name of AGENT_CLIS) {
+          agent ||= await hasExecutable(entry, name);
+        }
+        if (!agent) {
+          kept.push(entry);
+        }
+      }
+      // Lo que el filtro no puede quitar: uvx (Spec Kit) y, en POSIX, bash. En Windows bash se resuelve
+      // fuera del PATH (Git Bash), así que solo se exige uvx.
+      const required = process.platform === 'win32' ? ['uvx'] : ['uvx', 'bash'];
+      const lost: string[] = [];
+      for (const tool of required) {
+        let found = false;
+        for (const entry of kept) {
+          found ||= await hasExecutable(entry, tool);
+        }
+        if (!found) {
+          lost.push(tool);
+        }
+      }
+      if (lost.length > 0) {
+        const reason = `sin las CLIs de agentes el PATH pierde ${lost.join(' y ')}`;
+        if (process.platform === 'win32') {
+          skip(reason);
+        }
+        // En Linux (el entorno del CI) esta prueba nunca se salta: perder uvx o bash es un fallo.
+        throw new Error(reason);
+      }
+      setEnv('PATH', kept.join(path.delimiter));
+      try {
+        const result = await cli(['init', '--yes', '--preset-only']);
+        expect(result.code, result.out).toBe(0);
+        const integration = JSON.parse(await readText('.specify/integration.json'));
+        expect(integration.installed_integrations).toEqual(['claude', 'opencode', 'pi', 'cursor-agent']);
+        expect(integration.default_integration).toBe('claude');
+        const commandDirs: Array<[string, RegExp, RegExp]> = [
+          ['.claude/skills', /^speckit-bug-/, /^speckit-assess-/],
+          ['.opencode/commands', /^speckit\.bug\./, /^speckit\.assess\./],
+          ['.pi/prompts', /^speckit\.bug\./, /^speckit\.assess\./],
+          ['.cursor/skills', /^speckit-bug-/, /^speckit-assess-/],
+        ];
+        for (const [dir, bug, assess] of commandDirs) {
+          expect(await countMatching(dir, bug), `${dir}: comandos de bug`).toBe(3);
+          expect(await countMatching(dir, assess), `${dir}: comandos de assess`).toBe(5);
+        }
+        const doctor = await cli(['doctor']);
+        expect(doctor.out).not.toContain('[FAIL]');
+        expect(doctor.code, doctor.out).toBe(0);
+      } finally {
+        setEnv('PATH', savedEnv.PATH);
+      }
+    },
+  );
+});
+
 describe('failure matrix (10.2)', () => {
   it('missing uv on the real PATH exits 2 and writes nothing', { timeout: 120_000 }, async () => {
     const entries = (process.env.PATH ?? '').split(path.delimiter);

@@ -64,6 +64,8 @@ describe('installation sequence (3.1, 3.2)', () => {
       '--here',
       '--force',
       '--non-interactive',
+      // ci-verde: los destinos son opcionales; Spec Kit no debe exigir la CLI del agente instalada.
+      '--ignore-agent-tools',
       '--integration',
       'claude',
       '--script',

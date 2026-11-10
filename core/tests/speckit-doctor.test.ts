@@ -121,7 +121,8 @@ describe('shell (7.2)', () => {
 
   it('names the absolute shell resolved outside the PATH', async () => {
     const { speckitShellDetail } = await import('../src/speckit/doctor.js');
-    const gitBash = 'C:\\Program Files\\Git\\bin\\bash.exe';
+    // ci-verde D5: ruta absoluta de la plataforma en curso; en POSIX, path.isAbsolute('C:\\…') es false.
+    const gitBash = process.platform === 'win32' ? 'C:\\Program Files\\Git\\bin\\bash.exe' : '/opt/git/bin/bash';
     const absolute = speckitShellDetail({ ok: true, command: gitBash, tried: ['bash', gitBash] }, 'sh');
     expect(absolute).toContain('resuelto fuera del PATH');
     expect(absolute).toContain(gitBash);

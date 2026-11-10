@@ -44,6 +44,23 @@ líneas 19–399 llegaron al shell, con 42 errores de PowerShell.
 - `--idea-stdin`, `--idea-editor` y `--discord-token-stdin` son flags booleanos: ya no se tragan el argumento
   siguiente.
 
+### Spec Kit
+
+- **`init` e `install` ya instalan Spec Kit en una máquina sin la CLI del agente** (CI, servidores, contenedores
+  limpios).
+  - **Antes:** `specify init` abortaba con «Agent Detection Error — claude not found» y el arnés salía con error,
+    aunque los destinos son opcionales.
+  - **Ahora:** cada `specify init` lleva `--ignore-agent-tools`. `integration install` e `integration use` no lo
+    necesitan (medido sin ninguna CLI de agente) y no lo llevan.
+  - **Qué se instala no cambia:** con la CLI presente, `integration.json`, `init-options.json` y los 72 comandos de
+    Spec Kit quedan idénticos, comprobado por SHA-256. El plan y su hash no cambian.
+
+### Taller/CI
+
+- Las pruebas pasan también con npm 10 y en POSIX:
+  - `pack.test` lee la salida de `npm pack --json` tanto en array (npm 10, el del CI) como en objeto (npm ≥ 11);
+  - la prueba de `speckit-doctor` usa una ruta absoluta de la plataforma en curso.
+
 ## 0.13.0 — control-onboarding: conexión automática del plano de control (2026-11-09)
 
 `ai-hub init` deja el plano de control **completo y funcionando en una sola pasada opt-in**, con un bot propio
