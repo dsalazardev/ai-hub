@@ -1,6 +1,6 @@
 # Changelog
 
-## Sin publicar — idea-input: captura de la idea sin truncar ni fugas al shell
+## 0.14.0 — idea-input: captura de la idea sin truncar ni fugas al shell (2026-11-10)
 
 ### Seguridad
 
@@ -60,6 +60,23 @@ líneas 19–399 llegaron al shell, con 42 errores de PowerShell.
 - Las pruebas pasan también con npm 10 y en POSIX:
   - `pack.test` lee la salida de `npm pack --json` tanto en array (npm 10, el del CI) como en objeto (npm ≥ 11);
   - la prueba de `speckit-doctor` usa una ruta absoluta de la plataforma en curso.
+
+### Cifras medidas
+
+Re-medidas con el CLI compilado de 0.14.0 en copias temporales (`--no-speckit`); idénticas a 0.13.0:
+
+| Instalación | Destinos en `sync.lock.json` |
+|---|---|
+| `init --yes` (`generic-ts`, full) | 6.872 |
+| `init --yes --preset-only` | 66 |
+| `init --yes --exclude rule:skill-quality` | 6.852 |
+| `init --yes --preset angular-express` | 6.887 |
+
+`full` instala 262 skills de proyecto + 17 comandos Spec Kit, 40 agentes y 6 reglas universales.
+
+### Empaquetado
+
+- `core/package.json` en `0.14.0`. Tarball: **1.985 → 1.987 entradas** (+2: `dist/cli/idea` en `.js` y `.d.ts`).
 
 ## 0.13.0 — control-onboarding: conexión automática del plano de control (2026-11-09)
 

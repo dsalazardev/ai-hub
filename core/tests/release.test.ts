@@ -26,22 +26,19 @@ async function currentSection(): Promise<{ version: string; date: string; body: 
   return { version: pkg.version, date: heading[1], body: changelog.slice(start, next < 0 ? undefined : next) };
 }
 
-describe('release 0.13.0 (control-onboarding)', () => {
-  it('bumps the package and names the step, its specs, the package delta and what stays pending', async () => {
+describe('release 0.14.0 (idea-input)', () => {
+  it('bumps the package and names the step, the vulnerability and what changed in Spec Kit', async () => {
     const section = await currentSection();
-    expect(section.version).toBe('0.13.0');
-    expect(section.date).toBe('2026-11-09');
-    for (const flag of ['--connect-hermes', '--discord-token-stdin', '--allow-unvalidated', '--reconfigure-hermes']) {
+    expect(section.version).toBe('0.14.0');
+    expect(section.date).toBe('2026-11-10');
+    for (const flag of ['--idea-file', '--idea-stdin', '--idea-editor', 'AI_HUB_MAX_IDEA']) {
       expect(section.body).toContain(flag);
     }
-    expect(section.body).toContain('15 requisitos');
-    expect(section.body).toContain('hermes-control');
-    expect(section.body).toContain('interactive-onboarding');
-    expect(section.body).toContain('externos y opcionales');
-    expect(section.body).toContain('1.981 → 1.985 entradas');
-    expect(section.body).toContain('Sin cambios en los caminos sin Hermes');
-    expect(section.body).toMatch(/Discord[\s\S]*perfil[\s\S]*gateway/);
-    expect(section.body).not.toMatch(/telegram/i);
+    expect(section.body).toContain('desde 0.7.0');
+    expect(section.body).toContain('0.7.0–0.13.0');
+    expect(section.body).toContain('--ignore-agent-tools');
+    expect(section.body).toContain('1.985 → 1.987 entradas');
+    expect(section.body).toMatch(/bracketed paste/);
   });
 
   // El ritual iguala versión y fixture: la comprobación de cifras es estricta, sin omisión.
