@@ -1156,7 +1156,7 @@ describe('idea-input fase 5 — documentación (5.7, D8)', () => {
     const workshop = await read('../README.md');
     const changelog = await read('../CHANGELOG.md');
     expect(workshop).toContain('Aviso de seguridad (0.7.0–0.13.0)');
-    expect(changelog).toMatch(/^## Sin publicar — idea-input/m);
+    expect(changelog).toMatch(/^## (?:\d+\.\d+\.\d+ — idea-input|Sin publicar — idea-input)/m);
     expect(changelog).toContain('**Mitigación en versiones anteriores:**');
   });
 });
