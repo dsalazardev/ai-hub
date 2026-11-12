@@ -26,19 +26,19 @@ async function currentSection(): Promise<{ version: string; date: string; body: 
   return { version: pkg.version, date: heading[1], body: changelog.slice(start, next < 0 ? undefined : next) };
 }
 
-describe('release 0.14.0 (idea-input)', () => {
-  it('bumps the package and names the step, the vulnerability and what changed in Spec Kit', async () => {
+describe('release 0.15.0 (init-fiabilidad)', () => {
+  it('bumps the package and names the root, the status line and the control contract', async () => {
     const section = await currentSection();
-    expect(section.version).toBe('0.14.0');
-    expect(section.date).toBe('2026-11-10');
-    for (const flag of ['--idea-file', '--idea-stdin', '--idea-editor', 'AI_HUB_MAX_IDEA']) {
+    expect(section.version).toBe('0.15.0');
+    expect(section.date).toBe('2026-11-12');
+    for (const flag of ['--dir', 'AI_HUB_DIR', '--connect-hermes']) {
       expect(section.body).toContain(flag);
     }
-    expect(section.body).toContain('desde 0.7.0');
-    expect(section.body).toContain('0.7.0–0.13.0');
-    expect(section.body).toContain('--ignore-agent-tools');
-    expect(section.body).toContain('1.985 → 1.987 entradas');
-    expect(section.body).toMatch(/bracketed paste/);
+    expect(section.body).toContain('ai-hub-integration:');
+    expect(section.body).toContain('channelId');
+    expect(section.body).toContain('WEBHOOK_ENABLED');
+    expect(section.body).toContain('SOUL.md.pre-ai-hub');
+    expect(section.body).toContain('%LOCALAPPDATA%');
   });
 
   // El ritual iguala versión y fixture: la comprobación de cifras es estricta, sin omisión.

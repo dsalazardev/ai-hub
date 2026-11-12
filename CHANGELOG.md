@@ -1,6 +1,6 @@
 # Changelog
 
-## Sin publicar
+## 0.15.0 — init-fiabilidad: instalación recuperable y control verificable (2026-11-12)
 
 ### BREAKING
 
@@ -45,6 +45,24 @@ Migración: completa el perfil que falte y añade `channelId` al `manifest.contr
   incluye operación, etapa, estado, clase y `code`, sin cuerpo, cabeceras ni token.
 - **Windows.** El resolver de Hermes encuentra `%LOCALAPPDATA%\hermes\hermes-agent\.hermes\bin\hermes.exe` y
   distingue, por candidato, ausente, no ejecutable, `--version` fallido y versión antigua.
+
+### Cifras medidas
+
+Re-medidas en esta sesión con el CLI compilado en copias temporales (`--no-speckit`):
+
+| Instalación | Entradas de `sync.lock.json` |
+|---|---|
+| `init --yes` (`generic-ts`, full) | 6.872 |
+| `init --yes --preset-only` | 66 |
+| `init --yes --exclude rule:skill-quality` | 6.852 |
+| `init --yes --preset angular-express` | 6.887 |
+
+262 skills de proyecto + 17 comandos Spec Kit, 40 agentes y 5 destinos.
+
+### Empaquetado
+
+- Tarball `dsalazardev-ai-hub-cli-0.15.0.tgz`: **1996 entradas**, shasum
+  `629c4ee319d68c44f23846ea10d3a60200ed22f9`, 4.662.172 bytes (13.065.558 desempaquetados).
 
 ## 0.14.0 — idea-input: captura de la idea sin truncar ni fugas al shell (2026-11-10)
 
