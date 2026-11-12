@@ -16,16 +16,29 @@ const BOT_TOKEN_SENTINEL = 'AIHUB_BOT_TOKEN_SENTINEL_7a2d';
 interface FakeBinaries {
   files: Record<string, string>;
   calls: Array<{ command: string; args: string[] }>;
+  notExecutable?: Set<string>;
+  versionFails?: Set<string>;
 }
 
 function fakeHost(platform: NodeJS.Platform, env: Record<string, string>, home: string, binaries: FakeBinaries): ResolverHost {
   const exec: ProcessRunner = async (command, args) => {
     binaries.calls.push({ command, args });
     const target = /cmd\.exe$/i.test(command) ? args[3] : command;
+    if (binaries.versionFails?.has(target)) {
+      return { status: 1, stdout: '', stderr: 'version query failed' };
+    }
     const version = binaries.files[target];
     return version ? { status: 0, stdout: `Hermes Agent v${version} (2026.9.24) · stable`, stderr: '' } : { status: null, stdout: '', stderr: '', error: 'ENOENT' };
   };
-  return { platform, env, home, cwd: home, exec, exists: async (file) => file in binaries.files };
+  return {
+    platform,
+    env,
+    home,
+    cwd: home,
+    exec,
+    exists: async (file) => file in binaries.files,
+    ...(binaries.notExecutable ? { executable: async (file: string) => !binaries.notExecutable?.has(file) } : {}),
+  } as ResolverHost;
 }
 
 describe('fase 4 — resolver de Hermes (4.6)', () => {
@@ -59,6 +72,34 @@ describe('fase 4 — resolver de Hermes (4.6)', () => {
     expect(cli.path).toBe('C:\\Users\\u\\AppData\\Local\\hermes\\bin\\hermes.exe');
   });
 
+  it('finds the native installer agent directory on Windows', async () => {
+    const env = { PATH: 'C:\\Windows', LOCALAPPDATA: 'C:\\Users\\u\\AppData\\Local' };
+    const agent = 'C:\\Users\\u\\AppData\\Local\\hermes\\hermes-agent\\.hermes\\bin\\hermes.exe';
+    const cli = await resolveHermes(fakeHost('win32', env, 'C:\\Users\\u', { files: { [agent]: '0.23.0' }, calls: [] }));
+    expect(cli.path).toBe(agent);
+  });
+
+  it('never includes Windows locations on POSIX', () => {
+    const host = fakeHost('linux', { PATH: '' }, '/home/u', { files: {}, calls: [] });
+    const candidates = hermesCandidates(host);
+    expect(candidates.some((item) => /[A-Za-z]:\\|\\\\/.test(item))).toBe(false);
+  });
+
+  it('reports a present candidate as not executable instead of missing', async () => {
+    const bins: FakeBinaries = { files: { '/usr/bin/hermes': '0.23.0' }, calls: [], notExecutable: new Set(['/usr/bin/hermes']) };
+    const error = (await resolveHermes(fakeHost('linux', { PATH: '/usr/bin' }, '/home/u', bins)).catch((caught: unknown) => caught)) as HermesNotFoundError;
+    expect(error).toBeInstanceOf(HermesNotFoundError);
+    expect(error.message).toContain('/usr/bin/hermes');
+    expect(error.message).toContain('presente pero no ejecutable');
+  });
+
+  it('reports a failed version query with its exit code', async () => {
+    const bins: FakeBinaries = { files: { '/usr/bin/hermes': '0.23.0' }, calls: [], versionFails: new Set(['/usr/bin/hermes']) };
+    const error = (await resolveHermes(fakeHost('linux', { PATH: '/usr/bin' }, '/home/u', bins)).catch((caught: unknown) => caught)) as HermesNotFoundError;
+    expect(error.message).toContain('/usr/bin/hermes');
+    expect(error.message).toContain('--version falló (exit 1)');
+  });
+
   it('accepts the npm shim hermes.cmd on Windows and runs it through cmd.exe', async () => {
     const bins: FakeBinaries = { files: { 'C:\\npm\\hermes.cmd': '0.23.0' }, calls: [] };
     const cli = await resolveHermes(fakeHost('win32', { PATH: 'C:\\npm', ComSpec: 'C:\\Windows\\system32\\cmd.exe' }, 'C:\\Users\\u', bins));
@@ -79,7 +120,7 @@ describe('fase 4 — resolver de Hermes (4.6)', () => {
     const error = (await resolveHermes(host).catch((caught: unknown) => caught)) as HermesNotFoundError;
     expect(error).toBeInstanceOf(HermesNotFoundError);
     expect(error.tried).toEqual(hermesCandidates(host));
-    for (const expected of ['C:\\Windows\\hermes.exe', 'C:\\tools\\hermes.cmd', 'C:\\tools\\hermes.bat', 'C:\\L\\hermes\\bin\\hermes.exe', 'C:\\U\\.local\\bin\\hermes.exe', 'C:\\R\\Python\\Scripts\\hermes.exe', 'C:\\R\\npm\\hermes.cmd']) {
+    for (const expected of ['C:\\Windows\\hermes.exe', 'C:\\tools\\hermes.cmd', 'C:\\tools\\hermes.bat', 'C:\\L\\hermes\\bin\\hermes.exe', 'C:\\L\\hermes\\hermes-agent\\.hermes\\bin\\hermes.exe', 'C:\\U\\.local\\bin\\hermes.exe', 'C:\\R\\Python\\Scripts\\hermes.exe', 'C:\\R\\npm\\hermes.cmd']) {
       expect(error.message).toContain(expected);
     }
   });
@@ -185,7 +226,7 @@ describe('fase 4 — control enroll (4.2, 4.3)', () => {
     const second = await runEnroll(h.root, { mode: 'yes', hermes: hermesBin, host });
     expect(second.code).toBe(0);
     expect(creating(state.calls)).toEqual([]);
-    expect(second.lines.filter((line) => line.startsWith('[presente]'))).toHaveLength(6);
+    expect(second.lines.filter((line) => line.startsWith('[presente]'))).toHaveLength(8);
   });
 });
 
@@ -209,14 +250,14 @@ describe('fase 4 — perfil y credenciales de Discord (4.7, 4.8)', () => {
   it('--check reports the three keys by presence only', async () => {
     await profileEnv({ DISCORD_BOT_TOKEN: BOT_TOKEN_SENTINEL, DISCORD_ALLOWED_USERS: '123456789012345678', DISCORD_ALLOWED_CHANNELS: '987654321098765432' });
     const outcome = await runEnroll(h.root, { mode: 'check', hermes: hermesBin, host });
-    expect(outcome.code).toBe(0);
+    // El perfil de este fixture solo tiene .env: el check completo lo declara incompleto, pero las claves se leen.
+    expect(outcome.code).toBe(1);
     const text = outcome.lines.join('\n');
     for (const key of ['DISCORD_BOT_TOKEN', 'DISCORD_ALLOWED_USERS', 'DISCORD_ALLOWED_CHANNELS']) {
-      expect(text).toContain(`[OK]   ${key}: presente`);
+      expect(text).toMatch(new RegExp(`\\[OK\\] +${key}: presente`));
     }
-    for (const value of [BOT_TOKEN_SENTINEL, '123456789012345678', '987654321098765432']) {
-      expect(text).not.toContain(value);
-    }
+    // Los ids no son secretos y el check informa del canal; el token jamás se imprime.
+    expect(text).not.toContain(BOT_TOKEN_SENTINEL);
     expect(creating(state.calls)).toEqual([]);
   });
 

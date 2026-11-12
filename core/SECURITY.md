@@ -47,17 +47,35 @@ never lets a line break submit. For non-interactive runs, `--idea-file` is the s
 
 | Surface | What it does | Guarantees |
 |---|---|---|
-| `init` / `install` / `sync` | Write `.ai-hub/` and the agent destinations of the selected targets | Never write credentials; never overwrite a file the project edited; snapshot before risky steps |
+| `init` / `install` / `sync` | Write `.ai-hub/` and the agent destinations of the selected targets | Never write credentials on their own: only the two opt-in steps of `init` listed in «Credentials the package writes» do, and only with what the person types; never overwrite a file the project edited; snapshot before risky steps |
 | Host hooks (`ai-hub hook pre\|post\|stop`) | Run on every shell command and edit of Claude Code and OpenCode | Fail open on any error; `guardMode: shadow` by default; the post hook reports, never reverts |
 | Git hooks (`hooks install`) | `pre-commit` / `post-merge` | Exit 0 when `npx` is missing; never block because the harness is absent |
 | `.ai-hub/.env` | Local credentials of the harness | Ignored by git from `init`; excluded from snapshots; only presence of keys is checked; the token is only typed by the person in the interactive assistant |
 | `doctor --online`, `control tick --online` | One read-only request to the declared tracker | Opt-in; output redacted; no write calls |
 | `ai-hub control apply` / `expire` (hermes-control) | Move `ai::` labels of existing issues and post notes, only after an allow-listed Discord approval (or on expiry, only to `ai::blocked`) | Revalidates label, seal and WIP before writing; one label update and one note per decision; never creates issues, merges or pushes; token read inside the process, never printed |
-| `ai-hub init` control step (`control-onboarding`) | Writes the Discord bot token the person typed (masked prompt, or standard input with `--connect-hermes`) | The only credential the package writes, and only to the `.env` of the Hermes profile `hermes-control` (atomic write, owner-only permissions where supported); validated with Discord before saving; never to `.ai-hub/.env`, `manifest.yaml`, the plan, logs or git; never printed; refused when another profile already uses it |
+| `ai-hub init` control step (`control-onboarding`) | Writes the Discord bot token the person typed (masked prompt, or standard input with `--connect-hermes`) | Written only to the `.env` of the Hermes profile `hermes-control` (atomic write, owner-only permissions where supported; see «Credentials the package writes»); validated with Discord before saving; never to `.ai-hub/.env`, `manifest.yaml`, the plan, logs or git; never printed; refused when another profile already uses it |
 | `ai-hub control enroll` | Writes the `hermes-control` profile, skill, scripts, webhook route and cron in Hermes | Opt-in, `--dry-run` first; never passes `--secret` nor prints the webhook secret; reads the profile `.env` only to check key presence and bot-token collisions |
-| Idea step of `init` (assistant entry, `--idea-file`, `--idea-stdin`, `--idea-editor`) | Reads the project idea and writes it to `backlog/seed.md` (and `IDEA.md` with the control step) | Bracketed paste is enabled and every pasted byte is consumed before returning, so nothing reaches a later prompt or the shell; raw mode is restored on every exit; a line break never submits; 4 MiB limit (`AI_HUB_MAX_IDEA`), never truncated; the idea never enters the plan, lock, manifest, runs or any message; an existing seed is never overwritten. In conhost without bracketed paste a 30 ms quiet window and a final drain apply. On Windows the console delivers a paste at about 15 KB/s, so for texts above ~64 KiB use Ctrl+E or `--idea-file`; the 4 MiB limit is a memory limit, not a paste limit |
+| Idea step of `init` (assistant entry, `--idea-file`, `--idea-stdin`, `--idea-editor`) | Reads the project idea and writes it to `backlog/seed.md` and, next to it in the base installation, to `IDEA.md` at the root (never overwritten; not written when the seed holds another idea) | Bracketed paste is enabled and every pasted byte is consumed before returning, so nothing reaches a later prompt or the shell; raw mode is restored on every exit; a line break never submits; 4 MiB limit (`AI_HUB_MAX_IDEA`), never truncated; the idea never enters the plan, lock, manifest, runs or any message; an existing seed is never overwritten. In conhost without bracketed paste a 30 ms quiet window and a final drain apply. On Windows the console delivers a paste at about 15 KB/s, so for texts above ~64 KiB use Ctrl+E or `--idea-file`; the 4 MiB limit is a memory limit, not a paste limit |
 | `ai-hub runs` | Run telemetry in `.ai-hub/runs/` (ignored) | Closed schema; rejects prompts, file contents, credential-looking strings and values of `.ai-hub/.env` |
 | Generated rules and skills | Text loaded into coding agents | Ingested content is data, never instructions (universal rule); references are linted before publishing |
+
+## Credentials the package writes
+
+The package never creates a credential and never writes one on its own. Two opt-in steps of `ai-hub init` write
+exactly what the person types, and nothing else writes a credential:
+
+| Credential | Written by | Authorized by | Lives in | Ignore rule | Printed or logged |
+|---|---|---|---|---|---|
+| `GITLAB_TOKEN` (with `GITLAB_URL`) | The tracker step of the interactive assistant (`interactive-onboarding`) | The person at the terminal, accepting the step and typing the token in a masked prompt | `.ai-hub/.env` of the project, with owner-only mode where supported; an existing file is never overwritten | `.ai-hub/.env` is ignored by git from `init` and excluded from snapshots | Never printed nor logged; `doctor` checks presence only, and `doctor --online` shows a redacted identity |
+| `DISCORD_BOT_TOKEN` (with `DISCORD_ALLOWED_USERS`, `DISCORD_ALLOWED_CHANNELS`, `DISCORD_HOME_CHANNEL`) | The control step of `init` (`control-onboarding`): interactive, or `--connect-hermes` with `--discord-token-stdin` | The person, accepting the step and typing the token (masked prompt) or piping it on standard input; never as a flag value | `.env` of the Hermes profile `hermes-control` (outside the repository), atomic write with owner-only mode where supported | Outside the repository; never in `.ai-hub/.env`, `manifest.yaml`, the plan or git | Never printed nor logged; Hermes output shown on a failure is redacted (profile values, the typed token, secret lines, URL credentials) |
+
+Platform notes:
+
+- **Windows.** Owner-only mode (`0600`) is applied where the platform supports it; on Windows it does not change
+  the access control list of the file. Protect the folders with the operating system's own permissions.
+- **OneDrive and other synchronized folders.** `.ai-hub/.env` is ignored by git, but a project inside a synchronized
+  folder (for example OneDrive) can still upload it to the cloud. Keep projects with credentials outside synchronized
+  folders, or exclude `.ai-hub/.env` from the synchronization.
 
 ## Rotating credentials
 

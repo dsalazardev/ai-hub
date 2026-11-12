@@ -18,11 +18,19 @@ let root: string;
 async function cli(
   argv: string[],
   fake: FakeRunner = fakeRunner(),
-): Promise<{ code: number; out: string; fake: FakeRunner }> {
+): Promise<{ code: number; out: string; stdout: string; fake: FakeRunner }> {
+  // init-fiabilidad (DEV-05): `out` mezcla stdout y stderr para los mensajes; el plan JSON se lee solo de `stdout`.
   const out: string[] = [];
-  const io: CliIO = { out: (line) => out.push(line), err: (line) => out.push(line) };
+  const stdout: string[] = [];
+  const io: CliIO = {
+    out: (line) => {
+      out.push(line);
+      stdout.push(line);
+    },
+    err: (line) => out.push(line),
+  };
   const code = await runCli(argv, { cwd: root, io, exec: fake.run });
-  return { code, out: out.join('\n'), fake };
+  return { code, out: out.join('\n'), stdout: stdout.join('\n'), fake };
 }
 
 async function read(rel: string): Promise<string> {
@@ -387,8 +395,8 @@ describe('--script flag (3.1, 3.2, 3.3)', () => {
     const ps = await cli(['init', '--dry-run', '--script', 'ps']);
     expect(sh.code).toBe(0);
     expect(ps.code).toBe(0);
-    const shPlan = JSON.parse(sh.out) as { hash: string; speckit: { script: string } };
-    const psPlan = JSON.parse(ps.out) as { hash: string; speckit: { script: string } };
+    const shPlan = JSON.parse(sh.stdout) as { hash: string; speckit: { script: string } };
+    const psPlan = JSON.parse(ps.stdout) as { hash: string; speckit: { script: string } };
     expect(shPlan.speckit.script).toBe('sh');
     expect(psPlan.speckit.script).toBe('ps');
     expect(shPlan.hash).not.toBe(psPlan.hash);
@@ -399,7 +407,7 @@ describe('--scripts flag (script-choice 3.1)', () => {
   it('accepts py as --script and the rejection names sh, ps and py', async () => {
     const plan = await cli(['init', '--dry-run', '--script', 'py']);
     expect(plan.code, plan.out).toBe(0);
-    expect((JSON.parse(plan.out) as { speckit: { script: string } }).speckit.script).toBe('py');
+    expect((JSON.parse(plan.stdout) as { speckit: { script: string } }).speckit.script).toBe('py');
     const rejected = await cli(['init', '--yes', '--script', 'zsh']);
     expect(rejected.code).toBe(2);
     expect(rejected.out).toMatch(/acepta sh, ps o py/);
@@ -500,8 +508,8 @@ describe('plan body scripts (script-choice 3.3)', () => {
     const explicit = await cli(['init', '--dry-run', '--scripts', 'sh,ps,py']);
     expect(bare.code, bare.out).toBe(0);
     expect(explicit.code, explicit.out).toBe(0);
-    const barePlan = JSON.parse(bare.out) as { hash: string; speckit: Record<string, unknown> };
-    const explicitPlan = JSON.parse(explicit.out) as { hash: string; speckit: Record<string, unknown> };
+    const barePlan = JSON.parse(bare.stdout) as { hash: string; speckit: Record<string, unknown> };
+    const explicitPlan = JSON.parse(explicit.stdout) as { hash: string; speckit: Record<string, unknown> };
     expect(barePlan.speckit.scripts).toBeUndefined();
     expect(explicitPlan.speckit.scripts).toBeUndefined();
     expect(explicitPlan.hash).toBe(barePlan.hash);
@@ -511,8 +519,8 @@ describe('plan body scripts (script-choice 3.3)', () => {
     const bare = await cli(['init', '--dry-run']);
     const py = await cli(['init', '--dry-run', '--scripts', 'py']);
     expect(py.code, py.out).toBe(0);
-    const barePlan = JSON.parse(bare.out) as { hash: string };
-    const pyPlan = JSON.parse(py.out) as {
+    const barePlan = JSON.parse(bare.stdout) as { hash: string };
+    const pyPlan = JSON.parse(py.stdout) as {
       hash: string;
       speckit: { scripts?: string[]; script: string };
     };

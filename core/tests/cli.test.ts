@@ -5,6 +5,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { runCli, COMMAND_NAMES } from '../src/cli/run.js';
+import { cmdInit } from '../src/cli/onboarding.js';
+import { parseArgs } from '../src/cli/args.js';
 import { writeInventory } from '../src/manifest/manifest.js';
 import { ENGINE_SKILLS_DIR } from '../src/engine/engine.js';
 import { listBackups } from '../src/backup/snapshots.js';
@@ -277,6 +279,201 @@ describe('init', () => {
     expect((await cli(['init', '--preset-only', '--yes', '--hooks'])).code).toBe(0);
     const hook = await fs.readFile(path.join(root, '.git', 'hooks', 'post-merge'), 'utf8');
     expect(hook).toContain('ai-hub worktrees reap --auto');
+  });
+});
+
+describe('init-fiabilidad 2.1 — explicit root (DEV-00, DEV-01, DEV-01a, DEV-02)', () => {
+  const FLAGS = ['--preset-only', '--no-speckit', '--yes'];
+  const previousEnv = process.env.AI_HUB_DIR;
+
+  afterEach(() => {
+    if (previousEnv === undefined) delete process.env.AI_HUB_DIR;
+    else process.env.AI_HUB_DIR = previousEnv;
+  });
+
+  async function cliIn(cwd: string, argv: string[]): Promise<{ code: number; out: string; err: string }> {
+    const sink = capture();
+    const code = await runCli(argv, { cwd, io: sink.io, exec: fakeRunner().run });
+    return { code, out: sink.out.join('\n'), err: sink.err.join('\n') };
+  }
+
+  async function project(dir: string): Promise<void> {
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(path.join(dir, 'package.json'), JSON.stringify({ name: 'demo' }));
+  }
+
+  const listing = async (dir: string): Promise<string[]> => (await fs.readdir(dir)).sort();
+
+  it('init root is cwd, never an ancestor', async () => {
+    const cwd = path.join(root, 'nuevo');
+    await project(cwd);
+    expect((await cliIn(cwd, ['init', ...FLAGS])).code).toBe(0);
+    await fs.access(path.join(cwd, 'manifest.yaml'));
+    await fs.access(path.join(cwd, '.ai-hubrc.json'));
+    expect(await listing(root)).toEqual(['nuevo']);
+  });
+
+  it('init --yes exits 2 on an implicit ancestor', async () => {
+    await fs.writeFile(path.join(root, 'manifest.yaml'), 'version: 2\n');
+    const cwd = path.join(root, 'prueba');
+    await project(cwd);
+    const result = await cliIn(cwd, ['init', ...FLAGS]);
+    expect(result.code).toBe(2);
+    expect(result.err).toContain(root);
+    expect(result.err).toContain(cwd);
+    expect(result.err).toContain('--dir');
+    expect(await listing(cwd)).toEqual(['package.json']);
+    expect(await fs.readFile(path.join(root, 'manifest.yaml'), 'utf8')).toBe('version: 2\n');
+  });
+
+  it('relative and absolute --dir', async () => {
+    await project(path.join(root, 'app'));
+    expect((await cliIn(root, ['init', ...FLAGS, '--dir', './app'])).code).toBe(0);
+    await fs.access(path.join(root, 'app', 'manifest.yaml'));
+    await fs.access(path.join(root, 'app', '.ai-hubrc.json'));
+    expect(await listing(root)).toEqual(['app']);
+    const unicode = path.join(root, 'OneDrive', 'Escritorio', 'proyecto ñandú');
+    await project(unicode);
+    expect((await cliIn(path.join(root, 'app'), ['init', ...FLAGS, '--dir', unicode])).code).toBe(0);
+    await fs.access(path.join(unicode, 'manifest.yaml'));
+    await fs.access(path.join(unicode, '.ai-hubrc.json'));
+  });
+
+  it('AI_HUB_DIR names a new installation', async () => {
+    await project(path.join(root, 'nuevo'));
+    process.env.AI_HUB_DIR = './nuevo';
+    expect((await cliIn(root, ['init', ...FLAGS])).code).toBe(0);
+    await fs.access(path.join(root, 'nuevo', 'manifest.yaml'));
+    expect(await listing(root)).toEqual(['nuevo']);
+  });
+
+  it('same explicit destinations continue', async () => {
+    await project(path.join(root, 'app'));
+    process.env.AI_HUB_DIR = path.join(root, 'app');
+    expect((await cliIn(root, ['init', ...FLAGS, '--dir', './app'])).code).toBe(0);
+    await fs.access(path.join(root, 'app', 'manifest.yaml'));
+  });
+
+  it('different explicit destinations exit 2 with both paths', async () => {
+    await project(path.join(root, 'a'));
+    await project(path.join(root, 'b'));
+    process.env.AI_HUB_DIR = './b';
+    const result = await cliIn(root, ['init', ...FLAGS, '--dir', './a']);
+    expect(result.code).toBe(2);
+    expect(result.err).toContain(path.join(root, 'a'));
+    expect(result.err).toContain(path.join(root, 'b'));
+    expect(result.err).toContain('AI_HUB_DIR');
+    expect(result.err).toContain('--dir');
+    expect(await listing(path.join(root, 'a'))).toEqual(['package.json']);
+    expect(await listing(path.join(root, 'b'))).toEqual(['package.json']);
+  });
+
+  it('dir sets the project identity and the rc location (2.5, DEV-04)', async () => {
+    const tools = path.join(root, 'work', 'tools');
+    await project(tools);
+    await project(path.join(root, 'work', 'billing'));
+    const plan = JSON.parse((await cliIn(tools, ['init', '--dry-run', '--preset-only', '--no-speckit', '--dir', '../billing'])).out);
+    expect(plan.project).toBe('billing');
+    expect((await cliIn(tools, ['init', ...FLAGS, '--dir', '../billing'])).code).toBe(0);
+    const rc = JSON.parse(await fs.readFile(path.join(root, 'work', 'billing', '.ai-hubrc.json'), 'utf8'));
+    expect(rc.dir).toBe('.');
+    expect(await listing(tools)).toEqual(['package.json']);
+    expect(await fs.readFile(path.join(root, 'work', 'billing', 'manifest.yaml'), 'utf8')).toContain('billing');
+  });
+
+  it('missing target (2.3, DEV-03)', async () => {
+    const recorder = fakeRunner();
+    const sink = capture();
+    const code = await runCli(['init', ...FLAGS, '--dir', './no-existe'], { cwd: root, io: sink.io, exec: recorder.run });
+    expect(code).toBe(2);
+    expect(sink.err.join('\n')).toContain(path.join(root, 'no-existe'));
+    expect(await listing(root)).toEqual([]);
+    expect(recorder.calls).toEqual([]);
+  });
+
+  // POSIX real (chmod 555). En Windows ni el atributo de solo lectura (no aplica a directorios) ni una ACL de
+  // denegación frenan a un token de administrador elevado (medido en el taller): ahí cubre la prueba siguiente.
+  it.skipIf(process.platform === 'win32' || process.getuid?.() === 0)('read-only target (2.3, DEV-03, POSIX)', async () => {
+    const locked = path.join(root, 'locked');
+    await project(locked);
+    const before = await listing(locked);
+    await fs.chmod(locked, 0o555);
+    try {
+      const recorder = fakeRunner();
+      const sink = capture();
+      const code = await runCli(['init', '--preset-only', '--yes', '--dir', locked], { cwd: root, io: sink.io, exec: recorder.run });
+      expect(code).toBe(2);
+      expect(sink.err.join('\n')).toContain(locked);
+      expect(recorder.specifyCalls()).toEqual([]);
+    } finally {
+      await fs.chmod(locked, 0o755);
+    }
+    expect(await listing(locked)).toEqual(before);
+  });
+
+  it('read-only target refused before the backup and Spec Kit (2.3, DEV-03, any platform)', async () => {
+    const locked = path.join(root, 'locked');
+    await project(locked);
+    const recorder = fakeRunner();
+    const sink = capture();
+    const refuse = async (): Promise<void> => {
+      throw Object.assign(new Error('EACCES: permission denied'), { code: 'EACCES' });
+    };
+    const ctx = { cwd: root, root, source: null, io: sink.io, exec: recorder.run, writeProbe: refuse };
+    const code = await cmdInit(parseArgs(['--preset-only', '--yes', '--dir', locked]), ctx);
+    expect(code).toBe(2);
+    expect(sink.err.join('\n')).toContain(`${locked} no admite escritura (EACCES)`);
+    expect(recorder.calls).toEqual([]);
+    expect(await listing(locked)).toEqual(['package.json']);
+  });
+
+  it('symlink target (2.3, DEV-03)', async () => {
+    const real = path.join(root, 'real project');
+    await project(real);
+    const link = path.join(root, 'link');
+    await fs.symlink(real, link, process.platform === 'win32' ? 'junction' : 'dir');
+    const result = await cliIn(root, ['init', ...FLAGS, '--dir', link]);
+    expect(result.code).toBe(0);
+    await fs.access(path.join(real, 'manifest.yaml'));
+    expect(result.err).toContain(await fs.realpath(real));
+  });
+
+  it('escape refused (2.3, DEV-03)', async () => {
+    const target = path.join(root, 'proyecto');
+    const outside = path.join(root, 'fuera');
+    await project(target);
+    await fs.mkdir(outside);
+    await fs.symlink(outside, path.join(target, '.claude'), process.platform === 'win32' ? 'junction' : 'dir');
+    const result = await cliIn(root, ['init', ...FLAGS, '--dir', target]);
+    expect(result.code).toBe(2);
+    expect(result.err).toContain(path.join(target, '.claude'));
+    expect(await listing(outside)).toEqual([]);
+    expect(await listing(target)).toEqual(['.claude', 'package.json']);
+  });
+
+  it('dry run stdout is one JSON document (2.6, DEV-05)', async () => {
+    await project(path.join(root, 'app'));
+    const result = await cliIn(path.join(root, 'app'), ['init', '--dry-run', '--preset-only', '--no-speckit']);
+    expect(result.code).toBe(0);
+    const plan = JSON.parse(result.out);
+    expect(plan.hash).toMatch(/^[a-f0-9]{64}$/);
+    expect(JSON.stringify(plan)).not.toContain(path.join(root, 'app').replace(/\\/g, '\\\\'));
+    expect(result.err.split('\n')).toContain(`ai-hub: destino ${await fs.realpath(path.join(root, 'app'))}`);
+  });
+
+  it('path in the summary after the base is verified (2.6, 2.8, DEV-05, DEV-06)', async () => {
+    await project(path.join(root, 'app'));
+    const result = await cliIn(root, ['init', ...FLAGS, '--dir', './app']);
+    expect(result.code).toBe(0);
+    expect(result.out.split('\n')).toContain(`init: instalado en ${await fs.realpath(path.join(root, 'app'))}`);
+  });
+
+  it('doctor still walks up', async () => {
+    await seeded();
+    const nested = path.join(root, 'src', 'deep');
+    await fs.mkdir(nested, { recursive: true });
+    const result = await cliIn(nested, ['doctor']);
+    expect(result.out).toContain(`ai-hub doctor — ${root} (fuente: manifest-root)`);
   });
 });
 

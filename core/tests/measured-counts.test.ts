@@ -15,7 +15,7 @@ let root: string;
 
 async function plan(argv: string[]): Promise<{ destinations: number; skillCount: number }> {
   const out: string[] = [];
-  const io: CliIO = { out: (line) => out.push(line), err: (line) => out.push(line) };
+  const io: CliIO = { out: (line) => out.push(line), err: () => undefined }; // init-fiabilidad (DEV-05): el plan JSON es solo stdout
   const code = await runCli(['init', '--dry-run', ...argv], { cwd: root, io, exec: fakeRunner().run });
   expect(code).toBe(0);
   return JSON.parse(out.join('\n')) as { destinations: number; skillCount: number };

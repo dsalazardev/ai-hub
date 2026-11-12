@@ -1,3 +1,5 @@
+import fs from 'node:fs/promises';
+import { constants } from 'node:fs';
 import path from 'node:path';
 import type { ProcessRunner, RunResult } from '../speckit/runner.js';
 
@@ -13,6 +15,8 @@ export interface ResolverHost {
   env: Record<string, string | undefined>;
   home: string;
   exists(file: string): Promise<boolean>;
+  /** En POSIX distingue «presente» de «ejecutable»; en Windows el permiso no se expresa igual. */
+  executable?(file: string): Promise<boolean>;
   exec: ProcessRunner;
   cwd: string;
 }
@@ -24,9 +28,21 @@ export interface HermesCli {
   run(args: string[]): Promise<RunResult>;
 }
 
+export interface HermesRejection {
+  path: string;
+  reason: string;
+}
+
 export class HermesNotFoundError extends Error {
-  constructor(readonly tried: string[]) {
-    super(`Hermes no está instalado o no se encuentra; rutas probadas:\n${tried.map((item) => `  - ${item}`).join('\n')}`);
+  constructor(
+    readonly tried: string[],
+    readonly rejections: HermesRejection[] = tried.map((path) => ({ path, reason: 'no existe' })),
+  ) {
+    super(
+      `Hermes no está instalado o no se encuentra; rutas probadas:\n${rejections
+        .map((item) => `  - ${item.path}: ${item.reason}`)
+        .join('\n')}`,
+    );
     this.name = 'HermesNotFoundError';
   }
 }
@@ -72,6 +88,7 @@ export function hermesCandidates(host: ResolverHost, explicit?: string): string[
     list.push(
       join(local, 'hermes', 'bin', 'hermes.exe'), // instalador nativo (verificado en esta máquina)
       join(local, 'hermes', 'bin', 'hermes.cmd'),
+      join(local, 'hermes', 'hermes-agent', '.hermes', 'bin', 'hermes.exe'), // instalador nativo, agente
       join(profile, '.local', 'bin', 'hermes.exe'), // pipx
       join(roaming, 'Python', 'Scripts', 'hermes.exe'), // pip --user
       join(roaming, 'npm', 'hermes.cmd'), // npm -g
@@ -107,18 +124,36 @@ function runner(host: ResolverHost, cliPath: string): (args: string[]) => Promis
       : host.exec(cliPath, args, { cwd: host.cwd });
 }
 
-/** Primer candidato que existe y responde a `--version` con una versión ≥ la mínima. */
+/** Comprueba permiso de ejecución real; en Windows se delega en la ejecución del candidato. */
+export async function canExecute(file: string, platform: NodeJS.Platform = process.platform): Promise<boolean> {
+  if (platform === 'win32') {
+    return true;
+  }
+  return fs.access(file, constants.X_OK).then(
+    () => true,
+    () => false,
+  );
+}
+
+/** Primer candidato que existe, puede ejecutarse y responde a `--version` con una versión ≥ la mínima. */
 export async function resolveHermes(host: ResolverHost, explicit?: string, minimum: string = MIN_HERMES_VERSION): Promise<HermesCli> {
   const tried: string[] = [];
+  const rejections: HermesRejection[] = [];
   for (const candidate of hermesCandidates(host, explicit)) {
     tried.push(candidate);
     if (!(await host.exists(candidate))) {
+      rejections.push({ path: candidate, reason: 'no existe' });
+      continue;
+    }
+    if (host.executable && !(await host.executable(candidate).catch(() => false))) {
+      rejections.push({ path: candidate, reason: 'presente pero no ejecutable' });
       continue;
     }
     const run = runner(host, candidate);
     const result = await run(['--version']);
     const version = /v?(\d+\.\d+\.\d+)/.exec(`${result.stdout}\n${result.stderr}`)?.[1];
     if (result.status !== 0 || !version) {
+      rejections.push({ path: candidate, reason: `--version falló (exit ${result.status ?? 'sin código'})` });
       continue;
     }
     if (compareVersions(version, minimum) < 0) {
@@ -126,7 +161,7 @@ export async function resolveHermes(host: ResolverHost, explicit?: string, minim
     }
     return { path: candidate, version, run };
   }
-  throw new HermesNotFoundError(tried);
+  throw new HermesNotFoundError(tried, rejections);
 }
 
 /** Hogar de Hermes (verificado en su fuente): Windows `%LOCALAPPDATA%\hermes`, resto `~/.hermes`. */

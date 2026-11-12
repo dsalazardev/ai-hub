@@ -143,6 +143,79 @@ export function resolveAiHubDir(startDir: string = process.cwd()): AiHubLocation
   throw new AiHubDirNotFoundError(tried);
 }
 
+export type InitRootSource = 'dir' | 'env' | 'dir+env' | 'installation' | 'cwd';
+
+/**
+ * Raíz de `init` (init-fiabilidad, DEV-01/01a/02): nunca adopta un ancestro por su cuenta.
+ * - `root`: destino elegido; `ancestor` nombra una instalación por encima de un destino explícito (solo aviso).
+ * - `conflict`: `--dir` y `AI_HUB_DIR` resuelven a rutas distintas.
+ * - `ancestor`: sin destino explícito ni instalación en el cwd, un ancestro tiene `manifest.yaml`.
+ */
+export type InitRoot =
+  | { kind: 'root'; root: string; source: InitRootSource; ancestor: string | null }
+  | { kind: 'conflict'; dir: string; env: string }
+  | { kind: 'ancestor'; cwd: string; ancestor: string };
+
+function samePath(a: string, b: string): boolean {
+  const left = path.resolve(a);
+  const right = path.resolve(b);
+  return process.platform === 'win32' ? left.toLowerCase() === right.toLowerCase() : left === right;
+}
+
+/** Instalación presente en `dir` mismo (rc con `dir`, `./.ai-hub`, `./ai-hub` o `./manifest.yaml`), sin subir. */
+function installationIn(dir: string): string | null {
+  const rc = readAiHubRc(dir);
+  if (rc?.dir) {
+    const target = path.resolve(dir, rc.dir);
+    if (hasManifest(target)) {
+      return target;
+    }
+  }
+  for (const candidate of [path.join(dir, '.ai-hub'), path.join(dir, 'ai-hub'), dir]) {
+    if (hasManifest(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+/** Ancestro más cercano (sin contar `dir`) que contiene `manifest.yaml`. */
+function installedAncestor(dir: string): string | null {
+  let cursor = path.dirname(dir);
+  let previous = dir;
+  while (cursor !== previous) {
+    if (hasManifest(cursor)) {
+      return cursor;
+    }
+    previous = cursor;
+    cursor = path.dirname(cursor);
+  }
+  return null;
+}
+
+export function resolveInitRoot(cwd: string, explicit: { dir?: string; env?: string }): InitRoot {
+  const start = path.resolve(cwd);
+  const dir = explicit.dir !== undefined && explicit.dir.trim() !== '' ? path.resolve(start, explicit.dir) : null;
+  const env = explicit.env !== undefined && explicit.env.trim() !== '' ? path.resolve(start, explicit.env) : null;
+  if (dir !== null && env !== null && !samePath(dir, env)) {
+    return { kind: 'conflict', dir, env };
+  }
+  const chosen = dir ?? env;
+  if (chosen !== null) {
+    const source: InitRootSource = dir !== null && env !== null ? 'dir+env' : dir !== null ? 'dir' : 'env';
+    return { kind: 'root', root: chosen, source, ancestor: installationIn(chosen) === null ? installedAncestor(chosen) : null };
+  }
+  const installed = installationIn(start);
+  if (installed !== null) {
+    return { kind: 'root', root: installed, source: 'installation', ancestor: null };
+  }
+  const ancestor = installedAncestor(start);
+  if (ancestor !== null) {
+    return { kind: 'ancestor', cwd: start, ancestor };
+  }
+  return { kind: 'root', root: start, source: 'cwd', ancestor: null };
+}
+
 export function manifestPath(dir: string): string {
   return path.join(dir, MANIFEST_NAME);
 }

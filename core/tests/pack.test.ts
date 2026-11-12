@@ -73,7 +73,9 @@ describe('published package', () => {
     // Fase 4: +6 (control/{doctor,enroll,hermes} × 2).
     // control-onboarding: +4 (control/{onboard,onboard-step} × 2).
     // idea-input fase 2: +2 (cli/idea × 2).
-    expect(pkg.entryCount).toBe(1987);
+    // init-fiabilidad H1: +4 (cli/integrations y control/redact × 2 en dist); medido con npm pack --dry-run --json.
+    // init-fiabilidad H2: +5 (control/{identity,profile-env} × 2 en dist + engine/templates/hermes/SOUL.md).
+    expect(pkg.entryCount).toBe(1996);
     expect(paths.some((file) => file.includes('upstream-watch'))).toBe(false);
     expect(paths).toContain('SECURITY.md');
     expect(paths).toEqual(expect.arrayContaining(['engine/templates/env.example', 'engine/templates/gitlab-ci.yml']));

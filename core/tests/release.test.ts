@@ -82,3 +82,18 @@ describe('workshop README (11.4)', () => {
     expect(readme).toMatch(/NO_COLOR/);
   });
 });
+
+describe('init-fiabilidad 5.1 — security policy lists every written credential (DEV-07)', () => {
+  it('names GITLAB_TOKEN in .ai-hub/.env and DISCORD_BOT_TOKEN in the profile .env, never a single credential, with the Windows caveat', async () => {
+    const policy = await fs.readFile(path.join(CORE, 'SECURITY.md'), 'utf8');
+    expect(policy).not.toMatch(/the only credential the package writes/i);
+    const section = policy.slice(policy.indexOf('## Credentials the package writes'));
+    expect(section.startsWith('## Credentials the package writes')).toBe(true);
+    expect(section).toMatch(/`GITLAB_TOKEN`.*`\.ai-hub\/\.env`/);
+    expect(section).toMatch(/`DISCORD_BOT_TOKEN`.*`hermes-control`.*`\.env`/);
+    expect(section).toMatch(/ignored by git/i);
+    expect(section).toMatch(/never printed/i);
+    expect(section).toMatch(/on Windows it does not change\s+the access control list/i);
+    expect(section).toMatch(/OneDrive/);
+  });
+});

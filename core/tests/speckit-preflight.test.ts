@@ -14,11 +14,19 @@ let root: string;
 async function cli(
   argv: string[],
   fake: FakeRunner = fakeRunner(),
-): Promise<{ code: number; out: string; fake: FakeRunner }> {
+): Promise<{ code: number; out: string; stdout: string; fake: FakeRunner }> {
+  // init-fiabilidad (DEV-05): `out` mezcla stdout y stderr para los mensajes; el plan JSON se lee solo de `stdout`.
   const out: string[] = [];
-  const io: CliIO = { out: (line) => out.push(line), err: (line) => out.push(line) };
+  const stdout: string[] = [];
+  const io: CliIO = {
+    out: (line) => {
+      out.push(line);
+      stdout.push(line);
+    },
+    err: (line) => out.push(line),
+  };
   const code = await runCli(argv, { cwd: root, io, exec: fake.run });
-  return { code, out: out.join('\n'), fake };
+  return { code, out: out.join('\n'), stdout: stdout.join('\n'), fake };
 }
 
 async function entries(): Promise<string[]> {
@@ -44,9 +52,9 @@ afterEach(async () => {
 describe('plan (2.2, 4.1)', () => {
   it('hashes the resolved version, names the range when nothing resolves, and keeps the environment outside the hash', async () => {
     const engine = await loadEngine();
-    const withTools = JSON.parse((await cli(['init', '--dry-run'])).out);
+    const withTools = JSON.parse((await cli(['init', '--dry-run'])).stdout);
     const without = JSON.parse(
-      (await cli(['init', '--dry-run'], fakeRunner({ missing: ['uvx', 'bash'] }))).out,
+      (await cli(['init', '--dry-run'], fakeRunner({ missing: ['uvx', 'bash'] }))).stdout,
     );
     expect(withTools.speckit).toMatchObject({
       managed: true,
@@ -68,24 +76,24 @@ describe('plan (2.2, 4.1)', () => {
   });
 
   it('ignores the shell in the hash but follows the resolved version', async () => {
-    const withBash = JSON.parse((await cli(['init', '--dry-run'])).out);
-    const withoutBash = JSON.parse((await cli(['init', '--dry-run'], fakeRunner({ missing: ['bash'] }))).out);
+    const withBash = JSON.parse((await cli(['init', '--dry-run'])).stdout);
+    const withoutBash = JSON.parse((await cli(['init', '--dry-run'], fakeRunner({ missing: ['bash'] }))).stdout);
     expect(withoutBash.hash).toBe(withBash.hash);
-    const unresolved = JSON.parse((await cli(['init', '--dry-run'], fakeRunner({ missing: ['uvx'] }))).out);
-    const unresolvedAgain = JSON.parse((await cli(['init', '--dry-run'], fakeRunner({ missing: ['uvx'] }))).out);
+    const unresolved = JSON.parse((await cli(['init', '--dry-run'], fakeRunner({ missing: ['uvx'] }))).stdout);
+    const unresolvedAgain = JSON.parse((await cli(['init', '--dry-run'], fakeRunner({ missing: ['uvx'] }))).stdout);
     expect(unresolved.hash).toBe(unresolvedAgain.hash);
     expect(unresolved.hash).not.toBe(withBash.hash);
   });
 
   it('changes the hash when the resolved version, script or targets change', async () => {
-    const base = JSON.parse((await cli(['init', '--dry-run'])).out);
-    const fewer = JSON.parse((await cli(['init', '--dry-run', '--targets', 'claude,pi'])).out);
+    const base = JSON.parse((await cli(['init', '--dry-run'])).stdout);
+    const fewer = JSON.parse((await cli(['init', '--dry-run', '--targets', 'claude,pi'])).stdout);
     expect(fewer.hash).not.toBe(base.hash);
     expect(fewer.speckit.integrations).toEqual(['claude', 'pi']);
-    const noSpeckit = JSON.parse((await cli(['init', '--dry-run', '--no-speckit'])).out);
+    const noSpeckit = JSON.parse((await cli(['init', '--dry-run', '--no-speckit'])).stdout);
     expect(noSpeckit.hash).not.toBe(base.hash);
     expect(noSpeckit.speckit.managed).toBe(false);
-    const otherVersion = JSON.parse((await cli(['init', '--dry-run'], fakeRunner({ resolveVersion: '1.2.4' }))).out);
+    const otherVersion = JSON.parse((await cli(['init', '--dry-run'], fakeRunner({ resolveVersion: '1.2.4' }))).stdout);
     expect(otherVersion.speckit.version).not.toBe(base.speckit.version);
     expect(otherVersion.hash).not.toBe(base.hash);
   });

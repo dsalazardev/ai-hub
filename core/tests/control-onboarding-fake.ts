@@ -19,12 +19,63 @@ export const OTHER_TOKEN = 'AIHUB_ONBOARD_OTHER_SENTINEL_77aa';
 export const CHANNEL = '987654321098765432';
 export const APPROVER = '123456789012345678';
 
+/** Secreto HMAC que imprime `webhook subscribe` (como Hermes 0.23, `webhook.py:267`): jamás debe mostrarse. */
+export const WEBHOOK_SECRET_SENTINEL = 'AIHUB_WEBHOOK_SECRET_SENTINEL_onb';
+/** `SOUL.md` que siembra `profile create` (Hermes 0.23, `profiles_initialization.py`): identidad genérica sin marcas. */
+export const DEFAULT_SOUL = 'You are Hermes Agent, a helpful assistant.\n';
+/** `.env` que siembra `profile create`: un placeholder sin credenciales. */
+export const DEFAULT_PROFILE_ENV = '# Hermes profile credentials\n';
+/** Ayuda que imprime Hermes 0.23 en stdout cuando la plataforma webhook no está habilitada (`webhook.py:150-160`). */
+export const WEBHOOK_SETUP_HINT = 'Webhook platform is not enabled. Add to the profile .env:\n  WEBHOOK_ENABLED=true\n  WEBHOOK_PORT=8644';
+
+/** El proceso «muere» tras completar el comando indicado (`crashAfter`): el árbol queda tal cual. */
+export class SimulatedCrash extends Error {
+  constructor(command: string) {
+    super(`simulated crash after ${command}`);
+    this.name = 'SimulatedCrash';
+  }
+}
+
+export interface InjectedFailure {
+  status?: number;
+  stdout?: string;
+  stderr?: string;
+}
+
 export interface FakeHermes {
   host: ResolverHost;
   home: string;
   calls: string[][];
+  /** Compatibilidad: fallo genérico (exit 3, «boom») por clave de comando. */
   fail: Set<string>;
+  /** Fallo inyectado por subcomando (`webhook subscribe`, `cron create`, `profile create`…); se quita con `delete`. */
+  failOn: Map<string, InjectedFailure>;
+  /** `always-on`: la plataforma webhook está siempre habilitada (comportamiento anterior); `model`: como Hermes 0.23. */
+  webhookPlatform: 'always-on' | 'model';
   gatewayInstalled: boolean;
+  gatewayRunning: boolean;
+  /** Tras completar este comando, el falso lanza `SimulatedCrash` (interrupción del proceso). */
+  crashAfter: string | null;
+  routes: Set<string>;
+  crons: Set<string>;
+}
+
+/** Clave de un comando: `profile create`, `gateway status`, `webhook subscribe` (sin `-p <perfil>`). */
+export function commandKey(args: string[]): string {
+  const rest = args[0] === '-p' ? args.slice(2) : args;
+  return rest[0] === '--version' ? '--version' : rest.slice(0, 2).join(' ');
+}
+
+async function profileEnv(home: string, profile: string): Promise<Record<string, string>> {
+  const text = await fs.readFile(path.join(home, 'profiles', profile, '.env'), 'utf8').catch(() => '');
+  const values: Record<string, string> = {};
+  for (const line of text.split(/\r?\n/)) {
+    const match = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/.exec(line);
+    if (match) {
+      values[match[1]] = match[2].trim();
+    }
+  }
+  return values;
 }
 
 /** Hermes falso: binario en disco (el resolver lo encuentra), comandos grabados, perfiles reales en el hogar. */
@@ -36,36 +87,60 @@ export async function fakeHermes(root: string, version = '0.23.0'): Promise<Fake
   const bin = path.join(sandbox, 'bin', windows ? 'hermes.exe' : 'hermes');
   await fs.mkdir(path.dirname(bin), { recursive: true });
   await fs.writeFile(bin, 'fake');
-  const state: FakeHermes = { host: undefined as unknown as ResolverHost, home: '', calls: [], fail: new Set(), gatewayInstalled: true };
-  const routes = new Set<string>();
-  const crons = new Set<string>();
-  const exec: ProcessRunner = async (_command, args): Promise<RunResult> => {
-    state.calls.push(args);
+  const state: FakeHermes = {
+    host: undefined as unknown as ResolverHost,
+    home: '',
+    calls: [],
+    fail: new Set(),
+    failOn: new Map(),
+    webhookPlatform: 'always-on',
+    gatewayInstalled: true,
+    gatewayRunning: true,
+    crashAfter: null,
+    routes: new Set(),
+    crons: new Set(),
+  };
+  const { routes, crons } = state;
+  const respond = async (args: string[]): Promise<RunResult> => {
     const key = args.filter((arg) => !arg.startsWith('-') || arg === '--version').slice(0, 2).join(' ');
     const ok = (stdout = ''): RunResult => ({ status: 0, stdout, stderr: '' });
     if (state.fail.has(key)) {
       return { status: 3, stdout: '', stderr: 'boom' };
     }
+    const injected = state.failOn.get(commandKey(args));
+    if (injected) {
+      return { status: injected.status ?? 1, stdout: injected.stdout ?? '', stderr: injected.stderr ?? '' };
+    }
     if (args[0] === '--version') {
       return ok(`Hermes Agent v${version} (2026.9.24) · stable`);
     }
     if (args[0] === 'profile' && args[1] === 'create') {
-      await fs.mkdir(path.join(state.home, 'profiles', args[2]), { recursive: true });
+      const dir = path.join(state.home, 'profiles', args[2]);
+      await fs.mkdir(dir, { recursive: true });
+      await fs.writeFile(path.join(dir, '.env'), DEFAULT_PROFILE_ENV, { flag: 'wx' }).catch(() => undefined);
+      await fs.writeFile(path.join(dir, 'SOUL.md'), DEFAULT_SOUL, { flag: 'wx' }).catch(() => undefined);
       return ok();
     }
     if (args[0] === 'gateway' && args[1] === 'status') {
-      return state.gatewayInstalled ? ok('running') : { status: 1, stdout: '', stderr: 'not installed' };
+      if (!state.gatewayInstalled) {
+        return { status: 1, stdout: '', stderr: 'not installed' };
+      }
+      return state.gatewayRunning ? ok('running') : { status: 1, stdout: '', stderr: 'gateway is not running' };
     }
     if (args[0] === 'gateway' && args[1] === 'restart') {
+      state.gatewayRunning = true;
       return ok();
     }
     const sub = args.slice(2);
+    if (sub[0] === 'webhook' && state.webhookPlatform === 'model' && (await profileEnv(state.home, args[1])).WEBHOOK_ENABLED !== 'true') {
+      return { status: 1, stdout: WEBHOOK_SETUP_HINT, stderr: '' };
+    }
     if (sub[0] === 'webhook' && sub[1] === 'list') {
       return ok([...routes].map((route) => `  ◆ ${route}`).join('\n'));
     }
     if (sub[0] === 'webhook' && sub[1] === 'subscribe') {
       routes.add(sub[2]);
-      return ok('  Secret: AIHUB_WEBHOOK_SECRET_SENTINEL_onb');
+      return ok(`  Created ${sub[2]}\n  Secret: ${WEBHOOK_SECRET_SENTINEL}`);
     }
     if (sub[0] === 'cron' && sub[1] === 'list') {
       return ok([...crons].join('\n'));
@@ -75,6 +150,15 @@ export async function fakeHermes(root: string, version = '0.23.0'): Promise<Fake
       return ok();
     }
     return { status: 2, stdout: '', stderr: 'unknown' };
+  };
+  const exec: ProcessRunner = async (_command, args): Promise<RunResult> => {
+    state.calls.push(args);
+    const result = await respond(args);
+    if (state.crashAfter !== null && commandKey(args) === state.crashAfter) {
+      state.crashAfter = null;
+      throw new SimulatedCrash(commandKey(args));
+    }
+    return result;
   };
   state.host = {
     platform: process.platform,

@@ -205,6 +205,43 @@ Un preset publica skills propias o del catálogo compartido (la del preset gana)
 
 `resolveAiHubDir()` resuelve: `AI_HUB_DIR` → `dir` del rc → `./.ai-hub` → `./ai-hub` → ancestro con `manifest.yaml`. Un rc v1 se migra; una fuente explícita inválida falla en vez de continuar.
 
+**Dónde instala `init`.** `init` no sube por los directorios padre:
+
+- **Destino explícito.** Si lo hay, la raíz es ese destino: `--dir <ruta>`, relativa al directorio actual, o
+  `AI_HUB_DIR`. El destino puede no tener `manifest.yaml` todavía, pero tiene que existir.
+- **Dos destinos explícitos.** `--dir` y `AI_HUB_DIR` juntos tienen que coincidir. Si no coinciden, `init` sale con
+  2 sin escribir y nombra las dos rutas: quita `AI_HUB_DIR` o pasa la misma ruta a `--dir`.
+- **Sin destino explícito.** La raíz es la instalación del directorio actual, o el propio directorio actual.
+- **Ancestro con `manifest.yaml`.** Si el directorio actual no tiene instalación pero un padre sí, el asistente
+  pregunta dónde instalar (cancelar no escribe nada). Con `--yes`, o sin terminal, `init` sale con 2 y pide elegir
+  con `--dir` (`--dir .` para el directorio actual).
+- **Validación previa.** Antes de escribir, el destino debe existir, ser un directorio y admitir escritura; `init`
+  nunca lo crea y no escribe a través de enlaces que salgan de la raíz.
+- **Ruta visible.** La ruta absoluta sale en stderr (`ai-hub: destino <ruta>`), así que el stdout de `--dry-run`
+  sigue siendo un único JSON. El resumen termina con `init: instalado en <ruta>`.
+- **Resto de comandos.** `doctor`, `sync`, etc. siguen subiendo hasta el ancestro con `manifest.yaml`.
+
+**Integraciones opcionales y código de salida.** Con la instalación base verificada, el tracker y el plano de control
+corren aislados: su fallo no cambia el código de salida de `init`, que sale con 0. Si algo queda a medias, `init`
+escribe un aviso en stderr (la etapa, lo que está listo, lo que falta y cómo seguir) y termina stdout con una línea
+por integración ofrecida o pedida:
+
+```text
+ai-hub-integration: name=<tracker|control> state=<no-solicitada|completada|pendiente|fallida|no-verificable> stage=<etapa|-> action=<comando|->
+```
+
+Un script la lee con `^ai-hub-integration: name=(\S+) state=(\S+) stage=(\S+) action=(.*)$`; `action` ocupa el resto
+de la línea. Migración desde 0.14.0: un fallo de Hermes ya no sale con 1. Trata `fallida` y `pendiente` como «no
+conectado». Los argumentos inválidos de `--connect-hermes` salen con 2 antes de escribir nada, y un fallo de la base
+sigue saliendo con un código distinto de 0, sin líneas de estado.
+
+La acción depende de lo que quedó guardado:
+
+- **Sin guardar.** Si el token del perfil o `manifest.control` faltan, la acción es retomar la conexión con
+  `ai-hub init --yes --connect-hermes --discord-channel <id> --approver <id> --discord-token-stdin` (o `ai-hub init`
+  en una terminal), aportando de nuevo el token, el canal y el aprobador.
+- **Guardada.** `ai-hub control enroll --yes`.
+
 ---
 
 ## Metodología: Spec Kit

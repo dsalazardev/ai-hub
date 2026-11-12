@@ -11,6 +11,7 @@ import { createContext, runCli } from '../src/cli/run.js';
 import type { CliContext } from '../src/cli/types.js';
 import { IDEA_SENTINEL, makeIdeaFixture } from './idea-fixtures.js';
 import { fakeRunner } from './speckit-fake.js';
+import { APPROVER, BOT_TOKEN, CHANNEL, fakeDiscord, fakeHermes, type FakeHermes } from './control-onboarding-fake.js';
 
 /**
  * idea-input, fase 5 de punta a punta (proyecto integration: cada caso hace un `init` real con Spec Kit falso).
@@ -154,7 +155,7 @@ describe('idea-input 5.4 — el plan no cambia con la idea', () => {
 });
 
 describe('idea-input 5.4/5.5 — las cuatro fuentes dan la misma semilla y el centinela no sale de ella', () => {
-  it('archivo, entrada estándar, editor y pegado: seed.md idéntico salvo la nota y centinela solo en backlog/seed.md', async () => {
+  it('archivo, entrada estándar, editor y pegado: seed.md idéntico salvo la nota y centinela solo en backlog/seed.md e IDEA.md', async () => {
     const idea = makeIdeaFixture({ bytes: 1024 * 1024 });
     const ideaPath = path.join(base, 'idea.md');
     await fs.writeFile(ideaPath, makeIdeaFixture({ bytes: 1024 * 1024, crlf: true, bom: true }));
@@ -184,7 +185,8 @@ describe('idea-input 5.4/5.5 — las cuatro fuentes dan la misma semilla y el ce
       expect(run.code, run.text.slice(-2000)).toBe(0);
       expect(run.text).not.toContain(IDEA_SENTINEL);
       expect(run.out).toContain('backlog: seed.md escrito');
-      expect(await filesWith(root, IDEA_SENTINEL)).toEqual(['backlog/seed.md']);
+      // init-fiabilidad (SEED-01): IDEA.md lleva la misma idea textual que el seed, en el flujo base.
+      expect(await filesWith(root, IDEA_SENTINEL)).toEqual(['IDEA.md', 'backlog/seed.md']);
       const seed = await seedOf(root);
       expect(ideaOf(seed)).toBe(idea);
       seeds.push(withoutNote(seed));
@@ -247,4 +249,184 @@ describe('idea-input 5.2 — no destrucción del backlog', () => {
     expect(await runCli(['purge', '--yes'], quiet)).toBe(0);
     expect(await backlog()).toEqual(before);
   }, 240_000);
+});
+
+// ── init-fiabilidad 3.1: IDEA.md en la instalación base (SEED-01, SEED-02; design.md §21) ─────────────────
+
+const ideaMdOf = async (root: string): Promise<string | null> => fs.readFile(path.join(root, 'IDEA.md'), 'utf8').catch(() => null);
+const fencedIdeaMd = (text: string): string | null => extractFencedIdea(text.split('\n').slice(3).join('\n'));
+
+async function hermesFor(root: string): Promise<{ hermes: FakeHermes; firstCallSawIdea: () => boolean | null; extra: Partial<CliContext> }> {
+  const hermes = await fakeHermes(root);
+  let sawIdea: boolean | null = null;
+  const exec = hermes.host.exec;
+  hermes.host = {
+    ...hermes.host,
+    exec: async (command, args, options) => {
+      if (sawIdea === null) {
+        sawIdea = await fs.access(path.join(root, 'IDEA.md')).then(() => true, () => false);
+      }
+      return exec(command, args, options);
+    },
+  };
+  const discord = fakeDiscord();
+  return {
+    hermes,
+    firstCallSawIdea: () => sawIdea,
+    extra: { controlHost: hermes.host, discordFetch: discord.fetch, stdin: async () => BOT_TOKEN },
+  };
+}
+
+const CONNECT = ['--connect-hermes', '--discord-channel', CHANNEL, '--approver', APPROVER, '--discord-token-stdin'];
+
+describe('init-fiabilidad 3.1 — IDEA.md junto al seed (SEED-01)', () => {
+  it('sin Hermes: --idea-file deja IDEA.md con la idea en su fence y el enlace al seed', async () => {
+    const root = await consumer('sin-hermes');
+    const ideaPath = path.join(base, 'idea.md');
+    await fs.writeFile(ideaPath, 'Una app de facturas recurrentes\ncon dos líneas\n');
+    const run = await init(root, [...PRESET, '--yes', '--idea-file', ideaPath]);
+    expect(run.code, run.text).toBe(0);
+    const ideaMd = await ideaMdOf(root);
+    expect(ideaMd).not.toBeNull();
+    expect(ideaMd).toContain('[backlog/seed.md](backlog/seed.md)');
+    expect(fencedIdeaMd(ideaMd ?? '')).toBe('Una app de facturas recurrentes\ncon dos líneas');
+  });
+
+  it('--idea-file con --connect-hermes: IDEA.md existe antes del primer comando de Hermes', async () => {
+    const root = await consumer('con-conexion');
+    const ideaPath = path.join(base, 'idea.md');
+    await fs.writeFile(ideaPath, 'Idea con conexión\n');
+    const { firstCallSawIdea, extra } = await hermesFor(root);
+    await init(root, [...PRESET, '--yes', '--idea-file', ideaPath, ...CONNECT], extra).catch(() => null);
+    expect(firstCallSawIdea()).toBe(true);
+    expect(fencedIdeaMd((await ideaMdOf(root)) ?? '')).toBe('Idea con conexión');
+  });
+
+  it('contenido: nombra ai-hub init y la fecha, enlace relativo y el mismo fence que el seed', async () => {
+    const root = await consumer('contenido');
+    const ideaPath = path.join(base, 'idea.md');
+    await fs.writeFile(ideaPath, '## Título\n````\ncódigo\n````\n');
+    expect((await init(root, [...PRESET, '--yes', '--idea-file', ideaPath])).code).toBe(0);
+    const ideaMd = (await ideaMdOf(root)) ?? '';
+    expect(ideaMd).toContain('`ai-hub init`');
+    expect(ideaMd).toContain(new Date().toISOString().slice(0, 10));
+    expect(ideaMd).toContain('](backlog/seed.md)');
+    const longest = Math.max(...(ideaMd.match(/`+/g) ?? ['']).map((run) => run.length));
+    expect(longest).toBeGreaterThan(4);
+    expect(fencedIdeaMd(ideaMd)).toBe(ideaOf(await seedOf(root)));
+  });
+
+  it('paso de control saltado: el asistente con Hermes deja IDEA.md', async () => {
+    const root = await consumer('saltado');
+    const { extra } = await hermesFor(root);
+    const out: string[] = [];
+    const sink = { out: (line: string) => out.push(line), err: (line: string) => out.push(line) };
+    const ctx = await createContext(root, sink, fakeRunner().run);
+    const code = await cmdInit(parseArgs([]), { ...ctx, ...extra, interactive: true, assistantPrompts: pastingPrompts('Idea del asistente') });
+    expect(code, out.join('\n')).toBe(0);
+    expect(fencedIdeaMd((await ideaMdOf(root)) ?? '')).toBe('Idea del asistente');
+  });
+
+  it('Hermes falla después: IDEA.md y el seed existen aunque falle webhook subscribe', async () => {
+    const root = await consumer('falla');
+    const ideaPath = path.join(base, 'idea.md');
+    await fs.writeFile(ideaPath, 'Idea que sobrevive\n');
+    const { hermes, extra } = await hermesFor(root);
+    hermes.failOn.set('webhook subscribe', { stderr: 'Error: route refused' });
+    await init(root, [...PRESET, '--yes', '--idea-file', ideaPath, ...CONNECT], extra).catch(() => null);
+    expect(ideaOf(await seedOf(root))).toBe('Idea que sobrevive');
+    expect(fencedIdeaMd((await ideaMdOf(root)) ?? '')).toBe('Idea que sobrevive');
+  });
+
+  it('1 MiB: el fence de IDEA.md es el del seed', async () => {
+    const root = await consumer('grande');
+    const ideaPath = path.join(base, 'idea.md');
+    await fs.writeFile(ideaPath, makeIdeaFixture({ bytes: 1024 * 1024 }));
+    expect((await init(root, [...PRESET, '--yes', '--idea-file', ideaPath])).code).toBe(0);
+    expect(fencedIdeaMd((await ideaMdOf(root)) ?? '')).toBe(ideaOf(await seedOf(root)));
+  }, 120_000);
+});
+
+describe('init-fiabilidad 3.1 — IDEA.md nunca se sobrescribe ni diverge (SEED-02)', () => {
+  it('IDEA.md existente: byte a byte igual y la salida dice que se conserva', async () => {
+    const root = await consumer('existente');
+    await fs.writeFile(path.join(root, 'IDEA.md'), '# Mi idea editada\n');
+    const ideaPath = path.join(base, 'idea.md');
+    await fs.writeFile(ideaPath, 'Otra idea\n');
+    const run = await init(root, [...PRESET, '--yes', '--idea-file', ideaPath]);
+    expect(run.code).toBe(0);
+    expect(await ideaMdOf(root)).toBe('# Mi idea editada\n');
+    expect(run.out).toContain('backlog: IDEA.md ya existe; se conserva sin cambios');
+  });
+
+  it('IDEA.md existente con la conexión explícita: byte a byte igual', async () => {
+    const root = await consumer('existente-conexion');
+    await fs.writeFile(path.join(root, 'IDEA.md'), '# Mía\n');
+    const ideaPath = path.join(base, 'idea.md');
+    await fs.writeFile(ideaPath, 'Otra idea\n');
+    const { extra } = await hermesFor(root);
+    await init(root, [...PRESET, '--yes', '--idea-file', ideaPath, ...CONNECT], extra).catch(() => null);
+    expect(await ideaMdOf(root)).toBe('# Mía\n');
+  });
+
+  it('seed en colisión: no se escribe IDEA.md y la salida nombra la colisión', async () => {
+    const root = await consumer('colision');
+    const first = path.join(base, 'primera.md');
+    await fs.writeFile(first, 'Primera idea\n');
+    expect((await init(root, [...PRESET, '--yes', '--idea-file', first])).code).toBe(0);
+    await fs.rm(path.join(root, 'IDEA.md'), { force: true });
+    const second = path.join(base, 'segunda.md');
+    await fs.writeFile(second, 'Segunda idea\n');
+    const run = await init(root, [...PRESET, '--yes', '--idea-file', second]);
+    expect(run.code).toBe(0);
+    expect(await ideaMdOf(root)).toBeNull();
+    expect(run.out).toContain('backlog: IDEA.md no se escribe: backlog/seed.md contiene otra idea (colisión)');
+  });
+
+  it('re-ejecución: IDEA.md y el seed quedan byte a byte iguales', async () => {
+    const root = await consumer('repetida');
+    const ideaPath = path.join(base, 'idea.md');
+    await fs.writeFile(ideaPath, 'Idea estable\n');
+    expect((await init(root, [...PRESET, '--yes', '--idea-file', ideaPath])).code).toBe(0);
+    const before = [await ideaMdOf(root), await seedOf(root)];
+    expect(before[0]).not.toBeNull();
+    expect((await init(root, [...PRESET, '--yes', '--idea-file', ideaPath])).code).toBe(0);
+    expect([await ideaMdOf(root), await seedOf(root)]).toEqual(before);
+  });
+});
+
+describe('init-fiabilidad 3.3 — un fallo del backlog es un fallo de la base (SEED-03)', () => {
+  async function failingRun(root: string, ideaText: string): Promise<{ run: Run; hermes: FakeHermes }> {
+    const ideaPath = path.join(base, `idea-${path.basename(root)}.md`);
+    await fs.writeFile(ideaPath, ideaText);
+    const { hermes, extra } = await hermesFor(root);
+    const run = await init(root, [...PRESET, '--yes', '--idea-file', ideaPath, ...CONNECT], extra);
+    return { run, hermes };
+  }
+
+  function expectBaseFailure(run: Run, hermes: FakeHermes, file: string): void {
+    expect(run.code).not.toBe(0);
+    expect(run.err.join('\n')).toContain(file);
+    expect(run.text).not.toContain('init: instalado en');
+    expect(run.text).not.toContain('ai-hub-integration:');
+    expect(run.text).not.toContain('Error inesperado');
+    expect(hermes.calls).toEqual([]);
+  }
+
+  it('backlog/seed.md not writable fails the base (any platform)', async () => {
+    const root = await consumer('seed-no-escribible');
+    await fs.mkdir(path.join(root, 'backlog', 'seed.md'), { recursive: true });
+    const { run, hermes } = await failingRun(root, 'Idea que no cabe\n');
+    expectBaseFailure(run, hermes, 'backlog/seed.md');
+    await fs.access(path.join(root, 'manifest.yaml'));
+  });
+
+  // En Windows, escribir con `wx` sobre un enlace colgante crea su destino (dentro de la raíz): ahí no hay fallo.
+  it.skipIf(process.platform === 'win32')('IDEA.md not writable fails the base (POSIX: dangling symlink)', async () => {
+    const root = await consumer('no-escribible');
+    await fs.symlink(path.join(root, 'no-existe-el-destino'), path.join(root, 'IDEA.md'));
+    const { run, hermes } = await failingRun(root, 'Idea que no cabe\n');
+    expectBaseFailure(run, hermes, 'IDEA.md');
+    expect(ideaOf(await seedOf(root))).toBe('Idea que no cabe');
+  });
 });

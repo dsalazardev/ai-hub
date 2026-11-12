@@ -81,7 +81,7 @@ npx @dsalazardev/ai-hub-cli install --targets claude
 
 | Comando | Qué hace |
 |---|---|
-| `init` | Detecta el repo, elige preset e imprime el plan; `--yes` lo aplica, `--preset <id>`, `--preset-only`, `--targets`, `--no-speckit` |
+| `init` | Detecta el repo, elige preset e imprime el plan; `--yes` lo aplica, `--preset <id>`, `--preset-only`, `--targets`, `--no-speckit`, `--dir <ruta>` (destino explícito; si `AI_HUB_DIR` también está definido, deben coincidir o sale 2). Nunca escribe en un ancestro con `manifest.yaml` por su cuenta: en interactivo pregunta, y con `--yes` sale 2 pidiendo `--dir`. El destino debe existir y admitir escritura. La ruta absoluta va a stderr (`ai-hub: destino <ruta>`) y el resumen termina con `init: instalado en <ruta>` |
 | `install` | Materializa el preset y sincroniza destinos; refresca copias de `.ai-hub/` no tocadas |
 | `add` | Añade una skill o agente del catálogo al proyecto |
 | `list` | Preset, destinos, comandos, skills y agentes; `--collisions` |
@@ -103,6 +103,27 @@ npx @dsalazardev/ai-hub-cli install --targets claude
 | `seal` | `seal review --verdict <APPROVE|APPROVE_WITH_NITS|CHANGES_REQUESTED> [--base <ref>]`: liga el veredicto al diff real; la guardia `ship` lo exige |
 | `adopt` | Adopta un arnés heredado por fases: `--dry-run` primero, `--yes` con snapshot |
 | `hook` | Hook de host `pre|post|stop` (stdin); siempre sale 0 |
+
+**Integraciones opcionales y código de salida.** Con la instalación base verificada, el tracker y el plano de control
+corren aislados: su fallo no cambia el código de salida de `init`, que sale con 0. Si algo queda a medias, `init`
+escribe un aviso en stderr (la etapa, lo que está listo, lo que falta y cómo seguir) y termina stdout con una línea
+por integración ofrecida o pedida:
+
+```text
+ai-hub-integration: name=<tracker|control> state=<no-solicitada|completada|pendiente|fallida|no-verificable> stage=<etapa|-> action=<comando|->
+```
+
+Un script la lee con `^ai-hub-integration: name=(\S+) state=(\S+) stage=(\S+) action=(.*)$`; `action` ocupa el resto
+de la línea. Migración desde 0.14.0: un fallo de Hermes ya no sale con 1. Trata `fallida` y `pendiente` como «no
+conectado». Los argumentos inválidos de `--connect-hermes` salen con 2 antes de escribir nada, y un fallo de la base
+sigue saliendo con un código distinto de 0, sin líneas de estado.
+
+La acción depende de lo que quedó guardado:
+
+- **Sin guardar.** Si el token del perfil o `manifest.control` faltan, la acción es retomar la conexión con
+  `ai-hub init --yes --connect-hermes --discord-channel <id> --approver <id> --discord-token-stdin` (o `ai-hub init`
+  en una terminal), aportando de nuevo el token, el canal y el aprobador.
+- **Guardada.** `ai-hub control enroll --yes`.
 
 `ai-hub help` lista los 28 comandos. `verify` es alias de `gate`.
 
@@ -275,6 +296,40 @@ npx ai-hub control enroll --check      # credenciales de Discord del perfil, sol
   se niega si el perfil comparte `DISCORD_BOT_TOKEN` con otro perfil (dos perfiles con un mismo bot colisionan).
 - Imprime la ruta del `.env` del perfil (`<hogar de Hermes>/profiles/hermes-control/.env`), nunca su contenido.
 - Nunca pasa `--secret` ni imprime la salida de `webhook subscribe`: el secreto lo genera Hermes.
+- **Webhook:** antes de suscribir comprueba `webhook list`. Si la plataforma está deshabilitada, añade solo las
+  claves ausentes `WEBHOOK_ENABLED=true` y `WEBHOOK_PORT=8644`, conserva el resto del `.env`, repite el preflight
+  y solo entonces crea `ai-hub-gitlab`. Un `WEBHOOK_ENABLED` distinto de `true` no se modifica: se informa como
+  conflicto. Nunca escribe `WEBHOOK_SECRET`.
+- **Identidad:** el perfil recibe un bloque gestionado en `SOUL.md` entre
+  `<!-- ai-hub:soul:begin v=1 sha256=… -->` y `<!-- ai-hub:soul:end -->`. El perfil que crea esta misma
+  ejecución se adopta sin preguntar, también sin terminal; un perfil existente sin marcas solo se adopta en el
+  paso interactivo. La primera adopción guarda el original en `SOUL.md.pre-ai-hub`; si ese nombre ya tiene otro
+  contenido, usa `SOUL.md.pre-ai-hub.<n>`. Las copias nunca se sobrescriben. Un bloque editado no se toca: queda
+  `pendiente` y la acción empieza por apartar el archivo.
+- **Comprobación:** `enroll --check` verifica perfil, `.env`, claves de Discord, canal y aprobadores frente a
+  `manifest.control`, skill, scripts, identidad, plataforma webhook, ruta, cron, modelo y gateway. Es de solo
+  lectura: únicamente ejecuta `--version`, `webhook list`, `cron list` y `gateway status`. Sale 0 si el perfil
+  está completo, 1 si falta algo y 2 sin Hermes. El modelo y un gateway no instalado se muestran como
+  «no verificable» y no fallan; un gateway instalado y parado sí, con `hermes gateway restart` como acción.
+- **`manifest.control.channelId`** guarda el canal de control y debe coincidir con `DISCORD_HOME_CHANNEL`; el
+  canal también debe estar en `DISCORD_ALLOWED_CHANNELS`. Los aprobadores de `manifest.control` se comparan con
+  `DISCORD_ALLOWED_USERS`.
+
+**Recuperación.** La conexión queda guardada cuando el `.env` del perfil tiene `DISCORD_BOT_TOKEN` y existe
+`manifest.control`. Antes de ese punto se retoma con `init`; después, con `control enroll --yes`.
+
+| Punto de interrupción | Acción |
+|---|---|
+| Perfil creado, sin copia de identidad | Aparta `SOUL.md` y retoma la conexión con `init`. |
+| Copia escrita, sin bloque | Retoma la conexión: la copia idéntica completa la adopción sin preguntar. |
+| Bloque escrito, Discord sin guardar | Retoma la conexión. |
+| Discord guardado, `manifest.control` ausente | Retoma con el mismo token; la línea del token no cambia. |
+| Ruta o cron fallaron | `ai-hub control enroll --yes`; solo crea lo que falte. |
+| `profile create` falló | Retoma la conexión: no hay nada persistido. |
+| Identidad editada o sin adoptar | Aparta `SOUL.md` y ejecuta la acción del punto de guardado. |
+| Gateway instalado y parado | `hermes gateway restart`. |
+
+Cada acción termina en `ai-hub control enroll --check` = 0.
 
 ### Provisión de Discord
 
@@ -302,6 +357,28 @@ que la persona teclea en el paso de conexión de `init` (abajo), y solo en el `.
 
 Las variables de Discord **nunca** van en `.ai-hub/.env`, y las de GitLab nunca en el `.env` del perfil.
 Después: `npx ai-hub control enroll --check`.
+
+**Canal de control.** Crea un canal de texto para el control o usa `#general`, que existe en todo servidor
+nuevo. Copia el id del **canal**, no el del servidor ni el de tu usuario: *Modo desarrollador* → clic derecho
+en el canal → *Copiar ID*. El paso acepta también el nombre con o sin `#`, sin distinguir mayúsculas. Si el
+mismo nombre existe en varios servidores, muestra servidor, canal e id y pide el id; si solo hay un canal de
+voz con ese nombre, lo declara incompatible.
+
+**Si Discord rechaza una comprobación**, el paso muestra un diagnóstico por campos
+(`operation`, `status`, `class`, `code`) y nunca el cuerpo, las cabeceras ni el token. Qué hacer según la clase:
+
+| Respuesta | Qué se sabe | Acción |
+|---|---|---|
+| 401 | El token no autentica | Copia uno nuevo con *Reset Token*. |
+| 403 | Discord niega al bot el acceso a ese id; la causa exacta no se determina con esta respuesta | Revisa la invitación y los permisos; corrige el id si procede. |
+| 404 | Ningún canal con ese id es visible para el bot | Comprueba que copiaste el id del canal; si el diagnóstico identifica un servidor o el propio bot, usa el id del canal. |
+| 429 | La consulta está limitada; el dato puede ser correcto | Reintenta más tarde; no cambies una respuesta correcta. |
+| 5xx | Discord falla temporalmente | Reintenta; no cambies una respuesta correcta. |
+| timeout o red | No se pudo comprobar | Reintenta; con un id numérico el paso ofrece guardarlo sin validar. |
+
+La lista de servidores vacía prueba que el bot no está en ningún servidor; el paso lo dice y enlaza la
+invitación. Los mensajes basados en el `code` concreto de Discord no se implementaron: no había una sonda
+autorizada que registrara esa combinación de operación, estado y código.
 
 ### Conectar desde `init`
 

@@ -1,10 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { randomBytes } from 'node:crypto';
 import { stringify } from 'yaml';
 import { createBackup } from '../backup/snapshots.js';
 import { materializeHarnessLocal } from '../harness/local.js';
 import { installGitHook } from './githooks.js';
-import { readAiHubRc, writeAiHubRc, type AiHubRc } from '../paths.js';
+import { readAiHubRc, resolveInitRoot, writeAiHubRc, type AiHubRc, type InitRoot } from '../paths.js';
 import { detectPreset } from '../presets/detect.js';
 import {
   materializeCatalog,
@@ -36,7 +37,9 @@ import {
   resolveIdeaFromFlags,
   type IdeaOutcome,
 } from './idea.js';
-import { TOKEN_FLAG_REFUSED, connectFromFlags } from '../control/onboard-step.js';
+import { TOKEN_FLAG_REFUSED, connectFromFlagsReport, contextHost, readStdin, validateConnectFlags } from '../control/onboard-step.js';
+import { ENROLL_ACTION, RETAKE_ACTION, RETAKE_PROVIDE, isolate, printReports, type IntegrationReport } from './integrations.js';
+import { connectionSaved } from '../control/onboard.js';
 import {
   ENGINE_AGENTS_DIR,
   ENGINE_RULES_DIR,
@@ -663,7 +666,7 @@ async function resolveSelection(
   args: ParsedArgs,
   ctx: CliContext,
 ): Promise<{ preset: ResolvedPreset; profilePackageManager?: string; targets: string[]; migrate: boolean }> {
-  const rc = readAiHubRc(ctx.cwd);
+  const rc = readAiHubRc(ctx.root);
   const explicit = flagString(args, 'preset') ?? rc?.preset;
   const detected = await detectPreset(ctx.root);
   if (!explicit && detected.ambiguous.length > 0) {
@@ -722,7 +725,7 @@ export async function prepareInit(args: ParsedArgs, ctx: CliContext): Promise<Pr
   if (selection.migrate && !sourceCheckout) {
     throw new Error('--migrate solo aplica en el checkout de desarrollo; la instalación no tiene .planning/');
   }
-  const id = projectId(ctx.cwd);
+  const id = projectId(ctx.root);
   const rc: AiHubRc = {
     version: 2,
     dir: '.',
@@ -795,10 +798,226 @@ export function printInitPlan(
   return plan;
 }
 
-export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number> {
+/** init-fiabilidad (DEV-05, `design.md` §8): la ruta absoluta va a stderr, fuera del JSON del plan y del hash. */
+export function destinationLine(root: string): string {
+  return `ai-hub: destino ${root}`;
+}
+
+/** init-fiabilidad (DEV-01a): dos destinos explícitos distintos; ninguno se descarta en silencio. */
+export function conflictMessage(target: Extract<InitRoot, { kind: 'conflict' }>): string {
+  return `init: dos destinos explícitos distintos: --dir → ${target.dir} y AI_HUB_DIR → ${target.env}. Quita AI_HUB_DIR o pasa la misma ruta a --dir; no se escribió nada`;
+}
+
+/** init-fiabilidad (DEV-02): un ancestro con manifest.yaml nunca se adopta por su cuenta. */
+export function ancestorMessage(target: Extract<InitRoot, { kind: 'ancestor' }>): string {
+  return `init: ${target.cwd} no tiene instalación, pero el ancestro ${target.ancestor} tiene manifest.yaml. init no escribe en un ancestro por su cuenta: elige con --dir (--dir . para ${target.cwd} o --dir ${target.ancestor} para el ancestro); no se escribió nada`;
+}
+
+/**
+ * Raíz efectiva de `init` (init-fiabilidad, DEV-00…02): sustituye el walk-up de `resolveAiHubDir`, que sigue
+ * valiendo para el resto de comandos. Devuelve el contexto con esa raíz o el código de salida.
+ */
+export function initTarget(
+  args: ParsedArgs,
+  ctx: CliContext,
+): { ctx: CliContext; target: Exclude<InitRoot, { kind: 'conflict' }> } | { code: number } {
+  if (args.flags.dir === true) {
+    ctx.io.err('init: --dir necesita una ruta (--dir <ruta>); no se escribió nada');
+    return { code: 2 };
+  }
+  const target = resolveInitRoot(ctx.cwd, { dir: flagString(args, 'dir') ?? undefined, env: process.env.AI_HUB_DIR });
+  if (target.kind === 'conflict') {
+    ctx.io.err(conflictMessage(target));
+    return { code: 2 };
+  }
+  if (target.kind === 'ancestor') {
+    return { ctx, target };
+  }
+  const sameRoot = path.resolve(target.root) === path.resolve(ctx.root);
+  return { ctx: { ...ctx, root: target.root, source: sameRoot ? ctx.source : null }, target };
+}
+
+/** Entradas de la raíz que `init` escribe o puede escribir (medidas con `init --yes`, más Spec Kit, backlog y snapshots). */
+export const INIT_WRITE_NAMES = [
+  '.ai-hub',
+  '.ai-hubrc.json',
+  '.backups',
+  '.claude',
+  '.cursor',
+  '.github',
+  '.gitignore',
+  '.mcp.json',
+  '.opencode',
+  '.pi',
+  '.specify',
+  '.vscode',
+  'AGENTS.md',
+  'IDEA.md',
+  'backlog',
+  'manifest.yaml',
+  'opencode.json',
+  'specs',
+  'sync.lock.json',
+] as const;
+
+function inside(root: string, candidate: string): boolean {
+  const relative = path.relative(root, candidate);
+  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+}
+
+/** Enlaces (symlink o junction) bajo las rutas que escribe `init` que resuelven fuera de la raíz real. */
+async function escapingLinks(realRoot: string): Promise<Array<{ link: string; target: string }>> {
+  const found: Array<{ link: string; target: string }> = [];
+  const check = async (entry: string): Promise<boolean> => {
+    const stat = await fs.lstat(entry).catch(() => null);
+    if (stat === null || !stat.isSymbolicLink()) {
+      return false;
+    }
+    const target = await fs.realpath(entry).catch(async () => path.resolve(path.dirname(entry), await fs.readlink(entry)));
+    if (!inside(realRoot, target)) {
+      found.push({ link: entry, target });
+    }
+    return true;
+  };
+  for (const name of INIT_WRITE_NAMES) {
+    const entry = path.join(realRoot, name);
+    if (await check(entry)) {
+      continue;
+    }
+    const stat = await fs.stat(entry).catch(() => null);
+    if (stat?.isDirectory()) {
+      for (const child of await fs.readdir(entry, { recursive: true, withFileTypes: true }).catch(() => [])) {
+        if (child.isSymbolicLink()) {
+          await check(path.join(child.parentPath, child.name));
+        }
+      }
+    }
+  }
+  return found;
+}
+
+/**
+ * init-fiabilidad (DEV-03): el destino existe, es un directorio y, si se va a escribir, admite escrituras y ninguna
+ * ruta que `init` escribe sale de su ruta real. Nunca crea la raíz. Devuelve la raíz real o el código de salida.
+ */
+export type WriteProbe = (dir: string) => Promise<void>;
+
+/** Sonda de escritura: crea y borra un archivo con nombre aleatorio (un `EEXIST` nunca se confunde con «no escribible»). */
+export const defaultWriteProbe: WriteProbe = async (dir) => {
+  const probe = path.join(dir, `.ai-hub-write-probe-${process.pid}-${randomBytes(6).toString('hex')}`);
+  await fs.writeFile(probe, '', { flag: 'wx' });
+  await fs.rm(probe, { force: true });
+};
+
+export async function validateInitTarget(
+  root: string,
+  writing: boolean,
+  io: CliContext['io'],
+  writeProbe: WriteProbe = defaultWriteProbe,
+): Promise<{ root: string } | { code: number }> {
+  const stat = await fs.stat(root).catch(() => null);
+  if (stat === null) {
+    io.err(`init: el destino ${root} no existe; créalo o elige otro con --dir (init no crea la raíz); no se escribió nada`);
+    return { code: 2 };
+  }
+  if (!stat.isDirectory()) {
+    io.err(`init: el destino ${root} no es un directorio; elige otro con --dir; no se escribió nada`);
+    return { code: 2 };
+  }
+  const real = await fs.realpath(root);
+  if (!writing) {
+    return { root: real };
+  }
+  try {
+    await writeProbe(real);
+  } catch (error) {
+    io.err(`init: el destino ${real} no admite escritura (${(error as NodeJS.ErrnoException).code ?? 'error'}); no se escribió nada`);
+    return { code: 2 };
+  }
+  const escapes = await escapingLinks(real);
+  if (escapes.length > 0) {
+    for (const { link, target } of escapes) {
+      io.err(`init: ${link} apunta fuera de la raíz (${target}); init no escribe fuera de ${real}; no se escribió nada`);
+    }
+    return { code: 2 };
+  }
+  return { root: real };
+}
+
+/** init-fiabilidad (DEV-06): lo que falta de la instalación base en `root` (manifiesto, directorio del arnés, lock). */
+export async function missingBase(root: string): Promise<string[]> {
+  const missing: string[] = [];
+  if (!(await exists(path.join(root, 'manifest.yaml')))) {
+    missing.push('manifest.yaml');
+  }
+  if (!(await fs.stat(path.join(root, '.ai-hub')).then((stat) => stat.isDirectory(), () => false))) {
+    missing.push('.ai-hub/');
+  }
+  if (!(await exists(path.join(root, 'sync.lock.json')))) {
+    missing.push('sync.lock.json');
+  }
+  return missing;
+}
+
+/** init-fiabilidad (DEV-05, DEV-06): última línea de la base, solo tras verificarla. */
+export function installedLine(root: string): string {
+  return `init: instalado en ${root}`;
+}
+
+/** Ganchos internos del asistente: la idea ya capturada y los pasos opcionales que corren tras la base. */
+export interface InitHooks {
+  idea?: IdeaOutcome | null;
+  /** Integraciones opcionales tras verificar la base; devuelve un informe por integración ofrecida (IO-02). */
+  afterBase?: (ctx: CliContext) => Promise<IntegrationReport[]>;
+}
+
+export async function cmdInit(args: ParsedArgs, initialCtx: CliContext, hooks: InitHooks = {}): Promise<number> {
   if (args.flags['discord-token'] !== undefined) {
-    ctx.io.err(TOKEN_FLAG_REFUSED);
+    initialCtx.io.err(TOKEN_FLAG_REFUSED);
     return 2;
+  }
+  const resolvedTarget = initTarget(args, initialCtx);
+  if ('code' in resolvedTarget) {
+    return resolvedTarget.code;
+  }
+  const { target } = resolvedTarget;
+  let ctx = resolvedTarget.ctx;
+  if (target.kind === 'ancestor') {
+    // DEV-02: en interactivo se pregunta (nunca en el checkout del motor); con --yes o sin TTY, salida 2.
+    if (isInteractiveRequest(args, ctx) && !(await isEngineCheckout(target.ancestor))) {
+      return runAssistantInit({ ...ctx, root: target.cwd }, { ancestor: target });
+    }
+    ctx.io.err(ancestorMessage(target));
+    return 2;
+  }
+  const writing = Boolean(args.flags.yes) && !args.flags['dry-run'];
+  const validated = await validateInitTarget(ctx.root, writing, ctx.io, ctx.writeProbe);
+  if ('code' in validated) {
+    return validated.code;
+  }
+  ctx = { ...ctx, root: validated.root };
+  if (target.ancestor !== null) {
+    ctx.io.err(`ai-hub: aviso: ${target.ancestor} (ancestro de ${ctx.root}) ya tiene una instalación; init escribe solo en ${ctx.root}`);
+  }
+  if (!isInteractiveRequest(args, ctx)) {
+    ctx.io.err(destinationLine(ctx.root));
+  }
+  // init-fiabilidad (CO-07): los argumentos de --connect-hermes se validan antes de escribir nada, y el token se
+  // lee de la entrada estándar también antes del apply (vacío = salida 2 sin escribir).
+  let connectToken: string | undefined;
+  if (args.flags['connect-hermes'] && !args.flags['dry-run']) {
+    const invalid = validateConnectFlags(args.flags);
+    if (invalid !== null) {
+      ctx.io.err(invalid);
+      return 2;
+    }
+    if (args.flags.yes) {
+      connectToken = (await (ctx.stdin ?? readStdin)()).trim();
+      if (connectToken === '') {
+        ctx.io.err('--discord-token-stdin: la entrada estándar está vacía; no se escribió nada');
+        return 2;
+      }
+    }
   }
   const sourceCheckout = await isEngineCheckout(ctx.root);
   // Gate del asistente (design D3): sólo instalación, sólo TTY, sólo sin flags.
@@ -815,7 +1034,7 @@ export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number
       stdin: ctx.ideaStdin ?? processIdeaStdin(),
       editor: (maxBytes) => ideaFromEditor(ctx.editorHost ?? realEditorHost(ctx.root), maxBytes),
     });
-    idea = resolved.outcome;
+    idea = hooks.idea !== undefined ? hooks.idea : resolved.outcome;
     if (resolved.notice !== null) {
       ctx.io.err(resolved.notice);
     }
@@ -901,9 +1120,9 @@ export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number
   const planBody = prepared.planBodyFor(resolved);
   const plan: Plan = { ...planBody, hash: sha256(JSON.stringify(planBody)) };
   const sync = await runSync(ctx.root, { check: false });
-  const existingRc = readAiHubRc(ctx.cwd);
+  const existingRc = readAiHubRc(ctx.root);
   if (!existingRc || existingRc.version === 1 || args.flags.force) {
-    writeAiHubRc(ctx.cwd, prepared.rc);
+    writeAiHubRc(ctx.root, prepared.rc);
   }
   if (sourceCheckout) {
     try {
@@ -934,14 +1153,69 @@ export async function cmdInit(args: ParsedArgs, ctx: CliContext): Promise<number
   ctx.io.out(`plan: ${plan.hash}`);
   // idea-input (R12): la semilla se escribe solo tras el apply; antes de la conexión del plano de control.
   if (idea?.kind === 'idea') {
-    for (const line of await writeBacklogSeed(ctx, idea.text, idea.note)) {
+    // init-fiabilidad (SEED-03): si la idea no se puede guardar, la base falla (el arnés queda aplicado).
+    let lines: string[];
+    try {
+      lines = await writeBacklogSeed(ctx, idea.text, idea.note);
+    } catch (error) {
+      const failure = error as NodeJS.ErrnoException;
+      const file = failure.path ? path.relative(ctx.root, failure.path).split(path.sep).join('/') : 'backlog/';
+      ctx.io.err(`init: no se pudo escribir ${file} (${failure.code ?? failure.message}); el arnés sigue aplicado en ${ctx.root}, pero la idea no se guardó; no se ofrece ninguna integración`);
+      return 1;
+    }
+    for (const line of lines) {
       ctx.io.out(line);
     }
   }
-  // control-onboarding (D7): conexión explícita sin preguntas, después del init aplicado; el plan no cambia.
-  if (args.flags['connect-hermes']) {
-    return connectFromFlags(args.flags, ctx, idea?.kind === 'idea' ? idea.text : null);
+  // init-fiabilidad (DEV-06): «instalado» solo tras comprobar la base; las integraciones opcionales, después.
+  if (!sourceCheckout) {
+    const missing = await missingBase(ctx.root);
+    if (missing.length > 0) {
+      ctx.io.err(`init: la instalación base no está completa en ${ctx.root}: falta ${missing.join(', ')}; no se ofrece ninguna integración`);
+      return 1;
+    }
   }
+  ctx.io.out(installedLine(ctx.root));
+  // init-fiabilidad (IO-01, DEV-08): con la base verificada, las integraciones opcionales nunca cambian el código de
+  // salida; terminan en una línea de estado por integración (P-01: 0 también con --yes --connect-hermes).
+  let reports: IntegrationReport[] = [];
+  if (hooks.afterBase !== undefined) {
+    reports = await hooks.afterBase(ctx);
+  } else if (args.flags['connect-hermes']) {
+    // control-onboarding (D7): conexión explícita sin preguntas, después del init aplicado; el plan no cambia.
+    // Una excepción no prevista (o una interrupción simulada) se informa en la etapa en curso y con la acción que
+    // corresponde a lo persistido (HC-12): antes del punto de guardado, retomar la conexión; después, enroll.
+    const NEXT: Record<string, string> = {
+      profile: 'identity',
+      'identity-before-backup': 'identity',
+      'identity-backup': 'identity',
+      'identity-block': 'env',
+      env: 'manifest',
+      manifest: 'skill',
+    };
+    let stage = 'profile';
+    const staged: CliContext = {
+      ...ctx,
+      onConnectStage: async (done) => {
+        stage = NEXT[done] ?? stage;
+        await ctx.onConnectStage?.(done);
+      },
+    };
+    const report = await isolate(
+      'control',
+      () => stage,
+      async () => (await connectFromFlagsReport(args.flags, staged, idea?.kind === 'idea' ? idea.text : null, connectToken)).report,
+    );
+    if (report !== null && report.state === 'fallida' && report.action === null) {
+      const saved = await connectionSaved(ctx.root, contextHost(ctx));
+      report.action = saved ? ENROLL_ACTION : RETAKE_ACTION;
+      if (!saved) {
+        report.provide = RETAKE_PROVIDE;
+      }
+    }
+    reports = report === null ? [] : [report];
+  }
+  printReports(ctx.io, reports);
   return 0;
 }
 

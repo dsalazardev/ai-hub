@@ -3,9 +3,9 @@
 - Proyecto: ai-hub (AI Hub)
 - Preset: generic-ts@1 [base -> generic-ts]
 - Targets: claude, opencode, pi, cursor, copilot
-- Cambio activo: idea-input
-- Fase: pendiente-checklist-5.8
-- Tareas: 35/36
+- Cambio activo: init-fiabilidad
+- Fase: bloqueado-propietario
+- Tareas: 58/65
 
 ## Comandos Spec Kit
 
@@ -44,4 +44,4 @@ ai::todo · ai::in-spec · ai::spec-ready · ai::in-dev · ai::in-review · ai::
 - Escribe el estado en `.planning/`, nunca en el chat.
 - No implementes sin spec aprobada por un humano.
 - Trabaja en rama o worktree; no en una trunk cerrada.
-<!-- context-hash: 7683f9b6f3dd4085b0ff79f49f6131ebe7ca248bde3ba35d0aef64f7766ed3c4 -->
+<!-- context-hash: 3a90f535240b6e3f75fc31b514b3640580a7e9fe2ed346b52de9d1a79a94fe1f -->

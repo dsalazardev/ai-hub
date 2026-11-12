@@ -57,6 +57,7 @@ export async function harness(): Promise<Harness> {
         'control:',
         '  approvers:',
         `    - "${APPROVER}"`,
+        '  channelId: "987654321098765432"',
         '  ttlHours: 24',
         `  expire: ${options.expire ?? 'block'}`,
         '',

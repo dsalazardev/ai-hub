@@ -28,6 +28,10 @@ export interface CliContext {
   /** idea-input: entrada estándar de `--idea-stdin` y host del editor de `--idea-editor`, inyectables (tests). */
   ideaStdin?: IdeaStdin;
   editorHost?: EditorHost;
+  /** init-fiabilidad (1.3, HC-12): se llama al completar cada etapa de la conexión; lanzar simula una interrupción (tests). */
+  onConnectStage?: (stage: import('../control/onboard.js').ConnectStage) => void | Promise<void>;
+  /** init-fiabilidad (DEV-03): sonda de escritura del destino, inyectable (tests). */
+  writeProbe?: (dir: string) => Promise<void>;
 }
 
 export interface ParsedArgs {

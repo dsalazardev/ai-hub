@@ -277,6 +277,13 @@ Ante un fallo: mover a `ai::blocked` o proponerlo, comentar motivo y evidencia, 
 
 En el consumidor, las credenciales del arnés viven en `.ai-hub/.env`, que `init` ignora antes de que exista; el paquete solo materializa `.ai-hub/.env.example` con `CHANGEME` y jamás escribe un `.env` por su cuenta. Lo crea la persona, a mano o en el paso opcional del asistente interactivo (saltable, enmascarado, nunca con `--yes`). Ningún agente pide tokens. Los comandos que los necesitan se ejecutan con `ai-hub env exec -- <cmd>`; `doctor` comprueba solo presencia (`env:ignored`, `env:keys`) y, con `--online`, la identidad redactada (`tracker:token`). Los snapshots de `.backups/` excluyen `.ai-hub/.env` y `.ai-hub/runs/`.
 
+El paquete escribe solo dos credenciales, siempre lo que teclea la persona en un paso opt-in de `init` y nunca por su cuenta (detalle en `core/SECURITY.md` › Credentials the package writes):
+
+- `GITLAB_TOKEN` (con `GITLAB_URL`), en `.ai-hub/.env`, desde el paso del tracker del asistente;
+- `DISCORD_BOT_TOKEN` (con `DISCORD_ALLOWED_USERS`, `DISCORD_ALLOWED_CHANNELS` y `DISCORD_HOME_CHANNEL`), en el `.env` del perfil Hermes `hermes-control`, fuera del repositorio, desde el paso de control (interactivo, o `--connect-hermes` con `--discord-token-stdin`).
+
+El paso de control escribe además, en el hogar del perfil, las claves de la plataforma webhook que falten (`WEBHOOK_ENABLED`, `WEBHOOK_PORT`; nunca `WEBHOOK_SECRET`) y el bloque gestionado de `SOUL.md`. Ninguna credencial se imprime ni se registra; la salida de Hermes que se muestra ante un fallo va redactada. El modo `0600` no cambia las ACL en Windows, y una carpeta sincronizada (OneDrive) puede subir `.ai-hub/.env` aunque git lo ignore.
+
 ---
 
 ## 10. Checklist de cumplimiento

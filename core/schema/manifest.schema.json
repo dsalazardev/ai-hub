@@ -206,6 +206,7 @@
       "additionalProperties": false,
       "properties": {
         "approvers": { "type": "array", "items": { "type": "string", "pattern": "^[0-9]{5,25}$" }, "uniqueItems": true },
+        "channelId": { "type": "string", "pattern": "^[0-9]{17,20}$" },
         "ttlHours": { "type": "number", "exclusiveMinimum": 0, "maximum": 720 },
         "expire": { "enum": ["block", "notify"] },
         "pollMinutes": { "type": "integer", "minimum": 5, "maximum": 1440 }

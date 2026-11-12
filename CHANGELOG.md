@@ -1,5 +1,51 @@
 # Changelog
 
+## Sin publicar
+
+### BREAKING
+
+**`init` sale con 0 cuando falla una integración opcional después de verificar la instalación base.**
+Antes, un fallo de Hermes (interactivo o `--yes --connect-hermes`) terminaba con «Error inesperado» y salida
+1, aunque el arnés estuviera instalado. Ahora `init` sale con 0, escribe un aviso en stderr y termina stdout con
+una línea por integración:
+`ai-hub-integration: name=control state=fallida stage=webhook-route action=ai-hub control enroll --yes`.
+Migración: los scripts que comprobaban el 1 deben leer la línea con
+`^ai-hub-integration: name=(\S+) state=(\S+) stage=(\S+) action=(.*)$` y tratar `fallida` y `pendiente` como
+no conectados. Los argumentos inválidos siguen saliendo con 2, ahora antes de escribir nada; los fallos de la
+base siguen saliendo con un código distinto de 0.
+
+**`init --yes` ya no instala en un directorio padre por su cuenta.**
+Antes, si un ancestro tenía `manifest.yaml`, `init` escribía en él aunque se lanzara desde un subdirectorio.
+Ahora sale con 2 sin escribir, nombra las dos rutas y pide elegir.
+Migración: `--dir <ruta>` (o `AI_HUB_DIR`) para el ancestro, o `--dir .` para el directorio actual. En
+interactivo, el asistente pregunta.
+
+**`control enroll --check` exige un perfil completo y `manifest.control.channelId`.**
+Antes comprobaba solo la presencia de tres claves de Discord y salía 0 con un perfil incompleto. Ahora verifica
+perfil, configuración, claves, canal, aprobadores, skill, scripts, identidad, plataforma webhook, ruta, cron,
+modelo y gateway; sale 1 si falta algo. El canal se compara con `manifest.control.channelId`, que la conexión
+escribe automáticamente.
+Migración: completa el perfil que falte y añade `channelId` al `manifest.control` de instalaciones anteriores
+(el paso de conexión lo escribe en las nuevas). Los ids de Discord no son secretos.
+
+### Plano de control
+
+- **Webhook recuperable.** `control enroll` comprueba la plataforma con `webhook list`, añade solo
+  `WEBHOOK_ENABLED=true` y `WEBHOOK_PORT=8644` cuando faltan, repite el preflight y nunca escribe
+  `WEBHOOK_SECRET`. Un valor incompatible se informa sin cambiarlo.
+- **Identidad gestionada.** `SOUL.md` del perfil `hermes-control` lleva un bloque versionado con hash y se
+  actualiza con regla de tres vías. El perfil creado por la misma ejecución se adopta sin preguntar, antes de
+  escribir el `.env`; un perfil existente sin marcas solo se adopta en el paso interactivo. Las copias
+  `SOUL.md.pre-ai-hub[.n]` no se sobrescriben.
+- **Recuperación.** Cada interrupción de R1–R8 anuncia una acción existente —retomar la conexión o
+  `ai-hub control enroll --yes`— que termina en `control enroll --check` = 0; un gateway parado se repara con
+  `hermes gateway restart`.
+- **Discord.** Los fallos se clasifican por estado HTTP, la causa solo se nombra con una respuesta independiente,
+  los nombres se normalizan y la colisión de token se detecta antes de preguntar por el canal. El diagnóstico
+  incluye operación, etapa, estado, clase y `code`, sin cuerpo, cabeceras ni token.
+- **Windows.** El resolver de Hermes encuentra `%LOCALAPPDATA%\hermes\hermes-agent\.hermes\bin\hermes.exe` y
+  distingue, por candidato, ausente, no ejecutable, `--version` fallido y versión antigua.
+
 ## 0.14.0 — idea-input: captura de la idea sin truncar ni fugas al shell (2026-11-10)
 
 ### Seguridad

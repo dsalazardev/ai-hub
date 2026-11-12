@@ -644,3 +644,117 @@ barre `rules/`). Todo reescrito al vocabulario del motor.
 
 - Evidencia: `ai-hub runs event --from-status "AI-HUB-STATUS: CONVERGED | artifact=specs/001-recurring-invoices/tasks.md | reason=-"` → `"artifact" parece contener un secreto; no se registra`.
 - Impacto: una feature con nombre largo no puede registrar su estado. Pendiente de decisión del propietario (fuera de hermes-control).
+
+## 2026-11-10 — Instalación real de 0.14.0 en Windows: paso de control del `init`
+
+Recorrido verificado de punta a punta en `C:\Users\USUARIO\OneDrive\Escritorio\prueba`
+(PowerShell 5.1, Windows 11, Hermes 0.23.0, npm 12.1.0). Sirve como base del capítulo de
+instalación de la documentación.
+
+Orden real de los pasos del asistente, con lo que pide cada uno:
+
+1. clientes destino (los cinco por defecto);
+2. preset detectado (`generic-ts`);
+3. catálogo (`full`);
+4. tipos de script de Spec Kit (`Python, Shell, PowerShell`) y el activo (`Shell`);
+5. avisos por cliente detectado/ausente (Claude, OpenCode, Cursor, Pi, Copilot);
+6. entorno de Spec Kit (`uvx`, caché, `bash`, `specify-cli 1.2.6`);
+7. **idea del proyecto** (multilínea; `.` o Ctrl+D terminan; vacío salta);
+8. confirmación del plan (imprime el JSON con `destinations 6872`, `files 8521`, `hash`);
+9. tracker de GitLab (opcional; escribe `.ai-hub/.env`);
+10. plano de control (opcional; solo si detecta Hermes ≥ 0.23);
+11. resumen.
+
+Hallazgos del paso de control, todos reproducidos en vivo:
+
+- **H-1 — un solo mensaje para tres causas distintas.** `onboard-step.ts:135-139` imprime
+  «El bot no ve ese canal: invítalo al servidor…» tanto para `not-visible` (403/404 de
+  `GET /channels/{id}`) como para `no-match` (nombre sin coincidencia). En la prueba el bot
+  **sí estaba invitado y veía el servidor**; el mensaje apuntó a la causa equivocada y
+  provocó un bucle de reintentos.
+- **H-2 — nombre de canal sensible a mayúsculas.** `onboard.ts:89` compara
+  `data.name === value`. Discord normaliza los nombres de canal a minúsculas, así que
+  `SALAZAR` nunca coincide con `salazar`. Debería comparar normalizado.
+- **H-3 — ids de otra entidad entran por la rama numérica.** Un id de servidor y un id de
+  bot cumplen `MIN_ID` (`^[0-9]{17,20}$`) y se consultan como canal, con 404 idéntico al de
+  «sin permisos». Falta validar `type === 0` y distinguir el origen del id.
+- **H-4 — no hay forma de listar canales.** Diagnosticar exige `GET /users/@me/guilds` y
+  `GET /guilds/{id}/channels` a mano. Un `control channels` (o mostrar los canales
+  visibles al fallar) habría resuelto el caso en un paso.
+- **H-5 — la colisión de token se detecta al final.** `control: ese token es el bot del
+  perfil "default"; hermes-control necesita su propio bot (no se escribió nada)` aparece
+  después de teclear token, canal, aprobador, TTL y expiración. Debe comprobarse antes de
+  pedir nada.
+- **H-6 — `hermes` fuera del PATH de PowerShell.** El binario vive en
+  `%LOCALAPPDATA%\hermes\hermes-agent\.hermes\bin`; en bash está en el PATH, en PowerShell
+  no. Por eso el `init` anterior no ofreció el paso de control: `isHermesAvailable` no lo
+  vio. Un aviso («Hermes instalado pero no en el PATH») evitaría la confusión.
+
+- **H-7 — 403 no distingue «el bot no está en ningún servidor» de «sin permisos en ese canal».**
+  Con el segundo bot (`Leos S. Kennedy`) `GET /channels/{id}` devolvió 403 mientras
+  `GET /users/@me/guilds` devolvía `[]`. El mensaje del arnés era correcto pero genérico;
+  leer los guilds primero permitiría decir la causa exacta («el bot no está en ningún
+  servidor») y ahorrar el bucle.
+
+- **H-8 — `enroll` crea el webhook antes de habilitar la plataforma, y oculta el motivo.** En una
+  instalación nueva, `hermes -p hermes-control webhook subscribe …` sale 1 con
+  «Webhook platform is not enabled»; `enroll.ts:174-185` descarta stdout/stderr y solo
+  propaga «`hermes webhook subscribe falló (exit 1)`». El perfil, los scripts y el `.env`
+  ya estaban escritos, así que la instalación queda a medias sin decirlo. Falta habilitar
+  `platforms.webhook` (o `WEBHOOK_ENABLED`/`WEBHOOK_PORT`/`WEBHOOK_SECRET` en el `.env`
+  del perfil) antes del `subscribe`, o al menos relanzar el mensaje de Hermes.
+
+Datos del entorno que confirman la nomenclatura de Discord (el usuario confundió servidor,
+bot y canal):
+
+| Entidad | id | nombre |
+|---|---|---|
+| Servidor | `1569195743065940018` | `control` |
+| Bot | `1569189115428343818` | `Bills-builder` |
+| Canal de texto | `1569195743657467977` | `general` |
+| Canal de voz | `1569195743657467978` | `General` |
+
+Un servidor recién creado solo trae `#general`: no existe ningún canal `control` ni
+`salazar`. La documentación debe decir explícitamente que el canal hay que crearlo o usar
+`general`, y que el id se copia del **canal**, con *Modo desarrollador* activo.
+
+Riesgo operativo detectado: el token del bot se pegó en el chat durante el diagnóstico
+(expuesto). Debe rotarse con *Reset Token* y actualizarse solo en el `.env` del perfil.
+
+## Revisión de la propuesta `init-fiabilidad` — 2026-11-11
+
+- En `bae6ac7`, `openspec validate init-fiabilidad --strict` salió 0. `openspec list` mostró `init-fiabilidad` en 0/50 y `ci-verde` en 16/17. Se contaron 35 deltas y 106 escenarios. Los archivos de la propuesta existen localmente y están ignorados por Git.
+- `design.md:78` prevé una línea fuera del JSON en `init --dry-run`. El consumidor actual del CLI analiza todo `stdout` como JSON (`core/tests/cli.test.ts:125`). El diseño debe fijar un canal de salida que conserve ese contrato.
+- `design.md:84` promete recuperar con `control enroll --yes`, pero `design.md:329` deja `SOUL.md` sin marcas pendiente sin TTY y el perfil completo exige una identidad gestionada. Definir y probar una recuperación para el archivo que genera Hermes en perfiles nuevos y parciales.
+- `design.md:76` y `:93-94` presentan `--dir` como prioridad, pero exigen salir con 2 si difiere de `AI_HUB_DIR`. `AGENTS.md` §6 pone `AI_HUB_DIR` primero en la resolución vigente. Explicitar si se conserva la regla de conflicto o si `init` tendrá una excepción para la ruta explícita, y alinear el diseño y los escenarios.
+- `design.md:420-431` describe WIP 1 como política del consumidor y fija el cierre de `ci-verde` antes de aplicar como secuencia de la propuesta. Mantener explícita esa diferencia. La tarea 4.1 sigue abierta localmente y pide el log del job Linux; esta revisión no verificó ese job.
+
+### Segunda revisión de `init-fiabilidad`
+
+- La validación estricta pasó. El change tiene 42 deltas, 134 escenarios y 62 tareas pendientes. Los contratos de `--dry-run`, los destinos explícitos y la migración de `IDEA.md` quedaron precisados.
+- `design.md:180-183` sitúa la identidad antes de guardar las credenciales y `manifest.control`. La recuperación de `design.md:388-389` propone solo `control enroll --yes` si se interrumpe esa etapa. Falta una ruta para retomar el paso con los datos aún sin guardar. La tarea 8.10 debe partir del estado exacto de cada interrupción, sin completar el estado del fixture a mano.
+- `tasks.md:209-215` usa webhook deshabilitado para provocar un fallo, pero el escenario `Platform disabled` de `specs/hermes-control/spec.md` exige habilitarlo con consentimiento. Fijar un fallo controlado tras el preflight y retirarlo antes del reintento.
+- `ci-verde` sigue en 16/17. No se obtuvo evidencia del job Linux para `bae6ac7`.
+
+### Tercera revisión de `init-fiabilidad`
+
+- La validación estricta pasó. Se verificaron 44 deltas, 142 escenarios y 65 tareas pendientes. La matriz de recuperación distingue cuándo retomar `init` y cuándo basta `control enroll --yes`. Las tareas 9.9 y 9.10 separan la habilitación automática del fallo inyectado en `webhook subscribe`.
+- La tarea 9.10 necesita un perfil de prueba sin la ruta objetivo. Si reutiliza el perfil que dejó la tarea 9.9, el enrolamiento conserva la ruta existente y no ejecuta `subscribe`, por lo que el envoltorio no puede provocar el fallo.
+- El punto de guardado en `design.md:400` y HC-12 comprueba presencia del token y del bloque de control. El check también exige coherencia de canal y aprobadores. Una configuración previa puede dejar ambos presentes y desalineados tras una reconfiguración interrumpida. Conviene cubrir ese estado en la acción de recuperación y alinear el diagrama de `design.md:337-339` con la matriz.
+- `ci-verde` sigue en 16/17 según `openspec list`. La tercera revisión no verificó el job Linux.
+
+## 2026-11-11 — Deuda heredada registrada por `init-fiabilidad` (tarea 1.1)
+
+- `openspec/specs/hermes-control/spec.md:206` › «The harness works without Hermes»: «every existing command MUST
+  keep its 0.11.0 output and exit code». El texto ya era inexacto antes de `init-fiabilidad`: idea-input
+  (0.14.0) cambió la salida de `init`, y `init-fiabilidad` añade la ruta absoluta, `IDEA.md` y las líneas
+  `ai-hub-integration:`. `init-fiabilidad` no lo modifica (`design.md` §14); su equivalente en
+  `control-onboarding` sí se reescribe (CO-M3). Pendiente de un change que actualice o retire la promesa de
+  «0.11.0 output».
+
+## 2026-11-11 — Revisión de la implementación de `init-fiabilidad`
+
+- `npm --prefix core run typecheck` y la validación estricta del change pasaron. Se ejecutaron 33 pruebas de recuperación, check, webhook e identidad en cuatro archivos y todas pasaron. `openspec list` confirmó 58/65 en `init-fiabilidad` y 16/17 en `ci-verde`.
+- P1, recuperación desalineada: con un consumidor temporal y Hermes simulado, un canal distinto entre el perfil y el manifiesto produjo check 1 y acción `control enroll --yes`. Ese comando devolvió 0 y el segundo check volvió a salir 1 con el canal desalineado. `core/src/control/enroll.ts:205-229` propone enrolar para datos que ese comando no reescribe. `core/src/control/onboard.ts:465` también clasifica la conexión por presencia y no por coherencia.
+- P2, redacción incompleta: una ejecución sintética con `RunResult.status=null` y un centinela conocido en `error` confirmó que `redactedCause` lo conserva en su salida. `core/src/control/redact.ts:39-42` redacta stdout y stderr, pero interpola `error` directamente. Revisar también la emisión de mensajes crudos en el aislador.
+- P2, puerto publicado: el mismo consumidor temporal, con `WEBHOOK_PORT=9000`, recibió una URL para GitLab con el puerto 8644. `core/src/control/enroll.ts:507` usa un puerto fijo aunque el preflight conserva el existente.

@@ -7,7 +7,7 @@ import { renderDiscord, renderJson } from './render.js';
 import { cmdTick, TICK_USAGE } from './tick.js';
 import { TrackerError, type TrackerFetch } from './tracker.js';
 import { runEnroll, type EnrollMode } from './enroll.js';
-import { HermesNotFoundError, HermesVersionError, type ResolverHost } from './hermes.js';
+import { canExecute, HermesNotFoundError, HermesVersionError, type ResolverHost } from './hermes.js';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 
@@ -198,6 +198,7 @@ function processHost(ctx: CliContext): ResolverHost {
     cwd: ctx.root,
     exec: ctx.exec,
     exists: (file) => fs.access(file).then(() => true, () => false),
+    executable: (file) => canExecute(file),
   };
 }
 

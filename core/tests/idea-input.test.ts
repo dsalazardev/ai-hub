@@ -1011,7 +1011,8 @@ describe('idea-input fase 5 — semilla: fence, procedencia, colisión y migraci
   it('nuevo → escrito con fence, fecha y fuente; la idea se extrae exacta', async () => {
     const root = await ideaDir();
     const lines = await writeBacklogSeed(seedCtx(root), idea, 'archivo idea.md', new Date('2026-11-10T12:00:00Z'));
-    expect(lines).toEqual(['backlog: seed.md escrito', 'backlog: pre-prompt.md escrito', 'backlog: ejecuta backlog/pre-prompt.md en tu agente']);
+    // init-fiabilidad (SEED-01): IDEA.md se escribe junto al seed, en el mismo escritor.
+    expect(lines).toEqual(['backlog: seed.md escrito', 'backlog: pre-prompt.md escrito', 'backlog: ejecuta backlog/pre-prompt.md en tu agente', 'backlog: IDEA.md escrito (fuente: backlog/seed.md)']);
     const seed = await fs.readFile(seedFile(root), 'utf8');
     expect(seed).toContain('el 2026-11-10 desde archivo idea.md');
     expect(seed.match(/^## Idea$/gm)).toHaveLength(1);

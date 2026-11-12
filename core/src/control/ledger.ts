@@ -54,6 +54,7 @@ interface LedgerLine {
 
 export interface ControlSettings {
   approvers: string[];
+  channelId?: string;
   ttlHours: number;
   expire: 'block' | 'notify';
   pollMinutes: number;
@@ -69,6 +70,7 @@ export function controlSettings(manifest: ProjectManifest): ControlSettings | nu
   }
   return {
     approvers: control.approvers ?? [],
+    ...(control.channelId !== undefined ? { channelId: control.channelId } : {}),
     ttlHours: control.ttlHours ?? DEFAULT_TTL_HOURS,
     expire: control.expire ?? 'block',
     pollMinutes: control.pollMinutes ?? DEFAULT_POLL_MINUTES,

@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { cmdInit } from '../src/cli/onboarding.js';
+import { cmdInit, missingBase } from '../src/cli/onboarding.js';
 import { prepareInit } from '../src/cli/onboarding.js';
 import { sha256 } from '../src/sync/lock.js';
 import { createContext, runCli } from '../src/cli/run.js';
@@ -753,4 +753,112 @@ describe('doctor y backlog (D11)', () => {
     expect(joined).toContain('semilla presente');
     expect(joined).toMatch(/\[OK\] +backlog:/);
   }, 120_000);
+});
+
+describe('init-fiabilidad 2.4 — raíz ante un ancestro con manifest.yaml (DEV-02)', () => {
+  async function layout(): Promise<{ base: string; cwd: string }> {
+    const base = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-root-'));
+    await fs.writeFile(path.join(base, 'manifest.yaml'), 'version: 2\n', 'utf8');
+    const cwd = path.join(base, 'prueba');
+    await fs.mkdir(cwd);
+    await fs.writeFile(path.join(cwd, 'package.json'), JSON.stringify({ name: 'demo', devDependencies: { typescript: '^5.0.0' } }), 'utf8');
+    return { base, cwd };
+  }
+
+  it('asks which root when an ancestor holds a manifest, naming both absolute paths', async () => {
+    const { base, cwd } = await layout();
+    const sink = capture();
+    const ctx = await createContext(cwd, sink.io, fakeRunner().run);
+    const script = scriptedPrompts([cwd, ['claude'], 'full', ['py', 'sh', 'ps'], 'sh', '', true]);
+    const code = await cmdInit(parseArgs([]), { ...ctx, interactive: true, assistantPrompts: script.prompts });
+    expect(code).toBe(0);
+    const question = script.calls[0];
+    expect(question.kind).toBe('select');
+    expect(question.message).toContain(cwd);
+    expect(question.message).toContain(base);
+    expect(question.options).toEqual([cwd, base]);
+    await fs.access(path.join(cwd, 'manifest.yaml'));
+    expect(await fs.readFile(path.join(base, 'manifest.yaml'), 'utf8')).toBe('version: 2\n');
+    expect((await fs.readdir(base)).sort()).toEqual(['manifest.yaml', 'prueba']);
+    await fs.rm(base, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  }, 180_000);
+
+  it('cancelling the root question writes nothing', async () => {
+    const { base, cwd } = await layout();
+    const sink = capture();
+    const ctx = await createContext(cwd, sink.io, fakeRunner().run);
+    const script = scriptedPrompts([]);
+    const code = await cmdInit(parseArgs([]), { ...ctx, interactive: true, assistantPrompts: script.prompts });
+    expect(code).toBe(0);
+    expect(sink.out.join('\n')).toContain('init cancelado; no se escribió nada');
+    expect((await fs.readdir(base)).sort()).toEqual(['manifest.yaml', 'prueba']);
+    expect(await fs.readdir(cwd)).toEqual(['package.json']);
+    await fs.rm(base, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  });
+});
+
+describe('init-fiabilidad 2.6 — ruta antes de confirmar (DEV-05)', () => {
+  it('path before confirming: stderr names the absolute installation directory before the confirmation', async () => {
+    await seedConsumer();
+    const sink = capture();
+    const ctx = await createContext(root, sink.io, fakeRunner().run);
+    const script = scriptedPrompts([['claude'], 'full', ['py', 'sh', 'ps'], 'sh', '', false]);
+    let errAtConfirm: string[] = [];
+    const confirm = script.prompts.confirm;
+    script.prompts.confirm = async (message) => {
+      errAtConfirm = [...sink.err];
+      return confirm(message);
+    };
+    expect(await cmdInit(parseArgs([]), { ...ctx, interactive: true, assistantPrompts: script.prompts })).toBe(0);
+    expect(errAtConfirm).toContain(`ai-hub: destino ${await fs.realpath(root)}`);
+  });
+});
+
+describe('init-fiabilidad 2.8 — verificación de la base (DEV-06)', () => {
+  it('missing lock exits non-zero, no status line: the base check names what is missing', async () => {
+    await fs.writeFile(path.join(root, 'manifest.yaml'), 'version: 2\n', 'utf8');
+    await fs.mkdir(path.join(root, '.ai-hub'));
+    expect(await missingBase(root)).toEqual(['sync.lock.json']);
+    await fs.writeFile(path.join(root, 'sync.lock.json'), '{}', 'utf8');
+    expect(await missingBase(root)).toEqual([]);
+    await fs.rm(path.join(root, '.ai-hub'), { recursive: true });
+    expect(await missingBase(root)).toEqual(['.ai-hub/']);
+  });
+});
+
+describe('init-fiabilidad 2.7 — paridad de hash y ruta (DEV-04, DEV-05)', () => {
+  it('interactive and flags agree on hash and path', async () => {
+    await seedConsumer();
+    const sinkA = capture();
+    const ctxA = await createContext(root, sinkA.io, fakeRunner().run);
+    const answers = [['claude'], 'full', ['py', 'sh', 'ps'], 'sh', '', false];
+    expect(await cmdInit(parseArgs([]), { ...ctxA, interactive: true, assistantPrompts: scriptedPrompts(answers).prompts })).toBe(0);
+    const sinkB = capture();
+    const ctxB = await createContext(root, sinkB.io, fakeRunner().run);
+    expect(await cmdInit(parseArgs(['--dry-run', '--targets', 'claude', '--full', '--script', 'sh']), ctxB)).toBe(0);
+    const hashA = /"hash": "([0-9a-f]{64})"/.exec(sinkA.out.join('\n'))?.[1];
+    const hashB = /"hash": "([0-9a-f]{64})"/.exec(sinkB.out.join('\n'))?.[1];
+    expect(hashA).toBeDefined();
+    expect(hashA).toBe(hashB);
+    const destino = `ai-hub: destino ${await fs.realpath(root)}`;
+    expect(sinkA.err).toContain(destino);
+    expect(sinkB.err).toContain(destino);
+  });
+
+  it('same hash in two dirs with the same basename, different reported paths', async () => {
+    const base = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-basename-'));
+    const runs: Array<{ hash: string | undefined; err: string[] }> = [];
+    for (const parent of ['a', 'b']) {
+      const dir = path.join(base, parent, 'consumer');
+      await fs.mkdir(dir, { recursive: true });
+      await fs.writeFile(path.join(dir, 'package.json'), JSON.stringify({ name: 'demo', devDependencies: { typescript: '^5.0.0' } }), 'utf8');
+      const sink = capture();
+      const ctx = await createContext(dir, sink.io, fakeRunner().run);
+      expect(await cmdInit(parseArgs(['--dry-run', '--preset-only', '--no-speckit']), ctx)).toBe(0);
+      runs.push({ hash: JSON.parse(sink.out.join('\n')).hash as string, err: sink.err });
+    }
+    expect(runs[0].hash).toBe(runs[1].hash);
+    expect(runs[0].err.find((line) => line.startsWith('ai-hub: destino'))).not.toBe(runs[1].err.find((line) => line.startsWith('ai-hub: destino')));
+    await fs.rm(base, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  });
 });

@@ -1,4 +1,6 @@
-import { offerControlStep } from '../control/onboard-step.js';
+import { contextHost, runControlStep } from '../control/onboard-step.js';
+import { connectionSaved } from '../control/onboard.js';
+import { ENROLL_ACTION, RETAKE_ACTION, RETAKE_PROVIDE, isolate, type IntegrationReport } from './integrations.js';
 import type { ParsedArgs } from './types.js';
 import type { CliContext } from './types.js';
 import fs from 'node:fs/promises';
@@ -10,7 +12,7 @@ import { DEFAULT_SPECKIT_SCRIPTS, effectiveSpeckit } from '../speckit/settings.j
 import { probeEnvironment, probeShell, speckitPreflight, type SpeckitEnvironment } from '../speckit/commands.js';
 // Ciclo intencional con onboarding.ts (D2): ambos módulos se usan sólo a nivel de
 // función, nunca a nivel de módulo, así que los live bindings de ESM lo resuelven.
-import { cliVersion, cmdInit, prepareInit, printInitPlan, type PreparedInit } from './onboarding.js';
+import { cliVersion, cmdInit, destinationLine, prepareInit, printInitPlan, type PreparedInit } from './onboarding.js';
 import { PRE_PROMPT, PRE_PROMPT_HISTORY } from './preprompt.js';
 import {
   IdeaInputError,
@@ -69,6 +71,8 @@ export interface AssistantAnswers {
   script: SpeckitScript;
   /** Idea del proyecto; `null` = paso saltado (no se escribe `backlog/`). */
   idea: string | null;
+  /** init-fiabilidad (DEV-02): raíz elegida ante un ancestro instalado; se emite como `--dir`. */
+  dir?: string;
 }
 
 function isSpeckitScript(value: string): value is SpeckitScript {
@@ -98,6 +102,9 @@ export function answersToFlags(answers: AssistantAnswers): ParsedArgs {
     flags.exclude = answers.excludes.join(',');
   }
   flags.script = answers.script;
+  if (answers.dir !== undefined) {
+    flags.dir = answers.dir;
+  }
   const isDefaultSet =
     answers.scripts.length === DEFAULT_SPECKIT_SCRIPTS.length &&
     DEFAULT_SPECKIT_SCRIPTS.every((script) => answers.scripts.includes(script));
@@ -463,7 +470,36 @@ export async function writeBacklogSeed(
   if (state === 'written' || state === 'migrated') {
     lines.push('backlog: ejecuta backlog/pre-prompt.md en tu agente');
   }
+  lines.push(await writeIdeaMd(ctx.root, idea, state, now));
   return lines;
+}
+
+export const IDEA_MD_LINES = {
+  written: 'backlog: IDEA.md escrito (fuente: backlog/seed.md)',
+  kept: 'backlog: IDEA.md ya existe; se conserva sin cambios',
+  collision: 'backlog: IDEA.md no se escribe: backlog/seed.md contiene otra idea (colisión)',
+} as const;
+
+/** Contenido de `IDEA.md`: la idea textual en el mismo fence que el seed, la fecha y el enlace a la fuente. */
+export function renderIdeaMd(idea: string, now: Date = new Date()): string {
+  return `# Idea del proyecto\n\n> Registrada por \`ai-hub init\` el ${seedDate(now)}. Fuente: [backlog/seed.md](backlog/seed.md).\n\n${fenceIdea(idea)}\n`;
+}
+
+/**
+ * init-fiabilidad (SEED-01, SEED-02): `IDEA.md` en la raíz, en el flujo base y sin Hermes. Solo si el seed se
+ * escribió o ya tenía esta idea (nunca diverge del seed) y solo si no existe (nunca se sobrescribe). Escritura
+ * exclusiva (`wx`): un fallo de escritura sube a `init`, que lo trata como fallo de la base (SEED-03).
+ */
+async function writeIdeaMd(root: string, idea: string, state: SeedState, now: Date): Promise<string> {
+  const file = path.join(root, 'IDEA.md');
+  if (await fs.access(file).then(() => true, () => false)) {
+    return IDEA_MD_LINES.kept;
+  }
+  if (state === 'collision') {
+    return IDEA_MD_LINES.collision;
+  }
+  await fs.writeFile(file, renderIdeaMd(idea, now), { encoding: 'utf8', flag: 'wx' });
+  return IDEA_MD_LINES.written;
 }
 
 const IDEA_QUESTION = '¿Cuál es la idea del proyecto? Pégala o escríbela; puede ocupar varias líneas';
@@ -489,9 +525,34 @@ async function askIdea(prompts: AssistantPrompts, ctx: CliContext, maxBytes: num
  * clack en diferido, sólo tras el gate (design D1/D3). Cancelación (R5): cualquier
  * prompt que retorna `null` termina con "init cancelado" antes de escribir un byte.
  */
-export async function runAssistantInit(ctx: CliContext): Promise<number> {
+/** init-fiabilidad (DEV-02): texto de la pregunta de raíz ante un ancestro con `manifest.yaml`. */
+export function rootQuestion(cwd: string, ancestor: string): string {
+  return `${cwd} no tiene instalación, pero el ancestro ${ancestor} tiene manifest.yaml. ¿Dónde instalar?`;
+}
+
+export async function runAssistantInit(
+  initialCtx: CliContext,
+  options: { ancestor?: { cwd: string; ancestor: string } } = {},
+): Promise<number> {
+  let ctx = initialCtx;
   const prompts = ctx.assistantPrompts ?? (await import('./assistant-clack.js')).clackPrompts;
   prompts.intro('ai-hub init — asistente de instalación', await cliVersion());
+  // init-fiabilidad (DEV-02): un ancestro instalado nunca se adopta en silencio; la persona elige y la
+  // elección viaja como `--dir` (cancelar no escribe nada).
+  let dir: string | undefined;
+  if (options.ancestor !== undefined) {
+    const { cwd, ancestor } = options.ancestor;
+    const chosen = await prompts.select(rootQuestion(cwd, ancestor), [
+      { value: cwd, label: `${cwd} (este directorio, instalación nueva)` },
+      { value: ancestor, label: `${ancestor} (la instalación del ancestro)` },
+    ]);
+    if (chosen === null) {
+      ctx.io.out('init cancelado; no se escribió nada');
+      return 0;
+    }
+    dir = chosen;
+    ctx = { ...ctx, root: chosen };
+  }
   const installed = await detectTools(ctx);
   const answers = await collectAnswers(prompts, ctx, installed);
   if (answers === null) {
@@ -521,7 +582,11 @@ export async function runAssistantInit(ctx: CliContext): Promise<number> {
     ctx.io.out('init cancelado; no se escribió nada');
     return 0;
   }
-  const resolved: AssistantAnswers = { ...answers, idea: ideaOutcome.kind === 'idea' ? ideaOutcome.text : null };
+  const resolved: AssistantAnswers = {
+    ...answers,
+    idea: ideaOutcome.kind === 'idea' ? ideaOutcome.text : null,
+    ...(dir !== undefined ? { dir } : {}),
+  };
   const ideaNote = ideaOutcome.kind === 'idea' ? ideaOutcome.note : '';
   // Paso 7 (D12): el mismo JSON de `--dry-run` (plan + entorno real del paso 5) y
   // confirmación. Al confirmar, aplica por el mismo camino que `--yes` con los flags
@@ -536,25 +601,44 @@ export async function runAssistantInit(ctx: CliContext): Promise<number> {
     return 2;
   }
   printInitPlan(prepared, ctx, environment.environment);
+  // init-fiabilidad (DEV-05): la ruta absoluta, en stderr, antes de la confirmación.
+  ctx.io.err(destinationLine(ctx.root));
   const confirmed = await prompts.confirm('¿Aplicamos este plan?');
   if (confirmed !== true) {
     ctx.io.out('init cancelado; no se escribió nada');
     return 0;
   }
-  const code = await cmdInit(resolvedArgs, ctx);
-  // La semilla se escribe sólo tras un apply exitoso (D5/D6): activo del proyecto,
-  // nunca estado del plan.
-  if (code === 0 && resolved.idea !== null) {
-    for (const line of await writeBacklogSeed(ctx, resolved.idea, ideaNote)) {
-      ctx.io.out(line);
-    }
-  }
-  if (code === 0) {
-    await offerTrackerStep(prompts, ctx);
-    // control-onboarding: la última pregunta, solo con Hermes; vacío = saltar sin escribir nada.
-    return offerControlStep(prompts, ctx, resolved.idea);
-  }
-  return code;
+  // El apply va por el mismo camino que `--yes`; la semilla (D5/D6) y la verificación de la base las hace
+  // cmdInit, y solo después corren los pasos opcionales (init-fiabilidad, DEV-06).
+  return cmdInit(resolvedArgs, ctx, {
+    idea: ideaOutcome,
+    afterBase: async (applied) => {
+      // init-fiabilidad (IO-01): cada integración corre aislada; su fallo es un estado, nunca un error de init.
+      const reports: Array<IntegrationReport | null> = [];
+      reports.push(await isolate('tracker', () => 'tracker-env', () => runTrackerStep(prompts, applied)));
+      // control-onboarding: la última pregunta, solo con Hermes; vacío = saltar sin escribir nada.
+      const NEXT: Record<string, string> = { profile: 'env', env: 'manifest', manifest: 'skill' };
+      let stage = 'control';
+      const staged: CliContext = {
+        ...applied,
+        onConnectStage: async (done) => {
+          stage = NEXT[done] ?? stage;
+          await applied.onConnectStage?.(done);
+        },
+      };
+      const control = await isolate('control', () => stage, async () => (await runControlStep(prompts, staged, resolved.idea)).report);
+      // HC-12: una excepción no prevista se informa con la acción que corresponde a lo persistido.
+      if (control !== null && control.state === 'fallida' && control.action === null) {
+        const saved = await connectionSaved(applied.root, contextHost(applied));
+        control.action = saved ? ENROLL_ACTION : RETAKE_ACTION;
+        if (!saved) {
+          control.provide = RETAKE_PROVIDE;
+        }
+      }
+      reports.push(control);
+      return reports.filter((report): report is IntegrationReport => report !== null);
+    },
+  });
 }
 
 /**
@@ -564,30 +648,37 @@ export async function runAssistantInit(ctx: CliContext): Promise<number> {
  * imprime el valor. Un `.env` existente nunca se sobrescribe.
  */
 export async function offerTrackerStep(prompts: AssistantPrompts, ctx: CliContext): Promise<boolean> {
+  return (await runTrackerStep(prompts, ctx))?.state === 'completada';
+}
+
+const TRACKER_SKIPPED: IntegrationReport = { name: 'tracker', state: 'no-solicitada', stage: null, action: null };
+
+/** El paso del tracker con su informe (init-fiabilidad, IO-02): `null` si no se ofreció (sin entrada enmascarada). */
+export async function runTrackerStep(prompts: AssistantPrompts, ctx: CliContext): Promise<IntegrationReport | null> {
   if (!prompts.password) {
-    return false;
+    return null;
   }
   const reply = await prompts.text(
     '¿Quieres configurar tu tracker de GitLab ahora? (opcional: escribe "s" para configurarlo; vacío = saltar)',
   );
   if (reply === null || !/^(s|si|sí|y|yes)$/i.test((reply ?? '').trim())) {
     ctx.io.out('tracker: paso saltado; puedes crear .ai-hub/.env desde .ai-hub/.env.example cuando quieras');
-    return false;
+    return TRACKER_SKIPPED;
   }
   const envFile = path.join(ctx.root, HARNESS_ENV_FILE);
   if (await fs.access(envFile).then(() => true, () => false)) {
     ctx.io.out('tracker: .ai-hub/.env ya existe; edítalo a mano (no se sobrescribe)');
-    return false;
+    return { name: 'tracker', state: 'pendiente', stage: 'tracker-env', action: 'ai-hub doctor --online', ready: ['.ai-hub/.env (existente)'] };
   }
   const url = await prompts.text('URL de tu GitLab (sin /api; vacío = saltar)');
   if (url === null || (url ?? '').trim() === '') {
     ctx.io.out('tracker: paso saltado; no se escribió nada');
-    return false;
+    return TRACKER_SKIPPED;
   }
   const token = await prompts.password('Token personal de GitLab (scope api; no se mostrará)');
   if (token === null || (token ?? '').trim() === '') {
     ctx.io.out('tracker: paso saltado; no se escribió nada');
-    return false;
+    return TRACKER_SKIPPED;
   }
   await fs.mkdir(path.dirname(envFile), { recursive: true });
   await fs.writeFile(envFile, formatDotenv({ GITLAB_URL: url.trim(), GITLAB_TOKEN: token.trim() }), {
@@ -597,5 +688,5 @@ export async function offerTrackerStep(prompts: AssistantPrompts, ctx: CliContex
   ctx.io.out(
     'tracker: .ai-hub/.env escrito (ignorado por git). Declara manifest.tracker {kind: gitlab, urlEnv: GITLAB_URL, tokenEnv: GITLAB_TOKEN} y comprueba con ai-hub doctor --online',
   );
-  return true;
+  return { name: 'tracker', state: 'completada', stage: null, action: null };
 }

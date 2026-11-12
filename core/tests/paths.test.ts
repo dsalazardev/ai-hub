@@ -7,6 +7,7 @@ import {
   readAiHubRc,
   AiHubDirNotFoundError,
   AiHubRcError,
+  resolveInitRoot,
 } from '../src/paths.js';
 
 let tmp: string;
@@ -123,5 +124,55 @@ describe('readAiHubRc', () => {
       JSON.stringify({ version: 1, targets: [1] }),
     );
     expect(() => readAiHubRc(tmp)).toThrow(AiHubRcError);
+  });
+});
+
+describe('init-fiabilidad 2.1 — resolveInitRoot (DEV-01, DEV-01a, DEV-02)', () => {
+  it('init root is cwd, never an ancestor: without any installation the root is the current directory', async () => {
+    const cwd = path.join(tmp, 'nuevo');
+    await fs.mkdir(cwd);
+    expect(resolveInitRoot(cwd, {})).toEqual({ kind: 'root', root: cwd, source: 'cwd', ancestor: null });
+  });
+
+  it('init --yes exits 2 on an implicit ancestor: an ancestor manifest is reported, never adopted', async () => {
+    await harness(path.join(tmp, 'empresa'));
+    const cwd = path.join(tmp, 'empresa', 'prueba');
+    await fs.mkdir(cwd);
+    expect(resolveInitRoot(cwd, {})).toEqual({ kind: 'ancestor', cwd, ancestor: path.join(tmp, 'empresa') });
+  });
+
+  it('relative and absolute --dir resolve against the invocation directory', async () => {
+    const cwd = path.join(tmp, 'work');
+    await fs.mkdir(path.join(cwd, 'app'), { recursive: true });
+    expect(resolveInitRoot(cwd, { dir: './app' })).toMatchObject({ kind: 'root', root: path.join(cwd, 'app'), source: 'dir' });
+    expect(resolveInitRoot(tmp, { dir: path.join(cwd, 'app') })).toMatchObject({ kind: 'root', root: path.join(cwd, 'app'), source: 'dir' });
+  });
+
+  it('AI_HUB_DIR names a new installation without manifest.yaml', async () => {
+    await fs.mkdir(path.join(tmp, 'nuevo'));
+    expect(resolveInitRoot(tmp, { env: './nuevo' })).toMatchObject({ kind: 'root', root: path.join(tmp, 'nuevo'), source: 'env' });
+  });
+
+  it('same explicit destinations continue', async () => {
+    await fs.mkdir(path.join(tmp, 'app'));
+    expect(resolveInitRoot(tmp, { dir: './app', env: path.join(tmp, 'app') })).toMatchObject({ kind: 'root', root: path.join(tmp, 'app'), source: 'dir+env' });
+  });
+
+  it('different explicit destinations are a conflict naming both absolute paths', async () => {
+    expect(resolveInitRoot(tmp, { dir: './a', env: './b' })).toEqual({ kind: 'conflict', dir: path.join(tmp, 'a'), env: path.join(tmp, 'b') });
+  });
+
+  it('an installation in the current directory is reused, not an ancestor', async () => {
+    await harness(path.join(tmp, 'empresa'));
+    const cwd = path.join(tmp, 'empresa', 'prueba');
+    await harness(cwd);
+    expect(resolveInitRoot(cwd, {})).toMatchObject({ kind: 'root', root: cwd, source: 'installation' });
+  });
+
+  it('an explicit dir under an installed ancestor names that ancestor without adopting it', async () => {
+    await harness(path.join(tmp, 'empresa'));
+    const cwd = path.join(tmp, 'empresa', 'prueba');
+    await fs.mkdir(cwd);
+    expect(resolveInitRoot(cwd, { dir: '.' })).toEqual({ kind: 'root', root: cwd, source: 'dir', ancestor: path.join(tmp, 'empresa') });
   });
 });
