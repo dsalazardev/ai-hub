@@ -22,7 +22,7 @@ export const CONTROL_USAGE = [
   '     ai-hub control apply (--reply "<texto>" | -- aprobar|rechazar|detalle <iid> …) --approver <id-discord> [--ref <rama>]',
   '     ai-hub control apply --preapproved',
   '     ai-hub control expire',
-  '     ai-hub control enroll [--dry-run | --yes | --check] [--hermes <ruta>]',
+  '     ai-hub control enroll [--dry-run | --yes | --check] [--hermes <ruta>] [--webhook-owner <perfil>]',
 ];
 
 /** Inyección para tests: cliente del tracker y reloj. */
@@ -210,10 +210,18 @@ async function cmdEnroll(args: ParsedArgs, ctx: CliContext): Promise<number> {
     return 2;
   }
   const mode: EnrollMode = modes[0] ?? 'dry-run';
+  // webhook-operativo §D9: el consentimiento nombra al dueño del listener; se valida antes de escribir nada.
+  const owner = args.flags['webhook-owner'];
+  if (owner !== undefined && (typeof owner !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_.-]*$/.test(owner.trim()))) {
+    ctx.io.err(`--webhook-owner necesita el nombre del perfil dueño del listener\n${CONTROL_USAGE[6].trim()}`);
+    return 2;
+  }
   try {
     const outcome = await runEnroll(ctx.root, {
       mode,
       host: deps.hermesHost ?? processHost(ctx),
+      ...(typeof owner === 'string' ? { webhookOwner: owner.trim() } : {}),
+      notify: (line) => ctx.io.err(line),
       ...(flagString(args, 'hermes') !== null ? { hermes: flagString(args, 'hermes') ?? undefined } : {}),
     });
     return emit(outcome, ctx);

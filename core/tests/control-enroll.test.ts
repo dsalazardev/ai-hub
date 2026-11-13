@@ -129,6 +129,7 @@ describe('fase 4 — resolver de Hermes (4.6)', () => {
 // ── Enroll (4.2, 4.3, 4.7, 4.8): disco real en un temporal, CLI de Hermes falso ────────────────────────
 
 interface FakeHermesState {
+  listening?: boolean;
   calls: string[][];
   routes: Set<string>;
   crons: Set<string>;
@@ -150,6 +151,15 @@ function fakeHermes(home: string): ProcessRunner {
     if (args[0] === 'profile' && args[1] === 'create') {
       await fs.mkdir(path.join(home, 'profiles', args[2]), { recursive: true });
       return ok(`Profile ${args[2]} created`);
+    }
+    // webhook-operativo: gateway dedicado en marcha; el reinicio carga el bloque y el puerto pasa a escuchar.
+    const rest = args[0] === '-p' ? args.slice(2) : args;
+    if (rest[0] === 'gateway' && rest[1] === 'status') {
+      return ok('running');
+    }
+    if (rest[0] === 'gateway' && rest[1] === 'restart') {
+      state.listening = true;
+      return ok();
     }
     const sub = args.slice(2);
     if (sub[0] === 'webhook' && sub[1] === 'list') {
@@ -183,7 +193,7 @@ beforeEach(async () => {
   await fs.mkdir(path.dirname(hermesBin), { recursive: true });
   await fs.writeFile(hermesBin, 'fake');
   state = { calls: [], routes: new Set(), crons: new Set() };
-  host = { ...host, exec: fakeHermes(hermesRoot) };
+  host = { ...host, exec: fakeHermes(hermesRoot), probeWebhook: async () => (state.listening ? 'listening' : 'refused'), webhookWaitMs: 0 };
   profileDir = path.join(hermesRoot, 'profiles', PROFILE);
 });
 
@@ -212,8 +222,8 @@ describe('fase 4 — control enroll (4.2, 4.3)', () => {
     expect(first.code).toBe(0);
     expect(creating(state.calls).map((args) => args.slice(0, 5).join(' '))).toEqual([
       `profile create ${PROFILE} --no-skills`,
-      `-p ${PROFILE} webhook subscribe ai-hub-gitlab`,
       `-p ${PROFILE} cron create every 15m`,
+      `-p ${PROFILE} webhook subscribe ai-hub-gitlab`,
     ]);
     expect(state.calls.flat()).not.toContain('--secret');
     const subscribe = state.calls.find((args) => args.includes('subscribe')) ?? [];
@@ -226,7 +236,8 @@ describe('fase 4 — control enroll (4.2, 4.3)', () => {
     const second = await runEnroll(h.root, { mode: 'yes', hermes: hermesBin, host });
     expect(second.code).toBe(0);
     expect(creating(state.calls)).toEqual([]);
-    expect(second.lines.filter((line) => line.startsWith('[presente]'))).toHaveLength(8);
+    // webhook-operativo: seis etapas, la plataforma, la ruta y la escucha verificada por GET /health.
+    expect(second.lines.filter((line) => line.startsWith('[presente]'))).toHaveLength(9);
   });
 });
 

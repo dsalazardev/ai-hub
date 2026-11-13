@@ -282,7 +282,7 @@ El paquete escribe solo dos credenciales, siempre lo que teclea la persona en un
 - `GITLAB_TOKEN` (con `GITLAB_URL`), en `.ai-hub/.env`, desde el paso del tracker del asistente;
 - `DISCORD_BOT_TOKEN` (con `DISCORD_ALLOWED_USERS`, `DISCORD_ALLOWED_CHANNELS` y `DISCORD_HOME_CHANNEL`), en el `.env` del perfil Hermes `hermes-control`, fuera del repositorio, desde el paso de control (interactivo, o `--connect-hermes` con `--discord-token-stdin`).
 
-El paso de control escribe además, en el hogar del perfil, las claves de la plataforma webhook que falten (`WEBHOOK_ENABLED`, `WEBHOOK_PORT`; nunca `WEBHOOK_SECRET`) y el bloque gestionado de `SOUL.md`. Ninguna credencial se imprime ni se registra; la salida de Hermes que se muestra ante un fallo va redactada. El modo `0600` no cambia las ACL en Windows, y una carpeta sincronizada (OneDrive) puede subir `.ai-hub/.env` aunque git lo ignore.
+El paso de control escribe además el bloque gestionado de `SOUL.md` y habilita la plataforma webhook con el bloque `platforms.webhook` (`enabled`, `extra.port`) del `config.yaml` del perfil dueño del listener, nunca con claves `WEBHOOK_*` en el `.env`; cuando ese dueño es otro perfil (el `default` bajo el multiplexor), solo con `--webhook-owner <perfil>` o la pregunta interactiva que lo nombra, y con copia previa de su `config.yaml`. No escribe ningún secreto: el de la ruta lo genera Hermes, y un `WEBHOOK_SECRET` del operador queda intacto. Ninguna credencial se imprime ni se registra; la salida de Hermes que se muestra ante un fallo va redactada. El modo `0600` no cambia las ACL en Windows, y una carpeta sincronizada (OneDrive) puede subir `.ai-hub/.env` aunque git lo ignore.
 
 ---
 

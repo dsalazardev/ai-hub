@@ -79,7 +79,8 @@ describe('init-fiabilidad 4.3 — salida de Hermes redactada (HC-03)', () => {
     const result = await connect();
     expect(result.text).toContain('exit 1');
     expect(result.text).toContain('Webhook platform is not enabled');
-    expect(result.text).toContain('WEBHOOK_ENABLED=true');
+    // webhook-operativo: la ayuda real de Hermes 0.23 propone platforms.webhook en config.yaml, no el .env.
+    expect(result.text).toContain('enabled: true');
   }, 60_000);
 
   it('success shows nothing of the subscription output', async () => {

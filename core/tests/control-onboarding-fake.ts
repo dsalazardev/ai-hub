@@ -2,6 +2,7 @@ import { expect } from 'vitest';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { parse as parseYaml } from 'yaml';
 import type { AssistantPrompts } from '../src/cli/assistant.js';
 import type { CliContext, CliIO } from '../src/cli/types.js';
 import { hermesHome, type ResolverHost } from '../src/control/hermes.js';
@@ -25,8 +26,10 @@ export const WEBHOOK_SECRET_SENTINEL = 'AIHUB_WEBHOOK_SECRET_SENTINEL_onb';
 export const DEFAULT_SOUL = 'You are Hermes Agent, a helpful assistant.\n';
 /** `.env` que siembra `profile create`: un placeholder sin credenciales. */
 export const DEFAULT_PROFILE_ENV = '# Hermes profile credentials\n';
-/** Ayuda que imprime Hermes 0.23 en stdout cuando la plataforma webhook no está habilitada (`webhook.py:150-160`). */
-export const WEBHOOK_SETUP_HINT = 'Webhook platform is not enabled. Add to the profile .env:\n  WEBHOOK_ENABLED=true\n  WEBHOOK_PORT=8644';
+/** Ayuda que imprime Hermes 0.23 en stdout cuando la plataforma webhook no está habilitada (`webhook.py:138-160`). */
+export const WEBHOOK_SETUP_HINT = 'Webhook platform is not enabled. To set it up:\n  platforms:\n    webhook:\n      enabled: true';
+/** Salida de `gateway status` de un perfil servido por el gateway del perfil de lanzamiento (medida en Hermes 0.23). */
+export const MULTIPLEX_STATUS = 'Gateway is running via the default-profile multiplexer';
 
 /** El proceso «muere» tras completar el comando indicado (`crashAfter`): el árbol queda tal cual. */
 export class SimulatedCrash extends Error {
@@ -50,8 +53,21 @@ export interface FakeHermes {
   fail: Set<string>;
   /** Fallo inyectado por subcomando (`webhook subscribe`, `cron create`, `profile create`…); se quita con `delete`. */
   failOn: Map<string, InjectedFailure>;
-  /** `always-on`: la plataforma webhook está siempre habilitada (comportamiento anterior); `model`: como Hermes 0.23. */
-  webhookPlatform: 'always-on' | 'model';
+  /**
+   * `dedicated`: el perfil de control tiene su gateway; `multiplex`: lo sirve el gateway del perfil `default`, que es
+   * el dueño del listener (`gateway/run_adapters.py:1314-1321`).
+   */
+  topology: 'dedicated' | 'multiplex';
+  /** Estado del listener tal como lo cargó el último arranque del gateway (no el archivo actual). */
+  listener: { loaded: boolean; port: number | null; secretFromEnv: boolean };
+  /** Otro proceso ocupa el puerto: la sonda responde con un documento ajeno. */
+  portOccupied: boolean;
+  /** Rutas escritas a mano sin secreto: el runtime las descarta al recargar (`webhook.py:417-427`). */
+  routesWithoutSecret: Set<string>;
+  /** Store donde se escribió cada ruta y perfil al que quedó ligada (`--route-profile`). */
+  routeBinding: Map<string, { store: string; profile: string }>;
+  /** Entrega simulada a una ruta: 404 si no existe, no está en el store del listener o no tiene secreto utilizable. */
+  deliver(route: string): number;
   gatewayInstalled: boolean;
   gatewayRunning: boolean;
   /** Tras completar este comando, el falso lanza `SimulatedCrash` (interrupción del proceso). */
@@ -66,8 +82,32 @@ export function commandKey(args: string[]): string {
   return rest[0] === '--version' ? '--version' : rest.slice(0, 2).join(' ');
 }
 
-async function profileEnv(home: string, profile: string): Promise<Record<string, string>> {
-  const text = await fs.readFile(path.join(home, 'profiles', profile, '.env'), 'utf8').catch(() => '');
+/** Directorio de un perfil: `default` es el hogar; el resto vive en `profiles/<nombre>`. */
+export function profileHome(home: string, profile: string): string {
+  return profile === 'default' ? home : path.join(home, 'profiles', profile);
+}
+
+/** Como `hermes_cli/webhook.py:109-120`: solo `platforms.webhook` de `config.yaml`; el `.env` no se consulta. */
+async function webhookBlock(dir: string): Promise<{ enabled: boolean; port: number | null }> {
+  const text = await fs.readFile(path.join(dir, 'config.yaml'), 'utf8').catch(() => null);
+  if (text === null) {
+    return { enabled: false, port: null };
+  }
+  let data: unknown;
+  try {
+    data = parseYaml(text);
+  } catch {
+    return { enabled: false, port: null };
+  }
+  const map = (value: unknown): Record<string, unknown> =>
+    typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+  const webhook = map(map(map(data).platforms).webhook);
+  const port = map(webhook.extra).port;
+  return { enabled: Boolean(webhook.enabled), port: typeof port === 'number' ? port : null };
+}
+
+async function envOf(dir: string): Promise<Record<string, string>> {
+  const text = await fs.readFile(path.join(dir, '.env'), 'utf8').catch(() => '');
   const values: Record<string, string> = {};
   for (const line of text.split(/\r?\n/)) {
     const match = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/.exec(line);
@@ -93,7 +133,12 @@ export async function fakeHermes(root: string, version = '0.23.0'): Promise<Fake
     calls: [],
     fail: new Set(),
     failOn: new Map(),
-    webhookPlatform: 'always-on',
+    topology: 'dedicated',
+    listener: { loaded: false, port: null, secretFromEnv: false },
+    portOccupied: false,
+    routesWithoutSecret: new Set(),
+    routeBinding: new Map(),
+    deliver: () => 404,
     gatewayInstalled: true,
     gatewayRunning: true,
     crashAfter: null,
@@ -101,6 +146,30 @@ export async function fakeHermes(root: string, version = '0.23.0'): Promise<Fake
     crons: new Set(),
   };
   const { routes, crons } = state;
+  /** Store (perfil) sobre el que actúa un comando: `-p <perfil>` o `default`. */
+  const storeOf = (args: string[]): string => (args[0] === '-p' ? args[1] : 'default');
+  const ownerProfile = (): string => (state.topology === 'multiplex' ? 'default' : 'hermes-control');
+  /** El gateway lee su configuración al arrancar: bloque de `config.yaml` y overrides del `.env` (`config_env.py:132-141`). */
+  const reloadListener = async (): Promise<void> => {
+    const dir = profileHome(state.home, ownerProfile());
+    const block = await webhookBlock(dir);
+    const env = await envOf(dir);
+    const loaded = block.enabled || /^(1|true|yes|on)$/i.test(env.WEBHOOK_ENABLED ?? '');
+    const envPort = Number(env.WEBHOOK_PORT);
+    state.listener = {
+      loaded,
+      port: loaded ? (Number.isInteger(envPort) && envPort > 0 ? envPort : (block.port ?? 8644)) : null,
+      secretFromEnv: loaded && Boolean(env.WEBHOOK_SECRET),
+    };
+  };
+  const visible = (route: string, store: string): boolean => {
+    const binding = state.routeBinding.get(route);
+    return binding === undefined || binding.store === store;
+  };
+  state.deliver = (route) =>
+    state.gatewayRunning && state.listener.loaded && routes.has(route) && visible(route, ownerProfile()) && !state.routesWithoutSecret.has(route)
+      ? 200
+      : 404;
   const respond = async (args: string[]): Promise<RunResult> => {
     const key = args.filter((arg) => !arg.startsWith('-') || arg === '--version').slice(0, 2).join(' ');
     const ok = (stdout = ''): RunResult => ({ status: 0, stdout, stderr: '' });
@@ -121,26 +190,39 @@ export async function fakeHermes(root: string, version = '0.23.0'): Promise<Fake
       await fs.writeFile(path.join(dir, 'SOUL.md'), DEFAULT_SOUL, { flag: 'wx' }).catch(() => undefined);
       return ok();
     }
-    if (args[0] === 'gateway' && args[1] === 'status') {
+    const sub = args[0] === '-p' ? args.slice(2) : args;
+    const store = storeOf(args);
+    if (sub[0] === 'gateway' && sub[1] === 'status') {
       if (!state.gatewayInstalled) {
         return { status: 1, stdout: '', stderr: 'not installed' };
       }
-      return state.gatewayRunning ? ok('running') : { status: 1, stdout: '', stderr: 'gateway is not running' };
+      if (!state.gatewayRunning) {
+        return { status: 1, stdout: '', stderr: 'gateway is not running' };
+      }
+      return ok(state.topology === 'multiplex' && store !== 'default' ? MULTIPLEX_STATUS : 'running');
     }
-    if (args[0] === 'gateway' && args[1] === 'restart') {
+    if (sub[0] === 'gateway' && sub[1] === 'restart') {
       state.gatewayRunning = true;
+      await reloadListener();
       return ok();
     }
-    const sub = args.slice(2);
-    if (sub[0] === 'webhook' && state.webhookPlatform === 'model' && (await profileEnv(state.home, args[1])).WEBHOOK_ENABLED !== 'true') {
+    // Puerta del CLI (`webhook.py:163-176`): sin `platforms.webhook.enabled` en el `config.yaml` del store, sale 1.
+    if (sub[0] === 'webhook' && !(await webhookBlock(profileHome(state.home, store))).enabled) {
       return { status: 1, stdout: WEBHOOK_SETUP_HINT, stderr: '' };
     }
     if (sub[0] === 'webhook' && sub[1] === 'list') {
-      return ok([...routes].map((route) => `  ◆ ${route}`).join('\n'));
+      return ok([...routes].filter((route) => visible(route, store)).map((route) => `  ◆ ${route}`).join('\n'));
     }
     if (sub[0] === 'webhook' && sub[1] === 'subscribe') {
+      const bound = sub.indexOf('--route-profile');
       routes.add(sub[2]);
+      state.routeBinding.set(sub[2], { store, profile: bound >= 0 ? sub[bound + 1] : store });
       return ok(`  Created ${sub[2]}\n  Secret: ${WEBHOOK_SECRET_SENTINEL}`);
+    }
+    if (sub[0] === 'webhook' && (sub[1] === 'remove' || sub[1] === 'rm')) {
+      routes.delete(sub[2]);
+      state.routeBinding.delete(sub[2]);
+      return ok();
     }
     if (sub[0] === 'cron' && sub[1] === 'list') {
       return ok([...crons].join('\n'));
@@ -167,6 +249,9 @@ export async function fakeHermes(root: string, version = '0.23.0'): Promise<Fake
     cwd: root,
     exec,
     exists: (file) => fs.access(file).then(() => true, () => false),
+    probeWebhook: async (port) =>
+      state.portOccupied ? 'foreign' : state.gatewayRunning && state.listener.loaded && state.listener.port === port ? 'listening' : 'refused',
+    webhookWaitMs: 0,
   };
   state.home = hermesHome(state.host);
   return state;
@@ -303,4 +388,7 @@ export function stepContext(h: Harness, sink: { out: string[]; err: string[] }, 
 
 /** Comandos de Hermes que crean o cambian estado (sin --version, status ni list). */
 export const creating = (calls: string[][]): string[][] =>
-  calls.filter((args) => args[0] !== '--version' && !(args[0] === 'gateway' && args[1] === 'status') && !args.includes('list'));
+  calls.filter((args) => {
+    const rest = args[0] === '-p' ? args.slice(2) : args;
+    return rest[0] !== '--version' && !(rest[0] === 'gateway' && rest[1] === 'status') && !rest.includes('list');
+  });

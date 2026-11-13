@@ -37,7 +37,7 @@ import {
   resolveIdeaFromFlags,
   type IdeaOutcome,
 } from './idea.js';
-import { TOKEN_FLAG_REFUSED, connectFromFlagsReport, contextHost, readStdin, validateConnectFlags } from '../control/onboard-step.js';
+import { CONNECT_USAGE, TOKEN_FLAG_REFUSED, connectFromFlagsReport, contextHost, readStdin, validateConnectFlags } from '../control/onboard-step.js';
 import { ENROLL_ACTION, RETAKE_ACTION, RETAKE_PROVIDE, isolate, printReports, type IntegrationReport } from './integrations.js';
 import { connectionSaved } from '../control/onboard.js';
 import {
@@ -1005,6 +1005,11 @@ export async function cmdInit(args: ParsedArgs, initialCtx: CliContext, hooks: I
   // init-fiabilidad (CO-07): los argumentos de --connect-hermes se validan antes de escribir nada, y el token se
   // lee de la entrada estándar también antes del apply (vacío = salida 2 sin escribir).
   let connectToken: string | undefined;
+  if (args.flags['webhook-owner'] !== undefined && !args.flags['connect-hermes']) {
+    // webhook-operativo (design §D9): el consentimiento del dueño del listener solo tiene sentido al conectar.
+    ctx.io.err(`--webhook-owner solo se admite junto a --connect-hermes\n${CONNECT_USAGE}`);
+    return 2;
+  }
   if (args.flags['connect-hermes'] && !args.flags['dry-run']) {
     const invalid = validateConnectFlags(args.flags);
     if (invalid !== null) {

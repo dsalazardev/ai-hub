@@ -1,3 +1,5 @@
+import os from 'node:os';
+import path from 'node:path';
 import { defineConfig } from 'vitest/config';
 import { CATALOG_INDEX_FILE } from './tests/catalog-index-file.js';
 
@@ -8,6 +10,8 @@ export default defineConfig({
     globalSetup: ['./tests/global-setup.ts'],
     env: {
       AI_HUB_CATALOG_INDEX_FILE: CATALOG_INDEX_FILE,
+      // webhook-operativo: `doctor` nunca lee el hogar real de Hermes ni sondea su puerto durante las pruebas.
+      HERMES_HOME: path.join(os.tmpdir(), 'ai-hub-test-no-hermes-home'),
     },
     projects: [
       {

@@ -19,6 +19,10 @@ export interface ResolverHost {
   executable?(file: string): Promise<boolean>;
   exec: ProcessRunner;
   cwd: string;
+  /** Sonda del puerto del webhook (`GET /health`); por defecto la real de `webhook-config.ts`. Las pruebas la inyectan. */
+  probeWebhook?: (port: number) => Promise<'listening' | 'refused' | 'foreign' | 'timeout'>;
+  /** Espera máxima, en ms, a que el listener responda tras un reinicio (por defecto 30 000). */
+  webhookWaitMs?: number;
 }
 
 export interface HermesCli {

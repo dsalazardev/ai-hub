@@ -231,14 +231,29 @@ de feature lleva en su descripción `ai-hub:feature=<NNN-slug>`.
 solo eventos de issues y merge requests del proyecto de `GITLAB_PROJECT_PATH`, descarta duplicados por
 contenido y, si una persona movió la etiqueta a mano, anula lo pendiente de esa issue: manda GitLab.
 
-- Ruta en Hermes: `hermes -p hermes-control webhook subscribe ai-hub-gitlab --events "Issue Hook,Merge
-  Request Hook" --script gitlab-route.sh --prompt "{script_output}" --deliver discord --deliver-only`
-  (plantilla `engine/templates/hermes/gitlab-route.sh`). Un stdout vacío descarta el evento.
-- En GitLab (Settings > Webhooks del proyecto): URL `https://<host-de-hermes>:8644/webhooks/ai-hub-gitlab`,
-  eventos **Issues events** (work items) y **Merge request events**, y el secreto en **Secret token**: GitLab
-  lo envía en `X-Gitlab-Token` y Hermes lo compara.
+- Habilitación: el bloque `platforms.webhook` (`enabled: true`, `extra.port`) del `config.yaml` del perfil dueño
+  del listener. Es el único archivo que leen a la vez el CLI de rutas y el gateway: `WEBHOOK_ENABLED` en el `.env`
+  arranca el listener pero deja `webhook list`/`subscribe` fuera de servicio, así que `enroll` no lo escribe.
+- Dueño del listener: con gateway propio, el perfil `hermes-control`. Bajo el multiplexor (`gateway status` dice
+  `via the default-profile multiplexer`) es el perfil `default`: el bloque va en su `config.yaml`, la ruta se crea
+  en su store con `--route-profile hermes-control` y la URL es `/p/hermes-control/webhooks/ai-hub-gitlab`.
+- Ruta en Hermes: `webhook subscribe ai-hub-gitlab --events "Issue Hook,Merge Request Hook" --script
+  gitlab-route.sh --prompt "{script_output}" --deliver discord --deliver-only` (plantilla
+  `engine/templates/hermes/gitlab-route.sh`), contra el dueño del listener. Un stdout vacío descarta el evento.
+- En GitLab (Settings > Webhooks del proyecto): la URL que imprime `enroll`
+  (`https://<host-de-hermes>:8644/webhooks/ai-hub-gitlab` o, bajo el multiplexor,
+  `https://<host-de-hermes>:8644/p/hermes-control/webhooks/ai-hub-gitlab`), eventos **Issues events** (work
+  items) y **Merge request events**, y el secreto en **Secret token**: GitLab lo envía en `X-Gitlab-Token` y
+  Hermes lo compara.
 - El secreto lo genera Hermes al suscribir la ruta y lo guarda en `webhook_subscriptions.json` (permisos
-  0600) del perfil; `ai-hub` nunca lo imprime ni lo guarda. Cópialo de ahí a GitLab.
+  0600) del dueño del listener; `ai-hub` nunca lo imprime ni lo guarda. Cópialo de ahí a GitLab. `ai-hub` no
+  genera ni escribe ningún secreto global; si el `.env` del dueño tiene `WEBHOOK_SECRET`, el gateway lo usa como
+  secreto global y pisa `platforms.webhook.extra.secret` al arrancar (`gateway/config_env.py:141`): `enroll` lo
+  avisa por presencia y no lo toca. Rotación sin `--secret` en `core/SECURITY.md`.
+- «Escuchando» se comprueba con `GET http://127.0.0.1:<puerto>/health`, que debe responder
+  `{"status":"ok","platform":"webhook"}`; la salida de `webhook list` solo prueba que la clave existe. El sondeo
+  local demuestra que el listener está levantado, no que GitLab llegue al host: eso se prueba con una entrega
+  de prueba desde GitLab.
 - Sin webhook alcanzable (sin VPS ni túnel), el cron de sondeo hace el mismo trabajo cada `pollMinutes`.
 
 ### Aprobaciones por Discord
@@ -288,18 +303,34 @@ probadas; con una versión más antigua, sale 1 nombrando la encontrada y la mí
 
 ```bash
 npx ai-hub control enroll              # plan, sin cambios
-npx ai-hub control enroll --yes        # crea solo lo que falta: perfil, skill, scripts, webhook, cron
-npx ai-hub control enroll --check      # credenciales de Discord del perfil, solo por presencia
+npx ai-hub control enroll --yes        # crea solo lo que falta: perfil, skill, scripts, cron, webhook
+npx ai-hub control enroll --yes --webhook-owner default   # consiente escribir el config.yaml del perfil default
+npx ai-hub control enroll --check      # solo lectura: perfil, credenciales por presencia, webhook escuchando
 ```
 
 - Perfil propio: `hermes profile create hermes-control --no-skills`, con su propio bot de Discord. `enroll`
   se niega si el perfil comparte `DISCORD_BOT_TOKEN` con otro perfil (dos perfiles con un mismo bot colisionan).
 - Imprime la ruta del `.env` del perfil (`<hogar de Hermes>/profiles/hermes-control/.env`), nunca su contenido.
 - Nunca pasa `--secret` ni imprime la salida de `webhook subscribe`: el secreto lo genera Hermes.
-- **Webhook:** antes de suscribir comprueba `webhook list`. Si la plataforma está deshabilitada, añade solo las
-  claves ausentes `WEBHOOK_ENABLED=true` y `WEBHOOK_PORT=8644`, conserva el resto del `.env`, repite el preflight
-  y solo entonces crea `ai-hub-gitlab`. Un `WEBHOOK_ENABLED` distinto de `true` no se modifica: se informa como
-  conflicto. Nunca escribe `WEBHOOK_SECRET`.
+- **Orden:** perfil, identidad, skill, scripts y cron primero; después el webhook. Si el webhook falla, el plano
+  de control ya funciona por el tick.
+- **Webhook:** escribe `platforms.webhook` (`enabled: true`, `extra.port`, 8644 por defecto) en el `config.yaml`
+  del dueño del listener, conservando claves y comentarios; nunca escribe un secreto, `INSECURE_NO_AUTH` ni
+  `extra.host`. Un perfil con `WEBHOOK_ENABLED`/`WEBHOOK_PORT` en el `.env` (versiones anteriores) los migra al
+  bloque tras copiar el `.env` a `.env.pre-ai-hub[.n]` y retira solo esas dos líneas; un `WEBHOOK_SECRET` queda
+  intacto. `platforms.webhook.enabled: false` se respeta como exclusión. Después suscribe la ruta, reinicia el
+  gateway si hace falta y espera a que `GET /health` responda. Re-ejecutarlo deja el archivo byte a byte igual.
+- **Dueño compartido:** si el listener es del perfil `default`, escribir su `config.yaml` activa la plataforma
+  para todos los perfiles que sirve su gateway. `--yes` solo no lo hace: el webhook queda `pendiente` con la
+  acción `ai-hub control enroll --yes --webhook-owner default`. Con `--webhook-owner default` (o aceptando la
+  pregunta interactiva que lo nombra) se copia su `config.yaml` a `config.yaml.pre-ai-hub[.n]` antes de escribir.
+  Un `--webhook-owner` que no coincide con el dueño detectado no escribe nada.
+- **Reinicio compartido:** reiniciar el gateway del perfil `default` corta las sesiones activas de todos los
+  perfiles que sirve. `enroll` lo avisa antes del único reinicio; `--dry-run` y `--check` muestran el aviso y el
+  comando sin reiniciar. Sin nada que recargar, no reinicia ni avisa.
+- **Sin gateway instalado:** el webhook es «no verificable»: sale 0, instala el cron, no escribe el bloque ni la
+  ruta y propone `hermes gateway install`. Un gateway instalado y parado se reinicia una vez, avisando; si no
+  levanta, sale 1 con `hermes gateway restart`.
 - **Identidad:** el perfil recibe un bloque gestionado en `SOUL.md` entre
   `<!-- ai-hub:soul:begin v=1 sha256=… -->` y `<!-- ai-hub:soul:end -->`. El perfil que crea esta misma
   ejecución se adopta sin preguntar, también sin terminal; un perfil existente sin marcas solo se adopta en el
@@ -307,8 +338,10 @@ npx ai-hub control enroll --check      # credenciales de Discord del perfil, sol
   contenido, usa `SOUL.md.pre-ai-hub.<n>`. Las copias nunca se sobrescriben. Un bloque editado no se toca: queda
   `pendiente` y la acción empieza por apartar el archivo.
 - **Comprobación:** `enroll --check` verifica perfil, `.env`, claves de Discord, canal y aprobadores frente a
-  `manifest.control`, skill, scripts, identidad, plataforma webhook, ruta, cron, modelo y gateway. Es de solo
-  lectura: únicamente ejecuta `--version`, `webhook list`, `cron list` y `gateway status`. Sale 0 si el perfil
+  `manifest.control`, skill, scripts, identidad, plataforma webhook, ruta, cron, modelo y gateway. El webhook
+  cuenta como presente solo si el `config.yaml` del dueño lo habilita y el puerto responde a `GET /health`;
+  «declarado pero no escucha» falla con la acción de reinicio. Es de solo lectura: únicamente ejecuta
+  `--version`, `webhook list`, `cron list` y `gateway status`, y sondea el puerto local. Sale 0 si el perfil
   está completo, 1 si falta algo y 2 sin Hermes. El modelo y un gateway no instalado se muestran como
   «no verificable» y no fallan; un gateway instalado y parado sí, con `hermes gateway restart` como acción.
 - **`manifest.control.channelId`** guarda el canal de control y debe coincidir con `DISCORD_HOME_CHANNEL`; el
@@ -328,6 +361,17 @@ npx ai-hub control enroll --check      # credenciales de Discord del perfil, sol
 | `profile create` falló | Retoma la conexión: no hay nada persistido. |
 | Identidad editada o sin adoptar | Aparta `SOUL.md` y ejecuta la acción del punto de guardado. |
 | Gateway instalado y parado | `hermes gateway restart`. |
+
+**Recuperación del webhook.** El tick sigue ingiriendo mientras el webhook está caído.
+
+| Síntoma | Acción |
+|---|---|
+| Puerto ocupado por otro proceso (`/health` responde con otro documento) | Libera el puerto o cambia `platforms.webhook.extra.port` en el `config.yaml` del dueño y repite `enroll --yes`. |
+| Declarado pero no escucha | `hermes gateway restart` (o `hermes -p hermes-control gateway restart` con gateway propio) y revisa el log del gateway. |
+| Gateway parado | `hermes gateway restart`; `enroll --yes` lo intenta una vez avisando antes. |
+| Sin gateway instalado | `hermes gateway install`; el webhook queda «no verificable» hasta entonces. |
+| Webhook `pendiente` por el dueño compartido | `ai-hub control enroll --yes --webhook-owner default`, sabiendo que activa la plataforma y reinicia el gateway de todos los perfiles. |
+| GitLab no llega (firewall, NAT o sin túnel) | El sondeo local no lo detecta: abre el puerto o usa un túnel y envía una entrega de prueba desde GitLab. |
 
 Cada acción termina en `ai-hub control enroll --check` = 0.
 

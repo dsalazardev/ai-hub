@@ -246,7 +246,8 @@ describe('fase 4 — enroll, gateway y resumen (4.1, 4.2, 4.4)', () => {
     const writes = creating(hermes.calls).map((args) => args.join(' '));
     expect(writes.some((line) => line.includes('webhook subscribe ai-hub-gitlab'))).toBe(true);
     expect(writes.some((line) => line.includes('cron create'))).toBe(true);
-    expect(writes.at(-1)).toBe('gateway restart');
+    // webhook-operativo D2: el reinicio va al dueño del listener (aquí el propio perfil, `-p hermes-control`).
+    expect(writes.at(-1)).toBe('-p hermes-control gateway restart');
     expect(result.out.slice(-5)).toEqual([
       `control: perfil hermes-control (${path.join(hermes.home, 'profiles', 'hermes-control')})`,
       `control: canal ${CHANNEL} (#control)`,
@@ -612,6 +613,8 @@ describe('init-fiabilidad 8.5 — identidad antes de escribir la conexión', () 
 describe('init-fiabilidad 8.9 — resumen solo tras el check', () => {
   it('gateway not running leaves the step pending and prints no success summary', async () => {
     hermes.gatewayRunning = false;
+    // webhook-operativo D-A: con el gateway parado se intenta un reinicio; aquí falla y queda pendiente.
+    hermes.failOn.set('gateway restart', { stderr: 'unit failed to start' });
     const result = await flagsInit(CONNECT_FLAGS);
     expect(result.code, result.text).toBe(0);
     expect(result.out.at(-1)).toBe('ai-hub-integration: name=control state=pendiente stage=gateway action=hermes gateway restart');
@@ -812,7 +815,7 @@ describe('init-fiabilidad 4.8 — acción según lo persistido (HC-12, HC-13)', 
     }
   });
 
-  it('route failure announces enroll --yes (R5): after removing the fault only the route and cron are created', async () => {
+  it('route failure announces enroll --yes (R5): the cron already exists, so after removing the fault only the route is created', async () => {
     hermes.failOn.set('webhook subscribe', { stderr: 'Error: route refused' });
     const failed = await flagsInit(CONNECT_FLAGS);
     expect(failed.code).toBe(0);
@@ -821,7 +824,7 @@ describe('init-fiabilidad 4.8 — acción según lo persistido (HC-12, HC-13)', 
     hermes.calls.length = 0;
     const resumed = await enroll('yes');
     expect(resumed.code, resumed.lines.join('\n')).toBe(0);
-    expect(creating(hermes.calls).map((args) => args.slice(2, 4).join(' '))).toEqual(['webhook subscribe', 'cron create']);
+    expect(creating(hermes.calls).map((args) => (args[0] === '-p' ? args.slice(2, 4) : args.slice(0, 2)).join(' '))).toEqual(['webhook subscribe', 'gateway restart']);
     hermes.calls.length = 0;
     expect((await enroll('yes')).code).toBe(0);
     expect(creating(hermes.calls)).toEqual([]);

@@ -5,8 +5,19 @@ import { parseDotenv } from '../env/dotenv.js';
 import { readTemplate } from '../harness/local.js';
 import { loadManifestContext } from '../manifest/manifest.js';
 import { ControlConfigError, requireSettings } from './decide.js';
-import { hermesHome, resolveHermes, type HermesCli, type ResolverHost } from './hermes.js';
-import { writeProfileEnv } from './profile-env.js';
+import { HermesNotFoundError, HermesVersionError, hermesHome, resolveHermes, type HermesCli, type ResolverHost } from './hermes.js';
+import {
+  GATEWAY_INSTALL_ACTION,
+  GATEWAY_RESTART_ACTION,
+  SECRET_OVERRIDE_NOTICE,
+  WEBHOOK_PIECES,
+  gatewayTopology,
+  ownerOf,
+  sharedRestartWarning,
+  webhookPhase,
+  type Topology,
+} from './enroll-webhook.js';
+import { DEFAULT_WEBHOOK_PORT, probeWebhook, readWebhookBlock } from './webhook-config.js';
 import { ensureSoulIdentity, inspectSoulIdentity, setAsideSoulAction, soulNeedsSetAside } from './identity.js';
 import { redactedCause } from './redact.js';
 import { ENROLL_ACTION, RETAKE_ACTION, RETAKE_PROVIDE } from '../cli/integrations.js';
@@ -39,6 +50,12 @@ export interface EnrollOptions {
   host: ResolverHost;
   /** Valores en memoria que tampoco deben salir en una causa (p. ej. el token recién tecleado). */
   secrets?: readonly string[];
+  /** `--webhook-owner <perfil>`: consentimiento que nombra al dueño del listener cuando es otro perfil (design §D9). */
+  webhookOwner?: string;
+  /** Consentimiento interactivo equivalente: la pregunta que nombra al dueño del listener. */
+  confirmOwner?: (owner: string) => Promise<boolean>;
+  /** Avisos que deben verse antes de la acción que anuncian (el reinicio de un gateway compartido). */
+  notify?: (line: string) => void;
 }
 
 export interface EnrollOutcome {
@@ -52,8 +69,12 @@ export interface EnrollOutcome {
   /** La conexión está guardada (token del perfil + `manifest.control`): decide la acción (HC-12). */
   saved?: boolean;
   action?: string;
-  /** Identidad sin adoptar: se informa como `pendiente`, no como fallo inesperado. */
+  /** Identidad sin adoptar, dueño del listener sin consentir o gateway parado: `pendiente`, no fallo inesperado. */
   pending?: boolean;
+  /** El enrolamiento ya reinició el gateway en esta ejecución (no se reinicia otra vez). */
+  restarted?: boolean;
+  /** Estado final del webhook: escuchando, o no verificable por no haber gateway instalado. */
+  webhook?: 'listening' | 'no-verificable';
 }
 
 interface Step {
@@ -157,7 +178,24 @@ export async function runEnroll(root: string, options: EnrollOptions): Promise<E
     }
     throw error;
   }
-  const cli = await resolveHermes(options.host, options.hermes);
+  // webhook-operativo 4.1: Hermes ausente o viejo es una etapa con su código, no una excepción.
+  let cli: HermesCli;
+  try {
+    cli = await resolveHermes(options.host, options.hermes);
+  } catch (error) {
+    if (error instanceof HermesNotFoundError || error instanceof HermesVersionError) {
+      const notFound = error instanceof HermesNotFoundError;
+      const cause = [notFound ? `exit 2 · ${error.message.split('\n')[0]}` : `exit 1 · ${error.message}`];
+      return {
+        code: notFound ? 2 : 1,
+        lines: [`[FAIL] Hermes: ${error.message}`, `Siguiente: ${notFound ? 'instala Hermes (o indica --hermes <ruta>) y repite' : 'hermes update'}`],
+        stage: 'resolver',
+        cause,
+        action: notFound ? 'instala Hermes o indica --hermes <ruta>' : 'hermes update',
+      };
+    }
+    throw error;
+  }
   const home = hermesHome(options.host);
   const profileDir = path.join(home, 'profiles', PROFILE);
   const envFile = path.join(profileDir, '.env');
@@ -252,10 +290,62 @@ export async function runEnroll(root: string, options: EnrollOptions): Promise<E
       identityAction,
     );
 
-    const platform = profilePresent ? await profileCommand(cli, ['webhook', 'list']) : { ok: false, stdout: '' };
-    add('webhook', platform.ok ? 'ok' : 'fail', platform.ok ? 'webhook: plataforma habilitada' : 'webhook: plataforma deshabilitada o lista ilegible', 'webhook-platform', ENROLL_ACTION);
-    const routeOk = platform.ok && listed(platform.stdout, ROUTE);
-    add('ruta', routeOk ? 'ok' : 'fail', routeOk ? `ruta: ${ROUTE}` : `ruta: ${ROUTE} no listada`, 'webhook-route', ENROLL_ACTION);
+    // webhook-operativo: el webhook cuenta como presente solo si el config.yaml del dueño del listener lo habilita y
+    // el puerto responde; sin gateway instalado (o con él parado) no es verificable. Nada de esto escribe ni reinicia.
+    const topology: Topology = profilePresent
+      ? await gatewayTopology(cli, PROFILE)
+      : { state: 'not-installed', owner: PROFILE, shared: false };
+    const owner = ownerOf(topology, home, PROFILE);
+    const notices: string[] = [];
+    let listing = { ok: false, stdout: '' };
+    if (topology.state !== 'running') {
+      add(
+        'webhook',
+        'nv',
+        topology.state === 'not-installed'
+          ? `webhook: no verificable sin gateway instalado (${GATEWAY_INSTALL_ACTION})`
+          : 'webhook: no verificable con el gateway parado',
+        'webhook-platform',
+      );
+      if (profilePresent) {
+        listing = await profileCommand(cli, ['webhook', 'list']);
+      }
+    } else {
+      const block = await readWebhookBlock(owner.config);
+      const enableAction = topology.shared ? `${ENROLL_ACTION} --webhook-owner ${topology.owner}` : ENROLL_ACTION;
+      if (block.kind === 'malformed') {
+        add('webhook', 'fail', `webhook: ${owner.config} ${block.problem}`, 'webhook-platform', `corrige ${owner.config} y repite ${ENROLL_ACTION}`);
+      } else if (block.kind !== 'enabled') {
+        add('webhook', 'fail', `webhook: plataforma deshabilitada (falta platforms.webhook.enabled en ${owner.config})`, 'webhook-platform', enableAction);
+      } else {
+        const result = await cli.run(owner.command(['webhook', 'list']));
+        listing = { ok: result.status === 0, stdout: result.stdout };
+        const probed = await (options.host.probeWebhook ?? ((port: number) => probeWebhook(port)))(block.port);
+        if (!listing.ok) {
+          add('webhook', 'fail', 'webhook: plataforma deshabilitada o lista ilegible', 'webhook-platform', enableAction);
+        } else if (probed === 'listening') {
+          add('webhook', 'ok', `webhook: plataforma habilitada y escuchando en 127.0.0.1:${block.port}`, 'webhook-platform');
+        } else if (probed === 'foreign') {
+          add('webhook', 'fail', `webhook: el puerto ${block.port} está ocupado por otro proceso`, 'webhook-platform', `libera el puerto ${block.port} o elige otro en platforms.webhook.extra.port de ${owner.config}`);
+        } else {
+          add('webhook', 'fail', `webhook: declarado pero no escucha en 127.0.0.1:${block.port} · reinicia con ${owner.restartText}`, 'webhook-platform', owner.restartText);
+          if (topology.shared) {
+            notices.push(sharedRestartWarning(topology.owner));
+          }
+        }
+      }
+      if ((await readEnv(owner.env)).WEBHOOK_SECRET) {
+        notices.push(SECRET_OVERRIDE_NOTICE);
+      }
+    }
+    const routeOk = listing.ok && listed(listing.stdout, ROUTE);
+    if (routeOk) {
+      add('ruta', 'ok', `ruta: ${ROUTE}`, 'webhook-route');
+    } else if (topology.state === 'not-installed') {
+      add('ruta', 'nv', `ruta: ${ROUTE} no verificable sin gateway instalado`, 'webhook-route');
+    } else {
+      add('ruta', 'fail', `ruta: ${ROUTE} no listada`, 'webhook-route', ENROLL_ACTION);
+    }
     const crons = profilePresent ? await profileCommand(cli, ['cron', 'list']) : { ok: false, stdout: '' };
     const cronOk = crons.ok && listed(crons.stdout, CRON_NAME);
     add('cron', cronOk ? 'ok' : 'fail', cronOk ? `cron: ${CRON_NAME}` : `cron: ${CRON_NAME} no listado`, 'cron', ENROLL_ACTION);
@@ -282,24 +372,19 @@ export async function runEnroll(root: string, options: EnrollOptions): Promise<E
     }
     add('modelo', modelState, modelLine, 'check');
 
-    const gateway = profilePresent
-      ? await cli.run(['gateway', 'status'])
-      : { status: null, stdout: '', stderr: 'not installed' };
-    if (gateway.status === 0) {
-      add('gateway', 'ok', 'gateway: en ejecución', 'gateway');
+    if (topology.state === 'running') {
+      add('gateway', 'ok', topology.shared ? `gateway: en ejecución (multiplexor del perfil "${topology.owner}")` : 'gateway: en ejecución', 'gateway');
+    } else if (topology.state === 'not-installed') {
+      add('gateway', 'nv', 'gateway: no instalado (no verificable)', 'gateway');
     } else {
-      const detail = `${gateway.stdout}\n${gateway.stderr}`.toLowerCase();
-      if (detail.includes('not installed')) {
-        add('gateway', 'nv', 'gateway: no instalado (no verificable)', 'gateway');
-      } else {
-        add('gateway', 'fail', 'gateway: instalado pero no en ejecución', 'gateway', 'hermes gateway restart');
-      }
+      add('gateway', 'fail', 'gateway: instalado pero no en ejecución', 'gateway', GATEWAY_RESTART_ACTION);
     }
 
     for (const row of rows) {
       const tag = row.state === 'ok' ? '[OK]' : row.state === 'nv' ? '[NO VERIFICABLE]' : '[FAIL]';
       lines.push(`${tag} ${row.line}`);
     }
+    lines.push(...notices);
     const failed = rows.find((row) => row.state === 'fail');
     if (failed === undefined) {
       return {
@@ -328,66 +413,14 @@ export async function runEnroll(root: string, options: EnrollOptions): Promise<E
       return { code: 1, lines: [...lines, `[FAIL] colisión de token de bot: ${PROFILE} comparte DISCORD_BOT_TOKEN con el perfil "${collision}"; no se escribe nada`] };
     }
   }
-  let webhooks = profileExists ? await profileCommand(cli, ['webhook', 'list']) : { ok: false, stdout: '' };
   const crons = profileExists ? await profileCommand(cli, ['cron', 'list']) : { ok: false, stdout: '' };
   const scripts = scriptsDir(profileDir);
   const run = async (args: string[]): Promise<RunResult | void> => {
     const result = await cli.run(args);
     return result.status === 0 ? undefined : result;
   };
-  const routeStep: Step = {
-    stage: 'webhook-route',
-    piece: 'ruta',
-    label: `webhook: ${ROUTE} → discord (deliver-only, script gitlab-route.sh)`,
-    present: webhooks.ok && listed(webhooks.stdout, ROUTE),
-    // La salida de `subscribe` incluye el secreto generado: en éxito no se muestra; en fallo, solo redactada (HC-03).
-    create: () =>
-      run([
-        '-p', PROFILE, 'webhook', 'subscribe', ROUTE,
-        '--events', 'Issue Hook,Merge Request Hook',
-        '--script', 'gitlab-route.sh',
-        '--prompt', '{script_output}',
-        '--deliver', 'discord',
-        '--deliver-only',
-        '--description', 'ai-hub control ingest (hermes-control)',
-      ]),
-  };
-  const platformStep: Step = {
-    stage: 'webhook-platform',
-    piece: 'plataforma webhook',
-    label: 'plataforma webhook: WEBHOOK_ENABLED=true · WEBHOOK_PORT=8644 (añade solo las claves ausentes)',
-    present: webhooks.ok,
-    create: async () => {
-      // Preflight explícito aunque el perfil se acabe de crear: primero se comprueba, después se habilita.
-      webhooks = await profileCommand(cli, ['webhook', 'list']);
-      routeStep.present = webhooks.ok && listed(webhooks.stdout, ROUTE);
-      if (webhooks.ok) {
-        return undefined;
-      }
-      const env = await readEnv(envFile);
-      const enabled = env.WEBHOOK_ENABLED?.trim().toLowerCase();
-      if (enabled !== undefined && enabled !== 'true') {
-        return {
-          status: 1,
-          stdout: '',
-          stderr: `WEBHOOK_ENABLED=${env.WEBHOOK_ENABLED} es incompatible; la plataforma webhook no se habilita sin consentimiento`,
-        };
-      }
-      const missing: Record<string, string> = {};
-      if (env.WEBHOOK_ENABLED === undefined) {
-        missing.WEBHOOK_ENABLED = 'true';
-      }
-      if (env.WEBHOOK_PORT === undefined) {
-        missing.WEBHOOK_PORT = '8644';
-      }
-      if (Object.keys(missing).length > 0) {
-        await writeProfileEnv(envFile, missing);
-      }
-      webhooks = await profileCommand(cli, ['webhook', 'list']);
-      routeStep.present = webhooks.ok && listed(webhooks.stdout, ROUTE);
-      return webhooks.ok ? undefined : { status: 1, stdout: webhooks.stdout, stderr: '' };
-    },
-  };
+  const routeLabel = `webhook: ${ROUTE} → discord (deliver-only, script gitlab-route.sh)`;
+  // webhook-operativo (design §D5): el cron y control-poll.sh van antes del webhook; si este falla, queda el tick.
   const steps: Step[] = [
     {
       stage: 'profile',
@@ -441,8 +474,6 @@ export async function runEnroll(root: string, options: EnrollOptions): Promise<E
       present: await exists(path.join(scripts, 'gitlab-route.sh')),
       create: async () => writeIfMissing(path.join(scripts, 'gitlab-route.sh'), await render('hermes/gitlab-route.sh', root)),
     },
-    platformStep,
-    routeStep,
     {
       stage: 'cron',
       piece: 'cron',
@@ -456,6 +487,24 @@ export async function runEnroll(root: string, options: EnrollOptions): Promise<E
     },
   ];
   const ready: string[] = [];
+  /** Fallo con su etapa, lo listo, lo que falta, la causa redactada y la acción (CO-M1, HC-03); nunca se lanza. */
+  const failure = async (
+    stage: string,
+    headline: string,
+    cause: string[],
+    missing: string[],
+    action?: string,
+    pending = false,
+  ): Promise<EnrollOutcome> => {
+    const saved = Boolean((await readEnv(envFile)).DISCORD_BOT_TOKEN);
+    const listo = [...new Set(ready.filter((piece) => !missing.includes(piece)))];
+    if (saved) {
+      listo.splice(listo.indexOf('perfil') + 1, 0, '.env');
+    }
+    const next = action ?? (saved ? ENROLL_ACTION : RETAKE_ACTION);
+    lines.push(`[FAIL] ${headline}`, ...cause.slice(1).map((line) => `  ${line}`), `Siguiente: ${next}`);
+    return { code: 1, lines, stage, ready: listo, missing, cause, saved, action: next, ...(pending ? { pending: true } : {}) };
+  };
   for (const [index, step] of steps.entries()) {
     lines.push(`${step.present ? '[presente]' : options.mode === 'yes' ? '[creado]  ' : '[crear]   '} ${step.label}`);
     if (!step.present && options.mode === 'yes' && step.create) {
@@ -467,10 +516,9 @@ export async function runEnroll(root: string, options: EnrollOptions): Promise<E
         failed = { status: null, stdout: '', stderr: '', error: (error as Error).message.split('\n')[0] };
       }
       if (failed) {
-        const env = await readEnv(envFile);
-        const saved = Boolean(env.DISCORD_BOT_TOKEN);
+        const missing = [...new Set([...steps.slice(index).map((item) => item.piece), ...WEBHOOK_PIECES])];
         if (step.stage === 'identity' && identityPending !== null) {
-          const missing = [...new Set(steps.slice(index).map((item) => item.piece))];
+          const saved = Boolean((await readEnv(envFile)).DISCORD_BOT_TOKEN);
           lines[lines.length - 1] = `[PENDIENTE] ${step.label}`;
           lines.push(`[FAIL] identidad: sin adoptar; ${identityPending}`);
           return {
@@ -485,29 +533,92 @@ export async function runEnroll(root: string, options: EnrollOptions): Promise<E
             pending: true,
           };
         }
-        // init-fiabilidad (CO-M1, HC-03): el fallo se devuelve con su etapa y su causa redactada; nunca se lanza.
         lines[lines.length - 1] = `[FALLO]   ${step.label}`;
         const cause = redactedCause(failed, await knownSecrets(home, envFile, options.secrets ?? []));
-        const missing = [...new Set(steps.slice(index).map((item) => item.piece))];
-        const listo = [...new Set(ready.filter((piece) => !missing.includes(piece)))];
-        if (saved) {
-          listo.splice(listo.indexOf('perfil') + 1, 0, '.env');
-        }
-        const action = saved ? ENROLL_ACTION : RETAKE_ACTION;
-        lines.push(`[FAIL] ${step.label.split(':')[0]}: Hermes devolvió ${cause[0]}`, ...cause.slice(1).map((line) => `  ${line}`), `Siguiente: ${action}`);
-        return { code: 1, lines, stage: step.stage, ready: listo, missing, cause, saved, action };
+        return failure(step.stage, `${step.label.split(':')[0]}: Hermes devolvió ${cause[0]}`, cause, missing);
       }
     }
     if (step.present || options.mode === 'yes') {
       ready.push(step.piece);
     }
   }
+  const checkHint = `Siguiente: ai-hub control enroll --check (credenciales de Discord en ${envFile})`;
+  if (!(await exists(profileDir))) {
+    // `--dry-run` sin perfil: la topología aún no se puede consultar; se describe el plan sin sondear nada.
+    lines.push(
+      `[crear]    plataforma webhook: bloque platforms.webhook (enabled, extra.port=${DEFAULT_WEBHOOK_PORT}) en el config.yaml del dueño del listener`,
+      `[crear]    ${routeLabel}`,
+      'GitLab (Settings > Webhooks del proyecto):',
+      `  URL: https://<host-de-hermes>:${DEFAULT_WEBHOOK_PORT}/webhooks/${ROUTE} (con /p/${PROFILE} delante si el listener es del perfil default)`,
+      '  Eventos: Issues events (work items) y Merge request events',
+      `  Secret token: el que genere Hermes en webhook_subscriptions.json del dueño del listener (ai-hub no lo imprime)`,
+      checkHint,
+    );
+    return { code: 0, lines };
+  }
+  let phase: Awaited<ReturnType<typeof webhookPhase>>;
+  try {
+    phase = await webhookPhase({
+      cli,
+      home,
+      profile: PROFILE,
+      route: ROUTE,
+      subscribeArgs: [
+        '--events', 'Issue Hook,Merge Request Hook',
+        '--script', 'gitlab-route.sh',
+        '--prompt', '{script_output}',
+        '--deliver', 'discord',
+        '--deliver-only',
+        '--description', 'ai-hub control ingest (hermes-control)',
+      ],
+      routeLabel,
+      mode: options.mode,
+      probe: options.host.probeWebhook ?? ((port) => probeWebhook(port)),
+      waitMs: options.host.webhookWaitMs ?? 30_000,
+      ...(options.webhookOwner !== undefined ? { webhookOwner: options.webhookOwner } : {}),
+      ...(options.confirmOwner ? { confirmOwner: options.confirmOwner } : {}),
+      profileEnv: await readEnv(envFile),
+      ownerEnv: readEnv,
+      profileEnvFile: envFile,
+      lines,
+      ...(options.notify ? { notify: options.notify } : {}),
+      listed,
+      enrollAction: ENROLL_ACTION,
+    });
+  } catch (error) {
+    // IO-01 y webhook-operativo 4.1: una excepción en la fase del webhook es un fallo de su etapa, sin pila.
+    const first = (error instanceof Error ? error.message : String(error)).split('\n')[0];
+    phase = {
+      restarted: false,
+      port: DEFAULT_WEBHOOK_PORT,
+      topology: { state: 'running', owner: PROFILE, shared: false },
+      failure: { stage: 'webhook-platform', headline: `plataforma webhook: ${first}`, cause: [first] },
+    };
+  }
+  if (phase.failure) {
+    const failed = phase.failure;
+    const cause = failed.result
+      ? redactedCause(failed.result, await knownSecrets(home, envFile, options.secrets ?? []))
+      : (failed.cause ?? [failed.headline]);
+    const headline = failed.result && failed.stage !== 'gateway' ? `${failed.headline}: Hermes devolvió ${cause[0]}` : failed.headline;
+    const missing = failed.stage === 'webhook-route' ? ['ruta'] : failed.stage === 'gateway' ? ['gateway'] : WEBHOOK_PIECES;
+    if (failed.stage === 'webhook-route') {
+      ready.push('plataforma webhook');
+    }
+    const outcome = await failure(failed.stage, headline, cause, missing, failed.action, failed.pending === true);
+    return { ...outcome, restarted: phase.restarted };
+  }
+  if (phase.notVerifiable) {
+    lines.push(checkHint);
+    return { code: 0, lines, webhook: 'no-verificable', action: GATEWAY_INSTALL_ACTION };
+  }
+  const owner = ownerOf(phase.topology, home, PROFILE);
   lines.push(
     'GitLab (Settings > Webhooks del proyecto):',
-    `  URL: https://<host-de-hermes>:8644/webhooks/${ROUTE}`,
+    `  URL: https://<host-de-hermes>:${phase.port}${owner.urlPath(ROUTE)}`,
     '  Eventos: Issues events (work items) y Merge request events',
-    `  Secret token: el que generó Hermes, en ${path.join(profileDir, 'webhook_subscriptions.json')} (ai-hub no lo imprime)`,
-    `Siguiente: ai-hub control enroll --check (credenciales de Discord en ${envFile})`,
+    `  Secret token: el que generó Hermes, en ${owner.subscriptions} (ai-hub no lo imprime)`,
+    checkHint,
   );
-  return { code: 0, lines };
+  return { code: 0, lines, restarted: phase.restarted, webhook: 'listening' };
 }

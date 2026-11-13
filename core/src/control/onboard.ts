@@ -4,6 +4,7 @@ import { stringify } from 'yaml';
 import { parseDotenv } from '../env/dotenv.js';
 import { loadManifestContext, readManifestFile, writeInventory } from '../manifest/manifest.js';
 import { PROFILE, runEnroll } from './enroll.js';
+import { sharedRestartWarning } from './enroll-webhook.js';
 import { hermesHome, resolveHermes, type HermesCli, type ResolverHost } from './hermes.js';
 import { redactedCause } from './redact.js';
 import { writeProfileEnv } from './profile-env.js';
@@ -200,7 +201,11 @@ export async function resolveChannel(
       const response = await get(`/channels/${value}`);
       if (response.status === 200) {
         const body = record(await response.json().catch(() => null));
-        return { kind: 'found', id: value, name: typeof body.name === 'string' ? body.name : null, searchedFailures: [] };
+        const name = typeof body.name === 'string' ? body.name : null;
+        if (typeof body.type === 'number' && body.type !== 0) {
+          return { kind: 'incompatible', id: value, name: name ?? value, type: body.type };
+        }
+        return { kind: 'found', id: value, name, searchedFailures: [] };
       }
       const code = await errorCode(response);
       const item = failure('channel', response.status, code);
@@ -379,6 +384,11 @@ export interface ConnectOptions {
   now?: Date;
   /** Punto de enganche de pruebas (init-fiabilidad 1.3): se llama al completar cada etapa; lanzar = interrupción. */
   onStage?: (stage: ConnectStage) => void | Promise<void>;
+  /** webhook-operativo §D9: consentimiento que nombra al dueño del listener (`--webhook-owner` o la pregunta). */
+  webhookOwner?: string;
+  confirmOwner?: (owner: string) => Promise<boolean>;
+  /** Avisos que deben verse antes de la acción que anuncian (reinicio de un gateway compartido). */
+  notify?: (line: string) => void;
 }
 
 export interface ConnectOutcome {
@@ -562,7 +572,15 @@ export async function connectControlPlane(root: string, answers: ConnectAnswers,
   await options.onStage?.('env');
   await writeManifestControl(root, answers);
   await options.onStage?.('manifest');
-  const enrolled = await runEnroll(root, { mode: 'yes', host: options.host, hermes: cli.path, secrets: [answers.token] });
+  const enrolled = await runEnroll(root, {
+    mode: 'yes',
+    host: options.host,
+    hermes: cli.path,
+    secrets: [answers.token],
+    ...(options.webhookOwner !== undefined ? { webhookOwner: options.webhookOwner } : {}),
+    ...(options.confirmOwner ? { confirmOwner: options.confirmOwner } : {}),
+    ...(options.notify ? { notify: options.notify } : {}),
+  });
   if (enrolled.code !== 0) {
     return {
       code: enrolled.code,
@@ -573,11 +591,17 @@ export async function connectControlPlane(root: string, answers: ConnectAnswers,
       cause: enrolled.cause,
       saved: enrolled.saved ?? true,
       action: enrolled.action ?? ENROLL_ACTION,
+      // El dueño del listener sin consentir o un gateway parado no son un fallo: quedan pendientes de la persona.
+      ...(enrolled.pending && (enrolled.stage === 'webhook-platform' || enrolled.stage === 'gateway') ? { pending: true } : {}),
     };
   }
   let gatewayHint = '';
-  const status = await run(cli, ['gateway', 'status']);
-  if (status.ok) {
+  const status = await run(cli, ['-p', PROFILE, 'gateway', 'status']);
+  // El enrolamiento ya reinició el gateway al cargar el bloque: ese arranque también conecta el bot (un solo reinicio).
+  if (status.ok && enrolled.restarted !== true) {
+    if (`${status.result.stdout}\n${status.result.stderr}`.toLowerCase().includes('multiplexer')) {
+      options.notify?.(sharedRestartWarning('default'));
+    }
     const restarted = await run(cli, ['gateway', 'restart']);
     if (!restarted.ok) {
       const cause = redactedCause(restarted.result, [answers.token]);

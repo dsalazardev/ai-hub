@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -29,7 +30,9 @@ import type { CliContext } from './types.js';
 import { missingClaudeHooks } from '../sync/hooks.js';
 import { checkAgentCapabilities } from '../agents/doctor.js';
 import { checkEnvIgnored, checkEnvKeys, checkTrackerScope, checkTrackerToken, type EnvDoctorOptions } from '../env/doctor.js';
-import { checkControl } from '../control/doctor.js';
+import { checkControl, checkControlWebhook } from '../control/doctor.js';
+import { hermesHome } from '../control/hermes.js';
+import { controlSettings } from '../control/ledger.js';
 
 export interface DoctorCheck {
   id: string;
@@ -265,7 +268,7 @@ export async function diagnose(ctx: CliContext, options: DoctorOptions = {}): Pr
           (await exists(path.join(ctx.root, 'core', 'skills', 'shared'))),
         'core/agents + core/presets + core/skills',
       );
-      for (const id of ['env:ignored', 'env:keys', 'tracker:token', 'control']) {
+      for (const id of ['env:ignored', 'env:keys', 'tracker:token', 'control', 'control:webhook']) {
         add(id, true, 'no aplica en el checkout del motor');
       }
     } else {
@@ -335,6 +338,18 @@ export async function diagnose(ctx: CliContext, options: DoctorOptions = {}): Pr
         // 5.3: los privilegios del token solo se miran con --online (sin red, la salida no cambia).
         ...(options.online ? [await checkTrackerScope(ctx.root, manifest, options)] : []),
         checkControl(manifest),
+        // webhook-operativo 4.3: con plano de control, el webhook declarado debe escuchar; sin bloque es opcional.
+        ...(manifest && controlSettings(manifest) !== null
+          ? [
+              await checkControlWebhook({
+                // Hermes aísla su hogar con HERMES_HOME (su propio CLI lo fija); sin host inyectado se respeta igual.
+                home: ctx.controlHost
+                  ? hermesHome(ctx.controlHost)
+                  : (process.env.HERMES_HOME ?? hermesHome({ platform: process.platform, env: process.env, home: os.homedir() })),
+                ...(ctx.controlHost?.probeWebhook ? { probe: ctx.controlHost.probeWebhook } : {}),
+              }),
+            ]
+          : []),
       ]) {
         add(check.id, check.ok, check.detail);
       }

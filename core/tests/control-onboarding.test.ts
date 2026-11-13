@@ -36,7 +36,7 @@ describe('fase 1 — detección y pregunta de entrada (1.2, 1.3)', () => {
     await offerControlStep(script.prompts, stepContext(h, sink, { controlHost: hermes.host }), null);
     expect(script.asked).toHaveLength(1);
     expect(script.asked[0]).toBe(
-      'text:Hermes v0.23.0 detectado. ¿Conectar el plano de control ahora? Crea el perfil hermes-control con TU bot, escribe su .env (token del bot, usuarios y canales permitidos y, si faltan, WEBHOOK_ENABLED y WEBHOOK_PORT), su skill, sus scripts y el bloque gestionado de SOUL.md, crea la ruta del webhook y el cron, y reinicia el gateway de Hermes si está instalado. (escribe "s" para conectar; vacío = saltar)',
+      'text:Hermes v0.23.0 detectado. ¿Conectar el plano de control ahora? Crea el perfil hermes-control con TU bot, escribe su .env (token del bot, usuarios y canales permitidos), su skill, sus scripts y el bloque gestionado de SOUL.md, habilita la plataforma webhook con el bloque platforms.webhook en el config.yaml del perfil dueño del listener, crea la ruta del webhook y el cron, y reinicia el gateway de Hermes si está instalado. (escribe "s" para conectar; vacío = saltar)',
     );
   });
 
@@ -242,6 +242,25 @@ describe('init-fiabilidad 7.5 — nombres, ambigüedad y tipos', () => {
     const result = await discordStep(['s', BOT_TOKEN, 'general', null], api);
     expect(result.notes.join('\n')).toContain('incompatible');
     expect(result.notes.join('\n')).toContain('voz');
+  });
+
+  it.each([
+    [4, 'categoría'],
+    [2, 'voz'],
+  ])('channel-types 1.1 — rejects by id a channel of type %i as incompatible, never as found', async (type, label) => {
+    const api = discordApi({ channelsByGuild: { '555': [{ id: CHANNEL, name: 'general', type }] } });
+    const check = await resolveChannel(api.fetch, BOT_TOKEN, CHANNEL);
+    expect(check).toEqual({ kind: 'incompatible', id: CHANNEL, name: 'general', type });
+    const result = await discordStep(['s', BOT_TOKEN, CHANNEL, null], api);
+    const text = result.notes.join('\n');
+    expect(text).toContain('incompatible');
+    expect(text).toContain(label);
+    expect(text).not.toContain(`Canal: ${CHANNEL}`);
+  });
+
+  it('channel-types — a 200 whose body has no type is accepted as before', async () => {
+    const fetch: DiscordFetch = async () => ({ status: 200, json: async () => ({ id: CHANNEL, name: 'control' }) });
+    expect(await resolveChannel(fetch, BOT_TOKEN, CHANNEL)).toEqual({ kind: 'found', id: CHANNEL, name: 'control', searchedFailures: [] });
   });
 
   it('names a server whose channel list could not be searched and its status', async () => {

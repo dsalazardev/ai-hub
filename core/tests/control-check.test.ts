@@ -46,8 +46,10 @@ async function completeProfile(): Promise<void> {
   );
 }
 
-const READ_ONLY = (args: string[]): boolean =>
-  args.includes('list') || (args[0] === 'gateway' && args[1] === 'status') || args[0] === '--version';
+const READ_ONLY = (args: string[]): boolean => {
+  const rest = args[0] === '-p' ? args.slice(2) : args;
+  return rest.includes('list') || (rest[0] === 'gateway' && rest[1] === 'status') || rest[0] === '--version';
+};
 
 describe('init-fiabilidad 8.8 — enroll --check completo', () => {
   it('complete profile exits 0 and lists each component without secrets', async () => {
@@ -66,7 +68,8 @@ describe('init-fiabilidad 8.8 — enroll --check completo', () => {
 
   it('read-only: the tree stays byte-identical and only read-only commands run', async () => {
     await completeProfile();
-    await fs.writeFile(path.join(profileDir(), 'config.yaml'), 'model: provider/model\n');
+    // webhook-operativo: el config.yaml del perfil ya lleva platforms.webhook; el modelo se añade sin borrarlo.
+    await fs.appendFile(path.join(profileDir(), 'config.yaml'), 'model: provider/model\n');
     const before = [await treeHash(h.root), await treeHash(hermes.home)];
     hermes.calls.length = 0;
     const outcome = await runEnroll(h.root, { mode: 'check', host: hermes.host });

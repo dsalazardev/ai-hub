@@ -180,7 +180,6 @@ describe('init-fiabilidad 8.10 — matriz de recuperación', () => {
 
 describe('init-fiabilidad 9.5 — secretos', () => {
   it('no sentinel crosses stdout, stderr, the repository, the fake home or the ledger', async () => {
-    hermes.webhookPlatform = 'model';
     const routeSecret = 'AIHUB_9_5_ROUTE_SECRET_SENTINEL';
     hermes.failOn.set('webhook subscribe', { stderr: `Error: route refused\nSecret: ${routeSecret}` });
     const result = await init();
@@ -198,7 +197,6 @@ describe('init-fiabilidad 9.5 — secretos', () => {
 
 describe('init-fiabilidad 8.11 — fallo y recuperación de punta a punta', () => {
   it('injected route failure is redacted, leaves the connection saved and enroll recovers', async () => {
-    hermes.webhookPlatform = 'model';
     const secret = 'AIHUB_ROUTE_SECRET_SENTINEL_8_11';
     hermes.failOn.set('webhook subscribe', { stderr: `Error: route refused\nSecret: ${secret}` });
     const ideaPath = path.join(h.root, '..', `idea-recovery-${path.basename(h.root)}.md`);
@@ -215,8 +213,9 @@ describe('init-fiabilidad 8.11 — fallo y recuperación de punta a punta', () =
     expect(failed.text).not.toContain('Error inesperado');
     const env = await fs.readFile(envFile(), 'utf8');
     expect(env).toContain('DISCORD_BOT_TOKEN=');
-    expect(env).toContain('WEBHOOK_ENABLED=true');
-    expect(env).toContain('WEBHOOK_PORT=8644');
+    // webhook-operativo: la habilitación vive en el config.yaml del perfil, nunca en el .env.
+    expect(env).not.toContain('WEBHOOK_ENABLED');
+    expect(await fs.readFile(path.join(path.dirname(envFile()), 'config.yaml'), 'utf8')).toContain('enabled: true');
     expect((await loadManifestContext(h.root)).manifest.control).toBeDefined();
     expect((await check()).code).toBe(1);
 

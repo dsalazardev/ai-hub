@@ -1,5 +1,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
+import path from 'node:path';
+import { gatewayTopology } from './enroll-webhook.js';
 import type { AssistantPrompts } from '../cli/assistant.js';
 import type { CliContext } from '../cli/types.js';
 import {
@@ -72,8 +74,24 @@ export const LATER_LINE = 'control: Hermes no detectado; cuando lo instales, con
 const SKIPPED = 'control: paso saltado; no se escribió nada';
 const CANCELLED = 'control: cancelado; no se escribió nada';
 
-export function entryQuestion(version: string): string {
-  return `Hermes v${version} detectado. ¿Conectar el plano de control ahora? Crea el perfil hermes-control con TU bot, escribe su .env (token del bot, usuarios y canales permitidos y, si faltan, WEBHOOK_ENABLED y WEBHOOK_PORT), su skill, sus scripts y el bloque gestionado de SOUL.md, crea la ruta del webhook y el cron, y reinicia el gateway de Hermes si está instalado. (escribe "s" para conectar; vacío = saltar)`;
+export interface EntryContext {
+  /** Dueño del listener cuando es otro perfil (multiplexor): la pregunta lo nombra y aceptarla es el consentimiento. */
+  sharedOwner?: string | null;
+  /** El `.env` del perfil tiene `WEBHOOK_ENABLED` o `WEBHOOK_PORT` heredados. */
+  legacyKeys?: boolean;
+}
+
+/** Pregunta de aceptación (CO-01): nombra cada cambio que el paso puede hacer fuera del repositorio. */
+export function entryQuestion(version: string, context: EntryContext = {}): string {
+  const owner = context.sharedOwner
+    ? ` (aquí, el perfil "${context.sharedOwner}": la activa para todos los perfiles que sirve su gateway, y reiniciarlo corta sus sesiones)`
+    : '';
+  const legacy = context.legacyKeys ? ' mueve WEBHOOK_ENABLED y WEBHOOK_PORT del .env a ese config.yaml tras una copia del .env,' : '';
+  return `Hermes v${version} detectado. ¿Conectar el plano de control ahora? Crea el perfil hermes-control con TU bot, escribe su .env (token del bot, usuarios y canales permitidos), su skill, sus scripts y el bloque gestionado de SOUL.md, habilita la plataforma webhook con el bloque platforms.webhook en el config.yaml del perfil dueño del listener${owner},${legacy} crea la ruta del webhook y el cron, y reinicia el gateway de Hermes si está instalado. (escribe "s" para conectar; vacío = saltar)`;
+}
+
+export function ownerQuestion(owner: string): string {
+  return `El listener del webhook pertenece al perfil "${owner}" de Hermes. Habilitar la plataforma en su config.yaml la activa para todos los perfiles que sirve su gateway, y reiniciarlo corta sus sesiones. ¿Hacerlo? (no = el webhook queda pendiente y el tick sigue operativo)`;
 }
 
 export const TOKEN_HELP =
@@ -112,7 +130,17 @@ export async function runControlStep(prompts: AssistantPrompts, ctx: CliContext,
     }
     throw error;
   }
-  const entry = await prompts.text(entryQuestion(version));
+  // CO-01: si el perfil ya existe, la topología y las claves heredadas se conocen antes de preguntar (solo lectura).
+  const profileDir = path.join(hermesHome(host), 'profiles', PROFILE);
+  let sharedOwner: string | null = null;
+  let legacyKeys = false;
+  if (await host.exists(profileDir)) {
+    const topology = await gatewayTopology({ path: hermesPath, version, run: (args) => host.exec(hermesPath, args, { cwd: host.cwd }) }, PROFILE);
+    sharedOwner = topology.shared ? topology.owner : null;
+    const envText = await fs.readFile(path.join(profileDir, '.env'), 'utf8').catch(() => '');
+    legacyKeys = /^\s*(?:export\s+)?WEBHOOK_(?:ENABLED|PORT)\s*=/m.test(envText);
+  }
+  const entry = await prompts.text(entryQuestion(version, { sharedOwner, legacyKeys }));
   if (entry === null || !/^(s|si|sí|y|yes)$/i.test(entry.trim())) {
     ctx.io.out(SKIPPED);
     return { code: 0, report: NOT_REQUESTED };
@@ -251,6 +279,9 @@ export async function runControlStep(prompts: AssistantPrompts, ctx: CliContext,
     ...(ctx.onConnectStage ? { onStage: ctx.onConnectStage } : {}),
     reconfigure: async () =>
       (await prompts.confirm('El perfil hermes-control ya tiene otro bot. ¿Sustituirlo por este? (no = dejarlo como está)')) === true,
+    // design §D9: aceptar la pregunta que ya nombró al dueño es el consentimiento; si no se conocía, se pregunta ahora.
+    confirmOwner: async (owner) => owner === sharedOwner || (await prompts.confirm(ownerQuestion(owner))) === true,
+    notify: (line) => ctx.io.err(line),
   });
   for (const line of outcome.lines) {
     (outcome.code === 0 ? ctx.io.out : ctx.io.err)(line);
@@ -274,7 +305,10 @@ export const TOKEN_FLAG_REFUSED =
   '--discord-token no se admite: el token del bot se lee solo de la entrada estándar con --discord-token-stdin';
 
 export const CONNECT_USAGE =
-  'Uso: ai-hub init --yes --connect-hermes --discord-channel <id|nombre> --approver <id-de-usuario> --discord-token-stdin [--ttl-hours N] [--expire block|notify] [--allow-unvalidated] [--reconfigure-hermes]';
+  'Uso: ai-hub init --yes --connect-hermes --discord-channel <id|nombre> --approver <id-de-usuario> --discord-token-stdin [--ttl-hours N] [--expire block|notify] [--allow-unvalidated] [--reconfigure-hermes] [--webhook-owner <perfil>]';
+
+/** Nombre de perfil de Hermes aceptable como valor de `--webhook-owner`. */
+export const OWNER_NAME = /^[A-Za-z0-9][A-Za-z0-9_.-]*$/;
 
 /**
  * init-fiabilidad (CO-07): los argumentos de `--connect-hermes` se validan antes del apply. Devuelve el mensaje de
@@ -302,6 +336,10 @@ export function validateConnectFlags(flags: Record<string, string | boolean>): s
     (expireRaw !== 'block' && expireRaw !== 'notify')
   ) {
     return CONNECT_USAGE;
+  }
+  const owner = flags['webhook-owner'];
+  if (owner !== undefined && (typeof owner !== 'string' || !OWNER_NAME.test(owner.trim()))) {
+    return `--webhook-owner necesita el nombre del perfil dueño del listener\n${CONNECT_USAGE}`;
   }
   return null;
 }
@@ -384,6 +422,8 @@ export async function connectFromFlagsReport(
         host: contextHost(ctx),
         idea,
         reconfigure: async () => Boolean(flags['reconfigure-hermes']),
+        ...(typeof flags['webhook-owner'] === 'string' ? { webhookOwner: flags['webhook-owner'].trim() } : {}),
+        notify: (line) => ctx.io.err(line),
         ...(ctx.onConnectStage ? { onStage: ctx.onConnectStage } : {}),
       },
     );

@@ -1,32 +1,35 @@
-# Estado de la sesión — init-fiabilidad 58/65: H1 y H2 implementados, siete tareas del propietario — 2026-11-11
+# Estado de la sesión — channel-types y webhook-operativo aplicados y archivados — 2026-11-12
 
-**Change:** `openspec/changes/init-fiabilidad/`.
-**Progreso:** 58/65. H1 completo salvo el commit del hito (6.4); H2 completo salvo las verificaciones que exigen
-autorización, consumidor real o el commit/CI del propietario.
+**Changes activos:** ninguno. Archivados hoy: `2026-11-12-channel-types` (3/3) y `2026-11-12-webhook-operativo` (30/30).
+**Versión:** 0.15.0 publicada; el release siguiente (versión, CHANGELOG, `release.test.ts`, `install-counts.json`) es del
+propietario, con la entrada preparada en `archive/2026-11-12-webhook-operativo/design.md` §D10.
 
-## Cerrado en esta sesión
+## Cerrado
 
-- **H1:** 6.1 con suite completa en verde (48 archivos, 747 pruebas, 7 omitidas, 1147,68 s), `typecheck`, `build`
-  y `manifest:check`.
-- **Discord:** clasificación HTTP, evidencia independiente, nombres normalizados, colisión temprana y diagnóstico
-  por campos sin cuerpo ni token.
-- **Hermes:** candidato nativo de Windows y motivos por candidato; webhook habilitado solo con claves ausentes;
-  `SOUL.md` versionado con tres vías y copias protegidas; consentimiento/adopción; `enroll --check` completo y de
-  solo lectura; recuperación R1–R8 y fallo/recuperación de punta a punta.
-- **Contrato ampliado por decisión del propietario:** `manifest.control.channelId`.
-- **Verificación final:** suite completa 52/52 archivos, 819 verdes, 7 omitidas, 0 fallos, 1144,05 s; doctor sano;
-  `openspec validate init-fiabilidad --strict` válido; paquete con 1996 entradas y plantilla incluida.
+- channel-types: un id de categoría o de voz se rechaza; un 200 sin `type` se acepta como antes (D-D).
+- webhook-operativo: bloque `platforms.webhook` en el `config.yaml` del dueño del listener, `--webhook-owner`,
+  aviso de reinicio compartido, `GET /health`, migración del `.env`, ningún secreto escrito, `doctor` con
+  `control:webhook`. Detalle de pruebas rojas/verdes y aserciones cambiadas en `impl_webhook-operativo.md`.
+- Verificación: typecheck, build y manifest:check en verde; `npm test` 55/55 archivos, 870 pasadas, 6 omitidas
+  (1358,71 s, WSL apagado); doctor sano; drift y `sync --check-lock` no aplican en el taller.
 
-## Abierto (7)
+## Los tres choques de webhook-operativo con specs vigentes, y su resolución
 
-- 6.4 y 9.3: commit del hito, pipeline y job del propietario.
-- 7.1: sonda Discord real; no autorizada. 7.8 quedó «sin evidencia, no implementado».
-- 9.4: POSIX; Ubuntu debía permanecer apagado.
-- 9.8: perfil real de Windows en solo lectura; sin autorización.
-- 9.9 y 9.10: consumidores reales; sin autorización del propietario.
+1. Sin gateway instalado (contradecía «No gateway installed»): D-A, webhook no verificable, salida 0.
+2. `--check` sin gateway (contradecía «Gateway not verifiable»): D-A, gateway y webhook no verificables, salida 0.
+3. Orden de etapas (cron después de la ruta): D-B, cron y `control-poll.sh` antes del webhook; R5 adaptado y declarado.
 
-## Entorno
+## Registro de hallazgos
 
-- Logs: `%LOCALAPPDATA%\Temp\opencode\init-fiabilidad-h1-suite*.log` y `init-fiabilidad-h2-suite.log`.
-- Ubuntu y docker-desktop detenidos; sin procesos vitest/esbuild al cerrar.
-- Sin `git add`, commit, stash, reset, checkout ni clean. Sin publicar.
+- En una ronda anterior `findings.md` se restauró desde HEAD para dejar `git status` vacío, porque está versionado
+  aunque `.planning/` figure en `.gitignore`; el propietario acepta el árbol sucio y no debe repetirse.
+- La fuente de los hallazgos de estas rondas es el `design.md` de `webhook-operativo` (ahora archivado).
+
+## Abierto (decide el propietario)
+
+- `openspec/specs/hermes-control/spec.md` › «Enroll check verifies the whole profile read-only»: 536 caracteres tras
+  el archivado; `validate --strict` de esa spec pasa de verde a aviso. Propuesta: mover la frase del webhook a un
+  escenario. Las otras specs con avisos de longitud (control-onboarding, dev-cli, agent-guardrails, preset-system,
+  spec-kit-pipeline) ya los tenían.
+- `hermesHome()` no respeta `HERMES_HOME`; solo el check `control:webhook` de `doctor` lo hace.
+- Release (0.16.0 o la que decida) y prueba real con Hermes y GitLab.
