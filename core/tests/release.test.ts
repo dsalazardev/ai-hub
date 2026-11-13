@@ -26,19 +26,20 @@ async function currentSection(): Promise<{ version: string; date: string; body: 
   return { version: pkg.version, date: heading[1], body: changelog.slice(start, next < 0 ? undefined : next) };
 }
 
-describe('release 0.15.0 (init-fiabilidad)', () => {
-  it('bumps the package and names the root, the status line and the control contract', async () => {
+describe('release 0.16.0 (webhook operativo)', () => {
+  it('bumps the package and names the webhook contract and the channel types', async () => {
     const section = await currentSection();
-    expect(section.version).toBe('0.15.0');
-    expect(section.date).toBe('2026-11-12');
-    for (const flag of ['--dir', 'AI_HUB_DIR', '--connect-hermes']) {
-      expect(section.body).toContain(flag);
+    expect(section.version).toBe('0.16.0');
+    expect(section.date).toBe('2026-11-13');
+    for (const term of ['platforms.webhook', 'config.yaml', '--webhook-owner', '/p/hermes-control/webhooks/ai-hub-gitlab', 'GET /health']) {
+      expect(section.body).toContain(term);
     }
-    expect(section.body).toContain('ai-hub-integration:');
-    expect(section.body).toContain('channelId');
     expect(section.body).toContain('WEBHOOK_ENABLED');
-    expect(section.body).toContain('SOUL.md.pre-ai-hub');
-    expect(section.body).toContain('%LOCALAPPDATA%');
+    expect(section.body).toContain('WEBHOOK_SECRET');
+    expect(section.body).toContain('hermes gateway install');
+    expect(section.body).toContain('control:webhook');
+    expect(section.body).toContain('resolveChannel');
+    expect(section.body).toContain('2000 entradas');
   });
 
   // El ritual iguala versión y fixture: la comprobación de cifras es estricta, sin omisión.

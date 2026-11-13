@@ -1,5 +1,82 @@
 # Changelog
 
+## 0.16.0 — webhook operativo y tipos de canal (2026-11-13)
+
+### BREAKING
+
+**`control enroll` habilita el webhook en `config.yaml`, no en el `.env`.**
+Hermes 0.23 lee la habilitación por dos caminos: el gateway acepta `WEBHOOK_ENABLED` del `.env`, pero el CLI que
+crea, lista y retira rutas solo lee `platforms.webhook.enabled` de `config.yaml`. Con las claves de 0.15.0 el
+listener podía arrancar y `webhook list`/`subscribe` salían 1. Ahora `enroll` escribe el bloque
+`platforms.webhook` (`enabled`, `extra.port`) en el `config.yaml` del perfil dueño del listener y deja de escribir
+`WEBHOOK_ENABLED`/`WEBHOOK_PORT`.
+Migración: automática en el primer `control enroll --yes`. Un perfil con esas dos claves en el `.env` las traslada
+al bloque, copia antes el `.env` a `.env.pre-ai-hub[.n]` y retira solo esas dos líneas; el resto queda byte a byte.
+
+**Bajo el multiplexor, `--yes` solo deja el webhook `pendiente`.**
+Si `gateway status` dice `via the default-profile multiplexer`, el listener pertenece al perfil `default`, y
+escribir su `config.yaml` activa la plataforma para todos los perfiles que sirve. `--yes` no lo hace: sale 1 con
+`state=pendiente stage=webhook-platform` y la acción `ai-hub control enroll --yes --webhook-owner default`; `init`
+sigue saliendo con 0.
+Migración: ejecuta `control enroll --yes --webhook-owner default`, o acepta la pregunta interactiva que nombra al
+dueño. Se copia su `config.yaml` a `config.yaml.pre-ai-hub[.n]` antes de escribir.
+
+### Plano de control
+
+- **Fuente de verdad.** El bloque `platforms.webhook` del `config.yaml` del dueño del listener es el único archivo
+  que leen a la vez el CLI de rutas y el gateway. Se conservan claves y comentarios; una segunda ejecución deja el
+  archivo idéntico. `platforms.webhook.enabled: false` se respeta como exclusión, y un `config.yaml` ilegible o con
+  claves duplicadas falla cerrado sin escribir nada.
+- **Escucha verificada.** «Escuchando» se comprueba con `GET /health` en `127.0.0.1:<puerto>`
+  (`{"status":"ok","platform":"webhook"}`), con respaldo TCP para distinguir un puerto ocupado por otro proceso;
+  nunca con la salida de `webhook list`. `enroll` reinicia el gateway una sola vez cuando hace falta y espera a que
+  responda.
+- **Topología multiplexada.** La ruta se crea en el store del perfil `default` con `--route-profile hermes-control`,
+  y la URL para GitLab es `/p/hermes-control/webhooks/ai-hub-gitlab`. Con gateway propio, la URL sigue siendo
+  `/webhooks/ai-hub-gitlab`.
+- **Reinicio compartido anunciado.** Reiniciar el gateway del perfil `default` corta las sesiones de todos los
+  perfiles que sirve: `enroll` lo avisa antes del reinicio, y `--dry-run`/`--check` muestran el aviso y el comando
+  sin ejecutarlo.
+- **Sin gateway.** Sin gateway instalado, el webhook es «no verificable»: `enroll` sale 0, instala el cron y
+  propone `hermes gateway install`. Un gateway instalado y parado se reinicia una vez, con aviso; si no levanta,
+  sale 1 con `hermes gateway restart`.
+- **Orden.** El cron y `control-poll.sh` se instalan antes que el webhook, así que un fallo de la plataforma o de la
+  ruta deja el plano de control operativo por el tick.
+- **Secretos separados.** El arnés no genera ni escribe ningún secreto, `INSECURE_NO_AUTH` ni `extra.host`: el de
+  la ruta lo genera Hermes, y una ruta sin secreto utilizable nunca se sirve (medido contra Hermes 0.23). Un
+  `WEBHOOK_SECRET` del operador queda intacto; `enroll` y `--check` avisan por presencia de que el gateway lo usa
+  como secreto global y pisa `extra.secret`. La rotación de `core/SECURITY.md` es `webhook remove` + `subscribe`
+  sin `--secret`.
+- **Diagnóstico.** `control enroll --check` cuenta el webhook como presente solo si está habilitado y responde;
+  «declarado pero no escucha» sale 1 con la acción de reinicio. `doctor` añade el check `control:webhook`: no
+  configurado (opcional), declarado sin escucha (falla), escuchando o puerto ocupado. Hermes ausente o anterior a
+  0.23 y las excepciones del webhook salen como una etapa con su código y causa, nunca como «Error inesperado».
+
+### Discord
+
+- **Tipos de canal.** `resolveChannel` rechaza por id un canal que no es de texto: una categoría (`type: 4`) o un
+  canal de voz (`type: 2`) se informan como incompatibles con su tipo, en vez de aceptarse. Un 200 sin `type`
+  numérico se acepta como antes.
+
+### Cifras medidas
+
+Re-medidas en esta sesión con el CLI compilado en copias temporales (`--no-speckit`):
+
+| Instalación | Entradas de `sync.lock.json` |
+|---|---|
+| `init --yes` (`generic-ts`, full) | 6.872 |
+| `init --yes --preset-only` | 66 |
+| `init --yes --exclude rule:skill-quality` | 6.852 |
+| `init --yes --preset angular-express` | 6.887 |
+
+262 skills de proyecto + 17 comandos Spec Kit, 40 agentes y 5 destinos. Suite completa: 55 archivos, 870 pruebas
+en verde y 6 omitidas.
+
+### Empaquetado
+
+- Tarball `dsalazardev-ai-hub-cli-0.16.0.tgz`: **2000 entradas**, shasum
+  `2a782071365e941a763016879abcd2e1a0b38283`, 4.677.025 bytes (13.117.540 desempaquetados).
+
 ## 0.15.0 — init-fiabilidad: instalación recuperable y control verificable (2026-11-12)
 
 ### BREAKING
