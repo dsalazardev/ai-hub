@@ -1,5 +1,57 @@
 # Changelog
 
+## 0.17.0 — verificacion real de la instalacion (2026-11-13)
+
+### Added
+
+- `resolveListener` compartido por el enrolamiento, `control enroll --check` y `doctor`; la ruta se lee del store
+  del listener owner y `webhook list` pasa a contraste con aviso.
+- `control enroll --check --wait` e `init --declare-tracker`.
+- Escritor atómico único de `manifest.yaml` (`core/src/manifest/write.ts`) con gate de fuentes, y `sealLock`, que
+  sella sin re-renderizar destinos.
+
+### Changed
+
+- La espera tras reiniciar el gateway usa backoff con tope de 300 s y la variable
+  `AI_HUB_WEBHOOK_WAIT_SECONDS`.
+- **BREAKING para scripts:** cuando el tope se alcanza con el gateway vivo, el resultado es `pendiente` y no
+  `fallida`; `enroll --yes` sale 1 e `init` sigue saliendo 0. Quien lea el estado debe tratar `pendiente`.
+- Una segunda ejecución del paso de control ya no re-enrola ni reinicia el gateway.
+
+### Fixed
+
+- `enroll --check` y `doctor` dejan de dar `FAIL` falso bajo multiplexor; el resumen del init no declara «falta» lo
+  que solo está sin verificar.
+- Un fallo de escritura ya no deja `manifest.yaml` truncado (medido: 1075 B → 604 B sin `.bak`).
+
+### Migration
+
+- Las instalaciones de 0.16.0 con `.ai-hub/.env` sin `manifest.tracker` reciben la oferta de declararlo sin volver
+  a teclear el token; `--yes` solo no declara.
+
+### Cifras medidas
+
+Re-medidas en esta sesión con el CLI compilado en copias temporales (`--no-speckit`):
+
+| Instalación | Entradas de `sync.lock.json` |
+|---|---|
+| `init --yes` (`generic-ts`, full) | 6.872 |
+| `init --yes --preset-only` | 66 |
+| `init --yes --exclude rule:skill-quality` | 6.852 |
+| `init --yes --preset angular-express` | 6.887 |
+
+262 skills de proyecto + 17 comandos Spec Kit, 40 agentes y 5 destinos.
+
+### Empaquetado
+
+- Tarball `dsalazardev-ai-hub-cli-0.17.0.tgz`: **2004 entradas**, shasum
+  `b3fc47a09dbdfba9500c8ef0b0a7c783ebb28aa4`, 4.691.948 bytes (13.165.242 desempaquetados).
+
+### Known limitations
+
+- Hitos 6 y 7 de `fabrica-verificable` pendientes: suite opt-in contra gateway real, fixture del store, medición
+  del arranque en frío, README y verificación integral. Deudas en `.planning/impl_fabrica-verificable.md`.
+
 ## 0.16.0 — webhook operativo y tipos de canal (2026-11-13)
 
 ### BREAKING

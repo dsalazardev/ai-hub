@@ -76,7 +76,8 @@ describe('published package', () => {
     // init-fiabilidad H1: +4 (cli/integrations y control/redact × 2 en dist); medido con npm pack --dry-run --json.
     // init-fiabilidad H2: +5 (control/{identity,profile-env} × 2 en dist + engine/templates/hermes/SOUL.md).
     // webhook-operativo: +4 (control/{enroll-webhook,webhook-config} × 2 en dist); medido con npm pack --dry-run --json.
-    expect(pkg.entryCount).toBe(2000);
+    // fabrica-verificable: +4 (control/listener y manifest/write × 2 en dist; las tres pruebas no viajan).
+    expect(pkg.entryCount).toBe(2004);
     expect(paths.some((file) => file.includes('upstream-watch'))).toBe(false);
     expect(paths).toContain('SECURITY.md');
     expect(paths).toEqual(expect.arrayContaining(['engine/templates/env.example', 'engine/templates/gitlab-ci.yml']));
