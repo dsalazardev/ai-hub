@@ -758,3 +758,13 @@ Riesgo operativo detectado: el token del bot se pegó en el chat durante el diag
 - P1, recuperación desalineada: con un consumidor temporal y Hermes simulado, un canal distinto entre el perfil y el manifiesto produjo check 1 y acción `control enroll --yes`. Ese comando devolvió 0 y el segundo check volvió a salir 1 con el canal desalineado. `core/src/control/enroll.ts:205-229` propone enrolar para datos que ese comando no reescribe. `core/src/control/onboard.ts:465` también clasifica la conexión por presencia y no por coherencia.
 - P2, redacción incompleta: una ejecución sintética con `RunResult.status=null` y un centinela conocido en `error` confirmó que `redactedCause` lo conserva en su salida. `core/src/control/redact.ts:39-42` redacta stdout y stderr, pero interpola `error` directamente. Revisar también la emisión de mensajes crudos en el aislador.
 - P2, puerto publicado: el mismo consumidor temporal, con `WEBHOOK_PORT=9000`, recibió una URL para GitLab con el puerto 8644. `core/src/control/enroll.ts:507` usa un puerto fijo aunque el preflight conserva el existente.
+
+## 2026-11-13 — `fabrica-verificable` 1.1: captura de solo lectura del Hermes real
+
+- Autorizada por el propietario; tres comandos de lectura, sin escribir nada. Salidas con secretos redactados (no apareció ninguno).
+- `hermes -p hermes-control gateway status` → exit 1 · `Error: Profile 'hermes-control' does not exist. Create it with: hermes profile create hermes-control`.
+- `hermes webhook list` → exit 1 · `Webhook platform is not enabled. To set it up:` seguido de la ayuda de tres opciones (`gateway setup`, bloque `platforms.webhook` en `config.yaml`, claves `WEBHOOK_*` en `.env`).
+- `hermes -p hermes-control webhook list` → exit 1 · el mismo error de perfil inexistente.
+- Lectura: el host ya no está en el estado de la prueba de 0.16.0 (el perfil `hermes-control` no existe y el perfil por defecto no tiene la plataforma habilitada), así que el disparador del falso `[FAIL]` del punto 1 sigue **sin medir**. La captura no lo confirma ni lo descarta.
+- Dos hechos nuevos, sí medidos: (a) con el perfil inexistente, `gateway status` sale 1 con un texto que no contiene `not installed`; `gatewayTopology` lo clasificaría como `stopped`, y solo la guarda `profilePresent` de `--check` evita esa lectura; (b) la puerta del CLI de rutas responde exit 1 con la ayuda en stdout, igual que el doble (`WEBHOOK_SETUP_HINT`).
+- Consecuencia para el diseño (D1): ninguna; `resolveListener` decide por la evidencia del dueño (bloque, store, `/health`) y trata `webhook list` como contraste.

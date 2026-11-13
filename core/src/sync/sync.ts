@@ -150,6 +150,62 @@ export async function runSync(root: string, options: SyncOptions): Promise<SyncR
   return result;
 }
 
+export interface SealResult {
+  /** `true`: solo se escribió `sync.lock.json`. `false`: no se escribió nada. */
+  sealed: boolean;
+  /** Destinos cuyo hash renderizado difiere del lock anterior (todos, si no había lock). */
+  differing: number;
+}
+
+/**
+ * Sella el lock sin escribir destinos (fabrica-verificable, design §D5). Renderiza en memoria y construye el lock con
+ * `buildLock`, la misma función de `runSync`: no hay un segundo camino de hashing. Si ningún hash de destino difiere
+ * del lock anterior, escribe solo `sync.lock.json` (las fuentes que cambiaron, como `manifest.yaml`, quedan
+ * registradas). Si alguno difiere o no hay lock previo, no escribe nada y devuelve cuántos: decide quien llama.
+ * Una edición local de un destino nunca se toca aquí; `drift` la sigue informando.
+ */
+export async function sealLock(root: string): Promise<SealResult> {
+  if (await isEngineCheckout(root)) {
+    throw new SyncSourceCheckoutError(root);
+  }
+  const config = await loadSyncConfig(root);
+  const rendered = await renderAll(root, config);
+  const previous = await readLock(root);
+  const next = await buildLock(root, rendered);
+  if (previous === null) {
+    return { sealed: false, differing: Object.keys(next.files).length };
+  }
+  let differing = 0;
+  for (const rel of new Set([...Object.keys(previous.files), ...Object.keys(next.files)])) {
+    if (JSON.stringify(previous.files[rel]) !== JSON.stringify(next.files[rel])) {
+      differing += 1;
+    }
+  }
+  if (differing > 0) {
+    return { sealed: false, differing };
+  }
+  await writeLock(root, next);
+  return { sealed: true, differing: 0 };
+}
+
+/**
+ * Re-sella tras un cambio del manifiesto hecho por un paso de `init` (tracker, control). Sella sin tocar destinos
+ * cuando puede; si algún destino cambiaría, cae a `runSync` diciendo cuántos re-renderiza y que pisa sus ediciones.
+ */
+export async function sealOrSync(root: string, notify?: (line: string) => void): Promise<SealResult> {
+  const started = performance.now();
+  const seal = await sealLock(root);
+  if (!seal.sealed) {
+    notify?.(`sync: ${seal.differing} destinos se re-renderizan; las ediciones locales de esos destinos se sobrescriben (como ai-hub sync)`);
+    await runSync(root, { check: false });
+  }
+  const seconds = (performance.now() - started) / 1000;
+  if (seconds > 2) {
+    notify?.(`sync: sync.lock.json ${seal.sealed ? 'sellado' : 're-sellado con ai-hub sync'} en ${seconds.toFixed(1)} s`);
+  }
+  return seal;
+}
+
 function sourceDescription(source: string): string {
   return source.startsWith('@engine/')
     ? 'viene del motor; actualiza el paquete'

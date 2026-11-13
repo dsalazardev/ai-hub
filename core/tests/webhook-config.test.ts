@@ -4,7 +4,7 @@ import http from 'node:http';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
-import { numberedBackup, probeWebhook, readWebhookBlock, removeEnvKeys, writeWebhookBlock } from '../src/control/webhook-config.js';
+import { numberedBackup, probeWebhook, readWebhookBlock, removeEnvKeys, waitForWebhook, webhookWaitCap, writeWebhookBlock } from '../src/control/webhook-config.js';
 import { entryQuestion, ownerQuestion, validateConnectFlags } from '../src/control/onboard-step.js';
 import { harness } from './control-harness.js';
 
@@ -136,5 +136,84 @@ describe('webhook-operativo 2.7 — --webhook-owner is validated before any writ
     expect(shared).toContain('sesiones');
     expect(shared).toContain('mueve WEBHOOK_ENABLED y WEBHOOK_PORT');
     expect(ownerQuestion('default')).toContain('"default"');
+  });
+});
+
+describe('fabrica-verificable 2.1 — espera con backoff, tope y estados distinguibles', () => {
+  /** Reloj simulado: `sleep` avanza el tiempo sin esperar. */
+  function clock() {
+    let t = 0;
+    const sleeps: number[] = [];
+    return {
+      now: () => t,
+      sleep: async (ms: number) => {
+        sleeps.push(ms);
+        t += ms;
+      },
+      sleeps,
+      at: () => t,
+    };
+  }
+
+  it('listening after 177 simulated seconds: progress lines, backoff capped at 5 s and outcome listening', async () => {
+    const time = clock();
+    const progress: string[] = [];
+    const waited = await waitForWebhook(async () => (time.at() >= 177_000 ? 'listening' : 'refused'), 8644, {
+      totalMs: 300_000,
+      now: time.now,
+      sleep: time.sleep,
+      onProgress: (line) => progress.push(line),
+      alive: async () => true,
+    });
+    expect(waited.outcome).toBe('listening');
+    expect(waited.elapsedMs).toBeGreaterThanOrEqual(177_000);
+    expect(waited.elapsedMs).toBeLessThan(183_000);
+    expect(time.sleeps.slice(0, 5)).toEqual([500, 1000, 2000, 4000, 5000]);
+    expect(Math.max(...time.sleeps)).toBe(5000);
+    expect(progress.length).toBeGreaterThanOrEqual(10);
+    expect(progress[0]).toMatch(/^webhook: arrancando \(1[5-9] s de 300 s\)$/);
+  });
+
+  it('cap reached with the gateway alive: outcome cap, never beyond the cap', async () => {
+    const time = clock();
+    const waited = await waitForWebhook(async () => 'refused', 8644, { totalMs: 300_000, now: time.now, sleep: time.sleep, alive: async () => true });
+    expect(waited.outcome).toBe('cap');
+    expect(waited.elapsedMs).toBe(300_000);
+  });
+
+  it('gateway reported stopped during the wait ends at once', async () => {
+    const time = clock();
+    const waited = await waitForWebhook(async () => 'refused', 8644, { totalMs: 300_000, now: time.now, sleep: time.sleep, alive: async () => time.at() < 40_000 });
+    expect(waited.outcome).toBe('stopped');
+    expect(waited.elapsedMs).toBeLessThan(60_000);
+  });
+
+  it('a foreign listener ends the wait at once', async () => {
+    const time = clock();
+    const waited = await waitForWebhook(async () => (time.at() >= 3000 ? 'foreign' : 'refused'), 8644, { totalMs: 300_000, now: time.now, sleep: time.sleep });
+    expect(waited.outcome).toBe('foreign');
+    expect(waited.elapsedMs).toBeLessThan(10_000);
+  });
+
+  it('a zero cap probes once', async () => {
+    let probes = 0;
+    const waited = await waitForWebhook(async () => {
+      probes += 1;
+      return 'refused';
+    }, 8644, { totalMs: 0 });
+    expect(waited.outcome).toBe('cap');
+    expect(probes).toBe(1);
+  });
+
+  it('the cap comes from AI_HUB_WEBHOOK_WAIT_SECONDS between 0 and 900; an invalid value falls back with a notice', () => {
+    expect(webhookWaitCap({})).toEqual({ ms: 300_000, notice: null });
+    expect(webhookWaitCap({ AI_HUB_WEBHOOK_WAIT_SECONDS: '45' })).toEqual({ ms: 45_000, notice: null });
+    expect(webhookWaitCap({ AI_HUB_WEBHOOK_WAIT_SECONDS: '0' })).toEqual({ ms: 0, notice: null });
+    for (const bad of ['901', '-1', '1.5', 'mucho']) {
+      const cap = webhookWaitCap({ AI_HUB_WEBHOOK_WAIT_SECONDS: bad });
+      expect(cap.ms).toBe(300_000);
+      expect(cap.notice).toContain(bad);
+      expect(cap.notice).toContain('AI_HUB_WEBHOOK_WAIT_SECONDS');
+    }
   });
 });

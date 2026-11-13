@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import { DECLARE_TRACKER_ACTION } from '../cli/integrations.js';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import type { ProjectManifest } from '../manifest/manifest.js';
@@ -65,6 +66,15 @@ export async function checkEnvIgnored(root: string): Promise<EnvCheck> {
 export async function checkEnvKeys(root: string, manifest: ProjectManifest | null): Promise<EnvCheck> {
   const tracker = manifest?.tracker;
   if (!tracker) {
+    // fabrica-verificable §D6: las claves están y el bloque no (instalaciones de 0.16.0); se nombra el hueco sin degradar.
+    const values = await readHarnessEnv(root);
+    if (values !== null && ['GITLAB_URL', 'GITLAB_TOKEN'].every((key) => values[key] && values[key] !== 'CHANGEME')) {
+      return {
+        id: 'env:keys',
+        ok: true,
+        detail: `tracker no declarado: ${HARNESS_ENV_FILE} ya tiene GITLAB_URL y GITLAB_TOKEN y falta manifest.tracker · ${DECLARE_TRACKER_ACTION}`,
+      };
+    }
     return { id: 'env:keys', ok: true, detail: 'tracker no configurado (manifest.tracker opcional)' };
   }
   const values = (await readHarnessEnv(root)) ?? {};

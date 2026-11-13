@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
+import { readManifestDocument, updateManifestBlock, writeManifest } from '../manifest/write.js';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { stringify } from 'yaml';
 import { createBackup } from '../backup/snapshots.js';
 import { materializeHarnessLocal } from '../harness/local.js';
 import { installGitHook } from './githooks.js';
@@ -22,7 +22,7 @@ import {
   type ProjectManifest,
 } from '../manifest/manifest.js';
 import { emptyState, migrateLegacyState, readState, StateNotFoundError, writeState } from '../harness/memory/state.js';
-import { runSync } from '../sync/sync.js';
+import { runSync, sealOrSync } from '../sync/sync.js';
 import { TOOL_IDS, assertToolIds, TARGETS } from '../sync/targets.js';
 import { sha256 } from '../sync/lock.js';
 import { isEngineCheckout } from '../source-checkout.js';
@@ -38,7 +38,8 @@ import {
   type IdeaOutcome,
 } from './idea.js';
 import { CONNECT_USAGE, TOKEN_FLAG_REFUSED, connectFromFlagsReport, contextHost, readStdin, validateConnectFlags } from '../control/onboard-step.js';
-import { ENROLL_ACTION, RETAKE_ACTION, RETAKE_PROVIDE, isolate, printReports, type IntegrationReport } from './integrations.js';
+import { DECLARE_TRACKER_ACTION, ENROLL_ACTION, RETAKE_ACTION, RETAKE_PROVIDE, isolate, printReports, type IntegrationReport } from './integrations.js';
+import { HARNESS_ENV_FILE, readHarnessEnv } from '../env/dotenv.js';
 import { connectionSaved } from '../control/onboard.js';
 import {
   ENGINE_AGENTS_DIR,
@@ -620,8 +621,95 @@ async function buildAssetPlan(
   };
 }
 
-export async function writeManifest(root: string, manifest: ProjectManifest): Promise<void> {
-  await fs.writeFile(path.join(root, 'manifest.yaml'), stringify(manifest), 'utf8');
+/** Bloque que declara el paso opt-in del tracker; son nombres de variables de entorno, nunca valores. */
+export const DEFAULT_TRACKER = { kind: 'gitlab', urlEnv: 'GITLAB_URL', tokenEnv: 'GITLAB_TOKEN' } as const;
+
+export type TrackerDeclaration =
+  /** No hay `manifest.yaml`: no se puede declarar nada. */
+  | { state: 'absent' }
+  /** El manifiesto no es un mapping, tiene claves duplicadas o no es YAML: se nombra el problema, nunca el contenido. */
+  | { state: 'invalid'; problem: string }
+  /** Ya declaraba un tracker: se conserva tal cual, aunque use otros nombres de variable. */
+  | { state: 'kept' }
+  | { state: 'missing' }
+  | { state: 'declared' };
+
+/** ¿Declara ya el manifiesto un tracker? Solo lectura; se consulta antes de escribir ninguna credencial. */
+export async function inspectManifestTracker(root: string): Promise<TrackerDeclaration> {
+  const loaded = await readManifestDocument(root);
+  if ('state' in loaded) {
+    return loaded;
+  }
+  return { state: loaded.doc.has('tracker') ? 'kept' : 'missing' };
+}
+
+/**
+ * Declara `manifest.tracker` cuando la persona completó el paso del tracker y el manifiesto no lo tenía. El resto del
+ * archivo (claves, orden y comentarios) se conserva: la escritura pasa por el escritor único y atómico de
+ * `manifest/write.ts`. Orden: primero el manifiesto y su inventario, después se sella `sync.lock.json` con
+ * `sealOrSync` (sin escribir destinos cuando ninguno cambia), porque `manifest.yaml` es una fuente del lock.
+ */
+export async function declareTracker(root: string, notify?: (line: string) => void): Promise<TrackerDeclaration> {
+  const inspected = await inspectManifestTracker(root);
+  if (inspected.state !== 'missing') {
+    return inspected;
+  }
+  const updated = await updateManifestBlock(root, 'tracker', { ...DEFAULT_TRACKER });
+  if (updated.state === 'absent' || updated.state === 'invalid') {
+    return updated;
+  }
+  await loadManifestContext(root);
+  await writeInventory(root);
+  await sealOrSync(root, notify);
+  return { state: 'declared' };
+}
+
+/** Claves del tracker que faltan en `.ai-hub/.env`; solo presencia, ningún valor sale de aquí. `null`: no hay archivo. */
+export async function trackerEnvMissing(root: string): Promise<string[] | null> {
+  const values = await readHarnessEnv(root);
+  if (values === null) {
+    return null;
+  }
+  return [DEFAULT_TRACKER.urlEnv, DEFAULT_TRACKER.tokenEnv].filter((key) => !values[key] || values[key] === 'CHANGEME');
+}
+
+/**
+ * `init --yes [--declare-tracker]` (fabrica-verificable §D6): la vía consentida y sin terminal para una instalación
+ * que ya tiene las claves en `.ai-hub/.env` y no declara el tracker. Sin la bandera nunca declara: nombra el hueco.
+ * No lee ningún token de banderas ni de la entrada estándar, no escribe `.ai-hub/.env` y no sustituye un bloque.
+ */
+export async function trackerFromFlags(declare: boolean, ctx: CliContext): Promise<IntegrationReport | null> {
+  const declared = await inspectManifestTracker(ctx.root);
+  const missing = await trackerEnvMissing(ctx.root);
+  if (!declare) {
+    if (declared.state === 'missing' && missing !== null && missing.length === 0) {
+      ctx.io.err(
+        `tracker: .ai-hub/.env ya tiene ${DEFAULT_TRACKER.urlEnv} y ${DEFAULT_TRACKER.tokenEnv} y manifest.yaml no declara el tracker; decláralo con ${DECLARE_TRACKER_ACTION} (o ai-hub init en una terminal)`,
+      );
+    }
+    return null;
+  }
+  if (declared.state === 'kept') {
+    ctx.io.out('tracker: manifest.tracker ya existía y se conservó tal cual');
+    return { name: 'tracker', state: 'completada', stage: null, action: null };
+  }
+  if (declared.state === 'invalid' || declared.state === 'absent') {
+    const problem = declared.state === 'invalid' ? `manifest.yaml ${declared.problem}` : 'no hay manifest.yaml';
+    ctx.io.err(`tracker: ${problem}; no se declaró nada`);
+    return { name: 'tracker', state: 'fallida', stage: 'tracker-manifest', action: 'ai-hub init', cause: [problem] };
+  }
+  if (missing === null || missing.length > 0) {
+    const cause = missing === null ? `no existe ${HARNESS_ENV_FILE}` : `falta en ${HARNESS_ENV_FILE}: ${missing.join(', ')}`;
+    ctx.io.err(`tracker: ${cause}; no se declaró nada (--declare-tracker no escribe credenciales)`);
+    return { name: 'tracker', state: 'pendiente', stage: 'tracker-env', action: 'ai-hub init', cause: [cause] };
+  }
+  const outcome = await declareTracker(ctx.root, (line) => ctx.io.err(line));
+  if (outcome.state !== 'declared') {
+    const problem = outcome.state === 'invalid' ? `manifest.yaml ${outcome.problem}` : 'manifest.yaml cambió durante el paso';
+    return { name: 'tracker', state: 'fallida', stage: 'tracker-manifest', action: 'ai-hub init', cause: [problem] };
+  }
+  ctx.io.out('tracker: manifest.tracker quedó declarado {kind: gitlab, urlEnv: GITLAB_URL, tokenEnv: GITLAB_TOKEN} y sync.lock.json sellado; .ai-hub/.env no se tocó');
+  return { name: 'tracker', state: 'completada', stage: null, action: null };
 }
 
 const GENERATED_IGNORES = [
@@ -1219,6 +1307,13 @@ export async function cmdInit(args: ParsedArgs, initialCtx: CliContext, hooks: I
       }
     }
     reports = report === null ? [] : [report];
+  }
+  if (hooks.afterBase === undefined) {
+    // fabrica-verificable §D6: sin terminal, el tracker solo se declara con --declare-tracker; --yes a solas nombra el hueco.
+    const tracker = await isolate('tracker', () => 'tracker-manifest', () => trackerFromFlags(Boolean(args.flags['declare-tracker']), ctx));
+    if (tracker !== null) {
+      reports = [tracker, ...reports];
+    }
   }
   printReports(ctx.io, reports);
   return 0;

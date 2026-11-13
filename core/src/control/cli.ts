@@ -22,7 +22,7 @@ export const CONTROL_USAGE = [
   '     ai-hub control apply (--reply "<texto>" | -- aprobar|rechazar|detalle <iid> …) --approver <id-discord> [--ref <rama>]',
   '     ai-hub control apply --preapproved',
   '     ai-hub control expire',
-  '     ai-hub control enroll [--dry-run | --yes | --check] [--hermes <ruta>] [--webhook-owner <perfil>]',
+  '     ai-hub control enroll [--dry-run | --yes | --check [--wait[=segundos]]] [--hermes <ruta>] [--webhook-owner <perfil>]',
 ];
 
 /** Inyección para tests: cliente del tracker y reloj. */
@@ -216,9 +216,21 @@ async function cmdEnroll(args: ParsedArgs, ctx: CliContext): Promise<number> {
     ctx.io.err(`--webhook-owner necesita el nombre del perfil dueño del listener\n${CONTROL_USAGE[6].trim()}`);
     return 2;
   }
+  // fabrica-verificable §D2: `--check --wait[=segundos]` espera, solo lectura, a un gateway que acaba de reiniciarse.
+  const waitFlag = args.flags.wait;
+  let wait: boolean | number | undefined;
+  if (waitFlag !== undefined && waitFlag !== false) {
+    const seconds = typeof waitFlag === 'string' ? waitFlag.trim() : null;
+    if (mode !== 'check' || (seconds !== null && !(/^[0-9]+$/.test(seconds) && Number(seconds) <= 900))) {
+      ctx.io.err(`--wait solo acompaña a --check y admite segundos entre 0 y 900 (${CONTROL_USAGE[6].trim()})`);
+      return 2;
+    }
+    wait = seconds !== null ? Number(seconds) : true;
+  }
   try {
     const outcome = await runEnroll(ctx.root, {
       mode,
+      ...(wait !== undefined ? { wait } : {}),
       host: deps.hermesHost ?? processHost(ctx),
       ...(typeof owner === 'string' ? { webhookOwner: owner.trim() } : {}),
       notify: (line) => ctx.io.err(line),

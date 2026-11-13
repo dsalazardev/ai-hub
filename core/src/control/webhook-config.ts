@@ -241,19 +241,74 @@ export function probeWebhook(port: number, timeoutMs = 1500, host = '127.0.0.1')
   });
 }
 
-/** Sondea hasta que el listener responde o se agota `totalMs`; devuelve el último resultado. */
-export async function waitForWebhook(
-  probe: (port: number) => Promise<ProbeResult>,
-  port: number,
-  totalMs: number,
-  intervalMs = 500,
-): Promise<ProbeResult> {
-  const deadline = Date.now() + totalMs;
-  for (;;) {
+/** Tope por defecto de la espera tras un reinicio: 300 s (arranque en frío medido: 177 s). */
+export const DEFAULT_WEBHOOK_WAIT_MS = 300_000;
+export const WEBHOOK_WAIT_ENV = 'AI_HUB_WEBHOOK_WAIT_SECONDS';
+const WAIT_STEPS_MS = [500, 1000, 2000, 4000, 5000];
+const PROGRESS_EVERY_MS = 15_000;
+
+/** Tope de la espera: `AI_HUB_WEBHOOK_WAIT_SECONDS` (entero de 0 a 900) o el valor por defecto, con aviso si es inválido. */
+export function webhookWaitCap(env: Record<string, string | undefined>): { ms: number; notice: string | null } {
+  const raw = env[WEBHOOK_WAIT_ENV];
+  if (raw === undefined || raw.trim() === '') {
+    return { ms: DEFAULT_WEBHOOK_WAIT_MS, notice: null };
+  }
+  const text = raw.trim();
+  const seconds = /^\d+$/.test(text) ? Number(text) : Number.NaN;
+  if (Number.isInteger(seconds) && seconds >= 0 && seconds <= 900) {
+    return { ms: seconds * 1000, notice: null };
+  }
+  return {
+    ms: DEFAULT_WEBHOOK_WAIT_MS,
+    notice: `aviso: ${WEBHOOK_WAIT_ENV}=${text.slice(0, 20)} no es un entero entre 0 y 900; se usa el tope de ${DEFAULT_WEBHOOK_WAIT_MS / 1000} s`,
+  };
+}
+
+export interface WaitOptions {
+  totalMs: number;
+  /** Reloj y pausa inyectables: las pruebas simulan minutos sin esperar. */
+  now?: () => number;
+  sleep?: (ms: number) => Promise<void>;
+  /** Línea de progreso cada 15 s: `webhook: arrancando (45 s de 300 s)`. */
+  onProgress?: (line: string) => void;
+  /** ¿Sigue vivo el gateway? Se consulta cada 15 s y al llegar al tope; `false` corta la espera. */
+  alive?: () => Promise<boolean>;
+}
+
+export interface WaitResult {
+  /** `cap`: se agotó el tope sin evidencia de fallo (el gateway sigue arrancando). */
+  outcome: 'listening' | 'foreign' | 'stopped' | 'cap';
+  result: ProbeResult;
+  elapsedMs: number;
+}
+
+/**
+ * Sondea con backoff (0,5 → 5 s) hasta que el listener responde, aparece evidencia de fallo (puerto ajeno, gateway
+ * parado) o se agota `totalMs` (design §D2 de fabrica-verificable). Nunca espera más allá del tope.
+ */
+export async function waitForWebhook(probe: (port: number) => Promise<ProbeResult>, port: number, options: WaitOptions): Promise<WaitResult> {
+  const now = options.now ?? Date.now;
+  const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  const started = now();
+  const totalSeconds = Math.round(options.totalMs / 1000);
+  let nextMark = PROGRESS_EVERY_MS;
+  for (let attempt = 0; ; attempt += 1) {
     const result = await probe(port);
-    if (result === 'listening' || result === 'foreign' || Date.now() >= deadline) {
-      return result;
+    const elapsedMs = now() - started;
+    if (result === 'listening' || result === 'foreign') {
+      return { outcome: result, result, elapsedMs };
     }
-    await new Promise((resolve) => setTimeout(resolve, Math.min(intervalMs, Math.max(deadline - Date.now(), 0))));
+    const atCap = elapsedMs >= options.totalMs;
+    if (atCap || elapsedMs >= nextMark) {
+      if (options.alive && !(await options.alive())) {
+        return { outcome: 'stopped', result, elapsedMs };
+      }
+      if (atCap) {
+        return { outcome: 'cap', result, elapsedMs };
+      }
+      options.onProgress?.(`webhook: arrancando (${Math.round(elapsedMs / 1000)} s de ${totalSeconds} s)`);
+      nextMark = (Math.floor(elapsedMs / PROGRESS_EVERY_MS) + 1) * PROGRESS_EVERY_MS;
+    }
+    await sleep(Math.min(WAIT_STEPS_MS[Math.min(attempt, WAIT_STEPS_MS.length - 1)], options.totalMs - elapsedMs));
   }
 }

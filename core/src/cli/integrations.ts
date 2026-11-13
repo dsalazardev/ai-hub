@@ -17,6 +17,9 @@ export interface IntegrationReport {
   /** Un comando existente que retoma la integración, o `null`. */
   action: string | null;
   ready?: string[];
+  /** Piezas cuya comprobación aún no se pudo hacer; no son ausencias. */
+  unverified?: string[];
+  /** Solo ausencias observadas. */
   missing?: string[];
   /** Datos que la persona tiene que aportar de nuevo (nunca valores). */
   provide?: string[];
@@ -31,6 +34,9 @@ export function statusLine(report: IntegrationReport): string {
   return `${STATUS_PREFIX} name=${report.name} state=${report.state} stage=${report.stage ?? '-'} action=${report.action ?? '-'}`;
 }
 
+/** Declara `manifest.tracker` sin terminal cuando `.ai-hub/.env` ya tiene las claves (fabrica-verificable §D6). */
+export const DECLARE_TRACKER_ACTION = 'ai-hub init --yes --declare-tracker';
+
 /** Acción tras guardar la conexión (token del perfil + `manifest.control`). */
 export const ENROLL_ACTION = 'ai-hub control enroll --yes';
 /** Retomar la conexión antes del punto de guardado (design.md §12.4): el token solo por stdin, nunca como argumento. */
@@ -42,6 +48,9 @@ export function humanNote(report: IntegrationReport): string {
   const parts = [`${report.name}: ${report.state}${report.stage ? ` en ${report.stage}` : ''}`];
   if (report.ready && report.ready.length > 0) {
     parts.push(`listo: ${report.ready.join(', ')}`);
+  }
+  if (report.unverified && report.unverified.length > 0) {
+    parts.push(`sin verificar: ${report.unverified.join(', ')}`);
   }
   if (report.missing && report.missing.length > 0) {
     parts.push(`falta: ${report.missing.join(', ')}`);

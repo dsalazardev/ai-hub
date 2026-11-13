@@ -176,14 +176,43 @@ describe('webhook-operativo 1.5 — migration, port, gateway states and order', 
     expect(called('webhook subscribe')).toEqual([]);
   });
 
-  it('a listener that still refuses connections after the restart fails the webhook stage with the restart action', async () => {
+  // fabrica-verificable §D2: contrato nuevo. Antes, un puerto que no respondía tras el reinicio era `[FAIL]` con la
+  // acción de reinicio; ahora, sin evidencia de fallo, el gateway «sigue arrancando» y la etapa queda pendiente.
+  it('a listener that still refuses connections at the cap leaves the webhook stage pending, with no [FAIL] and the waiting check', async () => {
     hermes.host.probeWebhook = async () => 'refused';
     const outcome = await enroll();
+    const text = outcome.lines.join('\n');
     expect(outcome.code).toBe(1);
     expect(outcome.stage).toBe('webhook-platform');
-    expect(outcome.action).toContain('gateway restart');
-    expect(outcome.lines.join('\n')).toContain('no escucha');
+    expect(outcome.pending).toBe(true);
+    expect(outcome.action).toBe('ai-hub control enroll --check --wait');
+    expect(text).toContain('[PENDIENTE] webhook: el gateway sigue arrancando');
+    expect(text).not.toContain('[FAIL]');
+    expect(outcome.unverified).toEqual(['webhook escuchando']);
+    expect(outcome.missing).toEqual([]);
     expect(called('gateway restart')).toHaveLength(1);
+  });
+
+  it('a gateway that stops while starting fails at gateway with the restart and log action', async () => {
+    hermes.host.probeWebhook = async () => 'refused';
+    let statuses = 0;
+    const exec = hermes.host.exec;
+    hermes.host.exec = async (command, args, options) => {
+      const rest = args[0] === '-p' ? args.slice(2) : args;
+      if (rest[0] === 'gateway' && rest[1] === 'status') {
+        statuses += 1;
+        if (statuses > 1) {
+          hermes.calls.push(args);
+          return { status: 1, stdout: '', stderr: 'gateway is not running' };
+        }
+      }
+      return exec(command, args, options);
+    };
+    const outcome = await enroll();
+    expect(outcome.code).toBe(1);
+    expect(outcome.stage).toBe('gateway');
+    expect(outcome.lines.join('\n')).toContain('[FAIL] gateway: se detuvo mientras arrancaba');
+    expect(outcome.action).toContain('gateway restart');
   });
 
   it.each([
@@ -379,5 +408,23 @@ describe('webhook-operativo 1.5 — doctor distinguishes declared from listening
     const check = await checkControlWebhook({ home: hermes.home, probe: async () => 'foreign' });
     expect(check.ok).toBe(false);
     expect(check.detail).toContain('ocupado');
+  });
+});
+
+describe('fabrica-verificable 1.7 — doctor y el check nombran el mismo dueño', () => {
+  it('a stale enabled block in the control profile does not win: doctor and --check name the default owner and its port', async () => {
+    hermes.topology = 'multiplex';
+    expect((await enroll({ webhookOwner: 'default' })).code).toBe(0);
+    await fs.writeFile(profileConfig(), 'platforms:\n  webhook:\n    enabled: true\n    extra:\n      port: 9999\n');
+    const withCli = await checkControlWebhook({ home: hermes.home, probe: hermes.host.probeWebhook, cli: { path: 'hermes', version: '0.23.0', run: (args) => hermes.host.exec('hermes', args, { cwd: h.root }) } });
+    const withoutCli = await checkControlWebhook({ home: hermes.home, probe: hermes.host.probeWebhook });
+    for (const result of [withCli, withoutCli]) {
+      expect(result.ok, result.detail).toBe(true);
+      expect(result.detail).toContain('127.0.0.1:8644');
+      expect(result.detail).toContain('perfil default');
+    }
+    const check = await runEnroll(h.root, { mode: 'check', host: hermes.host });
+    expect(check.lines.join('\n')).toContain('escuchando en 127.0.0.1:8644');
+    expect(check.lines.join('\n')).toContain('listener: dueño "default"');
   });
 });

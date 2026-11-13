@@ -1,10 +1,14 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { stringify } from 'yaml';
 import { parseDotenv } from '../env/dotenv.js';
-import { loadManifestContext, readManifestFile, writeInventory } from '../manifest/manifest.js';
-import { PROFILE, runEnroll } from './enroll.js';
+import { loadManifestContext, writeInventory } from '../manifest/manifest.js';
+import { updateManifestBlock } from '../manifest/write.js';
+import { checkLockIntegrity, sealOrSync } from '../sync/sync.js';
+import { readLock } from '../sync/lock.js';
+import { PROFILE, ROUTE, runEnroll, type EnrollOutcome } from './enroll.js';
 import { sharedRestartWarning } from './enroll-webhook.js';
+import { resolveListener, type ListenerView } from './listener.js';
+import { probeWebhook } from './webhook-config.js';
 import { hermesHome, resolveHermes, type HermesCli, type ResolverHost } from './hermes.js';
 import { redactedCause } from './redact.js';
 import { writeProfileEnv } from './profile-env.js';
@@ -397,6 +401,8 @@ export interface ConnectOutcome {
   /** init-fiabilidad: etapa que falló, lo listo, lo que falta, causa redactada, punto de guardado y acción (HC-12). */
   stage?: string;
   ready?: string[];
+  /** Piezas sin comprobar todavía (no son ausencias). */
+  unverified?: string[];
   missing?: string[];
   cause?: string[];
   saved?: boolean;
@@ -446,21 +452,86 @@ export async function tokenOwner(home: string, token: string): Promise<string | 
 
 export { writeProfileEnv };
 
-/** `manifest.control` sobre el YAML crudo: el resto del manifiesto queda como estaba. */
-async function writeManifestControl(root: string, answers: ConnectAnswers): Promise<void> {
-  const raw = record(await readManifestFile(root));
-  const previous = record(raw.control);
-  raw.control = {
-    ...previous,
-    approvers: [answers.approver],
-    channelId: answers.channelId,
-    ttlHours: answers.ttlHours,
-    expire: answers.expire,
-    pollMinutes: typeof previous.pollMinutes === 'number' ? previous.pollMinutes : DEFAULT_POLL_MINUTES,
-  };
-  await fs.writeFile(path.join(root, 'manifest.yaml'), stringify(raw), 'utf8');
+/** `manifest.control` quedó escrito, pero `sync.lock.json` no se pudo re-sellar; el motivo va en una línea, sin pila. */
+export class ControlLockError extends Error {
+  constructor(readonly reason: string) {
+    super(`manifest.control quedó escrito, pero no se pudo re-sellar sync.lock.json: ${reason}`);
+    this.name = 'ControlLockError';
+  }
+}
+
+/**
+ * `manifest.control` sobre el YAML crudo: el resto del manifiesto queda como estaba. Orden: manifiesto, inventario y
+ * después el lock, sellado con `sealOrSync` (el mismo que usa `declareTracker`; no escribe destinos si ninguno cambia), porque `manifest.yaml`
+ * es una fuente de `sync.lock.json`.
+ *
+ * Si el re-sellado falla se lanza `ControlLockError` y el bloque ya escrito NO se revierte: es válido contra el
+ * esquema y, junto al `.env` del perfil, es el punto de guardado de la conexión (HC-12); borrarlo a ciegas obligaría
+ * a teclear de nuevo el token. Quien llama detiene el paso, lo informa y propone `ai-hub sync`, que re-sella.
+ */
+async function writeManifestControl(root: string, answers: ConnectAnswers, notify?: (line: string) => void): Promise<void> {
+  // Escritor único y atómico (`manifest/write.ts`): solo cambia el bloque `control`; una muerte a mitad deja el
+  // manifiesto anterior byte a byte.
+  const updated = await updateManifestBlock(root, 'control', (value: unknown) => {
+    const previous = record(value);
+    return {
+      ...previous,
+      approvers: [answers.approver],
+      channelId: answers.channelId,
+      ttlHours: answers.ttlHours,
+      expire: answers.expire,
+      pollMinutes: typeof previous.pollMinutes === 'number' ? previous.pollMinutes : DEFAULT_POLL_MINUTES,
+    };
+  });
+  if (updated.state === 'absent') {
+    throw new Error(`no hay manifest.yaml en ${root}; no se puede declarar manifest.control`);
+  }
+  if (updated.state === 'invalid') {
+    throw new Error(`manifest.yaml ${updated.problem}; no se puede declarar manifest.control`);
+  }
+  if (updated.state === 'unchanged') {
+    // design §D9: el bloque ya coincide y no se reescribe. El sellado se salta solo si el lock sigue íntegro: una
+    // ejecución anterior pudo escribir el bloque y morir antes de sellar, y enrolar con un lock viejo no es aceptable.
+    const lock = await readLock(root).catch(() => null);
+    if (lock !== null && (await checkLockIntegrity(root, lock)).length === 0) {
+      return;
+    }
+  }
   await loadManifestContext(root);
   await writeInventory(root);
+  try {
+    await sealOrSync(root, notify);
+  } catch (error) {
+    throw new ControlLockError((error instanceof Error ? error.message : String(error)).split('\n')[0]);
+  }
+}
+
+const LISTENER_PIECES = ['plataforma webhook', 'plataforma webhook (declarada)', 'ruta', 'webhook escuchando', 'gateway'];
+
+/**
+ * Listas del informe a partir de lo que se observa ahora (fabrica-verificable §D3): presente → listo; ausente →
+ * falta; lo que no se pudo comprobar → sin verificar. Las piezas ajenas al listener se conservan como venían.
+ */
+export function verifiedLists(
+  enrolled: Pick<EnrollOutcome, 'ready' | 'missing' | 'stage'>,
+  view: Pick<ListenerView, 'block' | 'route' | 'health' | 'gateway'>,
+): { ready: string[]; unverified: string[]; missing: string[] } {
+  const ready = (enrolled.ready ?? []).filter((piece) => !LISTENER_PIECES.includes(piece));
+  const missing = (enrolled.missing ?? []).filter((piece) => !LISTENER_PIECES.includes(piece));
+  const unverified: string[] = [];
+  if (view.gateway === 'stopped' || view.gateway === 'not-installed') {
+    missing.push('gateway');
+  }
+  if (view.block.kind === 'enabled') {
+    ready.push('plataforma webhook (declarada)');
+  } else {
+    missing.push('plataforma webhook');
+  }
+  (view.route === 'present' ? ready : view.route === 'absent' ? missing : unverified).push('ruta');
+  if (view.block.kind === 'enabled') {
+    (view.health === 'listening' ? ready : view.health === 'foreign' ? missing : unverified).push('webhook escuchando');
+  }
+  return { ready, unverified, missing };
 }
 
 async function run(cli: HermesCli, args: string[]): Promise<{ ok: boolean; status: number | null; result: RunResult }> {
@@ -563,14 +634,34 @@ export async function connectControlPlane(root: string, answers: ConnectAnswers,
     };
   }
   // design.md §12.4: el `.env` del perfil y después `manifest.control`; con los dos, la conexión queda guardada.
+  const envBefore = await fs.readFile(envFile, 'utf8').catch(() => null);
   await writeProfileEnv(envFile, {
     DISCORD_BOT_TOKEN: answers.token,
     DISCORD_ALLOWED_USERS: answers.approver,
     DISCORD_ALLOWED_CHANNELS: answers.channelId,
     DISCORD_HOME_CHANNEL: answers.channelId,
   });
+  // design §D9: el gateway solo se reinicia si esta ejecución cambió el `.env` del perfil (o el enrolamiento, el bloque).
+  const envChanged = envBefore !== (await fs.readFile(envFile, 'utf8').catch(() => null));
   await options.onStage?.('env');
-  await writeManifestControl(root, answers);
+  try {
+    await writeManifestControl(root, answers, options.notify);
+  } catch (error) {
+    if (!(error instanceof ControlLockError)) {
+      throw error;
+    }
+    // Fallo cerrado: no se enrola con un lock viejo. La conexión ya está guardada (token + manifest.control).
+    return {
+      code: 1,
+      lines: [`control: ${error.message}`, 'control: el enrolamiento no se ejecutó; el init sigue aplicado', `Siguiente: ai-hub sync y después ${ENROLL_ACTION}`],
+      stage: 'manifest',
+      ready: ['perfil', 'identidad', '.env', 'manifest.control'],
+      missing: ['lock', 'skill', 'scripts', 'cron', 'plataforma webhook', 'ruta'],
+      cause: [error.reason],
+      saved: true,
+      action: 'ai-hub sync',
+    };
+  }
   await options.onStage?.('manifest');
   const enrolled = await runEnroll(root, {
     mode: 'yes',
@@ -581,28 +672,51 @@ export async function connectControlPlane(root: string, answers: ConnectAnswers,
     ...(options.confirmOwner ? { confirmOwner: options.confirmOwner } : {}),
     ...(options.notify ? { notify: options.notify } : {}),
   });
+  let restartedThisRun = enrolled.restarted === true;
   if (enrolled.code !== 0) {
-    return {
-      code: enrolled.code,
-      lines: [...enrolled.lines, 'control: el enrolamiento no terminó; el init sigue aplicado'],
-      stage: enrolled.stage,
-      ready: enrolled.ready,
-      missing: enrolled.missing,
-      cause: enrolled.cause,
-      saved: enrolled.saved ?? true,
-      action: enrolled.action ?? ENROLL_ACTION,
-      // El dueño del listener sin consentir o un gateway parado no son un fallo: quedan pendientes de la persona.
-      ...(enrolled.pending && (enrolled.stage === 'webhook-platform' || enrolled.stage === 'gateway') ? { pending: true } : {}),
-    };
+    // fabrica-verificable §D3: antes de informar un cierre incompleto en el gateway o el webhook, se vuelve a resolver
+    // el listener (solo lectura). «falta» lleva únicamente ausencias observadas; lo demás va a «sin verificar».
+    let lists = { ready: enrolled.ready, unverified: enrolled.unverified, missing: enrolled.missing };
+    let resumed = false;
+    if (enrolled.stage === 'gateway' || enrolled.stage === 'webhook-platform' || enrolled.stage === 'webhook-route') {
+      const view = await resolveListener({
+        cli,
+        home,
+        profile: PROFILE,
+        route: ROUTE,
+        probe: options.host.probeWebhook ?? ((port: number) => probeWebhook(port)),
+      }).catch(() => null);
+      if (view !== null) {
+        lists = verifiedLists(enrolled, view);
+        // El listener ya responde: el arranque lento terminó y el paso sigue hasta su check de completitud.
+        resumed = enrolled.starting === true && view.health === 'listening' && view.route === 'present';
+      }
+    }
+    if (!resumed) {
+      return {
+        code: enrolled.code,
+        lines: [...enrolled.lines, 'control: el enrolamiento no terminó; el init sigue aplicado'],
+        stage: enrolled.stage,
+        ready: lists.ready,
+        ...(lists.unverified && lists.unverified.length > 0 ? { unverified: lists.unverified } : {}),
+        missing: lists.missing,
+        cause: enrolled.cause,
+        saved: enrolled.saved ?? true,
+        action: enrolled.action ?? ENROLL_ACTION,
+        // El dueño del listener sin consentir, un gateway parado o uno que sigue arrancando no son un fallo.
+        ...(enrolled.pending && (enrolled.stage === 'webhook-platform' || enrolled.stage === 'gateway') ? { pending: true } : {}),
+      };
+    }
   }
   let gatewayHint = '';
   const status = await run(cli, ['-p', PROFILE, 'gateway', 'status']);
   // El enrolamiento ya reinició el gateway al cargar el bloque: ese arranque también conecta el bot (un solo reinicio).
-  if (status.ok && enrolled.restarted !== true) {
+  if (status.ok && enrolled.restarted !== true && envChanged) {
     if (`${status.result.stdout}\n${status.result.stderr}`.toLowerCase().includes('multiplexer')) {
       options.notify?.(sharedRestartWarning('default'));
     }
     const restarted = await run(cli, ['gateway', 'restart']);
+    restartedThisRun = restartedThisRun || restarted.ok;
     if (!restarted.ok) {
       const cause = redactedCause(restarted.result, [answers.token]);
       return {
@@ -620,7 +734,15 @@ export async function connectControlPlane(root: string, answers: ConnectAnswers,
     gatewayHint = ' · inicia el gateway con hermes gateway install';
   }
   // CO-08: el resumen de éxito solo se imprime si el check en proceso pasa.
-  const checked = await runEnroll(root, { mode: 'check', host: options.host, hermes: cli.path, secrets: [answers.token] });
+  // fabrica-verificable §D2: tras un reinicio de esta ejecución, el check espera al listener en vez de sondear una vez.
+  const checked = await runEnroll(root, {
+    mode: 'check',
+    host: options.host,
+    hermes: cli.path,
+    secrets: [answers.token],
+    ...(restartedThisRun ? { wait: true } : {}),
+    ...(options.notify ? { notify: options.notify } : {}),
+  });
   if (checked.code !== 0) {
     return {
       code: 1,

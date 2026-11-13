@@ -31,7 +31,7 @@ import { missingClaudeHooks } from '../sync/hooks.js';
 import { checkAgentCapabilities } from '../agents/doctor.js';
 import { checkEnvIgnored, checkEnvKeys, checkTrackerScope, checkTrackerToken, type EnvDoctorOptions } from '../env/doctor.js';
 import { checkControl, checkControlWebhook } from '../control/doctor.js';
-import { hermesHome } from '../control/hermes.js';
+import { hermesHome, resolveHermes } from '../control/hermes.js';
 import { controlSettings } from '../control/ledger.js';
 
 export interface DoctorCheck {
@@ -347,6 +347,8 @@ export async function diagnose(ctx: CliContext, options: DoctorOptions = {}): Pr
                   ? hermesHome(ctx.controlHost)
                   : (process.env.HERMES_HOME ?? hermesHome({ platform: process.platform, env: process.env, home: os.homedir() })),
                 ...(ctx.controlHost?.probeWebhook ? { probe: ctx.controlHost.probeWebhook } : {}),
+                // Con un host inyectado se pregunta al CLI por el dueño del listener; sin él deciden los archivos y el puerto.
+                cli: ctx.controlHost ? await resolveHermes(ctx.controlHost).catch(() => null) : null,
               }),
             ]
           : []),

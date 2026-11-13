@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { gatewayTopology } from './enroll-webhook.js';
+import { gatewayTopology } from './listener.js';
 import type { AssistantPrompts } from '../cli/assistant.js';
 import type { CliContext } from '../cli/types.js';
 import {
@@ -49,7 +49,8 @@ export function connectReport(outcome: ConnectOutcome, unvalidated: boolean): In
     stage: outcome.stage ?? 'control',
     action: outcome.action ?? (saved ? null : RETAKE_ACTION),
     ...(outcome.ready ? { ready: outcome.ready } : {}),
-    ...(outcome.missing ? { missing: outcome.missing } : {}),
+    ...(outcome.unverified && outcome.unverified.length > 0 ? { unverified: outcome.unverified } : {}),
+    ...(outcome.missing && outcome.missing.length > 0 ? { missing: outcome.missing } : {}),
     ...(saved ? {} : { provide: RETAKE_PROVIDE }),
     ...(outcome.cause ? { cause: outcome.cause } : {}),
   };

@@ -11,13 +11,11 @@ import {
   GATEWAY_RESTART_ACTION,
   SECRET_OVERRIDE_NOTICE,
   WEBHOOK_PIECES,
-  gatewayTopology,
-  ownerOf,
   sharedRestartWarning,
   webhookPhase,
-  type Topology,
 } from './enroll-webhook.js';
-import { DEFAULT_WEBHOOK_PORT, probeWebhook, readWebhookBlock } from './webhook-config.js';
+import { listed, ownerLine, resolveListener } from './listener.js';
+import { DEFAULT_WEBHOOK_PORT, WEBHOOK_WAIT_ENV, probeWebhook, waitForWebhook, webhookWaitCap } from './webhook-config.js';
 import { ensureSoulIdentity, inspectSoulIdentity, setAsideSoulAction, soulNeedsSetAside } from './identity.js';
 import { redactedCause } from './redact.js';
 import { ENROLL_ACTION, RETAKE_ACTION, RETAKE_PROVIDE } from '../cli/integrations.js';
@@ -33,6 +31,8 @@ export const PROFILE = 'hermes-control';
 export const ROUTE = 'ai-hub-gitlab';
 export const CRON_NAME = 'ai-hub-control-poll';
 export const SKILL_NAME = 'ai-hub-control';
+/** Comprobación que espera a un gateway que acaba de reiniciarse (fabrica-verificable §D2). */
+export const CHECK_WAIT_ACTION = 'ai-hub control enroll --check --wait';
 export const DISCORD_KEYS = ['DISCORD_BOT_TOKEN', 'DISCORD_ALLOWED_USERS', 'DISCORD_ALLOWED_CHANNELS'] as const;
 
 /** Paso de `core/README.md` › "Provisión de Discord" que obtiene cada clave. */
@@ -56,6 +56,8 @@ export interface EnrollOptions {
   confirmOwner?: (owner: string) => Promise<boolean>;
   /** Avisos que deben verse antes de la acción que anuncian (el reinicio de un gateway compartido). */
   notify?: (line: string) => void;
+  /** `--check --wait[=s]`: espera, solo lectura, a un listener que aún no responde. `true` = tope por defecto. */
+  wait?: boolean | number;
 }
 
 export interface EnrollOutcome {
@@ -65,6 +67,8 @@ export interface EnrollOutcome {
   stage?: string;
   ready?: string[];
   missing?: string[];
+  /** Piezas cuya presencia no se pudo comprobar todavía (no son ausencias): «sin verificar». */
+  unverified?: string[];
   cause?: string[];
   /** La conexión está guardada (token del perfil + `manifest.control`): decide la acción (HC-12). */
   saved?: boolean;
@@ -73,6 +77,8 @@ export interface EnrollOutcome {
   pending?: boolean;
   /** El enrolamiento ya reinició el gateway en esta ejecución (no se reinicia otra vez). */
   restarted?: boolean;
+  /** El tope de la espera se agotó con el gateway vivo: sigue arrancando. */
+  starting?: boolean;
   /** Estado final del webhook: escuchando, o no verificable por no haber gateway instalado. */
   webhook?: 'listening' | 'no-verificable';
 }
@@ -156,10 +162,6 @@ async function writeIfMissing(file: string, content: string): Promise<void> {
 async function knownSecrets(home: string, envFile: string, extra: readonly string[] = []): Promise<string[]> {
   const values = [...Object.values(await readEnv(envFile)), ...Object.values(await readEnv(path.join(home, '.env')))];
   return [...values, ...extra].filter((value) => value.trim() !== '');
-}
-
-function listed(output: string, name: string): boolean {
-  return new RegExp(`(^|[^a-z0-9-])${name}([^a-z0-9-]|$)`, 'm').test(output);
 }
 
 async function profileCommand(cli: HermesCli, args: string[]): Promise<{ ok: boolean; stdout: string }> {
@@ -290,58 +292,67 @@ export async function runEnroll(root: string, options: EnrollOptions): Promise<E
       identityAction,
     );
 
-    // webhook-operativo: el webhook cuenta como presente solo si el config.yaml del dueño del listener lo habilita y
-    // el puerto responde; sin gateway instalado (o con él parado) no es verificable. Nada de esto escribe ni reinicia.
-    const topology: Topology = profilePresent
-      ? await gatewayTopology(cli, PROFILE)
-      : { state: 'not-installed', owner: PROFILE, shared: false };
-    const owner = ownerOf(topology, home, PROFILE);
-    const notices: string[] = [];
-    let listing = { ok: false, stdout: '' };
-    if (topology.state !== 'running') {
+    // fabrica-verificable §D1: dueño, bloque, salud y ruta salen del resolvedor compartido con el enrolamiento y
+    // `doctor`. La ruta se lee del store del dueño; `webhook list` es un contraste y su fallo, un aviso. Nada de esto
+    // escribe ni reinicia. Sin gateway instalado (o con él parado y sin evidencia) el webhook no es verificable.
+    const probe = options.host.probeWebhook ?? ((port: number) => probeWebhook(port));
+    let view = await resolveListener({ cli: profilePresent ? cli : null, home, profile: PROFILE, route: ROUTE, probe });
+    const waiting = options.wait !== undefined && options.wait !== false;
+    if (waiting && view.gateway === 'running' && view.block.kind === 'enabled' && view.health !== 'listening' && view.health !== 'foreign') {
+      // fabrica-verificable §D2: la misma espera del enrolamiento, sin escribir ni reiniciar nada.
+      const cap =
+        typeof options.wait === 'number'
+          ? { ms: options.wait * 1000, notice: null }
+          : options.host.webhookWaitMs !== undefined
+            ? { ms: options.host.webhookWaitMs, notice: null }
+            : webhookWaitCap(options.host.env);
+      if (cap.notice !== null) {
+        lines.push(cap.notice);
+      }
+      await waitForWebhook(probe, view.block.port, { totalMs: cap.ms, onProgress: options.notify ?? ((line: string) => lines.push(line)) });
+      view = await resolveListener({ cli, home, profile: PROFILE, route: ROUTE, probe });
+    }
+    const gatewayState = profilePresent ? view.gateway : 'not-installed';
+    const notices: string[] = [...view.notices];
+    if (gatewayState !== 'running') {
       add(
         'webhook',
         'nv',
-        topology.state === 'not-installed'
+        gatewayState === 'not-installed'
           ? `webhook: no verificable sin gateway instalado (${GATEWAY_INSTALL_ACTION})`
           : 'webhook: no verificable con el gateway parado',
         'webhook-platform',
       );
-      if (profilePresent) {
-        listing = await profileCommand(cli, ['webhook', 'list']);
-      }
     } else {
-      const block = await readWebhookBlock(owner.config);
-      const enableAction = topology.shared ? `${ENROLL_ACTION} --webhook-owner ${topology.owner}` : ENROLL_ACTION;
+      const block = view.block;
+      const enableAction = view.shared ? `${ENROLL_ACTION} --webhook-owner ${view.owner}` : ENROLL_ACTION;
       if (block.kind === 'malformed') {
-        add('webhook', 'fail', `webhook: ${owner.config} ${block.problem}`, 'webhook-platform', `corrige ${owner.config} y repite ${ENROLL_ACTION}`);
+        add('webhook', 'fail', `webhook: ${view.paths.config} ${block.problem}`, 'webhook-platform', `corrige ${view.paths.config} y repite ${ENROLL_ACTION}`);
       } else if (block.kind !== 'enabled') {
-        add('webhook', 'fail', `webhook: plataforma deshabilitada (falta platforms.webhook.enabled en ${owner.config})`, 'webhook-platform', enableAction);
+        add('webhook', 'fail', `webhook: plataforma deshabilitada (falta platforms.webhook.enabled en ${view.paths.config})`, 'webhook-platform', enableAction);
+      } else if (view.health === 'listening') {
+        add('webhook', 'ok', `webhook: plataforma habilitada y escuchando en 127.0.0.1:${block.port}`, 'webhook-platform');
+      } else if (view.health === 'foreign') {
+        add('webhook', 'fail', `webhook: el puerto ${block.port} está ocupado por otro proceso`, 'webhook-platform', `libera el puerto ${block.port} o elige otro en platforms.webhook.extra.port de ${view.paths.config}`);
       } else {
-        const result = await cli.run(owner.command(['webhook', 'list']));
-        listing = { ok: result.status === 0, stdout: result.stdout };
-        const probed = await (options.host.probeWebhook ?? ((port: number) => probeWebhook(port)))(block.port);
-        if (!listing.ok) {
-          add('webhook', 'fail', 'webhook: plataforma deshabilitada o lista ilegible', 'webhook-platform', enableAction);
-        } else if (probed === 'listening') {
-          add('webhook', 'ok', `webhook: plataforma habilitada y escuchando en 127.0.0.1:${block.port}`, 'webhook-platform');
-        } else if (probed === 'foreign') {
-          add('webhook', 'fail', `webhook: el puerto ${block.port} está ocupado por otro proceso`, 'webhook-platform', `libera el puerto ${block.port} o elige otro en platforms.webhook.extra.port de ${owner.config}`);
-        } else {
-          add('webhook', 'fail', `webhook: declarado pero no escucha en 127.0.0.1:${block.port} · reinicia con ${owner.restartText}`, 'webhook-platform', owner.restartText);
-          if (topology.shared) {
-            notices.push(sharedRestartWarning(topology.owner));
-          }
+        add(
+          'webhook',
+          'fail',
+          `webhook: declarado pero no escucha en 127.0.0.1:${block.port} · reinicia con ${view.restartText}; si acaba de reiniciarse, ${CHECK_WAIT_ACTION}`,
+          'webhook-platform',
+          view.restartText,
+        );
+        if (view.shared) {
+          notices.push(sharedRestartWarning(view.owner));
         }
       }
-      if ((await readEnv(owner.env)).WEBHOOK_SECRET) {
+      if ((await readEnv(view.paths.env)).WEBHOOK_SECRET) {
         notices.push(SECRET_OVERRIDE_NOTICE);
       }
     }
-    const routeOk = listing.ok && listed(listing.stdout, ROUTE);
-    if (routeOk) {
+    if (view.route === 'present') {
       add('ruta', 'ok', `ruta: ${ROUTE}`, 'webhook-route');
-    } else if (topology.state === 'not-installed') {
+    } else if (gatewayState === 'not-installed') {
       add('ruta', 'nv', `ruta: ${ROUTE} no verificable sin gateway instalado`, 'webhook-route');
     } else {
       add('ruta', 'fail', `ruta: ${ROUTE} no listada`, 'webhook-route', ENROLL_ACTION);
@@ -372,12 +383,15 @@ export async function runEnroll(root: string, options: EnrollOptions): Promise<E
     }
     add('modelo', modelState, modelLine, 'check');
 
-    if (topology.state === 'running') {
-      add('gateway', 'ok', topology.shared ? `gateway: en ejecución (multiplexor del perfil "${topology.owner}")` : 'gateway: en ejecución', 'gateway');
-    } else if (topology.state === 'not-installed') {
+    if (gatewayState === 'running') {
+      add('gateway', 'ok', view.shared ? `gateway: en ejecución (multiplexor del perfil "${view.owner}")` : 'gateway: en ejecución', 'gateway');
+    } else if (gatewayState === 'not-installed') {
       add('gateway', 'nv', 'gateway: no instalado (no verificable)', 'gateway');
     } else {
       add('gateway', 'fail', 'gateway: instalado pero no en ejecución', 'gateway', GATEWAY_RESTART_ACTION);
+    }
+    if (gatewayState === 'running') {
+      lines.push(ownerLine(view));
     }
 
     for (const row of rows) {
@@ -556,6 +570,10 @@ export async function runEnroll(root: string, options: EnrollOptions): Promise<E
     );
     return { code: 0, lines };
   }
+  const waitCap = options.host.webhookWaitMs !== undefined ? { ms: options.host.webhookWaitMs, notice: null } : webhookWaitCap(options.host.env);
+  if (waitCap.notice !== null) {
+    lines.push(waitCap.notice);
+  }
   let phase: Awaited<ReturnType<typeof webhookPhase>>;
   try {
     phase = await webhookPhase({
@@ -574,7 +592,7 @@ export async function runEnroll(root: string, options: EnrollOptions): Promise<E
       routeLabel,
       mode: options.mode,
       probe: options.host.probeWebhook ?? ((port) => probeWebhook(port)),
-      waitMs: options.host.webhookWaitMs ?? 30_000,
+      waitMs: waitCap.ms,
       ...(options.webhookOwner !== undefined ? { webhookOwner: options.webhookOwner } : {}),
       ...(options.confirmOwner ? { confirmOwner: options.confirmOwner } : {}),
       profileEnv: await readEnv(envFile),
@@ -608,11 +626,37 @@ export async function runEnroll(root: string, options: EnrollOptions): Promise<E
     const outcome = await failure(failed.stage, headline, cause, missing, failed.action, failed.pending === true);
     return { ...outcome, restarted: phase.restarted };
   }
+  if (phase.starting) {
+    // fabrica-verificable §D2/§D3: el bloque y la ruta existen; lo único sin verificar es que el puerto responda.
+    const saved = Boolean((await readEnv(envFile)).DISCORD_BOT_TOKEN);
+    const listo = [...new Set(ready)];
+    if (saved) {
+      listo.splice(listo.indexOf('perfil') + 1, 0, '.env');
+    }
+    lines.push(
+      `[PENDIENTE] webhook: el gateway sigue arrancando tras ${phase.starting.seconds} s (tope; ${WEBHOOK_WAIT_ENV} lo cambia) · ${CHECK_WAIT_ACTION}`,
+      `Siguiente: ${CHECK_WAIT_ACTION}`,
+    );
+    return {
+      code: 1,
+      lines,
+      stage: 'webhook-platform',
+      ready: [...listo, 'plataforma webhook (declarada)', 'ruta'],
+      unverified: ['webhook escuchando'],
+      missing: [],
+      cause: [`GET http://127.0.0.1:${phase.port}/health: sin respuesta tras ${phase.starting.seconds} s`],
+      saved,
+      action: CHECK_WAIT_ACTION,
+      pending: true,
+      restarted: true,
+      starting: true,
+    };
+  }
   if (phase.notVerifiable) {
     lines.push(checkHint);
     return { code: 0, lines, webhook: 'no-verificable', action: GATEWAY_INSTALL_ACTION };
   }
-  const owner = ownerOf(phase.topology, home, PROFILE);
+  const owner = { urlPath: phase.view!.urlPath, subscriptions: phase.view!.paths.subscriptions };
   lines.push(
     'GitLab (Settings > Webhooks del proyecto):',
     `  URL: https://<host-de-hermes>:${phase.port}${owner.urlPath(ROUTE)}`,

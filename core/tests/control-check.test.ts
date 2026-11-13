@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { runEnroll, PROFILE } from '../src/control/enroll.js';
+import { setControlDeps } from '../src/control/cli.js';
 import {
   APPROVER,
   BOT_TOKEN,
@@ -113,5 +114,74 @@ describe('init-fiabilidad 8.8 — enroll --check completo', () => {
     expect(outcome.code).toBe(1);
     expect(outcome.stage).toBe('gateway');
     expect(outcome.action).toBe('hermes gateway restart');
+  });
+});
+
+describe('fabrica-verificable 1.3 — el check decide por la evidencia del dueño del listener', () => {
+  const STORE_SECRET = 'AIHUB_STORE_SECRET_SENTINEL_check';
+
+  async function multiplexed(): Promise<void> {
+    hermes.topology = 'multiplex';
+    const initial = await runEnroll(h.root, { mode: 'yes', host: hermes.host, webhookOwner: 'default' });
+    expect(initial.code, initial.lines.join('\n')).toBe(0);
+    await fs.appendFile(
+      envFile(),
+      [`DISCORD_BOT_TOKEN=${BOT_TOKEN}`, `DISCORD_ALLOWED_USERS=${APPROVER}`, `DISCORD_ALLOWED_CHANNELS=${CHANNEL}`, `DISCORD_HOME_CHANNEL=${CHANNEL}`, ''].join('\n'),
+    );
+    // El store del dueño del listener, tal como lo escribe Hermes: la ruta ligada al perfil de control, con su secreto.
+    await fs.writeFile(
+      path.join(hermes.home, 'webhook_subscriptions.json'),
+      JSON.stringify({ 'ai-hub-gitlab': { profile: PROFILE, events: ['Issue Hook', 'Merge Request Hook'], secret: STORE_SECRET, script: 'gitlab-route.sh' } }),
+    );
+  }
+
+  it('listening, route in the owner store and `webhook list` exiting 1: exit 0, both present, owner named', async () => {
+    await multiplexed();
+    hermes.failOn.set('webhook list', { status: 1, stdout: 'Webhook platform is not enabled. To set it up:' });
+    hermes.calls.length = 0;
+    const outcome = await runEnroll(h.root, { mode: 'check', host: hermes.host });
+    const text = outcome.lines.join('\n');
+    expect(outcome.code, text).toBe(0);
+    expect(text).toContain('[OK] webhook: plataforma habilitada y escuchando en 127.0.0.1:8644');
+    expect(text).toContain('[OK] ruta: ai-hub-gitlab');
+    expect(text).toMatch(/listener: dueño "default" \(según /);
+    expect(text).toMatch(/aviso: .*webhook list/);
+    expect(text).not.toContain('[FAIL]');
+    expect(text).not.toContain(STORE_SECRET);
+    expect(creating(hermes.calls)).toEqual([]);
+  });
+
+  it('`gateway status` exiting 1 with the same evidence: the owner is resolved by evidence', async () => {
+    await multiplexed();
+    hermes.failOn.set('gateway status', { status: 1, stdout: '', stderr: 'gateway status unavailable' });
+    const outcome = await runEnroll(h.root, { mode: 'check', host: hermes.host });
+    const text = outcome.lines.join('\n');
+    expect(outcome.code, text).toBe(0);
+    expect(text).toContain('[OK] webhook');
+    expect(text).toContain('[OK] ruta: ai-hub-gitlab');
+    expect(text).toMatch(/listener: dueño "default" \(según la evidencia/);
+  });
+
+  it('declared but not listening names the restart and --check --wait', async () => {
+    await multiplexed();
+    hermes.listener = { loaded: false, port: null, secretFromEnv: false };
+    const outcome = await runEnroll(h.root, { mode: 'check', host: hermes.host });
+    const text = outcome.lines.join('\n');
+    expect(outcome.code).toBe(1);
+    expect(text).toContain('declarado pero no escucha');
+    expect(text).toContain('--check --wait');
+    expect(text).toContain('[OK] ruta: ai-hub-gitlab');
+  });
+
+  it('--check --wait waits read-only, and --wait without --check or with a bad value exits 2', async () => {
+    await multiplexed();
+    setControlDeps({ hermesHost: hermes.host });
+    hermes.calls.length = 0;
+    const waited = await h.cli(['control', 'enroll', '--check', '--wait']);
+    expect(waited.code, waited.out + waited.err).toBe(0);
+    expect(creating(hermes.calls)).toEqual([]);
+    expect((await h.cli(['control', 'enroll', '--yes', '--wait'])).code).toBe(2);
+    expect((await h.cli(['control', 'enroll', '--check', '--wait', '901'])).code).toBe(2);
+    expect(creating(hermes.calls)).toEqual([]);
   });
 });

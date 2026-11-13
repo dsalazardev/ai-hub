@@ -17,7 +17,8 @@ import { ENGINE_SKILLS_DIR } from '../engine/engine.js';
 import { catalogIndex, catalogSeal, hasFullDimension } from '../catalog.js';
 import { readLock } from '../sync/lock.js';
 import { runSync } from '../sync/sync.js';
-import { cliVersion, cmdInstall, writeManifest } from './onboarding.js';
+import { cliVersion, cmdInstall } from './onboarding.js';
+import { writeManifest } from '../manifest/write.js';
 import { splitItem } from './items.js';
 import type { CliContext, ParsedArgs } from './types.js';
 

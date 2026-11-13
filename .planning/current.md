@@ -1,35 +1,47 @@
-# Estado de la sesión — channel-types y webhook-operativo aplicados y archivados — 2026-11-12
+# Estado de la sesión — fabrica-verificable archivado con deudas — 2026-11-13
 
-**Changes activos:** ninguno. Archivados hoy: `2026-11-12-channel-types` (3/3) y `2026-11-12-webhook-operativo` (30/30).
-**Versión:** 0.15.0 publicada; el release siguiente (versión, CHANGELOG, `release.test.ts`, `install-counts.json`) es del
-propietario, con la entrada preparada en `archive/2026-11-12-webhook-operativo/design.md` §D10.
+**Changes activos:** ninguno. Archivado hoy: `2026-11-13-fabrica-verificable` (33/43 tareas; 10 con deuda aceptada).
+**Versión:** 0.16.0 sin cambios. El release es del propietario.
+**Estado de implementación:** hitos 1–5 aplicados; hitos 6 y 7 no ejecutados (ver deudas).
 
 ## Cerrado
 
-- channel-types: un id de categoría o de voz se rechaza; un 200 sin `type` se acepta como antes (D-D).
-- webhook-operativo: bloque `platforms.webhook` en el `config.yaml` del dueño del listener, `--webhook-owner`,
-  aviso de reinicio compartido, `GET /health`, migración del `.env`, ningún secreto escrito, `doctor` con
-  `control:webhook`. Detalle de pruebas rojas/verdes y aserciones cambiadas en `impl_webhook-operativo.md`.
-- Verificación: typecheck, build y manifest:check en verde; `npm test` 55/55 archivos, 870 pasadas, 6 omitidas
-  (1358,71 s, WSL apagado); doctor sano; drift y `sync --check-lock` no aplican en el taller.
+- Resolvedor único del listener (`core/src/control/listener.ts`) consumido por el enrolamiento, `control enroll --check` y `doctor`.
+- Espera tras reinicio con backoff, tope de 300 s (`AI_HUB_WEBHOOK_WAIT_SECONDS`), estado `pendiente` y `--check --wait`.
+- Escritor único atómico de `manifest.yaml` (`core/src/manifest/write.ts`) con gate de escritores.
+- Sellado del lock sin escribir destinos (`sealLock`); si un destino cambia, cae a `runSync` avisando cuántos pisa.
+- Idempotencia del paso de control sin re-enrolar ni reiniciar; migración de 0.16.0 con `--declare-tracker`.
+- Captura de solo lectura del Hermes real (tarea 1.1): registrada en `.planning/findings.md`.
+- Sincronización inline de los cuatro deltas sobre `openspec/specs/`: 12 requisitos añadidos y 4 modificados
+  (hermes-control 4+2, dev-cli 4+1, interactive-onboarding 1+2, control-onboarding 2+1). Verificado: recuentos
+  49, 76, 14 y 25; cada bloque añadido aparece una vez; cada bloque modificado coincide con su delta.
+- Archivo: `openspec/changes/archive/2026-11-13-fabrica-verificable/`.
+- Detalle de pruebas, desviaciones y mediciones en `impl_fabrica-verificable.md`.
 
-## Los tres choques de webhook-operativo con specs vigentes, y su resolución
+## Deudas aceptadas al archivar (`impl_fabrica-verificable.md`)
 
-1. Sin gateway instalado (contradecía «No gateway installed»): D-A, webhook no verificable, salida 0.
-2. `--check` sin gateway (contradecía «Gateway not verifiable»): D-A, gateway y webhook no verificables, salida 0.
-3. Orden de etapas (cron después de la ruta): D-B, cron y `control-poll.sh` antes del webhook; R5 adaptado y declarado.
+- Hitos 6 y 7 completos (10 tareas): suite opt-in contra gateway real, fixture del store, medición del arranque en
+  frío, README, verificación integral y reproducción con el CLI.
+- Tarea 1.1 no medible: el perfil `hermes-control` ya no existía en el host al ejecutarla; el disparador real del
+  fallo 1 queda sin observación y se cubre por fixture.
+- El presupuesto restante de la espera no se implementó: el check tras un reinicio usa el tope completo.
+- La prueba 4.2 no se vio fallar antes del arreglo; su rojo equivalente es la medición con el CLI.
+- Timeouts de 10 s con cinco archivos en paralelo; repetidos en aislado pasan. Sin fijar workers.
+- El gate de escritores es por línea y no detecta una ruta construida en una variable.
 
-## Registro de hallazgos
+## Correcciones del archivado
 
-- En una ronda anterior `findings.md` se restauró desde HEAD para dejar `git status` vacío, porque está versionado
-  aunque `.planning/` figure en `.gitignore`; el propietario acepta el árbol sucio y no debe repetirse.
-- La fuente de los hallazgos de estas rondas es el `design.md` de `webhook-operativo` (ahora archivado).
+- `dev-cli`, escenario «Plan contract»: `init --plan --declare-tracker` pasa a `init --dry-run --declare-tracker`
+  (`--plan` no existe en el CLI).
+- Los specs principales no están en git (`openspec/` es ignorado): no hay línea base versionada. La verificación
+  fue por recuentos y bloques, no por `git diff`.
+- Los nombres de función (`resolveListener`, `sealLock`) no aparecen en los requisitos: describen comportamiento.
+  Los nombres viven en `design.md`, archivado con el change.
 
 ## Abierto (decide el propietario)
 
-- `openspec/specs/hermes-control/spec.md` › «Enroll check verifies the whole profile read-only»: 536 caracteres tras
-  el archivado; `validate --strict` de esa spec pasa de verde a aviso. Propuesta: mover la frase del webhook a un
-  escenario. Las otras specs con avisos de longitud (control-onboarding, dev-cli, agent-guardrails, preset-system,
-  spec-kit-pipeline) ya los tenían.
+- Hitos 6 y 7 (ver deudas), con autorización y tiempo aparte.
 - `hermesHome()` no respeta `HERMES_HOME`; solo el check `control:webhook` de `doctor` lo hace.
-- Release (0.16.0 o la que decida) y prueba real con Hermes y GitLab.
+- Validación global: `openspec validate --all --strict` sale 1 por avisos de longitud preexistentes en
+  `agent-guardrails`, `control-onboarding`, `dev-cli`, `preset-system` y `spec-kit-pipeline`. Ninguno es de este change.
+- Release (versión, CHANGELOG) y prueba real con Hermes y GitLab.

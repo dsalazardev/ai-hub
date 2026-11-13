@@ -1,6 +1,6 @@
 import { contextHost, runControlStep } from '../control/onboard-step.js';
 import { connectionSaved } from '../control/onboard.js';
-import { ENROLL_ACTION, RETAKE_ACTION, RETAKE_PROVIDE, isolate, type IntegrationReport } from './integrations.js';
+import { DECLARE_TRACKER_ACTION, ENROLL_ACTION, RETAKE_ACTION, RETAKE_PROVIDE, isolate, type IntegrationReport } from './integrations.js';
 import type { ParsedArgs } from './types.js';
 import type { CliContext } from './types.js';
 import fs from 'node:fs/promises';
@@ -12,7 +12,7 @@ import { DEFAULT_SPECKIT_SCRIPTS, effectiveSpeckit } from '../speckit/settings.j
 import { probeEnvironment, probeShell, speckitPreflight, type SpeckitEnvironment } from '../speckit/commands.js';
 // Ciclo intencional con onboarding.ts (D2): ambos módulos se usan sólo a nivel de
 // función, nunca a nivel de módulo, así que los live bindings de ESM lo resuelven.
-import { cliVersion, cmdInit, destinationLine, prepareInit, printInitPlan, type PreparedInit } from './onboarding.js';
+import { cliVersion, cmdInit, declareTracker, destinationLine, inspectManifestTracker, trackerEnvMissing, prepareInit, printInitPlan, type PreparedInit } from './onboarding.js';
 import { PRE_PROMPT, PRE_PROMPT_HISTORY } from './preprompt.js';
 import {
   IdeaInputError,
@@ -644,12 +644,15 @@ export async function runAssistantInit(
 /**
  * Paso opt-in del tracker (PD-1, la última pregunta): solo el usuario en su terminal escribe su
  * token. Vacío o cancelación = saltar sin escribir nada. Escribe únicamente `.ai-hub/.env`
- * (ya ignorado por `init`), no toca el manifiesto, el plan ni ningún otro archivo, y jamás
+ * (ya ignorado por `init`) y, al completarse, declara `manifest.tracker` si faltaba y re-sella el lock; jamás
  * imprime el valor. Un `.env` existente nunca se sobrescribe.
  */
 export async function offerTrackerStep(prompts: AssistantPrompts, ctx: CliContext): Promise<boolean> {
   return (await runTrackerStep(prompts, ctx))?.state === 'completada';
 }
+
+export const TRACKER_DECLARE_OFFER =
+  'Tu .ai-hub/.env ya tiene GITLAB_URL y GITLAB_TOKEN y manifest.yaml no declara el tracker. ¿Declararlo ahora? Solo se escriben los nombres de las variables; no se pide el token. (escribe "s"; vacío = saltar)';
 
 const TRACKER_SKIPPED: IntegrationReport = { name: 'tracker', state: 'no-solicitada', stage: null, action: null };
 
@@ -657,6 +660,34 @@ const TRACKER_SKIPPED: IntegrationReport = { name: 'tracker', state: 'no-solicit
 export async function runTrackerStep(prompts: AssistantPrompts, ctx: CliContext): Promise<IntegrationReport | null> {
   if (!prompts.password) {
     return null;
+  }
+  // fabrica-verificable §D6: una instalación de 0.16.0 que ya completó el paso tiene las claves en `.ai-hub/.env` y
+  // ningún bloque. Se ofrece declararlo sin pedir URL ni token; el archivo se lee solo por presencia de claves.
+  const missingKeys = await trackerEnvMissing(ctx.root);
+  if (missingKeys !== null && missingKeys.length < 2 && (await inspectManifestTracker(ctx.root)).state === 'missing') {
+    if (missingKeys.length > 0) {
+      ctx.io.out(`tracker: .ai-hub/.env ya existe pero le falta ${missingKeys.join(', ')}; complétalo a mano (no se sobrescribe) y repite el paso`);
+      return {
+        name: 'tracker',
+        state: 'pendiente',
+        stage: 'tracker-env',
+        action: 'ai-hub init',
+        ready: ['.ai-hub/.env (existente)'],
+        cause: [`falta en .ai-hub/.env: ${missingKeys.join(', ')}`],
+      };
+    }
+    const offer = await prompts.text(TRACKER_DECLARE_OFFER);
+    if (offer === null || !/^(s|si|sí|y|yes)$/i.test(offer.trim())) {
+      ctx.io.out(`tracker: paso saltado; manifest.tracker sigue sin declarar (${DECLARE_TRACKER_ACTION} lo declara cuando quieras)`);
+      return TRACKER_SKIPPED;
+    }
+    const migrated = await declareTracker(ctx.root, (line) => ctx.io.err(line));
+    if (migrated.state === 'invalid') {
+      ctx.io.err(`tracker: manifest.yaml ${migrated.problem}; corrígelo y repite el paso (no se escribió nada)`);
+      return { name: 'tracker', state: 'fallida', stage: 'tracker-manifest', action: 'ai-hub init', cause: [`manifest.yaml ${migrated.problem}`] };
+    }
+    ctx.io.out('tracker: manifest.tracker quedó declarado {kind: gitlab, urlEnv: GITLAB_URL, tokenEnv: GITLAB_TOKEN} y sync.lock.json sellado; .ai-hub/.env no se tocó. Comprueba con ai-hub doctor --online');
+    return { name: 'tracker', state: 'completada', stage: null, action: null };
   }
   const reply = await prompts.text(
     '¿Quieres configurar tu tracker de GitLab ahora? (opcional: escribe "s" para configurarlo; vacío = saltar)',
@@ -669,6 +700,12 @@ export async function runTrackerStep(prompts: AssistantPrompts, ctx: CliContext)
   if (await fs.access(envFile).then(() => true, () => false)) {
     ctx.io.out('tracker: .ai-hub/.env ya existe; edítalo a mano (no se sobrescribe)');
     return { name: 'tracker', state: 'pendiente', stage: 'tracker-env', action: 'ai-hub doctor --online', ready: ['.ai-hub/.env (existente)'] };
+  }
+  // Fallo cerrado antes de pedir o escribir una credencial: un manifiesto roto no se puede completar.
+  const declared = await inspectManifestTracker(ctx.root);
+  if (declared.state === 'invalid') {
+    ctx.io.err(`tracker: manifest.yaml ${declared.problem}; corrígelo y repite el paso (no se escribió nada)`);
+    return { name: 'tracker', state: 'fallida', stage: 'tracker-manifest', action: 'ai-hub init', cause: [`manifest.yaml ${declared.problem}`] };
   }
   const url = await prompts.text('URL de tu GitLab (sin /api; vacío = saltar)');
   if (url === null || (url ?? '').trim() === '') {
@@ -685,8 +722,18 @@ export async function runTrackerStep(prompts: AssistantPrompts, ctx: CliContext)
     encoding: 'utf8',
     mode: 0o600,
   });
-  ctx.io.out(
-    'tracker: .ai-hub/.env escrito (ignorado por git). Declara manifest.tracker {kind: gitlab, urlEnv: GITLAB_URL, tokenEnv: GITLAB_TOKEN} y comprueba con ai-hub doctor --online',
-  );
+  // La persona completó el paso: el arnés declara el tracker (solo nombres de variables) y re-sella el lock.
+  const outcome = await declareTracker(ctx.root, (line) => ctx.io.err(line));
+  if (outcome.state === 'invalid') {
+    ctx.io.err(`tracker: .ai-hub/.env escrito, pero manifest.yaml ${outcome.problem}; corrígelo y declara manifest.tracker`);
+    return { name: 'tracker', state: 'pendiente', stage: 'tracker-manifest', action: 'ai-hub init', cause: [`manifest.yaml ${outcome.problem}`] };
+  }
+  const note =
+    outcome.state === 'declared'
+      ? 'manifest.tracker quedó declarado {kind: gitlab, urlEnv: GITLAB_URL, tokenEnv: GITLAB_TOKEN} y sync.lock.json re-sellado'
+      : outcome.state === 'kept'
+        ? 'manifest.tracker ya existía y se conservó tal cual'
+        : 'no hay manifest.yaml: manifest.tracker se declarará al instalar con ai-hub init';
+  ctx.io.out(`tracker: .ai-hub/.env escrito (ignorado por git); ${note}. Comprueba con ai-hub doctor --online`);
   return { name: 'tracker', state: 'completada', stage: null, action: null };
 }

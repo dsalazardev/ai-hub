@@ -8,7 +8,8 @@ import { fileURLToPath } from 'node:url';
 import { runCli, createContext } from '../src/cli/run.js';
 import { parseArgs } from '../src/cli/args.js';
 import { cmdInit } from '../src/cli/onboarding.js';
-import { offerTrackerStep, type AssistantPrompts } from '../src/cli/assistant.js';
+import { offerTrackerStep, runTrackerStep, type AssistantPrompts } from '../src/cli/assistant.js';
+import { parse as parseYaml } from 'yaml';
 import { checkEnvIgnored, checkEnvKeys, checkTrackerToken, type FetchLike } from '../src/env/doctor.js';
 import { parseDotenv } from '../src/env/dotenv.js';
 import { createBackup } from '../src/backup/snapshots.js';
@@ -352,7 +353,7 @@ describe('opt-in tracker step (2.8)', () => {
     expect(await exists(path.join(root, '.ai-hub', '.env'))).toBe(false);
   });
 
-  it('the plan hash is identical when skipping and when accepting', async () => {
+  it('the plan hash is identical when skipping and when accepting; only the tracker block and the lock seal differ', async () => {
     const base = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-tracker-'));
     try {
       const run = async (dir: string, tracker: Array<string | null>): Promise<{ hash?: string; out: string }> => {
@@ -400,15 +401,143 @@ describe('opt-in tracker step (2.8)', () => {
       const skipTree = await tree(path.join(base, 'skip', 'consumer'));
       const acceptTree = (await tree(path.join(base, 'accept', 'consumer'))).filter((rel) => rel !== '.ai-hub/.env');
       expect(acceptTree).toEqual(skipTree);
-      for (const rel of ['manifest.yaml', 'sync.lock.json', '.gitignore']) {
-        expect(await fs.readFile(path.join(base, 'accept', 'consumer', rel), 'utf8')).toBe(
-          await fs.readFile(path.join(base, 'skip', 'consumer', rel), 'utf8'),
-        );
-      }
+      const read = (variant: string, rel: string): Promise<string> => fs.readFile(path.join(base, variant, 'consumer', rel), 'utf8');
+      expect(await read('accept', '.gitignore')).toBe(await read('skip', '.gitignore'));
+      // Contrato nuevo: completar el paso declara manifest.tracker (y re-sella el lock); el resto del manifiesto no cambia.
+      expect(await read('accept', 'manifest.yaml')).toBe(
+        `${await read('skip', 'manifest.yaml')}tracker:\n  kind: gitlab\n  urlEnv: GITLAB_URL\n  tokenEnv: GITLAB_TOKEN\n`,
+      );
+      const locks = [JSON.parse(await read('accept', 'sync.lock.json')), JSON.parse(await read('skip', 'sync.lock.json'))];
+      expect(locks[0].files).toEqual(locks[1].files);
+      expect(Object.keys(locks[0].sources)).toEqual(Object.keys(locks[1].sources));
     } finally {
       await fs.rm(base, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     }
   }, 120_000);
+});
+
+describe('tracker step declares manifest.tracker and re-seals the lock', () => {
+  const TRACKER = { kind: 'gitlab', urlEnv: 'GITLAB_URL', tokenEnv: 'GITLAB_TOKEN' };
+  const ACCEPT = ['s', 'https://tracker.example.test', SENTINEL];
+
+  /** Asistente completo sobre `dir`: destinos, perfil, scripts, activo, idea vacía, confirmar y el paso del tracker. */
+  async function assistant(dir: string, tracker: Array<string | null>, argv: string[] = []): Promise<{ code: number; out: string }> {
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(path.join(dir, 'package.json'), JSON.stringify({ name: 'demo' }));
+    const sink = capture();
+    const ctx = await createContext(dir, sink.io, fakeRunner().run);
+    const replies: Array<unknown> = [['claude'], 'full', ['py', 'sh', 'ps'], 'sh', '', true, ...tracker];
+    let index = 0;
+    const next = (): unknown => (index < replies.length ? replies[index++] : null);
+    const text = async (): Promise<string | null> => {
+      const reply = next();
+      return typeof reply === 'string' ? reply : null;
+    };
+    const scripted: AssistantPrompts = {
+      intro: () => undefined,
+      note: () => undefined,
+      multiselect: async () => {
+        const reply = next();
+        return Array.isArray(reply) ? (reply as string[]) : null;
+      },
+      select: text,
+      text,
+      confirm: async () => next() === true,
+      password: text,
+    };
+    const noHermes = { platform: process.platform, env: { PATH: '' }, home: dir, cwd: dir, exec: fakeRunner().run, exists: async () => false };
+    const code = await cmdInit(parseArgs(argv), { ...ctx, interactive: true, assistantPrompts: scripted, controlHost: noHermes });
+    return { code, out: `${sink.out.join('\n')}\n${sink.err.join('\n')}` };
+  }
+
+  const manifestOf = async (dir: string): Promise<Record<string, unknown>> =>
+    parseYaml(await fs.readFile(path.join(dir, 'manifest.yaml'), 'utf8')) as Record<string, unknown>;
+
+  async function filesWith(dir: string, needle: string): Promise<string[]> {
+    const found: string[] = [];
+    for (const entry of await fs.readdir(dir, { recursive: true, withFileTypes: true })) {
+      if (entry.isFile() && (await fs.readFile(path.join(entry.parentPath, entry.name), 'utf8').catch(() => '')).includes(needle)) {
+        found.push(path.relative(dir, path.join(entry.parentPath, entry.name)).replace(/\\/g, '/'));
+      }
+    }
+    return found.sort();
+  }
+
+  it('completing the step declares the tracker, keeps the rest of the manifest, re-seals the lock and leaks nothing', async () => {
+    // Mismo nombre de carpeta: el id del proyecto sale de él y no debe distinguir los dos manifiestos.
+    const skip = path.join(root, 'skip', 'consumer');
+    const done = path.join(root, 'done', 'consumer');
+    expect((await assistant(skip, [''])).code).toBe(0);
+    const result = await assistant(done, ACCEPT);
+    expect(result.code, result.out).toBe(0);
+    const manifest = await manifestOf(done);
+    expect(manifest.tracker).toEqual(TRACKER);
+    const { tracker: _tracker, ...rest } = manifest;
+    expect(rest).toEqual(await manifestOf(skip));
+    const lock = await cli(['sync', '--check-lock'], done);
+    expect(lock.code, `${lock.out}\n${lock.err}`).toBe(0);
+    expect(result.out).toContain('manifest.tracker');
+    expect(result.out).not.toContain('Declara manifest.tracker');
+    expect(result.out).not.toContain(SENTINEL);
+    expect(result.out).not.toContain('tracker.example.test');
+    expect(await filesWith(done, SENTINEL)).toEqual(['.ai-hub/.env']);
+    expect(await filesWith(done, 'tracker.example.test')).toEqual(['.ai-hub/.env']);
+  }, 180_000);
+
+  it('a skipped step and init --yes never write the tracker, and the lock stays sealed', async () => {
+    const skip = path.join(root, 'skip');
+    expect((await assistant(skip, [''])).code).toBe(0);
+    expect((await manifestOf(skip)).tracker).toBeUndefined();
+    expect((await cli(['sync', '--check-lock'], skip)).code).toBe(0);
+    const cancelled = path.join(root, 'cancelled');
+    expect((await assistant(cancelled, ['s', 'https://tracker.example.test', null])).code).toBe(0);
+    expect((await manifestOf(cancelled)).tracker).toBeUndefined();
+    const yes = path.join(root, 'yes');
+    expect((await assistant(yes, ACCEPT, ['--preset-only', '--yes'])).code).toBe(0);
+    expect((await manifestOf(yes)).tracker).toBeUndefined();
+    expect(await exists(path.join(yes, '.ai-hub', '.env'))).toBe(false);
+  }, 180_000);
+
+  it('an existing tracker with other variable names is kept as it is', async () => {
+    const dir = path.join(root, 'own');
+    expect((await assistant(dir, [''])).code).toBe(0);
+    const own = { kind: 'gitlab', urlEnv: 'MY_TRACKER_URL', tokenEnv: 'MY_TRACKER_TOKEN' };
+    await fs.appendFile(path.join(dir, 'manifest.yaml'), `tracker:\n  kind: gitlab\n  urlEnv: ${own.urlEnv}\n  tokenEnv: ${own.tokenEnv}\n`);
+    const result = await assistant(dir, ACCEPT);
+    expect(result.code, result.out).toBe(0);
+    expect((await manifestOf(dir)).tracker).toEqual(own);
+    expect(result.out).toContain('se conservó');
+    expect((await cli(['sync', '--check-lock'], dir)).code).toBe(0);
+  }, 180_000);
+
+  it('a second run changes no byte of the manifest or the lock', async () => {
+    const dir = path.join(root, 'twice');
+    expect((await assistant(dir, ACCEPT)).code).toBe(0);
+    const before = [await fs.readFile(path.join(dir, 'manifest.yaml')), await fs.readFile(path.join(dir, 'sync.lock.json'))];
+    expect((await assistant(dir, ACCEPT)).code).toBe(0);
+    expect(await fs.readFile(path.join(dir, 'manifest.yaml'))).toEqual(before[0]);
+    expect(await fs.readFile(path.join(dir, 'sync.lock.json'))).toEqual(before[1]);
+    expect((await cli(['sync', '--check-lock'], dir)).code).toBe(0);
+  }, 180_000);
+
+  it.each([
+    ['duplicate keys', 'preset: a\npreset: b\n'],
+    ['a sequence', '- uno\n- dos\n'],
+  ])('fails closed on a manifest with %s: writes nothing and names the problem without the content', async (_label, broken) => {
+    await fs.writeFile(path.join(root, 'manifest.yaml'), broken);
+    const sink = capture();
+    const ctx = await createContext(root, sink.io, fakeRunner().run);
+    let index = 0;
+    const text = async (): Promise<string | null> => ACCEPT[index++] ?? null;
+    const report = await runTrackerStep({ intro: () => undefined, note: () => undefined, multiselect: async () => null, select: async () => null, text, confirm: async () => null, password: text }, ctx);
+    expect(report?.state).toBe('fallida');
+    expect(await fs.readFile(path.join(root, 'manifest.yaml'), 'utf8')).toBe(broken);
+    expect(await exists(path.join(root, '.ai-hub', '.env'))).toBe(false);
+    const out = `${sink.out.join('\n')}\n${sink.err.join('\n')}`;
+    expect(out).toContain('manifest.yaml');
+    expect(out).not.toContain('uno');
+    expect(out).not.toContain(SENTINEL);
+  });
 });
 
 describe('catalog without client host, load-env or token requests (2.9)', () => {
@@ -510,4 +639,151 @@ describe('fail-open git hooks (2.11)', () => {
     const result = spawnSync(shell, [hook], { env, encoding: 'utf8', shell: false });
     expect(result.status).toBe(0);
   });
+});
+
+describe('fabrica-verificable 5.3–5.7 — migración de 0.16.0: .env con las claves y sin manifest.tracker', () => {
+  const TRACKER = { kind: 'gitlab', urlEnv: 'GITLAB_URL', tokenEnv: 'GITLAB_TOKEN' };
+  const DECLARE = 'ai-hub init --yes --declare-tracker';
+  const envFile = (): string => path.join(root, '.ai-hub', '.env');
+  const manifestFile = (): string => path.join(root, 'manifest.yaml');
+  const lockFile = (): string => path.join(root, 'sync.lock.json');
+  const tracker = async (): Promise<unknown> => (parseYaml(await fs.readFile(manifestFile(), 'utf8')) as Record<string, unknown>).tracker;
+
+  /** Instalación como la que dejó 0.16.0: paso del tracker completado (`.env` con las dos claves) y sin bloque. */
+  async function legacy(env = `GITLAB_URL=https://tracker.example.test\nGITLAB_TOKEN=${SENTINEL}\n`): Promise<void> {
+    await initConsumer();
+    await fs.writeFile(envFile(), env);
+    expect(await tracker()).toBeUndefined();
+    expect((await cli(['sync', '--check-lock'])).code).toBe(0);
+  }
+
+  async function step(replies: Array<string | null>) {
+    const sink = capture();
+    const asked: string[] = [];
+    let index = 0;
+    const next = (): string | null => (index < replies.length ? replies[index++] : null);
+    const prompts: AssistantPrompts = {
+      intro: () => undefined,
+      note: () => undefined,
+      multiselect: async () => null,
+      select: async () => null,
+      text: async (message) => {
+        asked.push(`text:${message}`);
+        return next();
+      },
+      confirm: async () => null,
+      password: async (message) => {
+        asked.push(`password:${message}`);
+        return next();
+      },
+    };
+    const ctx = await createContext(root, sink.io, fakeRunner().run);
+    const report = await runTrackerStep(prompts, ctx);
+    return { report, asked, text: [...sink.out, ...sink.err].join('\n') };
+  }
+
+  async function everyFileWith(needle: string): Promise<string[]> {
+    const found: string[] = [];
+    for (const entry of await fs.readdir(root, { recursive: true, withFileTypes: true })) {
+      if (entry.isFile() && (await fs.readFile(path.join(entry.parentPath, entry.name), 'utf8').catch(() => '')).includes(needle)) {
+        found.push(path.relative(root, path.join(entry.parentPath, entry.name)).replace(/\\/g, '/'));
+      }
+    }
+    return found.sort();
+  }
+
+  it('the assistant offers the declaration, asks for no URL or token, and accepting declares the block and seals the lock', async () => {
+    await legacy();
+    const env = await fs.readFile(envFile());
+    const result = await step(['s']);
+    expect(result.report).toMatchObject({ name: 'tracker', state: 'completada' });
+    expect(result.asked).toHaveLength(1);
+    expect(result.asked[0]).toContain('manifest.yaml no declara el tracker');
+    expect(result.asked[0]).toContain('no se pide el token');
+    expect(result.asked.some((call) => call.startsWith('password:'))).toBe(false);
+    expect(await tracker()).toEqual(TRACKER);
+    expect(await fs.readFile(envFile())).toEqual(env);
+    expect((await cli(['sync', '--check-lock'])).code).toBe(0);
+    expect(result.text).not.toContain(SENTINEL);
+    expect(result.text).not.toContain('tracker.example.test');
+    expect(await everyFileWith(SENTINEL)).toEqual(['.ai-hub/.env']);
+  }, 120_000);
+
+  it('declining writes nothing', async () => {
+    await legacy();
+    const before = [await fs.readFile(manifestFile()), await fs.readFile(lockFile())];
+    const result = await step(['']);
+    expect(result.report).toMatchObject({ name: 'tracker', state: 'no-solicitada' });
+    expect([await fs.readFile(manifestFile()), await fs.readFile(lockFile())]).toEqual(before);
+  }, 120_000);
+
+  it('a credentials file without GITLAB_TOKEN names the missing key, declares nothing and stays pendiente', async () => {
+    await legacy('GITLAB_URL=https://tracker.example.test\n');
+    const result = await step(['s']);
+    expect(result.report).toMatchObject({ name: 'tracker', state: 'pendiente' });
+    expect(result.text).toContain('GITLAB_TOKEN');
+    expect(result.asked.some((call) => call.startsWith('password:'))).toBe(false);
+    expect(await tracker()).toBeUndefined();
+  }, 120_000);
+
+  it('init --yes alone never declares it and names the gap with the command', async () => {
+    await legacy();
+    const before = [await fs.readFile(manifestFile()), await fs.readFile(lockFile())];
+    const result = await cli(['init', '--preset-only', '--yes']);
+    expect(result.code, result.out + result.err).toBe(0);
+    expect(await tracker()).toBeUndefined();
+    expect([await fs.readFile(manifestFile()), await fs.readFile(lockFile())]).toEqual(before);
+    expect(result.out + result.err).toContain(DECLARE);
+    expect(result.out + result.err).not.toContain(SENTINEL);
+  }, 120_000);
+
+  it('init --yes --declare-tracker declares the block without touching .env, seals the lock and reports completada', async () => {
+    await legacy();
+    const env = await fs.readFile(envFile());
+    const result = await cli(['init', '--preset-only', '--yes', '--declare-tracker']);
+    expect(result.code, result.out + result.err).toBe(0);
+    expect(await tracker()).toEqual(TRACKER);
+    expect(await fs.readFile(envFile())).toEqual(env);
+    expect((await cli(['sync', '--check-lock'])).code).toBe(0);
+    expect(result.out.trimEnd().split('\n').at(-1)).toBe('ai-hub-integration: name=tracker state=completada stage=- action=-');
+    expect(result.out + result.err).not.toContain(SENTINEL);
+    // Segunda ejecución: ya declarado, nada cambia.
+    const before = [await fs.readFile(manifestFile()), await fs.readFile(lockFile())];
+    const again = await cli(['init', '--preset-only', '--yes', '--declare-tracker']);
+    expect(again.out.trimEnd().split('\n').at(-1)).toBe('ai-hub-integration: name=tracker state=completada stage=- action=-');
+    expect([await fs.readFile(manifestFile()), await fs.readFile(lockFile())]).toEqual(before);
+    expect(await everyFileWith(SENTINEL)).toEqual(['.ai-hub/.env']);
+  }, 180_000);
+
+  it('--declare-tracker with a key absent declares nothing, names the key and stays pendiente with exit 0', async () => {
+    await legacy(`GITLAB_TOKEN=${SENTINEL}\n`);
+    const result = await cli(['init', '--preset-only', '--yes', '--declare-tracker']);
+    expect(result.code, result.out + result.err).toBe(0);
+    expect(await tracker()).toBeUndefined();
+    expect(result.out.trimEnd().split('\n').at(-1)).toMatch(/^ai-hub-integration: name=tracker state=pendiente /);
+    expect(result.out + result.err).toContain('GITLAB_URL');
+    expect(result.out + result.err).not.toContain(SENTINEL);
+  }, 120_000);
+
+  it('--declare-tracker keeps the plan contract: nothing written and the same plan hash', async () => {
+    await legacy();
+    const before = [await fs.readFile(manifestFile()), await fs.readFile(lockFile())];
+    const plain = await cli(['init', '--preset-only', '--dry-run']);
+    const flagged = await cli(['init', '--preset-only', '--dry-run', '--declare-tracker']);
+    const hash = (text: string): string | undefined => /"hash":\s*"([0-9a-f]{64})"/.exec(text)?.[1];
+    expect(hash(plain.out)).toBeDefined();
+    expect(hash(flagged.out)).toBe(hash(plain.out));
+    expect([await fs.readFile(manifestFile()), await fs.readFile(lockFile())]).toEqual(before);
+  }, 120_000);
+
+  it('doctor names the undeclared tracker and its command without degrading the result', async () => {
+    await legacy();
+    const manifest = parseYaml(await fs.readFile(manifestFile(), 'utf8')) as ProjectManifest;
+    const check = await checkEnvKeys(root, manifest);
+    expect(check.ok).toBe(true);
+    expect(check.detail).toContain(DECLARE);
+    expect(check.detail).not.toContain(SENTINEL);
+    const doctor = await cli(['doctor']);
+    expect(doctor.out).toContain(DECLARE);
+  }, 120_000);
 });

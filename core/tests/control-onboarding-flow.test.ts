@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -10,6 +10,7 @@ import { runEnroll } from '../src/control/enroll.js';
 import { RETAKE_ACTION } from '../src/cli/integrations.js';
 import { parseDotenv } from '../src/env/dotenv.js';
 import { loadManifestContext } from '../src/manifest/manifest.js';
+import { runSync } from '../src/sync/sync.js';
 import {
   APPROVER,
   BOT_TOKEN,
@@ -629,6 +630,62 @@ describe('init-fiabilidad 8.9 — resumen solo tras el check', () => {
     expect(result.out.at(-2)).toBe('control: comprueba con ai-hub control enroll --check');
     expect(result.out.at(-1)).toBe('ai-hub-integration: name=control state=completada stage=- action=-');
   }, 60_000);
+
+  it('a completed control step declares manifest.control and leaves sync --check-lock at 0, and a second run changes no byte', async () => {
+    const result = await flagsInit(CONNECT_FLAGS);
+    expect(result.code, result.text).toBe(0);
+    expect(result.out.at(-1)).toBe('ai-hub-integration: name=control state=completada stage=- action=-');
+    expect((await loadManifestContext(h.root)).manifest.control).toMatchObject({ approvers: [APPROVER], channelId: CHANNEL });
+    const lock = await h.cli(['sync', '--check-lock']);
+    expect(lock.code, `${lock.out}\n${lock.err}`).toBe(0);
+    const doctor = await h.cli(['doctor']);
+    expect(doctor.out).toMatch(/\[OK\]\s+lock:/);
+    const before = [await fs.readFile(path.join(h.root, 'manifest.yaml')), await fs.readFile(path.join(h.root, 'sync.lock.json'))];
+    const mark = hermes.calls.length;
+    const again = await flagsInit(CONNECT_FLAGS);
+    expect(again.code, again.text).toBe(0);
+    expect(await fs.readFile(path.join(h.root, 'manifest.yaml'))).toEqual(before[0]);
+    expect(await fs.readFile(path.join(h.root, 'sync.lock.json'))).toEqual(before[1]);
+    expect((await h.cli(['sync', '--check-lock'])).code).toBe(0);
+    // fabrica-verificable 5.1 (D9): la segunda ejecución no re-enrola ni reinicia; ningún comando que cambie estado.
+    const second = hermes.calls.slice(mark);
+    expect(again.out.at(-1)).toBe('ai-hub-integration: name=control state=completada stage=- action=-');
+    expect(creating(second)).toEqual([]);
+    for (const word of ['subscribe', 'restart']) {
+      expect(second.some((args) => args.includes(word))).toBe(false);
+    }
+    expect(second.some((args) => args.includes('create'))).toBe(false);
+  }, 180_000);
+
+  it('a second run with a different token and confirmed reconfiguration changes the profile .env and restarts exactly once', async () => {
+    expect((await flagsInit(CONNECT_FLAGS)).code).toBe(0);
+    const envBefore = await fs.readFile(profileEnv(), 'utf8');
+    const mark = hermes.calls.length;
+    const again = await flagsInit([...CONNECT_FLAGS, '--reconfigure-hermes'], { stdin: async () => `${OTHER_TOKEN}\n` });
+    expect(again.code, again.text).toBe(0);
+    expect(await fs.readFile(profileEnv(), 'utf8')).not.toBe(envBefore);
+    expect(hermes.calls.slice(mark).filter((args) => args.includes('restart'))).toHaveLength(1);
+    expect(again.text).not.toContain(OTHER_TOKEN);
+  }, 180_000);
+
+  it('if the lock cannot be re-sealed the step fails closed at manifest, says so, keeps the written block and runs no enrolment', async () => {
+    const result = await flagsInit(CONNECT_FLAGS, {
+      onConnectStage: async (done: string) => {
+        if (done === 'env') {
+          // Una fuente del lock desaparece justo antes de escribir manifest.control: el re-sellado no puede completarse.
+          await fs.rm(path.join(h.root, '.ai-hub', 'agents'), { recursive: true, force: true });
+        }
+      },
+    });
+    expect(result.code, result.text).toBe(0);
+    expect(STATUS.exec(result.out.at(-1) ?? '')?.slice(1)).toEqual(['control', 'fallida', 'manifest', 'ai-hub sync']);
+    expect(result.text).toContain('sync.lock.json');
+    expect(result.text).toContain('manifest.control quedó escrito');
+    expect(result.text).not.toContain('Error inesperado');
+    expect(result.text).not.toContain(BOT_TOKEN);
+    expect((await loadManifestContext(h.root)).manifest.control).toMatchObject({ channelId: CHANNEL });
+    expect(hermes.calls.some((args) => args.includes('subscribe') || args.includes('cron'))).toBe(false);
+  }, 120_000);
 });
 
 describe('init-fiabilidad 1.3 / 8.5–8.6 — interrupción en cada etapa', () => {
@@ -829,4 +886,102 @@ describe('init-fiabilidad 4.8 — acción según lo persistido (HC-12, HC-13)', 
     expect((await enroll('yes')).code).toBe(0);
     expect(creating(hermes.calls)).toEqual([]);
   }, 120_000);
+});
+
+describe('fabrica-verificable 2.2 — un arranque lento no es un fallo y el resumen dice lo verificado', () => {
+  it('a listener that refuses through the cap ends pendiente, with no [FAIL] and nothing existing listed as missing', async () => {
+    hermes.topology = 'multiplex';
+    const real = hermes.host.probeWebhook!;
+    let slow = true;
+    hermes.host.probeWebhook = async (port) => (slow ? 'refused' : real(port));
+    const result = await flagsInit([...CONNECT_FLAGS, '--webhook-owner', 'default']);
+    expect(result.code, result.text).toBe(0);
+    expect(STATUS.exec(result.out.at(-1) ?? '')?.slice(1)).toEqual(['control', 'pendiente', 'webhook-platform', 'ai-hub control enroll --check --wait']);
+    expect(result.text).toContain('[PENDIENTE] webhook: el gateway sigue arrancando');
+    expect(result.text).toContain('AI_HUB_WEBHOOK_WAIT_SECONDS');
+    expect(result.text).not.toContain('[FAIL]');
+    const note = result.err.find((line) => line.startsWith('aviso: control:')) ?? '';
+    expect(note).toContain('sin verificar: webhook escuchando');
+    expect(note).toMatch(/listo: .*plataforma webhook \(declarada\).*ruta/);
+    expect(note).not.toMatch(/falta: .*(plataforma webhook|ruta)/);
+    expect(result.text).not.toContain(BOT_TOKEN);
+    // El mismo árbol, cuando el listener ya responde: el check con espera sale 0 sin escribir nada.
+    slow = false;
+    hermes.calls.length = 0;
+    const check = await runEnroll(h.root, { mode: 'check', host: hermes.host, wait: true });
+    expect(check.code, check.lines.join('\n')).toBe(0);
+    expect(creating(hermes.calls)).toEqual([]);
+  }, 120_000);
+
+  it('if the listener answers when the step re-verifies, the step goes on to its completeness check and completes', async () => {
+    hermes.topology = 'multiplex';
+    const real = hermes.host.probeWebhook!;
+    let probes = 0;
+    // Rechaza durante la espera del enrolamiento (antes y después del reinicio) y responde en la re-verificación.
+    hermes.host.probeWebhook = async (port) => {
+      probes += 1;
+      return probes <= 2 ? 'refused' : real(port);
+    };
+    const result = await flagsInit([...CONNECT_FLAGS, '--webhook-owner', 'default']);
+    expect(result.code, result.text).toBe(0);
+    expect(result.out.at(-1)).toBe('ai-hub-integration: name=control state=completada stage=- action=-');
+  }, 120_000);
+
+  it('a route that really is absent is listed as missing', async () => {
+    hermes.failOn.set('webhook subscribe', { stderr: 'Error: route refused' });
+    const result = await flagsInit(CONNECT_FLAGS);
+    const note = result.err.find((line) => line.startsWith('aviso: control:')) ?? '';
+    expect(STATUS.exec(result.out.at(-1) ?? '')?.slice(1, 4)).toEqual(['control', 'fallida', 'webhook-route']);
+    expect(note).toMatch(/falta: .*ruta/);
+    expect(note).toContain('ai-hub control enroll --yes');
+  }, 120_000);
+});
+
+describe('fabrica-verificable 3.5 — una muerte a mitad de la escritura no corrompe el manifiesto', () => {
+  it('a simulated death while the control block is written leaves manifest.yaml byte-identical and loadable', async () => {
+    const file = path.join(h.root, 'manifest.yaml');
+    const before = await fs.readFile(file);
+    // El fallo se arma al escribir el .env del perfil: la siguiente escritura del manifiesto es la del bloque control.
+    let armed = false;
+    const original = fs.writeFile.bind(fs);
+    const spy = vi.spyOn(fs, 'writeFile').mockImplementation(async (target, data, options) => {
+      if (armed && typeof target === 'string' && path.basename(target).startsWith('manifest.yaml')) {
+        await original(target, String(data).slice(0, Math.floor(String(data).length / 2)), options as never);
+        throw new Error('simulated kill mid-write');
+      }
+      return original(target as never, data as never, options as never);
+    });
+    const result = await flagsInit(CONNECT_FLAGS, {
+      onConnectStage: (done: string) => {
+        armed = armed || done === 'env';
+      },
+    });
+    spy.mockRestore();
+    expect(result.code, result.text).toBe(0);
+    expect(STATUS.exec(result.out.at(-1) ?? '')?.slice(1, 4)).toEqual(['control', 'fallida', 'manifest']);
+    expect(await fs.readFile(file)).toEqual(before);
+    expect((await loadManifestContext(h.root)).manifest.control).toBeUndefined();
+    expect((await fs.readdir(h.root)).filter((name) => name.startsWith('manifest.yaml'))).toEqual(['manifest.yaml']);
+    expect(result.text).not.toContain(BOT_TOKEN);
+    expect(hermes.calls.some((args) => args.includes('subscribe') || args.includes('cron'))).toBe(false);
+  }, 120_000);
+});
+
+describe('fabrica-verificable 4.2 — el paso de control no pisa ediciones locales', () => {
+  it('a target edited by hand before the control step is byte-identical after it, and the lock is sealed', async () => {
+    // Instalación con el lock al día (el consumidor del arnés añade `tracker` a mano después de `init`).
+    await runSync(h.root, { check: false });
+    const lock = JSON.parse(await fs.readFile(path.join(h.root, 'sync.lock.json'), 'utf8')) as { files: Record<string, { region?: string }> };
+    const rel = Object.keys(lock.files).find((name) => lock.files[name].region === undefined && name.endsWith('.md'));
+    expect(rel).toBeDefined();
+    const target = path.join(h.root, rel!);
+    const edited = `${await fs.readFile(target, 'utf8')}\nEDICION-LOCAL-DEL-OPERADOR\n`;
+    await fs.writeFile(target, edited);
+    // El paso de control a solas (sin el apply de `init`, que re-renderiza por contrato como `ai-hub sync`).
+    const result = await step(ACCEPT);
+    expect(result.code, result.text).toBe(0);
+    expect((await loadManifestContext(h.root)).manifest.control).toBeDefined();
+    expect((await h.cli(['sync', '--check-lock'])).code).toBe(0);
+    expect(await fs.readFile(target, 'utf8')).toBe(edited);
+  }, 180_000);
 });
