@@ -117,7 +117,7 @@ Un preset publica skills propias o del catálogo compartido (la del preset gana)
 
 ---
 
-## CLI: 30 comandos
+## CLI: 31 comandos
 
 | Comando | Responsabilidad |
 |---|---|
@@ -145,6 +145,7 @@ Un preset publica skills propias o del catálogo compartido (la del preset gana)
 | `gate` | Verifica el trabajo: artefactos por feature (`specs/NNN-*/`), WIP ≤ 1, `--seal <hash>` (fail-closed) y los comandos `typecheck`/`lint`/`test`/`verify` del manifiesto con el shell resuelto (nunca `bash` del PATH); `--quick` omite los comandos |
 | `runs` | Telemetría de ejecuciones en `.ai-hub/runs/` (ignorado) con esquema cerrado: `start`, `event` (`--from-status`), `note` (`decision`, `warn`, `awaiting-ok`, `lesson`), `end`, `list`; único escritor; nunca guarda prompts, contenido, tokens ni variables de entorno; retención `policy.runs.keep` (50) |
 | `locks` | Muestra (`show`) o libera explícitamente (`release --yes`) un lock X1 del motor; un dueño vivo de este host nunca se libera; uno de otro host, ilegible o de un recuperador interrumpido solo se libera así |
+| `orchestrate` | `discover` informa presencia, versión y operabilidad de Claude Code, Codex y OpenCode sin leer credenciales; `run --grant <id> --task-file <archivo>` ejecuta una concesión aprobada con el primer harness elegible de `manifest.runner.order` (lock del worktree, contexto canónico, fallback solo antes del arranque, cierre vinculado al run). Elegibles hoy: Claude Code 2.1.330 y Codex 0.172.0 (medidos); OpenCode no verificable |
 | `captures` | Lista (`list <archivo>`) o libera (`release <captura> --yes`) las capturas de escrituras externas detectadas; con tres sin liberar el motor no reemplaza ese archivo (`capture_quota_full`) |
 | `control` | `control tick --dry-run [--json] [--issue] [--labels-from] [--online]`: propone transiciones de etiqueta según `exit_effects`, revalida el sello antes de `ai::in-dev`, aplica `max_rounds` y lista lo pendiente de OK humano. No escribe, no mueve etiquetas, no comenta, no lanza agentes; nunca propone `ai::spec-ready` |
 | `review` | `review consolidate <informes…>`: consolida los bloques ```json findings``` del panel (une a ±3 líneas o por evidencia, degrada a `question` lo que no trae archivo, línea o escenario); solo escribe por stdout |

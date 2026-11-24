@@ -31,6 +31,7 @@ export const CLI_COMMAND_NAMES: readonly string[] = [
   'runs',
   'locks',
   'captures',
+  'orchestrate',
   'control',
   'review',
   'adopt',

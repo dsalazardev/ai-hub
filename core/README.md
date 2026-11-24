@@ -99,6 +99,7 @@ npx @dsalazardev/ai-hub-cli install --targets claude
 | `gate` | Artefactos por feature, WIP, `--seal <hash>` fail-closed y comandos del manifiesto; `--quick` |
 | `runs` | Telemetría cerrada en `.ai-hub/runs/`: `start`, `event` (`--from-status`), `note`, `end`, `list` |
 | `locks` | Muestra (`show`) o libera explícitamente (`release --yes`) un lock X1; un dueño vivo de este host nunca se libera, y uno de otro host o ilegible solo así |
+| `orchestrate` | `discover` informa presencia, versión y operabilidad de Claude Code, Codex y OpenCode sin leer credenciales; `run --grant <id> --task-file <archivo>` ejecuta una concesión aprobada con el primer harness elegible de `manifest.runner.order` (lock del worktree, contexto canónico, fallback solo antes del arranque, cierre vinculado al run). Elegibles hoy: Claude Code 2.1.330 y Codex 0.172.0 (medidos); OpenCode no verificable |
 | `captures` | Lista (`list <archivo>`) o libera (`release <captura> --yes`) las capturas de escrituras externas detectadas; con tres sin liberar el motor no reemplaza ese archivo (`capture_quota_full`) |
 | `control` | `control tick --dry-run [--json] [--issue] [--labels-from] [--online]`: propone, no aplica |
 | `review` | `review consolidate <informes…>`: consolida el panel de refutación por stdout |
@@ -127,7 +128,7 @@ La acción depende de lo que quedó guardado:
   en una terminal), aportando de nuevo el token, el canal y el aprobador.
 - **Guardada.** `ai-hub control enroll --yes`.
 
-`ai-hub help` lista los 30 comandos. `verify` es alias de `gate`.
+`ai-hub help` lista los 31 comandos. `verify` es alias de `gate`.
 
 ### Idea del proyecto
 

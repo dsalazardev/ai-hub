@@ -12,7 +12,9 @@ import type { DiscoveryDeps } from './discovery.js';
 export function hostDiscoveryDeps(env: NodeJS.ProcessEnv = process.env, platform: NodeJS.Platform = process.platform): DiscoveryDeps {
   return {
     async resolveBinary(binary) {
-      const extensions = platform === 'win32' ? ['', ...(env.PATHEXT ?? '.COM;.EXE;.BAT;.CMD').split(';').map((item) => item.toLowerCase())] : [''];
+      // En Windows solo ejecutables nativos: sin shell, Node no puede lanzar `.cmd`/`.bat` (los shims de npm) ni scripts
+      // sin extensión; un harness instalado solo así se informa como ausente, no se lanza con un shell.
+      const extensions = platform === 'win32' ? (env.PATHEXT ?? '.COM;.EXE').split(';').map((item) => item.toLowerCase()).filter((item) => item === '.exe' || item === '.com') : [''];
       for (const dir of (env.PATH ?? '').split(path.delimiter).filter(Boolean)) {
         for (const extension of extensions) {
           const candidate = path.join(dir, `${binary}${extension}`);

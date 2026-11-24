@@ -11,6 +11,7 @@ import { cmdHook } from './hook.js';
 import { cmdRuns } from '../harness/runs.js';
 import { cmdLocks } from './locks.js';
 import { cmdCaptures } from './captures.js';
+import { cmdOrchestrate } from './orchestrate.js';
 import { cmdControl } from '../control/cli.js';
 import { cmdReview } from '../review/consolidate.js';
 import { cmdAdopt } from '../adopt/convert.js';
@@ -165,6 +166,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
   gate: { summary: 'Verifica artefactos, WIP, sello y comandos del manifiesto', handler: cmdGate },
   runs: { summary: 'Telemetría de ejecuciones con esquema cerrado (start|event|note|end|list)', handler: cmdRuns },
   locks: { summary: 'Muestra o libera explícitamente un lock X1 (show|release --yes)', handler: cmdLocks },
+  orchestrate: { summary: 'Runner de harnesses: discover informa el estado sin credenciales; run ejecuta una concesión aprobada', handler: cmdOrchestrate },
   captures: { summary: 'Lista o libera capturas de escrituras externas detectadas (list|release --yes)', handler: cmdCaptures },
   control: { summary: 'Plano de control: tick --dry-run propone; decide, ingest, apply, expire y enroll (hermes-control)', handler: cmdControl },
   review: { summary: 'review consolidate <informes…>: consolida el panel por stdout', handler: cmdReview },
@@ -185,8 +187,9 @@ export function printHelp(io: CliIO): void {
   io.out('Uso: ai-hub <comando> [opciones]');
   io.out('');
   io.out(`Comandos (${COMMAND_NAMES.length}):`);
+  const width = Math.max(...COMMAND_NAMES.map((name) => name.length)) + 1;
   for (const name of COMMAND_NAMES) {
-    io.out(`  ${name.padEnd(10)} ${COMMANDS[name].summary}`);
+    io.out(`  ${name.padEnd(width)} ${COMMANDS[name].summary}`);
   }
   io.out('');
   io.out('add agent acepta cualquier agente del catálogo, no solo los del preset.');

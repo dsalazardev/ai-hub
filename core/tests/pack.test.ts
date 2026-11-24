@@ -89,7 +89,8 @@ describe('published package', () => {
     // +6 (3.ª medida): delivery/{change-request,reconcile} y harness/guards/delivery × 2 en dist; diff de npm pack.
     // +8 (4.ª medida): runner/{execution,process}, writes/replace y cli/captures × 2 en dist; lista de npm pack.
     // +6 (5.ª medida): runner/{discovery,orchestrate,host} × 2 en dist; lista de npm pack.
-    expect(pkg.entryCount).toBe(2090);
+    // +2 (6.ª medida): cli/orchestrate × 2 en dist (`ai-hub orchestrate`, #11-C1); lista de npm pack.
+    expect(pkg.entryCount).toBe(2092);
     expect(paths.some((file) => file.includes('upstream-watch'))).toBe(false);
     expect(paths).toContain('SECURITY.md');
     expect(paths).toEqual(expect.arrayContaining(['engine/templates/env.example', 'engine/templates/gitlab-ci.yml']));

@@ -64,6 +64,14 @@ export interface RunIndex extends ExecutionIndexEntry {
   state?: 'running' | 'held' | 'completed' | 'reconciled';
 }
 
+/**
+ * El run id viaja en el entorno (`AI_HUB_RUN_ID`) y en el texto de la tarea: medido en 2.6, los comandos que Codex ejecuta
+ * en su sandbox no ven la variable, así que el entorno solo no basta para que el cierre lo nombre.
+ */
+export function taskWithRun(task: string, run: string): string {
+  return `${task}\n\nRun id asignado por ai-hub: ${run}. Tu línea de cierre debe llevar run=${run}.`;
+}
+
 export async function executeGrantedRun(input: ExecutionRequestInput, deps: ExecutionDeps): Promise<ExecutionOutcome> {
   const { root, claim } = input;
   const now = input.now ?? new Date();
@@ -104,7 +112,7 @@ export async function executeGrantedRun(input: ExecutionRequestInput, deps: Exec
     const outcome = await runWithFallback(
       selection.eligible.map((item) => item.id),
       async (id) => {
-        last = await deps.launch({ harness: id, run, cwd: input.worktreePath, env: harnessEnvironment(run), task: input.task });
+        last = await deps.launch({ harness: id, run, cwd: input.worktreePath, env: harnessEnvironment(run), task: taskWithRun(input.task, run) });
         if (last.sessionId) {
           await index(root, run, { harness: id, session: last.sessionId });
         }
@@ -188,10 +196,12 @@ export function processLauncher(
     if (!result.started) {
       return { phase: 'resolve', ok: false, output: '', reason: 'el binario no arrancó' };
     }
-    const sessionId = declaration.session?.sessionId(result.tail) ?? null;
+    // La salida del harness se interpreta según su declaración: texto final (con la línea de cierre) e id de sesión.
+    const parsed = declaration.headless.output(result.tail);
+    const sessionId = parsed.sessionId ?? declaration.session?.sessionId(result.tail) ?? null;
     if (result.timedOut || result.exitCode !== 0) {
-      return { phase: 'task_delivered', ok: false, output: result.tail, sessionId, reason: result.timedOut ? 'timeout' : `salida ${result.exitCode}` };
+      return { phase: 'task_delivered', ok: false, output: parsed.text, sessionId, reason: result.timedOut ? 'timeout' : `salida ${result.exitCode}` };
     }
-    return { phase: 'completed', ok: true, output: result.tail, sessionId };
+    return { phase: 'completed', ok: true, output: parsed.text, sessionId };
   };
 }

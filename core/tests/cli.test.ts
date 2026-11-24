@@ -46,7 +46,7 @@ async function seeded(): Promise<void> {
 }
 
 describe('dispatch', () => {
-  it('help lists exactly the 30 commands', async () => {
+  it('help lists exactly the 31 commands', async () => {
     const result = await cli(['help']);
     expect(result.code).toBe(0);
     const expected = [
@@ -74,6 +74,7 @@ describe('dispatch', () => {
       'gate',
       'runs',
       'locks',
+      'orchestrate',
       'captures',
       'control',
       'review',
@@ -86,7 +87,7 @@ describe('dispatch', () => {
       expect(result.out).toContain(name);
     }
     const rows = result.out.split('\n').filter((line) => /^ {2}[a-z]+ {2,}/.test(line));
-    expect(rows).toHaveLength(30);
+    expect(rows).toHaveLength(31);
   });
 
   it('unknown commands exit 2 and no arguments exit 2', async () => {

@@ -55,6 +55,8 @@ export interface ProjectManifest {
   speckit?: ProjectSpeckit;
   /** Tracker opcional (PD-1): solo nombres de variables, jamás valores. */
   tracker?: { kind: 'gitlab' | 'github'; urlEnv: string; tokenEnv: string };
+  /** Runner de harnesses (R-092): orden de prioridad y límite de tiempo; por defecto claude, codex, opencode. */
+  runner?: { order?: Array<'claude' | 'codex' | 'opencode'>; timeoutMinutes?: number };
   /** Plano de control (hermes-control): aprobadores de Discord, TTL y política de expiración. */
   /** Entrega (R-068, R-069): opt-in; sin el bloque, `apply` no crea ramas ni worktrees. */
   delivery?: { branchPrefix?: string; base?: string };

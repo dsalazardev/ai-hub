@@ -79,13 +79,47 @@ describe('descubrimiento y prioridad (5.6, 5.7, 5.21 con dobles)', () => {
     expect(reordered.selected?.id).toBe('opencode');
   });
 
-  it('las declaraciones vigentes no hacen operable a ningún harness real: ejecución real deshabilitada', async () => {
-    const deps = discovery({ claude: 'operable', codex: 'operable', opencode: 'operable' });
-    const selection = await selectHarness(HARNESS_DECLARATIONS, deps);
-    expect(selection.selected).toBeNull();
-    expect(selection.skipped.every((item) => item.reason.includes('no verificable'))).toBe(true);
-    // Sin comando de estado declarado no se ejecuta ninguno: solo `--version`, en el directorio vacío.
-    expect(deps.calls.every((call) => call.args[0] === '--version' && call.cwd.includes('ai-hub-probe-vacio'))).toBe(true);
+  it('declaraciones vigentes (2.6): solo Claude Code 2.1.330 y Codex 0.172.0 medidos son elegibles; OpenCode no verificable', async () => {
+    // Salidas como las medidas en 2.6 (sin secretos).
+    const measured: DiscoveryDeps & { calls: string[][] } = {
+      calls: [],
+      resolveBinary: async (binary) => `/fake/${binary}`,
+      emptyDir: async () => path.join(os.tmpdir(), 'ai-hub-probe-vacio'),
+      run: async (command, args) => {
+        measured.calls.push([path.basename(command), ...args]);
+        const id = path.basename(command);
+        if (args[0] === '--version') {
+          return { exitCode: 0, stdout: id === 'claude' ? '2.1.330 (Claude Code)' : id === 'codex' ? 'codex-cli 0.172.0' : 'opencode v2.3.2', started: true };
+        }
+        if (id === 'claude') {
+          return { exitCode: 0, stdout: '{"loggedIn": true, "authMethod": "claude.ai"}', started: true };
+        }
+        return { exitCode: 0, stdout: 'Logged in using ChatGPT', started: true };
+      },
+    };
+    const selection = await selectHarness(HARNESS_DECLARATIONS, measured);
+    expect(selection.eligible.map((item) => item.id)).toEqual(['claude', 'codex']);
+    expect(selection.skipped).toEqual([{ id: 'opencode', reason: expect.stringContaining('no verificable') }]);
+    // OpenCode no ejecuta su comando de estado: no tiene uno verificado.
+    expect(measured.calls.filter((call) => call[0] === 'opencode').map((call) => call[1])).toEqual(['--version']);
+    // Fuera del rango medido o sin sesión, no elegible.
+    const newer = { ...measured, run: async (command: string, args: string[]) => (args[0] === '--version' ? { exitCode: 0, stdout: 'codex-cli 0.173.0', started: true } : measured.run(command, args, { cwd: '', timeoutMs: 1 })) };
+    expect((await selectHarness(HARNESS_DECLARATIONS, newer, ['codex'])).skipped[0].reason).toContain('fuera del rango');
+    const loggedOut = { ...measured, run: async (command: string, args: string[]) => (args[0] === '--version' ? { exitCode: 0, stdout: '2.1.330 (Claude Code)', started: true } : { exitCode: 1, stdout: '{"loggedIn": false}', started: true }) };
+    expect((await selectHarness(HARNESS_DECLARATIONS, loggedOut, ['claude'])).skipped[0].reason).toContain('no operativo');
+  });
+
+  it('la salida medida de cada harness da el texto de cierre y el id de sesión', () => {
+    const claude = HARNESS_DECLARATIONS.find((item) => item.id === 'claude')!;
+    const codex = HARNESS_DECLARATIONS.find((item) => item.id === 'codex')!;
+    expect(claude.headless!.output('{"type":"result","result":"hecho\\nAI-HUB-STATUS: DONE | artifact=- | reason=-","session_id":"6905-abc"}')).toEqual({
+      text: 'hecho\nAI-HUB-STATUS: DONE | artifact=- | reason=-',
+      sessionId: '6905-abc',
+    });
+    const jsonl = ['{"type":"thread.started","thread_id":"01a2-th"}', '{"type":"item.completed","item":{"type":"agent_message","text":"listo"}}', '{"type":"turn.completed"}'].join('\n');
+    expect(codex.headless!.output(jsonl)).toEqual({ text: 'listo', sessionId: '01a2-th' });
+    expect(codex.session!.resumeArgs('01a2-th')).toEqual(['exec', 'resume', '01a2-th', '--json', '--skip-git-repo-check']);
+    expect(HARNESS_DECLARATIONS.find((item) => item.id === 'opencode')!.headless).toBeNull();
   });
 
   it('sonda no declarada no arranca proceso (capability_unverified); declarada da diagnosed y no hace operable', async () => {
@@ -232,12 +266,12 @@ describe('ejecución concedida de extremo a extremo con dobles (5.10–5.13, 5.1
   it('lanzador real con un proceso doble: recibe el run id, su cierre se vincula y la ejecución sin declarar no arranca', async () => {
     await h.consumer();
     const script = "console.log('AI-HUB-STATUS: CONVERGED | artifact=- | run=' + process.env.AI_HUB_RUN_ID + ' | reason=done')";
-    const node = declaration('claude', { headless: { args: [], evidence: 'doble', build: () => ['-e', script] } });
+    const node = declaration('claude', { headless: { args: [], evidence: 'doble', build: () => ['-e', script], output: (stdout) => ({ text: stdout, sessionId: null }) } });
     const launch = processLauncher([node, declaration('codex')], async (binary) => (binary === 'claude' ? process.execPath : null), 20_000);
     const outcome = await base(await grant(), launch);
     expect(outcome).toMatchObject({ state: 'completed', harness: 'claude', accepted: true });
     const real = processLauncher(HARNESS_DECLARATIONS, async () => process.execPath, 20_000);
-    expect(await real({ harness: 'codex', run: 'r', cwd: h.root, env: {}, task: 't' })).toMatchObject({ phase: 'resolve', ok: false });
+    expect(await real({ harness: 'opencode', run: 'r', cwd: h.root, env: {}, task: 't' })).toMatchObject({ phase: 'resolve', ok: false });
   }, 30_000);
 });
 
@@ -246,10 +280,15 @@ describe('dependencias reales del descubrimiento (host)', () => {
     const { hostDiscoveryDeps } = await import('../src/runner/host.js');
     const bin = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-hub-bin-'));
     try {
-      const name = process.platform === 'win32' ? 'harness-doble.cmd' : 'harness-doble';
+      const name = process.platform === 'win32' ? 'harness-doble.exe' : 'harness-doble';
       await fs.writeFile(path.join(bin, name), 'x');
-      const deps = hostDiscoveryDeps({ PATH: bin, PATHEXT: '.CMD' }, process.platform);
+      if (process.platform === 'win32') {
+        await fs.writeFile(path.join(bin, 'solo-shim.cmd'), 'x');
+      }
+      const deps = hostDiscoveryDeps({ PATH: bin, PATHEXT: '.COM;.EXE;.BAT;.CMD' }, process.platform);
       expect(await deps.resolveBinary('harness-doble')).toBe(path.join(bin, name));
+      // Un shim `.cmd` no se lanza sin shell: se informa como ausente.
+      expect(await deps.resolveBinary('solo-shim')).toBeNull();
       expect(await deps.resolveBinary('no-existe-ai-hub')).toBeNull();
       const dir = await deps.emptyDir();
       expect(await fs.readdir(dir)).toEqual([]);

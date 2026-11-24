@@ -425,6 +425,21 @@
     "template": "detección ambigua entre {}; elige con --preset <id>"
   },
   {
+    "file": "cli/orchestrate.ts",
+    "emitter": "io.err",
+    "template": "orchestrate: {}: {}"
+  },
+  {
+    "file": "cli/orchestrate.ts",
+    "emitter": "io.err",
+    "template": "orchestrate: la concesión {} no está en el registro de control; no se ejecuta nada"
+  },
+  {
+    "file": "cli/orchestrate.ts",
+    "emitter": "io.err",
+    "template": "orchestrate: la concesión está ligada a un sello; indica --feature specs/<NNN-slug> para recalcularlo"
+  },
+  {
     "file": "cli/run.ts",
     "emitter": "io.err",
     "template": "[FAIL] {}"
