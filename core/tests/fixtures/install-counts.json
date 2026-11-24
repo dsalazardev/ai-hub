@@ -1,7 +1,7 @@
 {
   "description": "Cifras medidas en copias temporales con el CLI compilado (node dist/bin/ai-hub.js init --yes [...]); no se calculan a mano. Desde 0.11.0 se miden con --no-speckit: los archivos de Spec Kit no entran en sync.lock.json.",
-  "measuredAt": "2026-11-13",
-  "package": "0.17.0 (verificacion real de la instalacion; re-medidas con el CLI de 0.17.0, idénticas a 0.16.0)",
+  "measuredAt": "2026-11-24",
+  "package": "0.18.0 (harden-harness-orchestration; lock, skills de proyecto, agentes y comandos re-medidos con el CLI de 0.18.0, idénticos a 0.17.0; angularProjectSkills sin re-medir)",
   "commands": {
     "full": "init --yes",
     "presetOnly": "init --yes --preset-only",

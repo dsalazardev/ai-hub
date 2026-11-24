@@ -26,27 +26,26 @@ async function currentSection(): Promise<{ version: string; date: string; body: 
   return { version: pkg.version, date: heading[1], body: changelog.slice(start, next < 0 ? undefined : next) };
 }
 
-describe('release 0.17.0 (verificacion real)', () => {
-  it('bumps the package and names the listener, the atomic writer and the recovery contract', async () => {
+describe('release 0.18.0 (harden-harness-orchestration)', () => {
+  it('bumps the package and names the runner, the measured harnesses, the tracker results and the compatibility floor', async () => {
     const section = await currentSection();
-    expect(section.version).toBe('0.17.0');
-    expect(section.date).toBe('2026-11-13');
+    expect(section.version).toBe('0.18.0');
+    expect(section.date).toBe('2026-11-24');
     for (const term of [
-      'resolveListener',
-      'control enroll --check --wait',
-      'init --declare-tracker',
-      'core/src/manifest/write.ts',
-      'sealLock',
-      'AI_HUB_WEBHOOK_WAIT_SECONDS',
-      'tratar `pendiente`',
-      'segunda ejecución',
-      '1075 B → 604 B',
-      'manifest.tracker',
+      'ai-hub orchestrate',
+      'manifest.runner.order',
+      'Claude Code 2.1.330 y Codex 0.172.0',
+      'ai-hub captures list|release',
+      'git ≥ 2.56.1',
+      'Hermes ≥ 0.23.4',
+      'Versión mínima compatible (VMC): 0.18.0',
+      'no está soportado',
+      '`If-Match` rechazado',
     ]) {
       expect(section.body).toContain(term);
     }
-    expect(section.body).toContain('2004 entradas');
-    expect(section.body).toContain('b3fc47a09dbdfba9500c8ef0b0a7c783ebb28aa4');
+    expect(section.body).toContain('2092 entradas');
+    expect(section.body).toContain('e6ef1efbbc370bd926e35ccab70317257e2a42bb');
   });
 
   // El ritual iguala versión y fixture: la comprobación de cifras es estricta, sin omisión.

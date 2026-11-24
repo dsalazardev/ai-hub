@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — harden-harness-orchestration (sin publicar)
+## 0.18.0 — harden-harness-orchestration (2026-11-24)
 
 ### Added
 
@@ -35,6 +35,30 @@
   borrado condicional de ramas); la introspección de permisos del token queda «no verificada».
 - Con GitHub, la evidencia remota de tick usa los PR que referencian la issue (eventos `cross-referenced`) y los check
   runs de su cabeza; `control ingest` ignora el webhook con `ingest_unsupported_tracker` (la ingesta es de GitLab).
+
+### Cifras medidas
+
+Re-medidas con el CLI compilado de 0.18.0 en copias temporales (`--no-speckit`), idénticas a 0.17.0:
+
+| Instalación | Entradas de `sync.lock.json` |
+|---|---|
+| `init --yes` (`generic-ts`, full) | 6.872 |
+| `init --yes --preset-only` | 66 |
+| `init --yes --exclude rule:skill-quality` | 6.852 |
+| `init --yes --preset angular-express` | 6.887 |
+
+262 skills de proyecto + 17 comandos Spec Kit, 40 agentes y 5 destinos.
+
+### Empaquetado
+
+- Tarball `dsalazardev-ai-hub-cli-0.18.0.tgz`: **2092 entradas**, shasum
+  `e6ef1efbbc370bd926e35ccab70317257e2a42bb`, 4.819.800 bytes (13.588.115 desempaquetados).
+
+### Known limitations
+
+- Sin evidencia en GitLab (2.1, 2.9) ni del aislamiento del advisor (2.3): la actualización condicionada de etiquetas
+  y el borrado remoto siguen retenidos en GitLab, y las capacidades del advisor siguen desactivadas.
+- Ningún grupo habilita el tier `low` del panel (medición de 12 cambios reales): el panel completo se mantiene.
 
 ## 0.17.0 — verificacion real de la instalacion (2026-11-13)
 
