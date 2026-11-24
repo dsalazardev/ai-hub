@@ -79,6 +79,10 @@ jobs:
       - name: Install
         run: npm ci --prefix core
 
+      # Pseudoterminal real para el nivel 3 de idea-input; no se declara como dependencia (--no-save).
+      - name: node-pty for the pseudoterminal tests
+        run: npm install --no-save --no-fund --no-audit node-pty --prefix core
+
       # Sin secretos ni tracker: solo directorios temporales y procesos `node` propios.
       - name: Writes, capture, process tree and platform skips
         working-directory: core
@@ -95,6 +99,17 @@ jobs:
         run: >-
           node scripts/ci/required-ran.mjs platform-evidence.xml
           "POSIX exige modo 700" "POSIX: dangling symlink" "read-only target (2.3, DEV-03, POSIX)"
+          "al vencer el timeout no queda ningún proceso del árbol"
+          "pegado de 2000 líneas: seed.md idéntico, confirm sin respuesta y cero bytes sobrantes en la TTY"
+          "pegado de 2000 líneas con bracketed paste"
+
+      - name: Pseudoterminal tests ran on Windows
+        if: runner.os == 'Windows'
+        working-directory: core
+        run: >-
+          node scripts/ci/required-ran.mjs platform-evidence.xml
+          "con node-pty, un hijo en pseudoterminal recibe bytes crudos y termina"
+          "pegado de 2000 líneas con bracketed paste"
           "al vencer el timeout no queda ningún proceso del árbol"
 
       - name: Keep the report
