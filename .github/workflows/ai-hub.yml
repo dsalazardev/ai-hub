@@ -83,6 +83,10 @@ jobs:
       - name: node-pty for the pseudoterminal tests
         run: npm install --no-save --no-fund --no-audit node-pty --prefix core
 
+      # Los niveles 2 y 3 de pseudoterminal ejecutan el CLI compilado: sin `dist` se omiten.
+      - name: Build
+        run: npm --prefix core run build
+
       # Sin secretos ni tracker: solo directorios temporales y procesos `node` propios.
       - name: Writes, capture, process tree and platform skips
         working-directory: core
