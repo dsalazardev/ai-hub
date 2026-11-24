@@ -8,7 +8,7 @@ import { cmdTick, TICK_USAGE } from './tick.js';
 import { defaultTrackerFetch, trackerFromHarness, TrackerError, type TrackerFetch } from './tracker.js';
 import { openChangeRequest } from '../delivery/change-request.js';
 import { runEnroll, type EnrollMode } from './enroll.js';
-import { canExecute, hermesHome, HermesNotFoundError, HermesVersionError, resolveHermes, supportsCronPause, type ResolverHost } from './hermes.js';
+import { canExecute, HermesNotFoundError, HermesVersionError, resolveHermes, supportsCronPause, type ResolverHost } from './hermes.js';
 import { resetHealth } from './health.js';
 import { runPoll, type PollHost } from './poll.js';
 import { PROFILE } from './enroll.js';
@@ -267,7 +267,6 @@ async function processPollHost(ctx: CliContext): Promise<PollHost | null> {
   } catch {
     return null;
   }
-  const home = hermesHome(host);
   const cron = (args: string[]) => cli.run(['-p', PROFILE, 'cron', ...args]);
   return {
     cronJobs: async () => {
@@ -277,20 +276,10 @@ async function processPollHost(ctx: CliContext): Promise<PollHost | null> {
     // 4.25: pausar y reanudar solo desde la versión verificada; por debajo, el poll se queda en el aviso manual.
     pause: async (job) => supportsCronPause(cli.version) && (await cron(['pause', job])).status === 0,
     resume: async (job) => supportsCronPause(cli.version) && (await cron(['resume', job])).status === 0,
-    // Evidencia documentada (1.7): `gateway_state.json` del home (multiplexor) o del perfil.
-    gatewayStarting: async () => {
-      for (const file of [path.join(home, 'gateway_state.json'), path.join(home, 'profiles', PROFILE, 'gateway_state.json')]) {
-        const text = await fs.readFile(file, 'utf8').catch(() => null);
-        if (text !== null) {
-          try {
-            return (JSON.parse(text) as { gateway_state?: unknown }).gateway_state === 'starting';
-          } catch {
-            return false;
-          }
-        }
-      }
-      return false;
-    },
+    // 2.4 (Hermes 0.23.4): `gateway_state.json` no existe durante el arranque y sigue en `running` tras una caída; ningún
+    // estado documentado y estable distingue «arrancando». Sin él no hay evidencia verificada (5.2 detenida): un arranque
+    // cuenta como fallo normal y nunca se lee un archivo posiblemente obsoleto como estado actual.
+    gatewayStarting: async () => false,
   };
 }
 
