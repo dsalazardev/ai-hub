@@ -248,9 +248,9 @@ describe('runSync: check', () => {
     expect((await runSync(root, { check: true })).problems).toEqual([]);
   });
 
-  const itSymlink = process.platform === 'win32' ? it.skip : it;
-  itSymlink('rejects symlinks inside generated folders', async () => {
-    await fs.symlink(path.join(root, '.ai-hub/agents'), path.join(root, '.claude/agents/enlace'));
+  // En Windows un enlace simbólico de directorio exige privilegio; un junction no, y `lstat` lo informa como enlace.
+  it('rejects symlinks inside generated folders', async () => {
+    await fs.symlink(path.join(root, '.ai-hub/agents'), path.join(root, '.claude/agents/enlace'), process.platform === 'win32' ? 'junction' : 'dir');
     const result = await runSync(root, { check: true });
     expect(result.problems.join('\n')).toContain('enlace simbólico no permitido: .claude/agents/enlace');
   });

@@ -1,4 +1,6 @@
 import fs from 'node:fs/promises';
+import { createExclusive } from '../writes/proposals.js';
+import { replaceOwned } from '../writes/replace.js';
 import path from 'node:path';
 import { mapLimit } from '../concurrency.js';
 import { ENGINE_SKILLS_DIR } from '../engine/engine.js';
@@ -72,7 +74,7 @@ async function writeScaffold(root: string, record: ScaffoldRecord): Promise<void
     Object.entries(record.files).sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0)),
   );
   await fs.mkdir(path.dirname(file), { recursive: true });
-  await fs.writeFile(file, `${JSON.stringify({ version: 1, files }, null, 2)}\n`, 'utf8');
+  await replaceOwned({ root, file, module: 'presets/materialize.ts', content: `${JSON.stringify({ version: 1, files }, null, 2)}\n` });
 }
 
 async function copyOnce(
@@ -104,7 +106,8 @@ async function threeWay(
   const hash = sha256(content);
   const abs = path.join(root, destination);
   if (await exists(abs)) {
-    const current = sha256(await fs.readFile(abs, 'utf8').catch(() => ''));
+    const existing = await fs.readFile(abs, 'utf8').catch(() => '');
+    const current = sha256(existing);
     const previous =
       record.files[destination] ?? (knownHashes.includes(current) ? { sha256: current, source: sourceKey } : undefined);
     if (previous && previous.sha256 === current) {
@@ -116,7 +119,8 @@ async function threeWay(
         result.kept.push(destination);
         return;
       }
-      await fs.writeFile(abs, content, 'utf8');
+      // 3.11: solo si sigue siendo la copia intacta que se leyó; una edición concurrente se conserva.
+      await replaceOwned({ root, file: abs, module: 'presets/materialize.ts', content, expected: existing });
       record.files[destination] = { sha256: hash, source: sourceKey };
       result.updated.push(destination);
       return;
@@ -125,8 +129,11 @@ async function threeWay(
     result.collisions.push(destination);
     return;
   }
-  await fs.mkdir(path.dirname(abs), { recursive: true });
-  await fs.writeFile(abs, content, 'utf8');
+  // 3.11: archivo nuevo en exclusiva; si apareció entretanto es una colisión, nunca se sobrescribe.
+  if (!(await createExclusive(abs, content))) {
+    result.collisions.push(destination);
+    return;
+  }
   record.files[destination] = { sha256: hash, source: sourceKey };
   result.written.push(destination);
 }

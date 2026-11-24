@@ -162,3 +162,27 @@ describe('fabrica-verificable 1.2 — resolveListener', () => {
     expect(calls.every((args) => args.includes('status') || args.includes('list'))).toBe(true);
   });
 });
+
+describe('almacén de rutas corrupto frente a ausente (R-023)', () => {
+  it('corrupto: se informa con la otra fuente y la incertidumbre, y conserva sus bytes', async () => {
+    await block('default');
+    await store('default', PROFILE, `{ nope ${STORE_SECRET}`);
+    const file = path.join(home, 'webhook_subscriptions.json');
+    const candidates = [file, path.join(home, 'profiles', 'default', 'webhook_subscriptions.json')];
+    const target = (await Promise.all(candidates.map((item) => fs.access(item).then(() => item, () => null)))).find((item) => item !== null)!;
+    const before = await fs.readFile(target);
+    const view = await resolve({ status: ok(MULTIPLEX), list: ok(`  ◆ ${ROUTE}`) });
+    const notices = view.notices.join('\n');
+    expect(notices).toContain('store_corrupt');
+    expect(notices).toContain(`sí lista la ruta ${ROUTE}`);
+    expect(notices).toContain('incertidumbre');
+    expect(notices).not.toContain(STORE_SECRET);
+    expect((await fs.readFile(target)).equals(before)).toBe(true);
+  });
+
+  it('ausente: no se informa como corrupto', async () => {
+    await block('default');
+    const view = await resolve({ status: ok(MULTIPLEX), list: ok(`  ◆ ${ROUTE}`) });
+    expect(view.notices.join('\n')).not.toContain('store_corrupt');
+  });
+});

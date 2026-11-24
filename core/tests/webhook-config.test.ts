@@ -4,7 +4,7 @@ import http from 'node:http';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
-import { numberedBackup, probeWebhook, readWebhookBlock, removeEnvKeys, waitForWebhook, webhookWaitCap, writeWebhookBlock } from '../src/control/webhook-config.js';
+import { probeWebhook, readWebhookBlock, waitForWebhook, webhookWaitCap, withoutEnvKeys, writeWebhookBlock } from '../src/control/webhook-config.js';
 import { entryQuestion, ownerQuestion, validateConnectFlags } from '../src/control/onboard-step.js';
 import { harness } from './control-harness.js';
 
@@ -85,14 +85,12 @@ describe('webhook-operativo 2.1 — config.yaml reader and writer', () => {
     }
   });
 
-  it('numbered backups never overwrite and env key removal keeps every other byte', async () => {
-    dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-webhook-'));
-    const env = path.join(dir, '.env');
-    await fs.writeFile(env, 'A=1\r\nWEBHOOK_PORT=1\nB=2\n');
-    expect(await numberedBackup(env)).toBe(`${env}.pre-ai-hub`);
-    expect(await numberedBackup(env)).toBe(`${env}.pre-ai-hub.1`);
-    expect(await removeEnvKeys(env, ['WEBHOOK_PORT'])).toBe(1);
-    expect(await fs.readFile(env, 'utf8')).toBe('A=1\r\nB=2\n');
+  it('env key removal keeps every other byte; no adjacent-copy writer remains (R-032, 3.11)', async () => {
+    expect(withoutEnvKeys('A=1\r\nWEBHOOK_PORT=1\nB=2\n', ['WEBHOOK_PORT'])).toBe('A=1\r\nB=2\n');
+    // La migración real va por la transacción X2 (enroll-webhook.ts); los escritores directos se retiraron.
+    const exported = Object.keys(await import('../src/control/webhook-config.js'));
+    expect(exported).not.toContain('numberedBackup');
+    expect(exported).not.toContain('removeEnvKeys');
   });
 });
 

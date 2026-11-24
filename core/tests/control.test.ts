@@ -6,6 +6,7 @@ import os from 'node:os';
 import { runCli } from '../src/cli/run.js';
 import type { CliIO } from '../src/cli/types.js';
 import { setControlDeps } from '../src/control/cli.js';
+import { setTrackerSleep } from '../src/control/tracker.js';
 import { candidateFor, runDecide } from '../src/control/decide.js';
 import { decisionId, readDecisions, CONTROL_DIR } from '../src/control/ledger.js';
 import { renderDiscord, MESSAGE_LIMIT, type DecisionView } from '../src/control/render.js';
@@ -275,9 +276,13 @@ describe('fase 1 — control decide (1.8)', () => {
     await consumer();
     await feature('001-alpha');
     const gitlab = fakeGitlab([]);
-    gitlab.failNext({ method: 'GET' }, 'network');
+    // R-016: una lectura transitoria se reintenta (3 intentos); el tracker sigue caído en los tres.
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      gitlab.failNext({ method: 'GET' }, 'network');
+    }
     use(gitlab);
-    const result = await cli(['control', 'decide', '--online']);
+    setTrackerSleep(async () => undefined);
+    const result = await cli(['control', 'decide', '--online']).finally(() => setTrackerSleep(null));
     expect(result.code).toBe(1);
     expect(result.err).toContain('el tracker no responde');
     expect(result.err).not.toContain(TOKEN_SENTINEL);
@@ -289,7 +294,8 @@ describe('fase 1 — plantilla de cron (1.9)', () => {
     const text = await fs.readFile(path.join(TEMPLATES, 'control-poll.sh'), 'utf8');
     expect(text.startsWith('#!/bin/sh\n')).toBe(true);
     expect(text).toContain('__AI_HUB_REPO__');
-    expect(text).toContain('npx --no-install ai-hub control decide --online --format discord');
+    // R-010 (4.22): el script delega en `control poll`, que lee, decide y escribe en fases separadas.
+    expect(text).toContain('exec npx --no-install ai-hub control poll');
     expect(text).not.toMatch(/\bbash /);
     expect(text).not.toMatch(/\bcurl\b|\bglab\b|git push|TOKEN=/);
     expect(text).not.toMatch(/telegram/i);

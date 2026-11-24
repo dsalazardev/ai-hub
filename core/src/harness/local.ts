@@ -42,12 +42,18 @@ export async function readTemplate(name: string): Promise<string> {
 
 async function writeOnce(root: string, relative: string, content: string): Promise<boolean> {
   const destination = path.join(root, relative);
-  if (await exists(destination)) {
-    return false;
-  }
+  // 3.11: creación exclusiva (sin carrera entre la comprobación y la escritura). Inline: importar `writes/` desde
+  // aquí crea un ciclo de módulos que deja constantes sin definir al cargar.
   await fs.mkdir(path.dirname(destination), { recursive: true });
-  await fs.writeFile(destination, content, 'utf8');
-  return true;
+  try {
+    await fs.writeFile(destination, content, { encoding: 'utf8', flag: 'wx' });
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+      return false;
+    }
+    throw error;
+  }
 }
 
 /**

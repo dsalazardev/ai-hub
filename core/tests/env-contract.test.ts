@@ -71,9 +71,13 @@ describe('PD-1: ignores and example (2.2, 2.3)', () => {
   it.skipIf(GIT !== null)('init ignores .ai-hub/.env and runs/, keeps the example and user rules', async () => {
     runGit(['init', '-q'], root);
     await fs.writeFile(path.join(root, '.gitignore'), 'node_modules/\n', 'utf8');
-    await initConsumer();
-    const ignore = await fs.readFile(path.join(root, '.gitignore'), 'utf8');
-    expect(ignore.startsWith('node_modules/\n')).toBe(true);
+    await fs.writeFile(path.join(root, 'package.json'), JSON.stringify({ name: 'demo' }));
+    // D-65 (R-122, R-123): el .gitignore raíz existente no se edita; credenciales y telemetría se ignoran
+    // con .ai-hub/.gitignore, y las entradas que faltan en la raíz quedan como propuesta (instalación degradada).
+    const result = await cli(['init', '--preset-only', '--yes']);
+    expect(result.code, result.err).toBe(1);
+    expect(result.out).toContain('pendiente: root-gitignore');
+    expect(await fs.readFile(path.join(root, '.gitignore'), 'utf8')).toBe('node_modules/\n');
     expect(checkIgnore('.ai-hub/.env')).toBe(0);
     expect(checkIgnore('.ai-hub/runs/r1/events.jsonl')).toBe(0);
     expect(checkIgnore('.ai-hub/.env.example')).toBe(1);
@@ -98,10 +102,19 @@ describe('PD-1: ignores and example (2.2, 2.3)', () => {
     expect(`${result.out}\n${result.err}`).not.toContain(SENTINEL);
   });
 
-  it('snapshots never copy the credentials file', async () => {
+  it('snapshots never copy the credentials file, a sensitive JSON or private state (3.8, R-041, R-046)', async () => {
     await initConsumer();
     await fs.writeFile(path.join(root, '.ai-hub', '.env'), `GITLAB_TOKEN=${SENTINEL}\n`, 'utf8');
+    // JSON sensible: un MCP generado con credencial, y un generado interno cuyo nombre de clave eleva la sensibilidad.
+    await fs.writeFile(path.join(root, '.mcp.json'), JSON.stringify({ servers: { a: { env: { TOKEN: SENTINEL } } } }), 'utf8');
+    await fs.writeFile(path.join(root, 'sync.lock.json'), JSON.stringify({ ...JSON.parse(await fs.readFile(path.join(root, 'sync.lock.json'), 'utf8')), api_key: SENTINEL }), 'utf8');
+    // Borrador del advisor: estado privado, fuera del repositorio.
+    const privateDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-private-'));
+    await fs.writeFile(path.join(privateDir, 'draft.json'), JSON.stringify({ text: SENTINEL }), 'utf8');
     const record = await createBackup(root, 'probe');
+    expect(record.files).not.toContain('.mcp.json');
+    expect(record.files).not.toContain('sync.lock.json');
+    await fs.rm(privateDir, { recursive: true, force: true });
     expect(record.files).not.toContain('.ai-hub/.env');
     expect(record.files).toContain('.ai-hub/.env.example');
     const listing = await fs.readdir(path.join(root, '.backups'), { recursive: true });
@@ -201,6 +214,8 @@ describe('manifest.tracker and doctor checks (2.5, 2.6)', () => {
     const ignore = path.join(root, '.gitignore');
     const lines = (await fs.readFile(ignore, 'utf8')).split('\n').filter((line) => line !== '.ai-hub/.env');
     await fs.writeFile(ignore, lines.join('\n'), 'utf8');
+    // R-123: el ignorado de credenciales viene de .ai-hub/.gitignore; sin él (ni la línea raíz), no está ignorado.
+    await fs.rm(path.join(root, '.ai-hub', '.gitignore'));
     const result = await cli(['doctor']);
     expect(result.code).toBe(1);
     expect(result.out).toContain('[FAIL] env:ignored');
@@ -536,6 +551,22 @@ describe('tracker step declares manifest.tracker and re-seals the lock', () => {
     const out = `${sink.out.join('\n')}\n${sink.err.join('\n')}`;
     expect(out).toContain('manifest.yaml');
     expect(out).not.toContain('uno');
+    expect(out).not.toContain(SENTINEL);
+  });
+
+  it.skipIf(GIT !== null)('the credential step stops without a verified ignore rule: no token stored or printed (3.28, R-117)', async () => {
+    runGit(['init', '-q'], root);
+    await fs.mkdir(path.join(root, '.ai-hub'), { recursive: true });
+    await fs.writeFile(path.join(root, '.ai-hub', '.gitignore'), '*.log\n', 'utf8');
+    const sink = capture();
+    const ctx = await createContext(root, sink.io, fakeRunner().run);
+    let index = 0;
+    const text = async (): Promise<string | null> => ACCEPT[index++] ?? null;
+    const report = await runTrackerStep({ intro: () => undefined, note: () => undefined, multiselect: async () => null, select: async () => null, text, confirm: async () => null, password: text }, ctx);
+    expect(report).toMatchObject({ state: 'pendiente', stage: 'credential-ignore' });
+    expect(await exists(path.join(root, '.ai-hub', '.env'))).toBe(false);
+    const out = `${sink.out.join('\n')}\n${sink.err.join('\n')}`;
+    expect(out).toContain('credential_ignore_unverified');
     expect(out).not.toContain(SENTINEL);
   });
 });

@@ -5,7 +5,7 @@ import { runDecide } from '../src/control/decide.js';
 import { runIngest } from '../src/control/ingest.js';
 import { readDecisions } from '../src/control/ledger.js';
 import { runTick } from '../src/control/tick.js';
-import { checkTrackerScope } from '../src/env/doctor.js';
+import { checkTrackerScope, checkTrackerToken } from '../src/env/doctor.js';
 import type { FetchLike } from '../src/env/doctor.js';
 import { featureSeal, featureSealAtRef } from '../src/speckit/seal.js';
 import { loadManifestContext } from '../src/manifest/manifest.js';
@@ -57,7 +57,7 @@ describe('fase 5 — evidencia remota con su rango (5.1)', () => {
     expect(green.proposals[0]).toMatchObject({ proposed: 'ai::done', source: 'pipeline' });
   });
 
-  it('a local run wins over a remote line, and a malformed remote line is discarded', async () => {
+  it('a local run wins over a remote line, and a malformed latest remote line stops its issue (R-109)', async () => {
     await h.consumer();
     await h.feature('001-alpha');
     await h.feature('002-beta');
@@ -69,7 +69,9 @@ describe('fase 5 — evidencia remota con su rango (5.1)', () => {
     const alpha = tick.proposals.find((item) => item.feature === '001-alpha');
     const beta = tick.proposals.find((item) => item.feature === '002-beta');
     expect(alpha).toMatchObject({ latest: 'NEEDS_WORK', source: 'local' });
-    expect(beta).toMatchObject({ latest: null, proposed: 'ai::in-dev' });
+    // R-109 (4.84): la nota de estado más reciente es inválida; ya no se descarta para seguir, la issue se detiene.
+    expect(beta).toBeUndefined();
+    expect(tick.invalidStatus).toEqual([{ iid: 9, ref: 'nota de la issue #9' }]);
   });
 });
 
@@ -136,6 +138,41 @@ describe('fase 5 — privilegios del token en doctor --online (5.3)', () => {
     expect(none.detail).toContain('introspección no disponible');
     const offline = await checkTrackerScope(h.root, manifest, { online: false, now: NOW });
     expect(offline.detail).toContain('omitido');
+  });
+
+  it('github: control ingest ignora el webhook con motivo explícito y no llama al tracker (ingesta solo de GitLab)', async () => {
+    await h.consumer();
+    const file = path.join(h.root, 'manifest.yaml');
+    await fs.writeFile(file, (await fs.readFile(file, 'utf8')).replace('kind: gitlab', 'kind: github'));
+    const calls: string[] = [];
+    const result = await runIngest(
+      h.root,
+      JSON.stringify({ object_kind: 'issue', project: { path_with_namespace: 'grp/demo' }, object_attributes: { id: 1, iid: 3 } }),
+      { trackerFetch: async (url) => { calls.push(url); throw new Error('no debe llamarse'); }, now: NOW },
+    );
+    expect(result).toMatchObject({ outcome: 'ignored', reason: 'ingest_unsupported_tracker', fresh: [] });
+    expect(calls).toEqual([]);
+  });
+
+  it('github (4.68): identidad con GET /user y Bearer; la introspección de permisos queda no verificada', async () => {
+    await h.consumer();
+    const loaded = (await loadManifestContext(h.root)).manifest;
+    const manifest = { ...loaded, tracker: { ...loaded.tracker!, kind: 'github' as const } };
+    const seen: Array<{ url: string; headers: Record<string, string> }> = [];
+    const fetch: FetchLike = async (url, init) => {
+      seen.push({ url, headers: init.headers });
+      return { status: 200, json: async () => ({ id: 9, login: 'ai-hub-bot' }) };
+    };
+    const token = await checkTrackerToken(h.root, manifest, { online: true, fetch });
+    expect(token.ok).toBe(true);
+    expect(seen[0].url).toMatch(/\/user$/);
+    expect(seen[0].url).not.toContain('/api/v4');
+    expect(Object.keys(seen[0].headers)).toContain('Authorization');
+    expect(token.detail).not.toContain(TOKEN_SENTINEL);
+    const scope = await checkTrackerScope(h.root, manifest, { online: true, fetch, now: NOW });
+    expect(scope).toMatchObject({ ok: true });
+    expect(scope.detail).toContain('no verificada');
+    expect(seen).toHaveLength(1);
   });
 });
 

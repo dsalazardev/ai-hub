@@ -98,6 +98,8 @@ npx @dsalazardev/ai-hub-cli install --targets claude
 | `hooks` | `hooks install --pre-commit|--post-merge`: hooks de git que fallan abiertos |
 | `gate` | Artefactos por feature, WIP, `--seal <hash>` fail-closed y comandos del manifiesto; `--quick` |
 | `runs` | Telemetría cerrada en `.ai-hub/runs/`: `start`, `event` (`--from-status`), `note`, `end`, `list` |
+| `locks` | Muestra (`show`) o libera explícitamente (`release --yes`) un lock X1; un dueño vivo de este host nunca se libera, y uno de otro host o ilegible solo así |
+| `captures` | Lista (`list <archivo>`) o libera (`release <captura> --yes`) las capturas de escrituras externas detectadas; con tres sin liberar el motor no reemplaza ese archivo (`capture_quota_full`) |
 | `control` | `control tick --dry-run [--json] [--issue] [--labels-from] [--online]`: propone, no aplica |
 | `review` | `review consolidate <informes…>`: consolida el panel de refutación por stdout |
 | `seal` | `seal review --verdict <APPROVE|APPROVE_WITH_NITS|CHANGES_REQUESTED> [--base <ref>]`: liga el veredicto al diff real; la guardia `ship` lo exige |
@@ -125,7 +127,7 @@ La acción depende de lo que quedó guardado:
   en una terminal), aportando de nuevo el token, el canal y el aprobador.
 - **Guardada.** `ai-hub control enroll --yes`.
 
-`ai-hub help` lista los 28 comandos. `verify` es alias de `gate`.
+`ai-hub help` lista los 30 comandos. `verify` es alias de `gate`.
 
 ### Idea del proyecto
 
@@ -214,6 +216,14 @@ control:
 `.ai-hub/.env` (nunca versionado) lleva `GITLAB_URL`, `GITLAB_TOKEN` y `GITLAB_PROJECT_PATH`. Cada issue
 de feature lleva en su descripción `ai-hub:feature=<NNN-slug>`.
 
+Con `tracker: { kind: github, urlEnv: GITHUB_API_URL, tokenEnv: GITHUB_TOKEN }` el tablero es GitHub: el `.env`
+lleva esas dos claves y `GITHUB_REPOSITORY` (`propietario/repo`). `tick`, `decide`, `apply`, `expire`, `deliver`
+y `doctor --online` usan el adaptador de GitHub (mismos contract tests que GitLab, verificados con un doble HTTP,
+no contra GitHub real); la petición de cambio se nombra `PR #n`. Los PR de una issue salen de los eventos
+`cross-referenced` de su línea de tiempo y el «pipeline verde» de los check runs de la cabeza del PR. La ingesta de
+webhooks (`control ingest`) es de eventos de GitLab por contrato: con GitHub el evento se ignora con
+`ingest_unsupported_tracker` y el tablero se lee con el poll.
+
 - `ai-hub control tick --dry-run --online` lista el tablero (solo GET), liga issues y features por el
   marcador e informa las issues sin él.
 - `ai-hub control decide --online [--format discord|json]` publica las decisiones nuevas en
@@ -258,11 +268,21 @@ contenido y, si una persona movió la etiqueta a mano, anula lo pendiente de esa
 
 ### Aprobaciones por Discord
 
-Gramática estricta (cualquier otro texto se ignora):
+### Tres aprobaciones separadas
+
+| Aprobación | Qué autoriza | Cómo | Qué no implica |
+|---|---|---|---|
+| Spec | pasar la feature a `ai::in-dev` con el sello de §5 | `aprobar <iid> <sello>` | ninguna ejecución: no crea concesión |
+| Ejecución | que el runner ejecute una petición concreta (contenido, proyecto, worktree, efectos, base, sello, límites y caducidad, ligados por su hash) | `aprobar <iid> <hash de la petición>`; `rechazar` la deja no consumible | ningún cambio de etiqueta; se consume una sola vez |
+| Entrega | integrar la petición de cambio en draft que abre el componente de entrega | la revisión y el merge los hace una persona en el tracker (el autor elegible o, si no, el owner) | el arnés nunca aprueba ni fusiona; un rol implementer no abre la petición |
+
+Gramática estricta (cualquier otro texto se ignora; un hash de longitud o caracteres inválidos se diagnostica como `hash_length` o `hash_charset`; con varias decisiones abiertas, una respuesta que no elige una sola no escribe nada y las nombra):
 
 | Respuesta | Efecto |
 |---|---|
-| `aprobar <iid> <hash>` | ≥ 8 hex del hash de la decisión (en una spec, su sello); aplica la transición |
+| `aprobar <iid> <hash>` | 8 a 64 hex del hash de la decisión (en una spec, su sello); aplica la transición |
+| `aprobar <iid> confirmar <ref>` | la referencia de 10 caracteres de esa decisión (ligada a proyecto, decisión y caducidad); aplica esa y solo esa |
+| `aprobar <iid>` | solo informa a un aprobador del hash, la referencia y los comandos exactos; no escribe nada |
 | `rechazar <iid> <motivo>` | cierra la decisión; la etiqueta no cambia |
 | `detalle <iid>` | devuelve la evidencia completa |
 

@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import { replaceManagedScript, scriptState } from './scripts.js';
 import path from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import { parseDotenv } from '../env/dotenv.js';
@@ -29,7 +30,6 @@ import type { RunResult } from '../speckit/runner.js';
  */
 export const PROFILE = 'hermes-control';
 export const ROUTE = 'ai-hub-gitlab';
-export const CRON_NAME = 'ai-hub-control-poll';
 export const SKILL_NAME = 'ai-hub-control';
 /** Comprobación que espera a un gateway que acaba de reiniciarse (fabrica-verificable §D2). */
 export const CHECK_WAIT_ACTION = 'ai-hub control enroll --check --wait';
@@ -147,6 +147,17 @@ async function tokenCollision(home: string, profileDir: string): Promise<string 
 
 async function render(template: string, repo: string): Promise<string> {
   return (await readTemplate(template)).split('__AI_HUB_REPO__').join(repo.replace(/\\/g, '/'));
+}
+
+/** Paso de un script gestionado: crea si falta, sustituye con copia si está desactualizado y respeta uno ajeno. */
+async function scriptStep(file: string, rendered: string, repo: string, kind = 'script', targetId = 'hermes-profile-scripts'): Promise<{ label: string; present: boolean; create: () => Promise<void> }> {
+  const { state, text } = await scriptState(file, rendered, repo);
+  const suffix = state === 'outdated' ? ' (desactualizado: se sustituye con copia previa)' : state === 'unmanaged' ? ' (no gestionado: sin marca de AI-Hub; se deja intacto)' : '';
+  return {
+    label: `${kind}: ${file}${suffix}`,
+    present: state === 'current' || state === 'unmanaged',
+    create: async () => (state === 'outdated' && text !== null ? replaceManagedScript(file, rendered, text, targetId) : writeIfMissing(file, rendered)),
+  };
 }
 
 async function writeIfMissing(file: string, content: string): Promise<void> {
@@ -271,11 +282,25 @@ export async function runEnroll(root: string, options: EnrollOptions): Promise<E
     );
 
     const skillFile = path.join(profileDir, 'skills', SKILL_NAME, 'SKILL.md');
-    const skillPresent = await exists(skillFile);
-    add('skill', skillPresent ? 'ok' : 'fail', skillPresent ? `skill: ${skillFile}` : `skill: falta ${skillFile}`, 'skill', ENROLL_ACTION);
-    const scriptFiles = [path.join(scriptsDir(profileDir), 'control-poll.sh'), path.join(scriptsDir(profileDir), 'gitlab-route.sh')];
-    const scriptsPresent = (await Promise.all(scriptFiles.map((file) => exists(file)))).every(Boolean);
-    add('scripts', scriptsPresent ? 'ok' : 'fail', scriptsPresent ? 'scripts: control-poll.sh y gitlab-route.sh' : 'scripts: falta control-poll.sh o gitlab-route.sh', 'scripts', ENROLL_ACTION);
+    const { state: skillState } = await scriptState(skillFile, await render('hermes/SKILL.md', root), root);
+    add(
+      'skill',
+      skillState === 'current' || skillState === 'unmanaged' ? 'ok' : 'fail',
+      skillState === 'current' ? `skill: ${skillFile}` : skillState === 'absent' ? `skill: falta ${skillFile}` : skillState === 'outdated' ? `skill: ${skillFile} desactualizada` : `skill: ${skillFile} no gestionada (sin marca de AI-Hub; no se toca)`,
+      'skill',
+      ENROLL_ACTION,
+    );
+    // R-013 (4.26): ausente o desactualizado falla; sin marca es de la persona y se informa sin tocarlo.
+    const scriptNotes: string[] = [];
+    let scriptsOk = true;
+    for (const name of ['control-poll.sh', 'gitlab-route.sh']) {
+      const { state } = await scriptState(path.join(scriptsDir(profileDir), name), await render(`hermes/${name}`, root), root);
+      if (state === 'absent' || state === 'outdated') {
+        scriptsOk = false;
+      }
+      scriptNotes.push(state === 'current' ? name : `${name} ${state === 'absent' ? 'falta' : state === 'outdated' ? 'desactualizado' : 'no gestionado (sin marca de AI-Hub; no se toca)'}`);
+    }
+    add('scripts', scriptsOk ? 'ok' : 'fail', `scripts: ${scriptNotes.join(', ')}`, 'scripts', ENROLL_ACTION);
     const identity = await inspectSoulIdentity(profileDir);
     const identityFile = path.join(profileDir, 'SOUL.md');
     const identitySaved = Boolean(env.DISCORD_BOT_TOKEN);
@@ -358,8 +383,8 @@ export async function runEnroll(root: string, options: EnrollOptions): Promise<E
       add('ruta', 'fail', `ruta: ${ROUTE} no listada`, 'webhook-route', ENROLL_ACTION);
     }
     const crons = profilePresent ? await profileCommand(cli, ['cron', 'list']) : { ok: false, stdout: '' };
-    const cronOk = crons.ok && listed(crons.stdout, CRON_NAME);
-    add('cron', cronOk ? 'ok' : 'fail', cronOk ? `cron: ${CRON_NAME}` : `cron: ${CRON_NAME} no listado`, 'cron', ENROLL_ACTION);
+    const cronOk = crons.ok && listed(crons.stdout, settings.pollJob);
+    add('cron', cronOk ? 'ok' : 'fail', cronOk ? `cron: ${settings.pollJob}` : `cron: ${settings.pollJob} no listado`, 'cron', ENROLL_ACTION);
 
     let modelState: CheckState = 'nv';
     let modelLine = 'modelo: config.yaml ausente, ilegible o model vacío';
@@ -470,33 +495,28 @@ export async function runEnroll(root: string, options: EnrollOptions): Promise<E
     {
       stage: 'skill',
       piece: 'skill',
-      label: `skill: ${path.join(profileDir, 'skills', SKILL_NAME, 'SKILL.md')}`,
-      present: await exists(path.join(profileDir, 'skills', SKILL_NAME, 'SKILL.md')),
-      create: async () => writeIfMissing(path.join(profileDir, 'skills', SKILL_NAME, 'SKILL.md'), await render('hermes/SKILL.md', root)),
+      // 4.15: la skill también es gestionada, para que una instalación existente reciba la confirmación de cuatro palabras.
+      ...(await scriptStep(path.join(profileDir, 'skills', SKILL_NAME, 'SKILL.md'), await render('hermes/SKILL.md', root), root, 'skill', 'hermes-profile-skill')),
     },
     {
       stage: 'scripts',
       piece: 'scripts',
-      label: `script: ${path.join(scripts, 'control-poll.sh')}`,
-      present: await exists(path.join(scripts, 'control-poll.sh')),
-      create: async () => writeIfMissing(path.join(scripts, 'control-poll.sh'), await render('hermes/control-poll.sh', root)),
+      ...(await scriptStep(path.join(scripts, 'control-poll.sh'), await render('hermes/control-poll.sh', root), root)),
     },
     {
       stage: 'scripts',
       piece: 'scripts',
-      label: `script: ${path.join(scripts, 'gitlab-route.sh')}`,
-      present: await exists(path.join(scripts, 'gitlab-route.sh')),
-      create: async () => writeIfMissing(path.join(scripts, 'gitlab-route.sh'), await render('hermes/gitlab-route.sh', root)),
+      ...(await scriptStep(path.join(scripts, 'gitlab-route.sh'), await render('hermes/gitlab-route.sh', root), root)),
     },
     {
       stage: 'cron',
       piece: 'cron',
-      label: `cron: ${CRON_NAME} cada ${settings.pollMinutes} min → discord (sin agente, script control-poll.sh)`,
-      present: crons.ok && listed(crons.stdout, CRON_NAME),
+      label: `cron: ${settings.pollJob} cada ${settings.pollMinutes} min → discord (sin agente, script control-poll.sh)`,
+      present: crons.ok && listed(crons.stdout, settings.pollJob),
       create: () =>
         run([
           '-p', PROFILE, 'cron', 'create', `every ${settings.pollMinutes}m`,
-          '--name', CRON_NAME, '--no-agent', '--script', 'control-poll.sh', '--deliver', 'discord',
+          '--name', settings.pollJob, '--no-agent', '--script', 'control-poll.sh', '--deliver', 'discord',
         ]),
     },
   ];
@@ -598,6 +618,7 @@ export async function runEnroll(root: string, options: EnrollOptions): Promise<E
       profileEnv: await readEnv(envFile),
       ownerEnv: readEnv,
       profileEnvFile: envFile,
+      root,
       lines,
       ...(options.notify ? { notify: options.notify } : {}),
       listed,

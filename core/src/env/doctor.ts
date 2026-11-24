@@ -4,6 +4,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import type { ProjectManifest } from '../manifest/manifest.js';
 import { HARNESS_ENV_FILE, readHarnessEnv } from './dotenv.js';
+import { trackerDescriptor } from '../control/tracker.js';
 
 export interface EnvCheck {
   id: string;
@@ -113,15 +114,17 @@ export async function checkTrackerToken(
   }
   const doFetch: FetchLike = options.fetch ?? ((target, init) => fetch(target, init));
   try {
-    const response = await doFetch(`${url.replace(/\/+$/, '')}/api/v4/user`, {
-      headers: { 'PRIVATE-TOKEN': token },
+    // 4.68: la identidad se lee con el endpoint y la cabecera que declara el descriptor del tracker.
+    const descriptor = trackerDescriptor(tracker.kind);
+    const response = await doFetch(descriptor.identityUrl(url), {
+      headers: descriptor.authHeaders(token),
       signal: AbortSignal.timeout(10_000),
     });
     if (response.status !== 200) {
       return { id: 'tracker:token', ok: false, detail: `el tracker respondió HTTP ${response.status}` };
     }
-    const body = (await response.json().catch(() => null)) as { username?: unknown } | null;
-    return { id: 'tracker:token', ok: true, detail: `autenticado como ${redactIdentity(body?.username)}` };
+    const body: unknown = await response.json().catch(() => null);
+    return { id: 'tracker:token', ok: true, detail: `autenticado como ${redactIdentity(descriptor.identityName(body))}` };
   } catch (error) {
     const code = (error as { name?: string }).name ?? 'error';
     return { id: 'tracker:token', ok: false, detail: `sin respuesta del tracker (${code})` };
@@ -149,6 +152,10 @@ export async function checkTrackerScope(root: string, manifest: ProjectManifest 
   const tracker = manifest?.tracker;
   if (!tracker) {
     return { id, ok: true, detail: 'tracker no configurado' };
+  }
+  if (!trackerDescriptor(tracker.kind).tokenIntrospection) {
+    // Sin endpoint documentado de introspección: no se deduce nada (capacidad no verificada).
+    return { id, ok: true, detail: `introspección de permisos no disponible para ${tracker.kind} (no verificada): solo se comprueba la identidad (tracker:token)` };
   }
   const values = (await readHarnessEnv(root)) ?? {};
   const url = values[tracker.urlEnv];

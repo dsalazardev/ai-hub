@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { PRE_TOOL_MATCHER } from '../src/sync/hooks.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { runCli } from '../src/cli/run.js';
 import { runHook, globToRegExp, scopeViolations, changedPaths } from '../src/cli/hook.js';
 import { featureSeal } from '../src/speckit/seal.js';
@@ -231,14 +232,30 @@ describe('real hook projection (3.9, 3.10)', () => {
     expect(await fs.readFile(path.join(root, '.claude', 'settings.json'), 'utf8')).toBe('{ broken');
   });
 
-  it('sync projects the Claude hooks and the OpenCode plugin; settings stay out of the lock', async () => {
+  it('existing Claude settings get a proposal and stay byte-identical (D-65, R-121)', async () => {
     await seedFixture(root);
     await writeInventory(root);
     await fs.mkdir(path.join(root, '.claude'), { recursive: true });
-    await fs.writeFile(path.join(root, '.claude', 'settings.json'), JSON.stringify({ model: 'x' }), 'utf8');
+    const original = JSON.stringify({ model: 'x' });
+    await fs.writeFile(path.join(root, '.claude', 'settings.json'), original, 'utf8');
+    const sync = await cli(['sync']);
+    expect(sync.code).toBe(0);
+    expect(sync.out).toContain('pendiente: claude-hooks');
+    expect(await fs.readFile(path.join(root, '.claude', 'settings.json'), 'utf8')).toBe(original);
+    // Ninguna copia junto a settings.json (es sensible): ni .pre-ai-hub ni capturas.
+    expect((await fs.readdir(path.join(root, '.claude'))).filter((name) => name.startsWith('settings.json'))).toEqual(['settings.json']);
+    const doctor = await cli(['doctor']);
+    expect(doctor.code).toBe(1);
+    expect(doctor.out).toMatch(/pending: instalación degradada.*claude-hooks/);
+    expect(doctor.out).not.toContain('claude: hooks en .claude/settings.json');
+  });
+
+  it('sync projects the Claude hooks and the OpenCode plugin; settings stay out of the lock', async () => {
+    await seedFixture(root);
+    await writeInventory(root);
+    // Sin settings previos, el archivo es nuevo del motor y se crea en exclusiva con los hooks.
     expect((await cli(['sync'])).code).toBe(0);
     const settings = JSON.parse(await fs.readFile(path.join(root, '.claude', 'settings.json'), 'utf8')) as Record<string, unknown>;
-    expect(settings.model).toBe('x');
     expect(missingClaudeHooks(settings)).toEqual([]);
     const plugin = await fs.readFile(path.join(root, '.opencode', 'plugins', 'ai-hub.js'), 'utf8');
     expect(plugin).toContain("'tool.execute.before'");
@@ -262,7 +279,8 @@ describe('real hook projection (3.9, 3.10)', () => {
     await fs.writeFile(file, JSON.stringify(settings), 'utf8');
     const doctor = await cli(['doctor']);
     expect(doctor.code).toBe(1);
-    expect(doctor.out).toContain('[FAIL] hooks: faltan: .claude/settings.json: PreToolUse(Bash) → ai-hub hook pre');
+    // R-051 (4.32): el matcher incluye lecturas, ediciones y búsquedas además de la shell.
+    expect(doctor.out).toContain(`[FAIL] hooks: faltan: .claude/settings.json: PreToolUse(${PRE_TOOL_MATCHER}) → ai-hub hook pre`);
   });
 });
 
@@ -323,5 +341,22 @@ describe('list --collisions (3.13)', () => {
     const result = await cli(['list', '--collisions']);
     expect(result.code).toBe(0);
     expect(result.out).toContain('colisiones de descripción (umbral 0.8)');
+  });
+});
+
+describe('OpenCode 2.x plugin (A2: carga, API y límite del host)', () => {
+  it('the generated plugin exports the 2.x shape and reads the 2.x tool input; doctor does not present blocking as verified', async () => {
+    const template = await fs.readFile(path.join(__dirname, '..', 'engine', 'templates', 'opencode-plugin.js'), 'utf8');
+    // Forma 2.x: `id` + `setup(ctx)` en el export por defecto y `ctx.tool.hook('execute.before')`.
+    expect(template).toMatch(/export default \{\s*id: 'ai-hub'/);
+    expect(template).toContain("ctx.tool.hook('execute.before'");
+    // En 2.x la entrada de la herramienta llega en `event.input` (antes se perdía y nunca se denegaba nada).
+    expect(template).toContain('input.input');
+    const mod = (await import(pathToFileURL(path.join(__dirname, '..', 'engine', 'templates', 'opencode-plugin.js')).href)) as {
+      default: { id: string; setup: (ctx: unknown) => Promise<void> };
+    };
+    const hooks: string[] = [];
+    await mod.default.setup({ directory: os.tmpdir(), tool: { hook: async (name: string) => void hooks.push(name) } });
+    expect(hooks).toEqual(['execute.before']);
   });
 });

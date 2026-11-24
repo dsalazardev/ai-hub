@@ -174,3 +174,55 @@ describe('init-fiabilidad 8.6 — copias protegidas y reanudación', () => {
     await expect(fs.access(path.join(profile, 'SOUL.md.pre-ai-hub'))).rejects.toThrow();
   });
 });
+
+describe('SOUL.md por la transacción X2 (3.11)', () => {
+  it('una edición externa entre la decisión y el reemplazo no se sobrescribe', async () => {
+    await fs.writeFile(file, DEFAULT_SOUL);
+    const external = `${DEFAULT_SOUL}\nlínea añadida por la persona\n`;
+    await expect(
+      ensureSoulIdentity(profile, {
+        createdThisRun: true,
+        onStage: async (stage) => {
+          if (stage === 'identity-backup') {
+            await fs.writeFile(file, external);
+          }
+        },
+      }),
+    ).rejects.toThrow(/cambió mientras se preparaba/);
+    expect(await fs.readFile(file, 'utf8')).toBe(external);
+    // El directorio del perfil no recibe `.ai-hub/` ni temporales del motor.
+    expect((await fs.readdir(profile)).filter((name) => name.startsWith('.'))).toEqual([]);
+  });
+});
+
+describe('gramática documentada (4.16, R-001)', () => {
+  it('SOUL.md, AGENTS.md §5 y core/README.md nombran las cinco formas y los diagnósticos', async () => {
+    const repo = path.resolve(__dirname, '..', '..');
+    const soul = (await currentTemplate()).text;
+    const agents = await fs.readFile(path.join(repo, 'AGENTS.md'), 'utf8');
+    const readme = await fs.readFile(path.join(repo, 'core', 'README.md'), 'utf8');
+    for (const form of ['aprobar <iid> <hash>', 'aprobar <iid> confirmar <ref>', 'aprobar <iid>', 'rechazar <iid> <motivo>', 'detalle <iid>']) {
+      for (const [name, text] of [['SOUL.md', soul], ['AGENTS.md', agents], ['core/README.md', readme]] as const) {
+        expect(text, `${name}: ${form}`).toContain(form);
+      }
+    }
+    for (const [name, text] of [['AGENTS.md', agents], ['core/README.md', readme]] as const) {
+      expect(text, name).toContain('hash_length');
+      expect(text, name).toContain('hash_charset');
+      expect(text, name).not.toContain('≥ 8 hex');
+    }
+  });
+});
+
+describe('tres aprobaciones documentadas (6.3, R-005, R-071, R-093)', () => {
+  it('AGENTS.md §5 y core/README.md separan spec, ejecución y entrega', async () => {
+    const repo = path.resolve(__dirname, '..', '..');
+    for (const doc of ['AGENTS.md', path.join('core', 'README.md')]) {
+      const text = await fs.readFile(path.join(repo, doc), 'utf8');
+      const section = text.slice(text.indexOf('### Tres aprobaciones separadas'));
+      for (const fragment of ['| Spec |', '| Ejecución |', '| Entrega |', 'no crea concesión', 'ningún cambio de etiqueta', 'nunca aprueba ni fusiona']) {
+        expect(section, `${doc}: ${fragment}`).toContain(fragment);
+      }
+    }
+  });
+});

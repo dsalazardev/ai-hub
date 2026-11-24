@@ -1,4 +1,8 @@
 import { spawnSync } from 'node:child_process';
+import { compatibilityMinimum, compatWarning } from '../harness/compat.js';
+import os from 'node:os';
+import { moveSensitiveCopies } from '../writes/sensitive-copies.js';
+import { hermesHome } from '../control/hermes.js';
 import { COLLISION_THRESHOLD, findCollisions, readSkillDescriptions } from '../catalog/collisions.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -257,6 +261,20 @@ export async function cmdUninstall(args: ParsedArgs, ctx: CliContext): Promise<n
 }
 
 export async function cmdBackups(args: ParsedArgs, ctx: CliContext): Promise<number> {
+  if (args.positionals[0] === 'move-sensitive') {
+    // R-040: movimiento explícito de copias sensibles adyacentes al almacenamiento privado validado.
+    if (!args.flags.yes) {
+      ctx.io.err(`backups move-sensitive mueve copias sensibles al almacenamiento privado; repite con --yes`);
+      return 2;
+    }
+    const result = await moveSensitiveCopies(ctx.root, process.env.HERMES_HOME ?? hermesHome({ platform: process.platform, env: process.env, home: os.homedir() }));
+    if (!result.ok) {
+      ctx.io.err(`backups move-sensitive: ${result.reason}: ${result.detail}; no se movió nada`);
+      return 1;
+    }
+    ctx.io.out(result.moved.length === 0 ? 'backups move-sensitive: no hay copias sensibles junto a sus archivos' : `backups move-sensitive: ${result.moved.length} copia(s) movida(s) al almacenamiento privado`);
+    return 0;
+  }
   const snapshots = await listBackups(ctx.root);
   if (args.flags.json) {
     ctx.io.out(JSON.stringify(snapshots, null, 2));
@@ -368,7 +386,18 @@ export async function cmdUpgrade(args: ParsedArgs, ctx: CliContext): Promise<num
     }
     return code;
   }
+  // R-114: el aviso de la versión mínima compatible sale antes de escribir estado nuevo (la rama full lo
+  // emite desde install).
+  ctx.io.out(compatWarning(await compatibilityMinimum()));
   const result = await runSync(ctx.root, { check: false });
   ctx.io.out(`upgrade: ${result.written.length} archivos regenerados`);
+  // D-65 (R-118): lo que no se puede aplicar sin editar configuración ajena queda pendiente (salida 1).
+  for (const line of result.pending) {
+    ctx.io.out(line);
+  }
+  if (result.pending.length > 0) {
+    ctx.io.out('upgrade: instalación degradada: aplica lo pendiente y vuelve a ejecutar ai-hub sync');
+    return 1;
+  }
   return 0;
 }

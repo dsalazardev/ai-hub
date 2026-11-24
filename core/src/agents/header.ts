@@ -71,12 +71,13 @@ export function readAgentHeader(data: Record<string, unknown>): AgentHeader {
 }
 
 /** Forma de la cabecera de agente que entiende cada host. */
-export type AgentHeaderStyle = 'tool-list' | 'deny-permissions' | 'readonly';
+/** `unenforced`: el destino no puede aplicar capacidades por agente (Codex: `sandbox_mode` no sobrescribe al padre). */
+export type AgentHeaderStyle = 'tool-list' | 'deny-permissions' | 'readonly' | 'unenforced';
 
 export interface AgentFormat {
   /** Directorio de agentes del destino. */
   path: string;
-  extension: '.md' | '.agent.md';
+  extension: '.md' | '.agent.md' | '.toml';
   style: AgentHeaderStyle;
   /** `tool-list`: nombres de herramienta del host por capacidad. `deny-permissions`: acciones. */
   names: Record<Capability, string[]>;
@@ -123,6 +124,9 @@ export function renderAgentHeader(
       data.permissions = denied.flatMap((capability) =>
         format.names[capability].map((action) => ({ action, resource: '*', effect: 'deny' })),
       );
+    } else if (format.style === 'unenforced') {
+      // R-090: no se insinúa una restricción que el archivo de agente no aplica; se declara degradada.
+      degraded.push('capabilities (no se aplican por archivo de agente)');
     } else {
       const writes = capabilities.some((capability) => WRITE_CAPABILITIES.includes(capability));
       if (!writes) {

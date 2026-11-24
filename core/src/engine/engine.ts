@@ -54,6 +54,9 @@ export interface EngineSpeckit {
 /** Extensiones de Spec Kit que proveen los 8 comandos de assessment y bug fix. */
 export const REQUIRED_SPECKIT_EXTENSIONS = ['assess', 'bug'] as const;
 
+export const DELEGATION_REASONS = ['exploration', 'parallel_writers', 'context_backup', 'independent_verifier'] as const;
+export type DelegationReason = (typeof DELEGATION_REASONS)[number];
+
 export interface EngineManifest {
   version: 2;
   roles: EngineRole[];
@@ -64,11 +67,31 @@ export interface EngineManifest {
   targets: string[];
   speckit: EngineSpeckit;
   /** Contrato de cierre (A1): última línea no vacía de la respuesta final de todo rol. */
-  status_line: { prefix: 'AI-HUB-STATUS'; panel: string[]; reason_required: string[]; reason_max: number };
+  status_line: {
+    prefix: 'AI-HUB-STATUS';
+    panel: string[];
+    reason_required: string[];
+    reason_max: number;
+    /** Segmentos opcionales (R-049, R-107), en su orden, entre `artifact` y `reason`. */
+    segments: Array<{ name: 'run' | 'delegated'; pattern: string }>;
+  };
+  /** Delegación (R-054, R-055): inline por defecto y cuatro razones con nombre y umbral de partida. */
+  delegation: {
+    default: 'inline';
+    reasons: Array<{ id: DelegationReason; threshold: string }>;
+    verifier: {
+      agents: string[];
+      author_tier: 'light' | 'balanced' | 'heavy';
+      prefer_different_model: true;
+      diversity_unavailable_reason: 'diversity_unavailable';
+    };
+  };
   /** Bucle acotado (A2): agotadas las rondas de converge, el estado es BLOCKED. */
   loop: { converge: { max_rounds: number; on_exhaust: 'BLOCKED' } };
   /** Límites que el proyecto solo puede endurecer (E4). */
   policy_limits: { wip: number };
+  /** Versión mínima compatible (R-114): fuente única del aviso de install/upgrade, doctor y notas de versión. */
+  compatibility: { minimum: string };
 }
 
 /** Estados de salida que el vocabulario normalizado de Spec Kit retiró. */

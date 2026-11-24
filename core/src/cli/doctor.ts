@@ -1,4 +1,12 @@
 import fs from 'node:fs/promises';
+import { checkPendingProposals, listProposals } from '../writes/proposals.js';
+import { checkSensitiveCopies } from '../writes/sensitive-copies.js';
+import { checkCompatibility } from '../harness/compat.js';
+import { checkLeftovers } from '../writes/leftovers.js';
+import { checkReadCoverage } from '../harness/guards/adapters/read-coverage.js';
+import { advisorCapabilities } from '../advisor/capabilities.js';
+import { describeLimit, verificationLimits } from '../harness/limits.js';
+import { ADVISOR_PROFILE } from '../advisor/profile.js';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -30,7 +38,7 @@ import type { CliContext } from './types.js';
 import { missingClaudeHooks } from '../sync/hooks.js';
 import { checkAgentCapabilities } from '../agents/doctor.js';
 import { checkEnvIgnored, checkEnvKeys, checkTrackerScope, checkTrackerToken, type EnvDoctorOptions } from '../env/doctor.js';
-import { checkControl, checkControlWebhook } from '../control/doctor.js';
+import { checkControl, checkControlLabels, checkControlWebhook } from '../control/doctor.js';
 import { hermesHome, resolveHermes } from '../control/hermes.js';
 import { controlSettings } from '../control/ledger.js';
 
@@ -281,6 +289,11 @@ export async function diagnose(ctx: CliContext, options: DoctorOptions = {}): Pr
         }
         const spec = TARGETS[target];
         if (spec.hookFormat === 'none' || spec.hookPath === null) {
+          if (spec.hook === null) {
+            // R-089 (4.81): sin formato de hooks verificado para la versión, no se proyecta ninguno.
+            surfaces.push(`${target}: sin hooks (formato no verificado para la versión soportada; la política se declara en la región de AGENTS.md)`);
+            continue;
+          }
           surfaces.push(`${target}: solo regla (el host no admite hooks)`);
           if (!(await exists(path.join(ctx.root, spec.hook)))) {
             missingHooks.push(spec.hook);
@@ -288,7 +301,9 @@ export async function diagnose(ctx: CliContext, options: DoctorOptions = {}): Pr
           continue;
         }
         if (spec.hookFormat === 'plugin') {
-          surfaces.push(`${target}: plugin`);
+          // OpenCode 2.x documenta `execute.before` para inspeccionar o reemplazar la entrada, pero no el bloqueo
+          // (opencode.ai/docs/build/plugins/server): el plugin intenta denegar, sin que eso cuente como protección.
+          surfaces.push(`${target}: plugin (opencode_block_unverified: bloqueo verificado solo con la API 1.x; en 2.x no documentado)`);
           if (!(await exists(path.join(ctx.root, spec.hookPath)))) {
             missingHooks.push(spec.hookPath);
           }
@@ -308,8 +323,45 @@ export async function diagnose(ctx: CliContext, options: DoctorOptions = {}): Pr
       add(
         'hooks',
         missingHooks.length === 0,
-        missingHooks.length === 0 ? surfaces.join('; ') : `faltan: ${missingHooks.join(', ')} (ejecuta ai-hub sync)`,
+        missingHooks.length === 0
+          ? surfaces.join('; ')
+          : `faltan: ${missingHooks.join(', ')} (${(await listProposals(ctx.root)).some((item) => item.capability === 'claude-hooks') ? 'pending_application: aplica la propuesta y ejecuta ai-hub sync' : 'ejecuta ai-hub sync'})`,
       );
+      // R-048 (4.35): cobertura de la política de lectura por host, incluido el evaluador ausente.
+      {
+        const coverage = await checkReadCoverage({
+          root: ctx.root,
+          targets: manifest.targets,
+          guardMode: manifest.policy.guardMode,
+          optOuts: manifest.policy.optOuts,
+          claudeHooks: !missingHooks.some((item) => item.startsWith('.claude/')),
+        });
+        add(coverage.id, coverage.ok, coverage.detail);
+      }
+      // D-65 (R-118): una capacidad pendiente de aplicación degrada la instalación y nunca se informa como sana.
+      {
+        const pendingCheck = await checkPendingProposals(ctx.root);
+        add(pendingCheck.id, pendingCheck.ok, pendingCheck.detail);
+        // R-040: copias sensibles adyacentes de versiones previas, solo por presencia (nunca su contenido).
+        const copiesCheck = await checkSensitiveCopies(ctx.root, process.env.HERMES_HOME ?? hermesHome({ platform: process.platform, env: process.env, home: os.homedir() }));
+        add(copiesCheck.id, copiesCheck.ok, copiesCheck.detail);
+        // R-085 (4.77): con el perfil del advisor inscrito, cada capacidad desactivada y la prueba que falta.
+        {
+          const home = process.env.HERMES_HOME ?? hermesHome({ platform: process.platform, env: process.env, home: os.homedir() });
+          if (await exists(path.join(home, 'profiles', ADVISOR_PROFILE))) {
+            const report = await advisorCapabilities(ctx.root, { host: os.hostname(), hermesVersion: null });
+            add('advisor', true, report.lines.join('; '));
+          }
+        }
+        // R-115 (4.87): límites declarados con capacidad, configuración y observación; sin observación, evidence_missing.
+        add('limits', true, (await verificationLimits(ctx.root, manifest)).map(describeLimit).join('; '));
+        // R-025 (4.5): una escritura interrumpida se informa al arrancar.
+        const leftoverCheck = await checkLeftovers(ctx.root, process.env.HERMES_HOME ?? hermesHome({ platform: process.platform, env: process.env, home: os.homedir() }));
+        add(leftoverCheck.id, leftoverCheck.ok, leftoverCheck.detail);
+        // R-114: la versión mínima compatible (fuente única: engine.yaml) y el estado más nuevo encontrado.
+        const compatCheck = await checkCompatibility(ctx.root);
+        add(compatCheck.id, compatCheck.ok, compatCheck.detail);
+      }
       // Aviso del backlog (design D11): informativo como el de la constitución
       // (speckit/doctor.ts), nunca un gate. La semilla es un activo opcional del
       // proyecto: su ausencia no puede fallar doctor.
@@ -338,6 +390,7 @@ export async function diagnose(ctx: CliContext, options: DoctorOptions = {}): Pr
         // 5.3: los privilegios del token solo se miran con --online (sin red, la salida no cambia).
         ...(options.online ? [await checkTrackerScope(ctx.root, manifest, options)] : []),
         checkControl(manifest),
+        ...(checkControlLabels(manifest) ? [checkControlLabels(manifest)!] : []),
         // webhook-operativo 4.3: con plano de control, el webhook declarado debe escuchar; sin bloque es opcional.
         ...(manifest && controlSettings(manifest) !== null
           ? [

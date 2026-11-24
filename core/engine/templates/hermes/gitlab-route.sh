@@ -1,4 +1,5 @@
 #!/bin/sh
+# ai-hub-managed: gitlab-route.sh v=1
 # ai-hub GitLab route (hermes-control, fase 2). Lo instala `ai-hub control enroll` en
 # <HERMES_HOME del perfil>/scripts/ y lo usa la ruta del webhook, sin agente:
 #   hermes -p hermes-control webhook subscribe ai-hub-gitlab --events "Issue Hook,Merge Request Hook" \

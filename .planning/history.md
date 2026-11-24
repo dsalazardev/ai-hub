@@ -21,3 +21,14 @@
 - 26/26 tareas y 4/4 artefactos completos.
 - Main specs actualizados: agent-guardrails, dev-cli, harness-memory, preset-system.
 - Archivo: `openspec/changes/archive/2026-10-26-install-completo/`.
+
+## 2026-11-23 - harden-harness-orchestration: aprobaci贸n de aplicaci贸n (sesi贸n)
+
+- Aprobaci贸n del propietario en esta sesi贸n para aplicar la propuesta: desarrollo local, pruebas y verificaciones sobre entornos sint茅ticos. No es aprobaci贸n de spec (搂5), concesi贸n de ejecuci贸n ni autorizaci贸n sobre consumidores, cuentas o servicios reales.
+- Decisiones: D-65 aceptada (sin edici贸n de configuraci贸n ajena existente; instalaci贸n degradada mientras haya pendientes); SC-03 deshabilitado (4.88 no se implementa); SC-01 autorizado para implementar como modo opcional desactivado por defecto, sin activarlo en ning煤n consumidor (no cumple #1-C6/#3-C9); SC-02 rechazado para ejecuci贸n.
+- Autorizado adem谩s: descarga de paquetes p煤blicos para 3.22 (verificando identidad, solo sobre fixtures aisladas) y paquete local candidato. No autorizado: GitLab/GitHub reales, Hermes/Discord reales, harnesses reales con cuota, frontera alternativa, publicaci贸n.
+- Rama de desarrollo: `codex/harden-harness-orchestration` desde `c11feda`.
+
+- 2026-11-24 - Continuaci髇 de `/opsx:apply`: 131 -> 139/176. Cerradas 3.11 (migraci髇 de escritores; el escritor de `manifest.yaml` conserva su mecanismo bajo lock X1 para no romper sus pruebas de contrato), 3.19 y 4.68-4.70 (adaptador GitHub con contract tests comunes sobre un doble HTTP; ninguna escritura en GitHub real), 5.14, 5.15 y 5.17 (runner con dobles; ejecuci髇 real deshabilitada). Supuesto A: umbrales de delegaci髇 con la procedencia de la issue #7, sin porcentaje de contexto medido; `delegation.verifier.agents` y `author_tier: balanced` quedan como propuestas al owner. Supuesto B: 5.8 sin dependencia de 5.6, justificado; la integraci髇 con el descubrimiento sigue pendiente. 4.25 sin fuente primaria: capacidad no verificada.
+
+- 2026-11-24 (b) - Sin tareas nuevas marcadas. Corregida la ramificaci髇 por nombre de tracker (R-019) introducida antes; runner integrado con dobles; X2 completado en el escritor de manifest.yaml; suite completa detenida por memoria del host (65/84 archivos, 0 fallos), no relanzada.

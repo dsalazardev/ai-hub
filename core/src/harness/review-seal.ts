@@ -6,12 +6,18 @@ import { isReviewVerdict, type ReviewVerdict } from '../speckit/seal.js';
 /** Registro del sello de revisión: bajo `runs/` (ignorado), nunca versionado ni dentro del diff. */
 export const REVIEW_SEAL_FILE = '.ai-hub/runs/review-seal.json';
 
+/**
+ * Registro de revisión. v2 (R-059, 4.51) añade el candidato congelado y el tier de riesgo, ambos opcionales; un
+ * registro v1 conserva su comprobación de ship pero no sirve como candidato del panel.
+ */
 export interface ReviewSealRecord {
-  v: 1;
+  v: 1 | 2;
   base: string;
   verdict: ReviewVerdict;
   diff: string;
   seal: string;
+  candidate?: { tree: string; commit: string } | null;
+  tier?: 'low' | 'high' | null;
 }
 
 function git(root: string, args: string[]): Buffer | null {
@@ -48,6 +54,11 @@ export function readReviewDiff(root: string, base: string): Buffer | null {
   return Buffer.concat(parts);
 }
 
+/** Candidato del panel de un registro: solo v2 con candidato; un v1 exige congelar uno nuevo. */
+export function panelCandidateOf(record: ReviewSealRecord): { tree: string; commit: string } | null {
+  return record.v === 2 && record.candidate ? record.candidate : null;
+}
+
 export function readReviewSealRecord(root: string): ReviewSealRecord | null {
   const file = path.join(root, REVIEW_SEAL_FILE);
   if (!existsSync(file)) {
@@ -62,7 +73,14 @@ export function readReviewSealRecord(root: string): ReviewSealRecord | null {
       typeof record.verdict === 'string' &&
       isReviewVerdict(record.verdict)
     ) {
-      return { v: 1, base: record.base, verdict: record.verdict, diff: record.diff, seal: record.seal };
+      const candidate =
+        record.v === 2 && record.candidate && typeof record.candidate.tree === 'string' && typeof record.candidate.commit === 'string'
+          ? { tree: record.candidate.tree, commit: record.candidate.commit }
+          : null;
+      const tier = record.v === 2 && (record.tier === 'low' || record.tier === 'high') ? record.tier : null;
+      return record.v === 2
+        ? { v: 2, base: record.base, verdict: record.verdict, diff: record.diff, seal: record.seal, candidate, tier }
+        : { v: 1, base: record.base, verdict: record.verdict, diff: record.diff, seal: record.seal };
     }
   } catch {
     return null;

@@ -1,4 +1,7 @@
 import fs from 'node:fs/promises';
+import { compatibilityMinimum, compatWarning } from '../harness/compat.js';
+import { closeProposals, createExclusive, describePending, prepareProposal } from '../writes/proposals.js';
+import { ensureHarnessGitignore, HARNESS_GITIGNORE, HARNESS_GITIGNORE_RULES } from '../writes/credential-ignore.js';
 import { readManifestDocument, updateManifestBlock, writeManifest } from '../manifest/write.js';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -728,22 +731,45 @@ const GENERATED_IGNORES = [
   // Locales del arnés (PD-1/PD-2): credenciales y telemetría nunca se versionan.
   '.ai-hub/.env',
   '.ai-hub/runs/',
+  // Capturas de la transacción X2 junto a destinos no sensibles (R-105): nunca se versionan.
+  '*.ai-hub-capture-*',
 ];
 
 /** Memoria de agente (M-26): ignorada salvo `agentMemory: versioned`. */
 export const AGENT_MEMORY_IGNORES = ['.claude/agent-memory/'];
 
-async function ensureProjectIgnores(root: string, agentMemory?: 'versioned' | 'ignored'): Promise<void> {
+/**
+ * Reglas de ignorado (D-65, R-122–R-124): `.ai-hub/.gitignore` (credenciales y telemetría) es un archivo
+ * nuevo del motor; el `.gitignore` raíz solo se crea si no existe. Si existe y le faltan entradas, NO se
+ * edita: se prepara una propuesta y la capacidad queda pendiente. Devuelve las líneas pendientes.
+ */
+export async function ensureProjectIgnores(root: string, agentMemory?: 'versioned' | 'ignored'): Promise<string[]> {
+  const pending: string[] = [];
+  if ((await ensureHarnessGitignore(root)) === 'foreign') {
+    pending.push(`pendiente: harness-ignore · ${HARNESS_GITIGNORE} existe sin las reglas ${HARNESS_GITIGNORE_RULES.join(' y ')}; añádelas a mano`);
+  }
   const file = path.join(root, '.gitignore');
+  const wanted = agentMemory === 'versioned' ? GENERATED_IGNORES : [...GENERATED_IGNORES, ...AGENT_MEMORY_IGNORES];
+  if (await createExclusive(file, `${wanted.join('\n')}\n`)) {
+    return pending;
+  }
   const current = await fs.readFile(file, 'utf8').catch(() => '');
   const present = new Set(current.split(/\r?\n/).map((line) => line.trim()));
-  const wanted = agentMemory === 'versioned' ? GENERATED_IGNORES : [...GENERATED_IGNORES, ...AGENT_MEMORY_IGNORES];
   const missing = wanted.filter((entry) => !present.has(entry));
   if (missing.length === 0) {
-    return;
+    await closeProposals(root, 'root-gitignore', '.gitignore');
+    return pending;
   }
-  const base = current === '' ? '' : `${current.replace(/\s*$/, '')}\n`;
-  await fs.writeFile(file, `${base}${missing.join('\n')}\n`, 'utf8');
+  const prepared = await prepareProposal(root, {
+    capability: 'root-gitignore',
+    file,
+    display: '.gitignore',
+    fragment: `${missing.join('\n')}\n`,
+    instructions: 'añade estas líneas al final de .gitignore',
+    check: 'git check-ignore de cada entrada (o ai-hub doctor)',
+  });
+  pending.push(describePending(root, prepared.proposal));
+  return pending;
 }
 
 async function installPostMergeHook(root: string): Promise<{ installed: boolean; reason: string }> {
@@ -1212,10 +1238,12 @@ export async function cmdInit(args: ParsedArgs, initialCtx: CliContext, hooks: I
   }
   const planBody = prepared.planBodyFor(resolved);
   const plan: Plan = { ...planBody, hash: sha256(JSON.stringify(planBody)) };
+  // D-65: las reglas de ignorado van antes de sync, que solo genera MCP con credenciales si git lo ignora.
+  const pendingIgnores = await ensureProjectIgnores(ctx.root, manifest.agentMemory);
   const sync = await runSync(ctx.root, { check: false });
   const existingRc = readAiHubRc(ctx.root);
   if (!existingRc || existingRc.version === 1 || args.flags.force) {
-    writeAiHubRc(ctx.root, prepared.rc);
+    await writeAiHubRc(ctx.root, prepared.rc);
   }
   if (sourceCheckout) {
     try {
@@ -1231,7 +1259,6 @@ export async function cmdInit(args: ParsedArgs, initialCtx: CliContext, hooks: I
       await migrateLegacyState(ctx.root, prepared.id, prepared.selection.preset.id);
     }
   }
-  await ensureProjectIgnores(ctx.root, manifest.agentMemory);
   if (args.flags.hooks) {
     const hook = await installPostMergeHook(ctx.root);
     ctx.io.out(`hooks: ${hook.installed ? 'post-merge instalado' : hook.reason}`);
@@ -1316,6 +1343,18 @@ export async function cmdInit(args: ParsedArgs, initialCtx: CliContext, hooks: I
     }
   }
   printReports(ctx.io, reports);
+  // D-65 (R-118): instalación degradada mientras quede una capacidad pendiente de aplicación o detenida.
+  const pending = [...pendingIgnores, ...sync.pending];
+  for (const line of pending) {
+    ctx.io.out(line);
+  }
+  const stopped = reports.some(
+    (report) => report.stage === 'credential-ignore' || (report.state === 'pendiente' && report.stage === 'webhook-platform' && (report.cause ?? []).some((cause) => cause.startsWith('pending_application'))),
+  );
+  if (pending.length > 0 || stopped) {
+    ctx.io.out('init: instalación degradada: aplica lo pendiente y vuelve a ejecutar ai-hub sync (o ai-hub doctor para comprobarlo)');
+    return 1;
+  }
   return 0;
 }
 
@@ -1449,6 +1488,8 @@ export async function cmdInstall(args: ParsedArgs, ctx: CliContext): Promise<num
     );
     return 0;
   }
+  // R-114: el aviso de la versión mínima compatible sale antes de escribir estado nuevo.
+  ctx.io.out(compatWarning(await compatibilityMinimum()));
   const preflight = runSpeckit ? await preflightOrReport(speckitSettings, ctx, 'install') : null;
   if (preflight !== null && !preflight.ok) {
     return 2;
@@ -1496,9 +1537,9 @@ export async function cmdInstall(args: ParsedArgs, ctx: CliContext): Promise<num
   if (runSpeckit) {
     resolved = (await readSpeckitState(ctx.root)).initOptions?.speckit_version ?? resolved;
   }
+  const pendingIgnores = await ensureProjectIgnores(ctx.root, next.agentMemory);
   const sync = await runSync(ctx.root, { check: false });
   await writeInventory(ctx.root);
-  await ensureProjectIgnores(ctx.root, next.agentMemory);
   if (args.flags.hooks) {
     const hook = await installPostMergeHook(ctx.root);
     ctx.io.out(`hooks: ${hook.installed ? 'post-merge instalado' : hook.reason}`);
@@ -1510,6 +1551,14 @@ export async function cmdInstall(args: ParsedArgs, ctx: CliContext): Promise<num
     ctx.io.out('full: no aplica; usa install --full para expandir el catálogo');
   }
   ctx.io.out(speckitSummary(speckitSettings, resolved));
+  const pending = [...pendingIgnores, ...sync.pending];
+  for (const line of pending) {
+    ctx.io.out(line);
+  }
+  if (pending.length > 0) {
+    ctx.io.out('install: instalación degradada: aplica lo pendiente y vuelve a ejecutar ai-hub sync (o ai-hub doctor para comprobarlo)');
+    return 1;
+  }
   return 0;
 }
 

@@ -35,7 +35,8 @@ describe('engine invariants', () => {
     expect(engine.roles).toHaveLength(ENGINE_COUNTS.roles);
     expect(engine.commands).toHaveLength(ENGINE_COUNTS.commands);
     expect(engine.labels).toHaveLength(ENGINE_COUNTS.labels);
-    expect(engine.targets).toHaveLength(5);
+    // R-089: cinco destinos por defecto y `codex` opt-in.
+    expect(engine.targets).toHaveLength(6);
   });
 
   it('maps every command to a Spec Kit id with artifacts and terminal states', async () => {

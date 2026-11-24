@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import { replaceOwned } from '../writes/replace.js';
 import { existsSync } from 'node:fs';
 import { PACKAGE_NAME } from '../package-info.js';
 import path from 'node:path';
@@ -53,9 +54,11 @@ export interface ProjectManifest {
   mcp?: { source: string };
   speckit?: ProjectSpeckit;
   /** Tracker opcional (PD-1): solo nombres de variables, jamás valores. */
-  tracker?: { kind: 'gitlab'; urlEnv: string; tokenEnv: string };
+  tracker?: { kind: 'gitlab' | 'github'; urlEnv: string; tokenEnv: string };
   /** Plano de control (hermes-control): aprobadores de Discord, TTL y política de expiración. */
-  control?: { approvers?: string[]; channelId?: string; ttlHours?: number; expire?: 'block' | 'notify'; pollMinutes?: number };
+  /** Entrega (R-068, R-069): opt-in; sin el bloque, `apply` no crea ramas ni worktrees. */
+  delivery?: { branchPrefix?: string; base?: string };
+  control?: { approvers?: string[]; channelId?: string; ttlHours?: number; expire?: 'block' | 'notify'; pollMinutes?: number; pollJob?: string; labels?: { mode?: 'withhold' | 'unprotected' } };
   /** Modelo por destino y tier (A3); sin correspondencia, el host hereda el de la sesión. */
   agentModels?: Record<string, Record<string, string>>;
   /** Región reservada en el AGENTS.md raíz y en el de cada área (E2). */
@@ -389,7 +392,7 @@ export async function writeInventory(root: string): Promise<ManifestInventory> {
   const inventory = buildInventory(manifest, engine);
   const file = inventoryPath(root);
   await fs.mkdir(path.dirname(file), { recursive: true });
-  await fs.writeFile(file, serializeInventory(inventory), 'utf8');
+  await replaceOwned({ root, file, module: 'manifest/manifest.ts', content: serializeInventory(inventory) });
   return inventory;
 }
 

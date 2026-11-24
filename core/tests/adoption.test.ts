@@ -14,6 +14,7 @@ import { loadManifestContext, writeInventory } from '../src/manifest/manifest.js
 import { readLock } from '../src/sync/lock.js';
 import { ENGINE_SKILLS_DIR } from '../src/engine/engine.js';
 import { REGION_END, REGION_START } from '../src/sync/region.js';
+import { listProposals } from '../src/writes/proposals.js';
 import type { CliIO } from '../src/cli/types.js';
 import { fakeRunner } from './speckit-fake.js';
 import { seedFixture } from './fixtures.js';
@@ -155,9 +156,21 @@ describe('agents-md region (6.7, 6.8)', () => {
     await writeInventory(root);
   }
 
-  it('writes only between the markers, preserves user text and locks the region hash', async () => {
+  /** D-65 (R-125): la persona aplica la región propuesta (su editor); el motor nunca escribe el archivo existente. */
+  async function applyRegionProposal(): Promise<void> {
+    const proposal = (await listProposals(root)).find((item) => item.capability === 'managed-region' && item.target === 'AGENTS.md');
+    expect(proposal).toBeDefined();
+    await fs.writeFile(path.join(root, 'AGENTS.md'), `${await read('AGENTS.md')}\n${proposal!.fragment}`);
+  }
+
+  it('an existing AGENTS.md gets a proposal; once applied, only the region is hashed and drift ignores user text (R-125)', async () => {
     await seededAgentsMd();
-    expect((await cli(['sync'])).code).toBe(0);
+    const sync = await cli(['sync']);
+    expect(sync.code).toBe(0);
+    expect(sync.out).toContain('pendiente: managed-region');
+    expect(await read('AGENTS.md')).toBe('# Team guide\n\nOur own text.\n');
+    await applyRegionProposal();
+    expect((await cli(['sync'])).out).not.toContain('pendiente: managed-region');
     const text = await read('AGENTS.md');
     expect(text.startsWith('# Team guide\n\nOur own text.\n')).toBe(true);
     expect(text).toContain(REGION_START);
@@ -166,13 +179,15 @@ describe('agents-md region (6.7, 6.8)', () => {
     expect(lock?.files['AGENTS.md']?.region).toBe('ai-hub');
     await fs.writeFile(path.join(root, 'AGENTS.md'), `${text}\n## More team notes\n`);
     expect((await cli(['drift'])).code).toBe(0);
-    await fs.writeFile(path.join(root, 'AGENTS.md'), text.replace('## Contrato de cierre', '## Edited by hand'));
+    const edited = text.replace('## Contrato de cierre', '## Edited by hand');
+    await fs.writeFile(path.join(root, 'AGENTS.md'), edited);
     expect((await cli(['drift'])).code).toBe(1);
-    expect((await cli(['sync'])).code).toBe(0);
-    expect(await read('AGENTS.md')).toContain('## Contrato de cierre');
+    // Sync no reescribe la región editada a mano: propone restaurarla y deja el archivo intacto.
+    expect((await cli(['sync'])).out).toContain('pendiente: managed-region');
+    expect(await read('AGENTS.md')).toBe(edited);
   });
 
-  it('not selected means untouched; disabling removes only the region', async () => {
+  it('not selected means untouched; enabling and disabling the region are proposals on an existing file (R-125)', async () => {
     await seedFixture(root);
     await writeInventory(root);
     await fs.writeFile(path.join(root, 'AGENTS.md'), '# Team guide\n');
@@ -181,12 +196,26 @@ describe('agents-md region (6.7, 6.8)', () => {
     await fs.appendFile(path.join(root, 'manifest.yaml'), 'agentsMd: true\n');
     await writeInventory(root);
     await cli(['sync']);
+    expect(await read('AGENTS.md')).toBe('# Team guide\n');
+    await applyRegionProposal();
     expect(await read('AGENTS.md')).toContain(REGION_END);
     const manifestFile = path.join(root, 'manifest.yaml');
     await fs.writeFile(manifestFile, (await fs.readFile(manifestFile, 'utf8')).replace('agentsMd: true\n', ''));
     await writeInventory(root);
-    await cli(['sync']);
-    expect(await read('AGENTS.md')).toBe('# Team guide\n');
+    const disabled = await cli(['sync']);
+    expect(disabled.out).toContain('pendiente: managed-region-removal');
+    expect(await read('AGENTS.md')).toContain(REGION_END);
+  });
+
+  it('a missing AGENTS.md is created exclusively with only the region (R-125)', async () => {
+    await seedFixture(root);
+    await fs.appendFile(path.join(root, 'manifest.yaml'), 'agentsMd: true\n');
+    await writeInventory(root);
+    expect((await cli(['sync'])).code).toBe(0);
+    const text = await read('AGENTS.md');
+    expect(text.startsWith(REGION_START)).toBe(true);
+    expect(text.trimEnd().endsWith(REGION_END)).toBe(true);
+    expect(await listProposals(root)).toEqual([]);
   });
 
   it('doctor warns about a 266 KB AGENTS.md without degrading', async () => {

@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { listProposals } from '../src/writes/proposals.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -888,12 +889,37 @@ describe('init-fiabilidad 4.8 — acción según lo persistido (HC-12, HC-13)', 
   }, 120_000);
 });
 
+/** El bloque platforms.webhook ya presente en el config.yaml del dueño `default` (aplicado por la persona, D-65). */
+async function seedOwnerBlock(): Promise<void> {
+  const owner = path.join(hermes.home, 'config.yaml');
+  const current = await fs.readFile(owner, 'utf8').catch(() => '');
+  await fs.mkdir(path.dirname(owner), { recursive: true });
+  await fs.writeFile(owner, `${current}platforms:\n  webhook:\n    enabled: true\n    extra:\n      port: 8644\n`);
+}
+
+describe('D-65 (R-119, 4.89) — dueño compartido sin bloque aplicado', () => {
+  it('init --yes --connect-hermes sale 1 (degradada), deja el config.yaml del dueño intacto y prepara la propuesta', async () => {
+    hermes.topology = 'multiplex';
+    const owner = path.join(hermes.home, 'config.yaml');
+    const before = await fs.readFile(owner, 'utf8').catch(() => null);
+    const result = await flagsInit(CONNECT_FLAGS);
+    expect(result.code, result.text).toBe(1);
+    expect(STATUS.exec(result.out.find((line) => line.startsWith('ai-hub-integration: name=control')) ?? '')?.slice(1, 4)).toEqual(['control', 'pendiente', 'webhook-platform']);
+    expect(result.text).toContain('instalación degradada');
+    expect(await fs.readFile(owner, 'utf8').catch(() => null)).toBe(before);
+    expect((await listProposals(h.root)).map((item) => item.capability)).toContain('hermes-webhook');
+    expect(result.text).not.toContain(BOT_TOKEN);
+  }, 120_000);
+});
+
 describe('fabrica-verificable 2.2 — un arranque lento no es un fallo y el resumen dice lo verificado', () => {
   it('a listener that refuses through the cap ends pendiente, with no [FAIL] and nothing existing listed as missing', async () => {
     hermes.topology = 'multiplex';
     const real = hermes.host.probeWebhook!;
     let slow = true;
     hermes.host.probeWebhook = async (port) => (slow ? 'refused' : real(port));
+    // D-65: el bloque del dueño compartido ya lo aplicó la persona (la prueba mide el arranque lento, no la escritura).
+    await seedOwnerBlock();
     const result = await flagsInit([...CONNECT_FLAGS, '--webhook-owner', 'default']);
     expect(result.code, result.text).toBe(0);
     expect(STATUS.exec(result.out.at(-1) ?? '')?.slice(1)).toEqual(['control', 'pendiente', 'webhook-platform', 'ai-hub control enroll --check --wait']);
@@ -922,6 +948,8 @@ describe('fabrica-verificable 2.2 — un arranque lento no es un fallo y el resu
       probes += 1;
       return probes <= 2 ? 'refused' : real(port);
     };
+    // D-65: el bloque del dueño compartido ya lo aplicó la persona (la prueba mide el arranque lento, no la escritura).
+    await seedOwnerBlock();
     const result = await flagsInit([...CONNECT_FLAGS, '--webhook-owner', 'default']);
     expect(result.code, result.text).toBe(0);
     expect(result.out.at(-1)).toBe('ai-hub-integration: name=control state=completada stage=- action=-');

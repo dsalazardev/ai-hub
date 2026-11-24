@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 export type AiHubSource = 'env' | 'rc' | 'dot-dir' | 'plain-dir' | 'manifest-root';
@@ -81,8 +81,10 @@ export function readAiHubRc(startDir: string): AiHubRc | null {
   };
 }
 
-export function writeAiHubRc(startDir: string, rc: AiHubRc): void {
-  writeFileSync(path.join(startDir, RC_NAME), `${JSON.stringify(rc, null, 2)}\n`, 'utf8');
+export async function writeAiHubRc(startDir: string, rc: AiHubRc): Promise<void> {
+  // 3.11: transacción X2 (lock del proyecto, temporal, última comprobación, rename).
+  const { replaceOwned } = await import('./writes/replace.js');
+  await replaceOwned({ root: startDir, file: path.join(startDir, RC_NAME), module: 'paths.ts', content: `${JSON.stringify(rc, null, 2)}\n` });
 }
 
 /**

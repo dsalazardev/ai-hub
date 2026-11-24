@@ -1,0 +1,1297 @@
+[
+  {
+    "file": "adopt/convert.ts",
+    "emitter": "io.err",
+    "template": "--legacy-until debe ser una fecha YYYY-MM-DD"
+  },
+  {
+    "file": "adopt/convert.ts",
+    "emitter": "io.err",
+    "template": "[F1] init falló (exit {}); ai-hub restore {} revierte la adopción"
+  },
+  {
+    "file": "adopt/convert.ts",
+    "emitter": "io.err",
+    "template": "no se detectó un arnés heredado (ni núcleo vendorizado ni manifiesto v1); usa ai-hub init"
+  },
+  {
+    "file": "adopt/mcp.ts",
+    "emitter": "throw Error",
+    "template": "el manifiesto MCP heredado no es un objeto YAML"
+  },
+  {
+    "file": "advisor/client.ts",
+    "emitter": "throw AdvisorClientError",
+    "template": "{} {} está fuera de la allowlist del advisor; no se envía"
+  },
+  {
+    "file": "advisor/client.ts",
+    "emitter": "throw AdvisorClientError",
+    "template": "cuerpo fuera de la allowlist del advisor ({}); no se envía"
+  },
+  {
+    "file": "advisor/client.ts",
+    "emitter": "throw AdvisorClientError",
+    "template": "el advisor no puede {}; no se envía ninguna petición"
+  },
+  {
+    "file": "advisor/client.ts",
+    "emitter": "throw AdvisorClientError",
+    "template": "las escrituras del advisor están desactivadas hasta verificar el aislamiento del perfil; no se envía"
+  },
+  {
+    "file": "advisor/client.ts",
+    "emitter": "throw AdvisorClientError",
+    "template": "más de {} escrituras en una hora; no se envía"
+  },
+  {
+    "file": "advisor/client.ts",
+    "emitter": "throw AdvisorClientError",
+    "template": "nota vacía o de más de {} caracteres"
+  },
+  {
+    "file": "advisor/client.ts",
+    "emitter": "throw AdvisorClientError",
+    "template": "título (1–{}) o descripción (≤ {}) fuera de límites"
+  },
+  {
+    "file": "advisor/drafts.ts",
+    "emitter": "throw DraftError",
+    "template": "el borrador caducó; pide uno nuevo"
+  },
+  {
+    "file": "advisor/drafts.ts",
+    "emitter": "throw DraftError",
+    "template": "el contenido no es el del borrador confirmado; no se crea nada"
+  },
+  {
+    "file": "advisor/drafts.ts",
+    "emitter": "throw DraftError",
+    "template": "el token es de otro autor; no se crea nada"
+  },
+  {
+    "file": "advisor/drafts.ts",
+    "emitter": "throw DraftError",
+    "template": "el token es de otro canal; no se crea nada"
+  },
+  {
+    "file": "advisor/drafts.ts",
+    "emitter": "throw DraftError",
+    "template": "el token ya se usó; no se crea nada"
+  },
+  {
+    "file": "advisor/drafts.ts",
+    "emitter": "throw DraftError",
+    "template": "ningún borrador tiene ese token; no se crea nada"
+  },
+  {
+    "file": "advisor/drafts.ts",
+    "emitter": "throw DraftError",
+    "template": "sin almacenamiento privado validado no se guardan borradores ({}): {}"
+  },
+  {
+    "file": "ci/templates.ts",
+    "emitter": "io.err",
+    "template": "{} ya existe; repite con --force para sobrescribirlo"
+  },
+  {
+    "file": "cli/assistant.ts",
+    "emitter": "io.err",
+    "template": "{}; no se escribió nada"
+  },
+  {
+    "file": "cli/assistant.ts",
+    "emitter": "io.err",
+    "template": "preflight de Spec Kit fallido; no se escribió nada"
+  },
+  {
+    "file": "cli/assistant.ts",
+    "emitter": "io.err",
+    "template": "tracker: .ai-hub/.env escrito, pero manifest.yaml {}; corrígelo y declara manifest.tracker"
+  },
+  {
+    "file": "cli/assistant.ts",
+    "emitter": "io.err",
+    "template": "tracker: {}: {}; el token no se guardó ni se mostró"
+  },
+  {
+    "file": "cli/assistant.ts",
+    "emitter": "io.err",
+    "template": "tracker: manifest.yaml {}; corrígelo y repite el paso (no se escribió nada)"
+  },
+  {
+    "file": "cli/assistant.ts",
+    "emitter": "throw Error",
+    "template": "la regla base \"{}\" no se puede excluir"
+  },
+  {
+    "file": "cli/captures.ts",
+    "emitter": "io.err",
+    "template": "release borra la captura {}; revísala antes y repite con --yes"
+  },
+  {
+    "file": "cli/drift.ts",
+    "emitter": "io.err",
+    "template": "[DRIFT] {}"
+  },
+  {
+    "file": "cli/drift.ts",
+    "emitter": "io.err",
+    "template": "Ejecuta ai-hub sync para corregir {} diferencias"
+  },
+  {
+    "file": "cli/gate.ts",
+    "emitter": "io.err",
+    "template": "Uso: ai-hub gate [--seal <hash> [--feature <NNN-slug>]] [--quick]"
+  },
+  {
+    "file": "cli/hook.ts",
+    "emitter": "io.err",
+    "template": "Uso: ai-hub hook <{}> (lee el payload del host por stdin)"
+  },
+  {
+    "file": "cli/idea.ts",
+    "emitter": "throw IdeaInputError",
+    "template": "--idea-editor necesita una terminal para abrir tu editor; sin terminal usa --idea-file <ruta> o --idea-stdin"
+  },
+  {
+    "file": "cli/idea.ts",
+    "emitter": "throw IdeaInputError",
+    "template": "--idea-editor no está disponible en este contexto; usa --idea-file <ruta>"
+  },
+  {
+    "file": "cli/idea.ts",
+    "emitter": "throw IdeaInputError",
+    "template": "--idea-file necesita una ruta: --idea-file <ruta> (o --idea-file=<ruta>)"
+  },
+  {
+    "file": "cli/idea.ts",
+    "emitter": "throw IdeaInputError",
+    "template": "--idea-stdin y --discord-token-stdin no pueden compartir la entrada estándar: el token es lo único que viaja por ella. Pasa la idea con --idea-file <ruta>; no se escribió nada"
+  },
+  {
+    "file": "cli/idea.ts",
+    "emitter": "throw IdeaInputError",
+    "template": "{} debe ser un entero positivo de bytes (valor recibido no válido)"
+  },
+  {
+    "file": "cli/idea.ts",
+    "emitter": "throw IdeaInputError",
+    "template": "{}: contenido binario (byte NUL); la idea debe ser texto UTF-8"
+  },
+  {
+    "file": "cli/idea.ts",
+    "emitter": "throw IdeaInputError",
+    "template": "{}: es un directorio; indica un archivo de texto"
+  },
+  {
+    "file": "cli/idea.ts",
+    "emitter": "throw IdeaInputError",
+    "template": "{}: la ruta no existe o no se puede leer"
+  },
+  {
+    "file": "cli/idea.ts",
+    "emitter": "throw IdeaInputError",
+    "template": "{}: no es un archivo regular"
+  },
+  {
+    "file": "cli/idea.ts",
+    "emitter": "throw IdeaInputError",
+    "template": "{}: no es UTF-8 válido; guarda la idea como texto UTF-8"
+  },
+  {
+    "file": "cli/idea.ts",
+    "emitter": "throw IdeaInputError",
+    "template": "el editor ({}) salió con código {}; no se escribió nada"
+  },
+  {
+    "file": "cli/idea.ts",
+    "emitter": "throw IdeaInputError",
+    "template": "el temporal del editor cae dentro del repositorio; define TMPDIR/TEMP fuera de él o usa --idea-file"
+  },
+  {
+    "file": "cli/integrations.ts",
+    "emitter": "io.err",
+    "template": "aviso: {}"
+  },
+  {
+    "file": "cli/locks.ts",
+    "emitter": "io.err",
+    "template": "release libera {} sin comprobar a su dueño remoto; repite con --yes"
+  },
+  {
+    "file": "cli/maintenance.ts",
+    "emitter": "io.err",
+    "template": "\"{}\" lo provee Spec Kit; ai-hub no añade ni desinstala sus comandos"
+  },
+  {
+    "file": "cli/maintenance.ts",
+    "emitter": "io.err",
+    "template": "backups move-sensitive mueve copias sensibles al almacenamiento privado; repite con --yes"
+  },
+  {
+    "file": "cli/maintenance.ts",
+    "emitter": "io.err",
+    "template": "backups move-sensitive: {}: {}; no se movió nada"
+  },
+  {
+    "file": "cli/maintenance.ts",
+    "emitter": "io.err",
+    "template": "la regla base \"{}\" no se puede desinstalar"
+  },
+  {
+    "file": "cli/maintenance.ts",
+    "emitter": "io.err",
+    "template": "la skill \"{}\" no pertenece al catálogo instalable (no existe o declara runtime: false)"
+  },
+  {
+    "file": "cli/maintenance.ts",
+    "emitter": "io.err",
+    "template": "las reglas universales se seleccionan con --exclude rule:<id> en init; no se añaden con add"
+  },
+  {
+    "file": "cli/maintenance.ts",
+    "emitter": "io.err",
+    "template": "no existe \"{}\" en el preset {} ni en el catálogo del motor"
+  },
+  {
+    "file": "cli/maintenance.ts",
+    "emitter": "io.err",
+    "template": "no existe el agente \"{}\" en el catálogo {}"
+  },
+  {
+    "file": "cli/maintenance.ts",
+    "emitter": "io.err",
+    "template": "no existe la skill \"{}\" en {} ni en el catálogo del motor"
+  },
+  {
+    "file": "cli/maintenance.ts",
+    "emitter": "io.err",
+    "template": "npm install falló; revisa la salida anterior"
+  },
+  {
+    "file": "cli/maintenance.ts",
+    "emitter": "io.err",
+    "template": "purge elimina el arnés; repite con --yes (antes crea un snapshot)"
+  },
+  {
+    "file": "cli/maintenance.ts",
+    "emitter": "io.err",
+    "template": "snapshot no encontrado: {}"
+  },
+  {
+    "file": "cli/maintenance.ts",
+    "emitter": "io.err",
+    "template": "uso: ai-hub add <skill|agent> <id>"
+  },
+  {
+    "file": "cli/maintenance.ts",
+    "emitter": "io.err",
+    "template": "uso: ai-hub restore <snapshot>"
+  },
+  {
+    "file": "cli/maintenance.ts",
+    "emitter": "io.err",
+    "template": "uso: ai-hub uninstall <skill|agent|rule> <id>"
+  },
+  {
+    "file": "cli/memory.ts",
+    "emitter": "io.err",
+    "template": "uso: ai-hub memory [add|list|resume]"
+  },
+  {
+    "file": "cli/onboarding.ts",
+    "emitter": "io.err",
+    "template": "--discord-token-stdin: la entrada estándar está vacía; no se escribió nada"
+  },
+  {
+    "file": "cli/onboarding.ts",
+    "emitter": "io.err",
+    "template": "--webhook-owner solo se admite junto a --connect-hermes {}"
+  },
+  {
+    "file": "cli/onboarding.ts",
+    "emitter": "io.err",
+    "template": "ai-hub: aviso: {} (ancestro de {}) ya tiene una instalación; init escribe solo en {}"
+  },
+  {
+    "file": "cli/onboarding.ts",
+    "emitter": "io.err",
+    "template": "colisiones (no se sobrescribieron): {}"
+  },
+  {
+    "file": "cli/onboarding.ts",
+    "emitter": "io.err",
+    "template": "init: --dir necesita una ruta (--dir <ruta>); no se escribió nada"
+  },
+  {
+    "file": "cli/onboarding.ts",
+    "emitter": "io.err",
+    "template": "init: {} apunta fuera de la raíz ({}); init no escribe fuera de {}; no se escribió nada"
+  },
+  {
+    "file": "cli/onboarding.ts",
+    "emitter": "io.err",
+    "template": "init: el destino {} no admite escritura ({}); no se escribió nada"
+  },
+  {
+    "file": "cli/onboarding.ts",
+    "emitter": "io.err",
+    "template": "init: el destino {} no es un directorio; elige otro con --dir; no se escribió nada"
+  },
+  {
+    "file": "cli/onboarding.ts",
+    "emitter": "io.err",
+    "template": "init: el destino {} no existe; créalo o elige otro con --dir (init no crea la raíz); no se escribió nada"
+  },
+  {
+    "file": "cli/onboarding.ts",
+    "emitter": "io.err",
+    "template": "init: la instalación base no está completa en {}: falta {}; no se ofrece ninguna integración"
+  },
+  {
+    "file": "cli/onboarding.ts",
+    "emitter": "io.err",
+    "template": "init: no se pudo escribir {} ({}); el arnés sigue aplicado en {}, pero la idea no se guardó; no se ofrece ninguna integración"
+  },
+  {
+    "file": "cli/onboarding.ts",
+    "emitter": "io.err",
+    "template": "preflight de Spec Kit fallido; no se escribió nada:"
+  },
+  {
+    "file": "cli/onboarding.ts",
+    "emitter": "io.err",
+    "template": "restaura el estado previo con: ai-hub restore {}"
+  },
+  {
+    "file": "cli/onboarding.ts",
+    "emitter": "io.err",
+    "template": "Spec Kit no quedó instalado como se esperaba:"
+  },
+  {
+    "file": "cli/onboarding.ts",
+    "emitter": "io.err",
+    "template": "tracker: .ai-hub/.env ya tiene {} y {} y manifest.yaml no declara el tracker; decláralo con {} (o ai-hub init en una terminal)"
+  },
+  {
+    "file": "cli/onboarding.ts",
+    "emitter": "io.err",
+    "template": "tracker: {}; no se declaró nada"
+  },
+  {
+    "file": "cli/onboarding.ts",
+    "emitter": "io.err",
+    "template": "tracker: {}; no se declaró nada (--declare-tracker no escribe credenciales)"
+  },
+  {
+    "file": "cli/onboarding.ts",
+    "emitter": "throw Error",
+    "template": "--full y --preset-only son incompatibles"
+  },
+  {
+    "file": "cli/onboarding.ts",
+    "emitter": "throw Error",
+    "template": "--migrate solo aplica en el checkout de desarrollo; la instalación no tiene .planning/"
+  },
+  {
+    "file": "cli/onboarding.ts",
+    "emitter": "throw Error",
+    "template": "--script acepta sh, ps o py{}; ejecuta ai-hub {} --script sh, ai-hub {} --script ps o ai-hub {} --script py"
+  },
+  {
+    "file": "cli/onboarding.ts",
+    "emitter": "throw Error",
+    "template": "--scripts acepta sh, ps, py (recibido: {}); ejecuta ai-hub {} --scripts py o ai-hub {} --scripts sh,ps,py"
+  },
+  {
+    "file": "cli/onboarding.ts",
+    "emitter": "throw Error",
+    "template": "--scripts necesita una lista sh, ps, py separada por comas, mínimo un valor; ejecuta ai-hub {} --scripts py o ai-hub {} --scripts sh,ps,py"
+  },
+  {
+    "file": "cli/onboarding.ts",
+    "emitter": "throw Error",
+    "template": "--scripts no admite duplicados y acepta sh, ps, py (recibido repetido: {}); ejecuta ai-hub {} --scripts py o ai-hub {} --scripts sh,ps,py"
+  },
+  {
+    "file": "cli/onboarding.ts",
+    "emitter": "throw Error",
+    "template": "{} queda fuera del conjunto {}; el activo debe ser uno del conjunto elegido — inclúyelo con ai-hub {} --scripts {} o elige el activo dentro de [{}]"
+  },
+  {
+    "file": "cli/onboarding.ts",
+    "emitter": "throw Error",
+    "template": "detección ambigua entre {}; elige con --preset <id>"
+  },
+  {
+    "file": "cli/run.ts",
+    "emitter": "io.err",
+    "template": "[FAIL] {}"
+  },
+  {
+    "file": "cli/run.ts",
+    "emitter": "io.err",
+    "template": "[FAIL] lock: {}"
+  },
+  {
+    "file": "cli/run.ts",
+    "emitter": "io.err",
+    "template": "Comando desconocido: {}"
+  },
+  {
+    "file": "cli/run.ts",
+    "emitter": "io.err",
+    "template": "Ejecuta ai-hub sync tras editar la fuente en {}"
+  },
+  {
+    "file": "cli/run.ts",
+    "emitter": "io.err",
+    "template": "Error en sync: {}"
+  },
+  {
+    "file": "cli/run.ts",
+    "emitter": "io.err",
+    "template": "Error inesperado en \"{}\": {}"
+  },
+  {
+    "file": "cli/seal.ts",
+    "emitter": "io.err",
+    "template": "[FAIL] el diff toca la spec aprobada ({}): la aprobación humana queda invalidada; vuelve a sellar la spec por la puerta humana (§5) antes de aprobar la revisión"
+  },
+  {
+    "file": "cli/seal.ts",
+    "emitter": "io.err",
+    "template": "[FAIL] no se pudo escribir {} ({}): {}"
+  },
+  {
+    "file": "cli/seal.ts",
+    "emitter": "io.err",
+    "template": "no se pudo leer el diff contra {} (¿repositorio git?)"
+  },
+  {
+    "file": "cli/trunk.ts",
+    "emitter": "io.err",
+    "template": "uso: ai-hub trunk [show|lock|unlock]"
+  },
+  {
+    "file": "cli/worktrees.ts",
+    "emitter": "io.err",
+    "template": "no se pudo eliminar {}: {}"
+  },
+  {
+    "file": "cli/worktrees.ts",
+    "emitter": "io.err",
+    "template": "uso: ai-hub worktrees [list|reap] [--confirm]"
+  },
+  {
+    "file": "control/apply.ts",
+    "emitter": "return code 1",
+    "template": "#{}: {}; la decisión {} sigue pendiente"
+  },
+  {
+    "file": "control/apply.ts",
+    "emitter": "return code 1",
+    "template": "#{}: {}: {}; no se escribe nada"
+  },
+  {
+    "file": "control/apply.ts",
+    "emitter": "return code 1",
+    "template": "#{}: el hash {} no corresponde a la decisión pendiente; no se escribe nada"
+  },
+  {
+    "file": "control/apply.ts",
+    "emitter": "return code 1",
+    "template": "#{}: el sello actual no coincide con el aprobado; la spec cambió y necesita otra aprobación"
+  },
+  {
+    "file": "control/apply.ts",
+    "emitter": "return code 1",
+    "template": "#{}: el sello no coincide con el hash aprobado (fail-closed); no se pasa a {}"
+  },
+  {
+    "file": "control/apply.ts",
+    "emitter": "return code 1",
+    "template": "#{}: la decisión {} se aplica por su sello, no por respuesta; no se escribe nada"
+  },
+  {
+    "file": "control/apply.ts",
+    "emitter": "return code 1",
+    "template": "#{}: la etiqueta cambió ({} → {}); la decisión queda anulada"
+  },
+  {
+    "file": "control/apply.ts",
+    "emitter": "return code 1",
+    "template": "#{}: la referencia {} no corresponde a ninguna decisión de este proyecto para #{}; usa detalle {}; no se escribe nada"
+  },
+  {
+    "file": "control/apply.ts",
+    "emitter": "return code 1",
+    "template": "#{}: la referencia es de la decisión {}, que ya no está vigente ({}){}; usa detalle {}; no se escribe nada"
+  },
+  {
+    "file": "control/apply.ts",
+    "emitter": "return code 1",
+    "template": "#{}: la respuesta coincide con {}; usa un prefijo más largo; no se aprueba nada"
+  },
+  {
+    "file": "control/apply.ts",
+    "emitter": "return code 1",
+    "template": "#{}: label_conflict: la etiqueta cambió ({} → {}); no se escribe y se reconcilia"
+  },
+  {
+    "file": "control/apply.ts",
+    "emitter": "return code 1",
+    "template": "#{}: label_lock_timeout: {}; no se escribe nada"
+  },
+  {
+    "file": "control/apply.ts",
+    "emitter": "return code 1",
+    "template": "#{}: no hay ninguna decisión pendiente | #{}: la decisión {} caducó; espera la siguiente"
+  },
+  {
+    "file": "control/apply.ts",
+    "emitter": "return code 1",
+    "template": "#{}: registro de decisiones detenido: {}; no se escribe nada"
+  },
+  {
+    "file": "control/apply.ts",
+    "emitter": "return code 1",
+    "template": "#{}: WIP lleno ({}/{} en {}: {}); la decisión sigue pendiente"
+  },
+  {
+    "file": "control/apply.ts",
+    "emitter": "return code 1",
+    "template": "aprobador no autorizado: no está en manifest.control.approvers; no se escribe nada"
+  },
+  {
+    "file": "control/apply.ts",
+    "emitter": "throw ControlConfigError",
+    "template": "manifest.control.approvers está vacío: las aprobaciones están desactivadas"
+  },
+  {
+    "file": "control/capabilities.ts",
+    "emitter": "throw CapabilityDeclarationError",
+    "template": "{}: la declaración necesita una cita de evidencia"
+  },
+  {
+    "file": "control/capabilities.ts",
+    "emitter": "throw CapabilityDeclarationError",
+    "template": "{}: rango de versiones invertido"
+  },
+  {
+    "file": "control/capabilities.ts",
+    "emitter": "throw CapabilityDeclarationError",
+    "template": "{}: una capacidad disponible necesita un rango de versiones verificado"
+  },
+  {
+    "file": "control/cli.ts",
+    "emitter": "io.err",
+    "template": "--verify-message no está disponible: el endpoint de Discord para releer el mensaje no está verificado (PENDIENTE). La aprobación se valida con la gramática, el hash de la decisión y manifest.control.approvers."
+  },
+  {
+    "file": "control/cli.ts",
+    "emitter": "io.err",
+    "template": "--wait solo acompaña a --check y admite segundos entre 0 y 900 ({})"
+  },
+  {
+    "file": "control/cli.ts",
+    "emitter": "io.err",
+    "template": "--webhook-owner necesita el nombre del perfil dueño del listener {}"
+  },
+  {
+    "file": "control/cli.ts",
+    "emitter": "io.err",
+    "template": "[ai-hub] {}"
+  },
+  {
+    "file": "control/cli.ts",
+    "emitter": "io.err",
+    "template": "[ai-hub] registro de decisiones detenido: {}"
+  },
+  {
+    "file": "control/decide.ts",
+    "emitter": "throw ControlConfigError",
+    "template": "el plano de control necesita manifest.control (aprobadores, ttlHours, expire)"
+  },
+  {
+    "file": "control/enroll.ts",
+    "emitter": "return code 1",
+    "template": "[FAIL] colisión de token de bot: {} comparte DISCORD_BOT_TOKEN con el perfil \"{}\"; no se escribe nada"
+  },
+  {
+    "file": "control/grants.ts",
+    "emitter": "throw Error",
+    "template": "la concesión cambió bajo el lock"
+  },
+  {
+    "file": "control/health.ts",
+    "emitter": "throw Error",
+    "template": "no se pudo actualizar la salud del poll ({}): {}"
+  },
+  {
+    "file": "control/identity.ts",
+    "emitter": "throw Error",
+    "template": "{} cambió mientras se preparaba el bloque gestionado; no se reemplaza (vuelve a ejecutar el paso)"
+  },
+  {
+    "file": "control/identity.ts",
+    "emitter": "throw Error",
+    "template": "{}: escritura detenida ({}): {}"
+  },
+  {
+    "file": "control/identity.ts",
+    "emitter": "throw Error",
+    "template": "no hay un nombre libre para la copia protegida de SOUL.md en {}"
+  },
+  {
+    "file": "control/ledger.ts",
+    "emitter": "throw Error",
+    "template": "aprobador no admitido en el registro de control: debe ser un id numérico de Discord"
+  },
+  {
+    "file": "control/ledger.ts",
+    "emitter": "throw Error",
+    "template": "motivo no admitido en el registro de control: debe ser un código [a-z0-9_]"
+  },
+  {
+    "file": "control/onboard-step.ts",
+    "emitter": "io.err",
+    "template": "--discord-token-stdin: la entrada estándar está vacía; no se escribió nada"
+  },
+  {
+    "file": "control/onboard-step.ts",
+    "emitter": "io.err",
+    "template": "control: {} (no se escribió nada)"
+  },
+  {
+    "file": "control/onboard-step.ts",
+    "emitter": "io.err",
+    "template": "control: {}{}"
+  },
+  {
+    "file": "control/onboard.ts",
+    "emitter": "return code 1",
+    "template": "control: {}"
+  },
+  {
+    "file": "control/onboard.ts",
+    "emitter": "return code 1",
+    "template": "control: {} ya tiene otro bot; no se cambia (no se escribió nada)"
+  },
+  {
+    "file": "control/onboard.ts",
+    "emitter": "return code 1",
+    "template": "control: el enrolamiento no se ejecutó; el init sigue aplicado"
+  },
+  {
+    "file": "control/onboard.ts",
+    "emitter": "return code 1",
+    "template": "control: el perfil todavía no está completo; el init sigue aplicado"
+  },
+  {
+    "file": "control/onboard.ts",
+    "emitter": "return code 1",
+    "template": "control: ese token es el bot del perfil \"{}\"; {} necesita su propio bot (no se escribió nada)"
+  },
+  {
+    "file": "control/onboard.ts",
+    "emitter": "return code 1",
+    "template": "control: falló \"hermes gateway restart\" ({}); el perfil quedó configurado"
+  },
+  {
+    "file": "control/onboard.ts",
+    "emitter": "return code 1",
+    "template": "control: falló \"hermes profile create {} --no-skills\" ({}); no se escribió el token; el init sigue aplicado"
+  },
+  {
+    "file": "control/onboard.ts",
+    "emitter": "return code 1",
+    "template": "control: la identidad quedó pendiente en {}; no se escribió la conexión"
+  },
+  {
+    "file": "control/onboard.ts",
+    "emitter": "return code 1",
+    "template": "control: la identidad se interrumpió en {}; {}"
+  },
+  {
+    "file": "control/onboard.ts",
+    "emitter": "return code 1",
+    "template": "Siguiente: {}"
+  },
+  {
+    "file": "control/onboard.ts",
+    "emitter": "return code 1",
+    "template": "Siguiente: ai-hub sync y después {}"
+  },
+  {
+    "file": "control/onboard.ts",
+    "emitter": "throw Error",
+    "template": "manifest.yaml {}; no se puede declarar manifest.control"
+  },
+  {
+    "file": "control/onboard.ts",
+    "emitter": "throw Error",
+    "template": "no hay manifest.yaml en {}; no se puede declarar manifest.control"
+  },
+  {
+    "file": "control/profile-env.ts",
+    "emitter": "throw Error",
+    "template": "{}: escritura detenida ({}): {}"
+  },
+  {
+    "file": "control/requests.ts",
+    "emitter": "throw Error",
+    "template": "la petición {} ya no está pendiente; no se cambia"
+  },
+  {
+    "file": "control/scripts.ts",
+    "emitter": "throw Error",
+    "template": "{} cambió mientras se preparaba la actualización; no se sustituye"
+  },
+  {
+    "file": "control/scripts.ts",
+    "emitter": "throw Error",
+    "template": "{}: actualización detenida ({}): {}"
+  },
+  {
+    "file": "control/tick.ts",
+    "emitter": "io.err",
+    "template": "--issue debe ser un número de issue"
+  },
+  {
+    "file": "control/tick.ts",
+    "emitter": "io.err",
+    "template": "control tick solo propone (--dry-run): aplicar etiquetas, comentar o lanzar agentes es de hermes-control"
+  },
+  {
+    "file": "control/tick.ts",
+    "emitter": "throw Error",
+    "template": "--labels-from debe contener una lista [{feature, iid?, labels, approvedHash?}]"
+  },
+  {
+    "file": "control/tick.ts",
+    "emitter": "throw Error",
+    "template": "--labels-from: la entrada {} necesita feature (texto) y labels (lista de textos)"
+  },
+  {
+    "file": "control/tick.ts",
+    "emitter": "throw Error",
+    "template": "--online necesita {}, {} y {} en .ai-hub/.env"
+  },
+  {
+    "file": "control/tick.ts",
+    "emitter": "throw Error",
+    "template": "--online necesita manifest.tracker"
+  },
+  {
+    "file": "control/tick.ts",
+    "emitter": "throw Error",
+    "template": "el tracker respondió HTTP {} para la issue {}"
+  },
+  {
+    "file": "control/tracker.ts",
+    "emitter": "throw TrackerError",
+    "template": "el plano de control necesita manifest.tracker"
+  },
+  {
+    "file": "control/tracker.ts",
+    "emitter": "throw TrackerError",
+    "template": "el tracker devolvió una respuesta ilegible ({} {})"
+  },
+  {
+    "file": "control/tracker.ts",
+    "emitter": "throw TrackerError",
+    "template": "el tracker limitó la petición (HTTP 429){}"
+  },
+  {
+    "file": "control/tracker.ts",
+    "emitter": "throw TrackerError",
+    "template": "el tracker no responde ({} {})"
+  },
+  {
+    "file": "control/tracker.ts",
+    "emitter": "throw TrackerError",
+    "template": "el tracker respondió HTTP {} ({} {})"
+  },
+  {
+    "file": "control/tracker.ts",
+    "emitter": "throw TrackerError",
+    "template": "faltan en .ai-hub/.env: {}"
+  },
+  {
+    "file": "control/tracker.ts",
+    "emitter": "throw TrackerError",
+    "template": "lectura incompleta: la página siguiente apunta a otro origen (GET {})"
+  },
+  {
+    "file": "control/tracker.ts",
+    "emitter": "throw TrackerError",
+    "template": "lectura incompleta: más de {} check runs (GET /commits/{sha}/check-runs)"
+  },
+  {
+    "file": "control/tracker.ts",
+    "emitter": "throw TrackerError",
+    "template": "lectura incompleta: más de {} páginas (GET {})"
+  },
+  {
+    "file": "control/tracker.ts",
+    "emitter": "throw TrackerError",
+    "template": "lectura incompleta: página llena sin cabeceras de paginación (GET {})"
+  },
+  {
+    "file": "control/webhook-config.ts",
+    "emitter": "throw WebhookConfigError",
+    "template": "el bloque platforms.webhook no quedó habilitado tras escribirlo"
+  },
+  {
+    "file": "control/webhook-config.ts",
+    "emitter": "throw WebhookConfigError",
+    "template": "no se puede leer ({})"
+  },
+  {
+    "file": "delivery/association.ts",
+    "emitter": "throw DeliveryError",
+    "template": "la base {} no se resuelve a un commit"
+  },
+  {
+    "file": "delivery/association.ts",
+    "emitter": "throw DeliveryError",
+    "template": "la rama {} existe sin asociación; no se adopta en silencio: revísala o renómbrala"
+  },
+  {
+    "file": "delivery/association.ts",
+    "emitter": "throw DeliveryError",
+    "template": "la rama {} ya pertenece a la asociación de #{}; dos asociaciones nunca comparten rama"
+  },
+  {
+    "file": "delivery/association.ts",
+    "emitter": "throw DeliveryError",
+    "template": "no se pudo crear el worktree de {}: {}"
+  },
+  {
+    "file": "delivery/association.ts",
+    "emitter": "throw DeliveryError",
+    "template": "no se pudo crear la rama {}: {}"
+  },
+  {
+    "file": "delivery/change-request.ts",
+    "emitter": "throw Error",
+    "template": "#{}: sin asociación de entrega; no se abre ninguna petición de cambio"
+  },
+  {
+    "file": "frontmatter.ts",
+    "emitter": "throw Error",
+    "template": "{}: frontmatter.{} debe ser texto no vacío"
+  },
+  {
+    "file": "frontmatter.ts",
+    "emitter": "throw Error",
+    "template": "frontmatter inválido: {}: {}"
+  },
+  {
+    "file": "frontmatter.ts",
+    "emitter": "throw Error",
+    "template": "frontmatter inválido: {}: se esperaba un objeto"
+  },
+  {
+    "file": "frontmatter.ts",
+    "emitter": "throw Error",
+    "template": "sin frontmatter: {}"
+  },
+  {
+    "file": "harness/guards/adapters/context.ts",
+    "emitter": "throw Error",
+    "template": "not a git repository or HEAD is unavailable"
+  },
+  {
+    "file": "harness/lock.ts",
+    "emitter": "throw Error",
+    "template": "nombre de lock inválido: {}"
+  },
+  {
+    "file": "harness/lock.ts",
+    "emitter": "throw LockHeldError",
+    "template": "{}.recover"
+  },
+  {
+    "file": "harness/memory/ledger.ts",
+    "emitter": "throw LedgerValidationError",
+    "template": "\"{}\" debe ser texto"
+  },
+  {
+    "file": "harness/memory/ledger.ts",
+    "emitter": "throw LedgerValidationError",
+    "template": "\"{}\" debe ser una lista de textos"
+  },
+  {
+    "file": "harness/memory/ledger.ts",
+    "emitter": "throw LedgerValidationError",
+    "template": "\"decision.id\" y \"decision.choice\" son obligatorios"
+  },
+  {
+    "file": "harness/memory/ledger.ts",
+    "emitter": "throw LedgerValidationError",
+    "template": "\"decision\" debe ser un objeto"
+  },
+  {
+    "file": "harness/memory/ledger.ts",
+    "emitter": "throw LedgerValidationError",
+    "template": "\"event\" debe ser uno de: {}"
+  },
+  {
+    "file": "harness/memory/ledger.ts",
+    "emitter": "throw LedgerValidationError",
+    "template": "\"sessionId\" es obligatorio"
+  },
+  {
+    "file": "harness/memory/ledger.ts",
+    "emitter": "throw LedgerValidationError",
+    "template": "\"toolCalls\" debe ser un número no negativo"
+  },
+  {
+    "file": "harness/runs.ts",
+    "emitter": "io.err",
+    "template": "{} ({}); no se escribió nada"
+  },
+  {
+    "file": "harness/runs.ts",
+    "emitter": "io.err",
+    "template": "{}; no se escribió nada"
+  },
+  {
+    "file": "harness/runs.ts",
+    "emitter": "io.err",
+    "template": "campo desconocido para runs {}: {}; no se escribió nada"
+  },
+  {
+    "file": "harness/runs.ts",
+    "emitter": "throw RunValidationError",
+    "template": "--{} debe ser un entero"
+  },
+  {
+    "file": "harness/runs.ts",
+    "emitter": "throw RunValidationError",
+    "template": "--kind debe ser step|status|metric"
+  },
+  {
+    "file": "harness/runs.ts",
+    "emitter": "throw RunValidationError",
+    "template": "--metric debe ser clave=número"
+  },
+  {
+    "file": "harness/runs.ts",
+    "emitter": "throw RunValidationError",
+    "template": "--run <id> es obligatorio"
+  },
+  {
+    "file": "harness/runs.ts",
+    "emitter": "throw RunValidationError",
+    "template": "--type debe ser {}"
+  },
+  {
+    "file": "harness/runs.ts",
+    "emitter": "throw RunValidationError",
+    "template": "\"{}\" contiene un valor de .ai-hub/.env; no se registra"
+  },
+  {
+    "file": "harness/runs.ts",
+    "emitter": "throw RunValidationError",
+    "template": "\"{}\" no admite saltos de línea (no se guarda contenido)"
+  },
+  {
+    "file": "harness/runs.ts",
+    "emitter": "throw RunValidationError",
+    "template": "\"{}\" parece contener un secreto; no se registra"
+  },
+  {
+    "file": "harness/runs.ts",
+    "emitter": "throw RunValidationError",
+    "template": "estado desconocido: {}"
+  },
+  {
+    "file": "harness/runs.ts",
+    "emitter": "throw RunValidationError",
+    "template": "evento inválido: {}"
+  },
+  {
+    "file": "manifest/write.ts",
+    "emitter": "throw Error",
+    "template": "{}: la verificación tras escribir no coincide; revisa el archivo"
+  },
+  {
+    "file": "manifest/write.ts",
+    "emitter": "throw Error",
+    "template": "no se pudo escribir {}{}; el archivo anterior queda intacto"
+  },
+  {
+    "file": "paths.ts",
+    "emitter": "throw AiHubRcError",
+    "template": "{} debe ser un objeto"
+  },
+  {
+    "file": "paths.ts",
+    "emitter": "throw AiHubRcError",
+    "template": "{} no es JSON válido: {}"
+  },
+  {
+    "file": "paths.ts",
+    "emitter": "throw AiHubRcError",
+    "template": "{}: \"dir\" debe ser un texto no vacío"
+  },
+  {
+    "file": "paths.ts",
+    "emitter": "throw AiHubRcError",
+    "template": "{}: \"guardMode\" debe ser \"shadow\" o \"enforce\""
+  },
+  {
+    "file": "paths.ts",
+    "emitter": "throw AiHubRcError",
+    "template": "{}: \"preset\" debe ser un texto no vacío"
+  },
+  {
+    "file": "paths.ts",
+    "emitter": "throw AiHubRcError",
+    "template": "{}: \"targets\" debe ser una lista de textos"
+  },
+  {
+    "file": "paths.ts",
+    "emitter": "throw AiHubRcError",
+    "template": "{}: \"version\" debe ser 1 o 2"
+  },
+  {
+    "file": "presets/materialize.ts",
+    "emitter": "throw Error",
+    "template": "el agente \"{}\" no existe en {}"
+  },
+  {
+    "file": "presets/materialize.ts",
+    "emitter": "throw Error",
+    "template": "el agente \"{}\" no existe ni en el preset ni en el motor"
+  },
+  {
+    "file": "presets/materialize.ts",
+    "emitter": "throw Error",
+    "template": "el agente de catálogo \"{}\" no existe en {}"
+  },
+  {
+    "file": "presets/materialize.ts",
+    "emitter": "throw Error",
+    "template": "el preset \"{}\" declara la regla \"{}\" pero no existe"
+  },
+  {
+    "file": "presets/materialize.ts",
+    "emitter": "throw Error",
+    "template": "el preset \"{}\" no declara rules/core.md"
+  },
+  {
+    "file": "presets/materialize.ts",
+    "emitter": "throw Error",
+    "template": "falta la rúbrica universal \"{}\" en {}"
+  },
+  {
+    "file": "presets/materialize.ts",
+    "emitter": "throw Error",
+    "template": "la skill \"{}\" no existe en {}"
+  },
+  {
+    "file": "presets/materialize.ts",
+    "emitter": "throw Error",
+    "template": "la skill \"{}\" no existe en el preset \"{}\" ni en el catálogo"
+  },
+  {
+    "file": "presets/materialize.ts",
+    "emitter": "throw Error",
+    "template": "la skill de catálogo \"{}\" no existe en {}"
+  },
+  {
+    "file": "review/candidate.ts",
+    "emitter": "throw CandidateError",
+    "template": "el candidato {} lo referencia el {}; no se elimina sin --force"
+  },
+  {
+    "file": "review/candidate.ts",
+    "emitter": "throw CandidateError",
+    "template": "el candidato {} no existe en el repositorio"
+  },
+  {
+    "file": "review/candidate.ts",
+    "emitter": "throw CandidateError",
+    "template": "git {} falló al preparar el candidato"
+  },
+  {
+    "file": "review/candidate.ts",
+    "emitter": "throw CandidateError",
+    "template": "la base «{}» no se resuelve a un commit inmutable; el sellado se rechaza"
+  },
+  {
+    "file": "review/candidate.ts",
+    "emitter": "throw CandidateError",
+    "template": "no hay ningún candidato {}"
+  },
+  {
+    "file": "review/candidate.ts",
+    "emitter": "throw CandidateError",
+    "template": "no se pudo registrar el veredicto del panel ({})"
+  },
+  {
+    "file": "review/candidate.ts",
+    "emitter": "throw CandidateError",
+    "template": "sin merge-base entre HEAD y {}: no hay base inmutable; el sellado se rechaza"
+  },
+  {
+    "file": "review/candidate.ts",
+    "emitter": "throw CandidateError",
+    "template": "veredicto de hallazgo fuera de su familia: {}"
+  },
+  {
+    "file": "review/candidate.ts",
+    "emitter": "throw CandidateError",
+    "template": "veredicto de panel fuera de su familia: {}"
+  },
+  {
+    "file": "review/consolidate.ts",
+    "emitter": "io.err",
+    "template": "no se puede leer el informe {}"
+  },
+  {
+    "file": "review/consolidate.ts",
+    "emitter": "throw Error",
+    "template": "un bloque json findings debe ser una lista"
+  },
+  {
+    "file": "speckit/seal.ts",
+    "emitter": "throw Error",
+    "template": "ref no válida para el sello: {}"
+  },
+  {
+    "file": "speckit/settings.ts",
+    "emitter": "throw Error",
+    "template": "el destino {} no recibe Spec Kit"
+  },
+  {
+    "file": "speckit/status.ts",
+    "emitter": "throw StatusLineError",
+    "template": "{} exige reason=<código>"
+  },
+  {
+    "file": "speckit/status.ts",
+    "emitter": "throw StatusLineError",
+    "template": "artifact debe ser una ruta relativa a la raíz sin \"..\" o \"-\""
+  },
+  {
+    "file": "speckit/status.ts",
+    "emitter": "throw StatusLineError",
+    "template": "estado fuera del contrato: {}"
+  },
+  {
+    "file": "speckit/status.ts",
+    "emitter": "throw StatusLineError",
+    "template": "la frase del motivo contiene un marcador de segmento; los segmentos van antes de reason"
+  },
+  {
+    "file": "speckit/status.ts",
+    "emitter": "throw StatusLineError",
+    "template": "la frase del motivo supera {} caracteres"
+  },
+  {
+    "file": "speckit/status.ts",
+    "emitter": "throw StatusLineError",
+    "template": "no es una línea {} válida"
+  },
+  {
+    "file": "speckit/status.ts",
+    "emitter": "throw StatusLineError",
+    "template": "segmento {} con un valor inválido"
+  },
+  {
+    "file": "speckit/status.ts",
+    "emitter": "throw StatusLineError",
+    "template": "segmento {} repetido o fuera de orden (orden: {})"
+  },
+  {
+    "file": "speckit/status.ts",
+    "emitter": "throw StatusLineError",
+    "template": "segmento desconocido: {}"
+  },
+  {
+    "file": "speckit/version.ts",
+    "emitter": "throw Error",
+    "template": "rango de versiones malformado: \"{}\" (se esperaba \">=x.y.z <a.b.c\")"
+  },
+  {
+    "file": "sync/lock.ts",
+    "emitter": "throw Error",
+    "template": "{} no es JSON válido: {}"
+  },
+  {
+    "file": "sync/lock.ts",
+    "emitter": "throw Error",
+    "template": "{} no tiene el formato esperado; bórralo y ejecuta ai-hub sync"
+  },
+  {
+    "file": "sync/lock.ts",
+    "emitter": "throw Error",
+    "template": "{} usa una versión no soportada; bórralo y ejecuta ai-hub sync"
+  },
+  {
+    "file": "sync/render.ts",
+    "emitter": "throw Error",
+    "template": "{}: {{stack.{}}} no existe en manifest.stack"
+  },
+  {
+    "file": "sync/render.ts",
+    "emitter": "throw Error",
+    "template": "{}: cada MCP necesita \"id\" y un bloque \"client\""
+  },
+  {
+    "file": "sync/render.ts",
+    "emitter": "throw Error",
+    "template": "{}: el MCP \"{}\" necesita client.url o client.command"
+  },
+  {
+    "file": "sync/render.ts",
+    "emitter": "throw Error",
+    "template": "{}: falta la lista required_mcps"
+  },
+  {
+    "file": "sync/render.ts",
+    "emitter": "throw Error",
+    "template": "fuente no encontrada: {}"
+  },
+  {
+    "file": "sync/render.ts",
+    "emitter": "throw Error",
+    "template": "skill publicada no existe: {}/{}"
+  },
+  {
+    "file": "sync/targets.ts",
+    "emitter": "throw Error",
+    "template": "destinos desconocidos: {}. Válidos: {}"
+  },
+  {
+    "file": "writes/replace.ts",
+    "emitter": "throw Error",
+    "template": "{} cambió mientras se preparaba la escritura; no se reemplaza"
+  },
+  {
+    "file": "writes/replace.ts",
+    "emitter": "throw Error",
+    "template": "{}: escritura detenida ({}): {}"
+  },
+  {
+    "file": "writes/targets.ts",
+    "emitter": "throw Error",
+    "template": "destino externo no declarado: {}"
+  },
+  {
+    "file": "writes/transaction.ts",
+    "emitter": "throw Error",
+    "template": "no es una captura del motor: {}"
+  },
+  {
+    "file": "writes/transaction.ts",
+    "emitter": "throw Error",
+    "template": "no se pudo crear una copia exclusiva de {}"
+  }
+]

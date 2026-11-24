@@ -768,3 +768,432 @@ Riesgo operativo detectado: el token del bot se pegó en el chat durante el diag
 - Lectura: el host ya no está en el estado de la prueba de 0.16.0 (el perfil `hermes-control` no existe y el perfil por defecto no tiene la plataforma habilitada), así que el disparador del falso `[FAIL]` del punto 1 sigue **sin medir**. La captura no lo confirma ni lo descarta.
 - Dos hechos nuevos, sí medidos: (a) con el perfil inexistente, `gateway status` sale 1 con un texto que no contiene `not installed`; `gatewayTopology` lo clasificaría como `stopped`, y solo la guarda `profilePresent` de `--check` evita esa lectura; (b) la puerta del CLI de rutas responde exit 1 con la ayuda en stdout, igual que el doble (`WEBHOOK_SETUP_HINT`).
 - Consecuencia para el diseño (D1): ninguna; `resolveListener` decide por la evidencia del dueño (bloque, store, `/health`) y trata `webhook list` como contraste.
+
+## 2026-11-23 — `harden-harness-orchestration`: verificaciones de propuesta (sin ejecución)
+
+- Base: `c11feda`, 0.17.0. Las once issues (#1–#11) coinciden byte a byte con las instantáneas `openspec/changes/harden-harness-orchestration/research/issues/*.json`; 0 comentarios; 92 criterios.
+- Correcciones a la exploración: existen pruebas escritas del `decide` silencioso (`core/tests/control.test.ts:248`), de snapshots sin credenciales (`core/tests/env-contract.test.ts:101`) y de la guardia `ship:review-seal` (`core/tests/factory-f.test.ts:201`); la unicidad del escritor de telemetría aplica solo a `<run>/events.jsonl`.
+- BT-1: no se encontró documentación de precondición atómica (`If-Match`) para `PUT /projects/:id/issues/:iid` en GitLab ni para etiquetas en GitHub. Pendiente de la tarea 1.1/1.2.
+- BT-2: no se encontró evidencia de que Hermes pueda quitar terminal y lectura de archivos al modelo de un perfil. Pendiente de la tarea 1.3.
+- BT-3: no se encontró un estado documentado de «gateway arrancando». Pendiente de la tarea 1.4.
+- Hechos externos usados por el diseño (fuentes en `design.md`): reemplazo de etiquetas con ámbito en GitLab, `resource_label_events`, paginación `x-next-page`/`Link`, `draft` de PR en GitHub, reglas `permissions.deny` de Claude Code (no cubren `grep -r`), formatos de Codex (`.agents/skills`, `.codex/agents/*.toml`), `hermes cron pause|resume`.
+- Instalación de scripts de Hermes con `writeIfMissing` (`core/src/control/enroll.ts:152`): las instalaciones existentes no reciben scripts nuevos (afecta a #10).
+
+## 2026-11-23 — `harden-harness-orchestration`: revisión 4.1–4.12 (sin ejecución)
+
+- Contradicciones corregidas: `ask` frente a `deny` en lecturas no verificables; concesión «verificada por el runner» sin autoridad; copias adyacentes de destinos ajenos con secretos (`config.yaml` de Hermes, `settings.json`, MCP); limpieza sin evidencia por método de merge; revisor de respaldo distinto del owner (#2-C4); `runs` v2 dependiente del runner; comportamiento por defecto sin CAS no definido; efectos de hooks de arranque; enlaces simbólicos del candidato; escritura sin transacción; reversión sin tipos; excepción «assumed operable».
+- Verificado: cuerpos de #1–#11 iguales a las instantáneas; `git status` sin cambios en código; `openspec/specs/` no tocado.
+- Sin verificar (tareas 1.1–1.11): precondiciones de GitLab y GitHub, identificación del owner, campos de evidencia de merge, aislamiento de Hermes, estado del gateway, comandos de estado de los harnesses y ACL en Windows.
+
+## 2026-11-23 — `harden-harness-orchestration`: revisión técnica A–D (sin ejecución)
+
+- Verificado por lectura de código en `c11feda`: `pruneRuns` poda por recuento y nombre sin leer versiones (`core/src/harness/runs.ts:149-177`); `scope` y `control` excluidos desde 0.12.0 (`64b24ab`); `readRunEvents` no comprueba `v` (`:132-146`); ledger en archivo fijo (`core/src/control/ledger.ts:11-12,84`); `purge` borra `.ai-hub/` (`core/src/cli/maintenance.ts:317-318`); `renameWithRetry` reintenta 5×100 ms sin recomprobar (`core/src/manifest/write.ts:13-31`); la frase del motivo llega al final de la línea (`core/src/speckit/status.ts:43`); el tick toma la última nota con línea válida y descarta las inválidas (`core/src/control/tick.ts:293-310`, `status.ts:73-85`).
+- Documentación oficial consultada: `gitprotocol-pack` (old-id validado por el servidor), `git-push` (`--force-with-lease`, sin mención explícita a borrados), GitLab `DELETE /projects/:id/repository/branches/:branch` y GitHub `DELETE /repos/{owner}/{repo}/git/refs/{ref}` sin revisión esperada; auto-eliminación sin regla sobre commits nuevos.
+- Contradicción corregida: la propuesta atribuía a binarios publicados la preservación de registros nuevos; D-52 queda corregida por D-57.
+- Sin verificar: comportamiento real de los binarios publicados (3.22), borrado con lease en GitLab y GitHub (2.9, 2.10), enlaces duros por sistema de archivos (1.16).
+
+## 2026-11-23 — `harden-harness-orchestration`: respuestas del propietario (sin ejecución)
+
+- Escritores reales de etiquetas en 0.17.0: `core/src/control/apply.ts:150` (`applyReply`, `applyPreapproved`) y `:258` (`expireDecisions` con `block`); `tick`, `decide`, `ingest` y `doctor` solo leen.
+- `.ai-hub/` es distinto en cada worktree: un lock en `.ai-hub/runs/` no coordina worktrees; los locks compartidos van al directorio de locks del usuario.
+- No se identificó un mecanismo que evite pérdidas frente a editores externos con Node en ninguna plataforma (rename sin condición de contenido, locks POSIX cooperativos, sin modo de compartición exclusivo en Windows); de ahí la aplicación controlada (D-65), pendiente.
+- `"v": { "const": 1 }` en `core/schema/runs.schema.json:10` describe la escritura de 0.17.0, no su lector ni su retención.
+
+## 2026-11-23 — `harden-harness-orchestration`: revisión final (D-65, SC-01; sin ejecución)
+
+- Escrituras actuales en configuración ajena:
+  - `.gitignore` raíz con `writeFile` directo (`core/src/cli/onboarding.ts:736-747`);
+  - región de `AGENTS.md` (`core/src/sync/render.ts:97`) y retirada de regiones (`core/src/sync/sync.ts:110-117`);
+  - hooks en `.claude/settings.json`;
+  - `platforms.webhook` del dueño (`core/src/control/enroll-webhook.ts:240`);
+  - `mcp-manifest.yaml` en `adopt`, con comprobación previa seguida de `writeFile` (`core/src/adopt/convert.ts:139-141`).
+- Documentación de git consultada:
+  - el `.gitignore` más profundo prevalece y sus patrones son relativos a su carpeta (git-scm.com/docs/gitignore);
+  - `git check-ignore -q` sale 0 si la ruta se ignora (git-scm.com/docs/git-check-ignore).
+- La documentación de Claude Code no fue accesible (fallo de DNS): la alternativa del host queda en la tarea 1.17.
+
+## 2026-11-23 — harden-harness-orchestration, hito 1 (aplicación)
+
+### 1.10 ACL en Windows (local, directorio temporal del scratchpad)
+
+- Comando: `icacls <dir> /inheritance:r /grant:r "<usuario>:(OI)(CI)F" "*S-1-5-18:(OI)(CI)F"`, y después `(Get-Acl <dir>).Access`, traduciendo `IdentityReference` a SID.
+- Salida (SID redactados al formato):
+  - `S-1-5-18 FullControl Allow inherited=False`
+  - `S-1-5-21-…-1001 FullControl Allow inherited=False`
+  - `protected=True`
+- `%LOCALAPPDATA%` por defecto concede acceso solo a `S-1-5-18` (SYSTEM), `S-1-5-32-544` (Administradores) y al SID del usuario, todos heredados.
+- Conclusión: la lista de acceso se puede leer por SID (independiente del idioma) con `Get-Acl`. «Solo el usuario y cuentas del sistema» = conjunto ⊆ {SID del usuario, S-1-5-18, S-1-5-32-544}. `icacls` es legible pero su salida depende del idioma; se usa `Get-Acl`.
+
+### 1.14 Binarios publicados 0.12.0–0.17.0 (lectura de código por commit de release)
+
+| Release (commit) | Poda `fs.rm` | Exclusión `scope`/`control` | Lector `JSON.parse` sin `v` | Ledger con archivo fijo | Poda desde el hook |
+|---|---|---|---|---|---|
+| 0.12.0 (`d78de6d`) | `runs.ts:175` | `:153` | `:140` | `ledger.ts:12` | `hook.ts:216` |
+| 0.13.0 (`24434e5`) | igual | igual | igual | igual | igual |
+| 0.14.0 (`d4e54b0`) | igual | igual | igual | igual | igual |
+| 0.15.0 (`9bb8e96`) | igual | igual | igual | igual | igual |
+| 0.16.0 (`6a961d2`) | igual | igual | igual | igual | igual |
+| 0.17.0 (`c11feda`) | igual | igual | igual | igual | igual |
+
+- **Leído:** las seis versiones podan por recuento y nombre, solo directorios. Las líneas con campos desconocidos se aceptan como objetos (no hay validación al leer). El ledger lee `decisions.jsonl` y no lista `control/`.
+- **Pendiente de 3.22:** ejecutar los binarios reales.
+
+### 1.11 Inventario de escritores directos (`core/src`, sin tests)
+
+| Módulo:línea | Destino | Propiedad | Sensibilidad | Regenerable | Mecanismo actual |
+|---|---|---|---|---|---|
+| `cli/onboarding.ts:746` | `.gitignore` raíz | ajeno | interna | no | `writeFile` directo (D-65: dejar de editarlo si existe) |
+| `sync/hooks.ts:116` | `.claude/settings.json` | ajeno | sensible | no | `writeFile` directo (D-65) |
+| `sync/sync.ts:114`, `:134` | región de `AGENTS.md` y otros archivos con región | ajeno | interna | no | `writeFile` directo (D-65) |
+| `sync/sync.ts:141`, `:119`, `:106` | destinos generados del lock; obsoletos; enlaces | generado | interna (MCP: sensible) | sí | `writeFile`, `rm`, `unlink` directos |
+| `sync/lock.ts:67` | `sync.lock.json` | generado | interna | sí | directo |
+| `control/webhook-config.ts:105-106` | `config.yaml` del dueño del listener | ajeno salvo perfil propio | sensible | no | temporal + rename |
+| `control/webhook-config.ts:150` | copia `config.yaml.pre-ai-hub` **adyacente** | — | sensible | — | `copyFile` (viola la custodia por sensibilidad) |
+| `control/identity.ts:108`, `:134-135` | copia numerada adyacente; `SOUL.md` del perfil | ajeno salvo perfil propio | interna | no | `wx`; temporal + rename |
+| `control/profile-env.ts:26-27` | `.env` del perfil | propio (perfil creado) | sensible | no | temporal + rename, modo 600 |
+| `control/enroll.ts:154` | scripts y archivos del perfil | propio | interna | sí | `wx` (no sobrescribe) |
+| `control/ledger.ts:95` | `.ai-hub/runs/control/decisions.jsonl` | estado | interna | no | `appendFile` sin lock |
+| `harness/runs.ts:129`, `:175` | telemetría | estado | interna | no | `appendFile`; poda `rm` |
+| `cli/hook.ts:159` | `.ai-hub/runs/scope/*.json` | estado | interna | sí | directo |
+| `cli/seal.ts:49` | `.ai-hub/runs/review-seal.json` | estado | interna | no | directo |
+| `cli/trunk.ts:38` | estado de trunk | estado | interna | no | directo |
+| `manifest/write.ts:21-41` | `manifest.yaml` | arnés (capa proyecto) | interna | no | temporal + rename con reintento |
+| `paths.ts:85` | `.ai-hubrc.json` | arnés | interna | no | `writeFileSync` directo |
+| `presets/materialize.ts:75,119,129,395,401` | `.ai-hub/` (preset y scaffold) | arnés | interna | sí | directo |
+| `cli/assistant.ts:721` | `.ai-hub/.env` | ajeno (lo teclea la persona) | sensible | no | directo (R-117: tras `check-ignore`) |
+| `cli/assistant.ts:460`, `:501`; `cli/idea.ts:413,439` | semilla e idea | proyecto | interna | no | directo; `wx` |
+| `cli/githooks.ts:49` | `.git/hooks/post-merge` | ajeno | interna | no | `writeFile` directo |
+| `ci/templates.ts:35` | `.github/workflows/*` | generado | interna | sí | directo |
+| `adopt/convert.ts:99,140,195,212` | archivado; `mcp-manifest.yaml`; carpeta heredada; `.planning`→`.ai-hub/work` | proyecto | interna (MCP: sensible) | no | `rename`, comprobación previa + `writeFile`, `rm` |
+| `backup/snapshots.ts:102,111,160,186` | `.backups/` | estado | depende del origen | — | `copyFile` y `writeFile` directos |
+| `cli/context.ts:71`, `harness/memory/*`, `manifest/manifest.ts:392` | contexto, `.planning/`, `manifest.json` | taller | interna | — | directo |
+
+**Hallazgos del inventario:**
+- `webhook-config.ts:150` crea una copia adyacente de un archivo sensible. Contradice R-032 y queda para 3.7 y 3.11.
+- `cli/githooks.ts:49` sobrescribe un archivo de `.git/hooks`. Es configuración ajena y no estaba en la tabla de D-65; se trata como tal en 3.25.
+
+### Hito 1 documental (1.1–1.9, 1.15–1.17): informe con citas y URL
+
+Fuente: investigación de solo lectura del 2026-11-23. Versiones instaladas: hermes v0.23.3, claude 2.1.330, opencode v2.3.2, git 2.56.1.windows.1, node v24.18.0. Codex no está instalado.
+
+#### Hito 1: investigación documental (solo lectura)
+
+Fecha de consulta: 2026-11-23. No se modificó el repositorio. Cada fila indica la fuente consultada. Si un dato no aparece en la documentación, se marca como "no documentado" y no se completa de memoria.
+
+Leyenda de veredictos: **documentado** / **no documentado** / **no accesible**. "Solo en código fuente" significa que la conducta está en el código oficial, pero no en la documentación.
+
+---
+
+#### 1.1 GitLab: ¿escritura condicional en `PUT /projects/:id/issues/:iid`?
+
+| Pregunta | Respuesta | Cita | URL | Veredicto |
+|---|---|---|---|---|
+| ¿Hay alguna precondición (If-Match, If-Unmodified-Since, ETag, version/lock_version) que rechace una escritura obsoleta? | **No.** La sección "Update an issue" no documenta ninguna precondición. `updated_at` es un valor que se asigna, no una comprobación. | `updated_at`: "When the issue was updated." / "Empty string or null values are not accepted." | https://docs.gitlab.com/api/issues/ (sin versión; la nota más reciente cita GitLab 19.6) | no documentado (no existe precondición) |
+| Etiquetas | `add_labels`/`remove_labels` son deltas sin comprobación previa. | "Comma-separated label names to add to an issue." / "...to remove from an issue." / `labels`: "Set to an empty string to unassign all labels." | ídem | documentado |
+| ¿ETag o peticiones condicionales en la REST general? | La página REST no menciona ETag, If-Match ni "conditional". ETag/If-None-Match aparece solo en la guía interna de polling (lecturas, 304) y en la Orbit API. | (página REST: sin coincidencias) | https://docs.gitlab.com/api/rest/ ; https://docs.gitlab.com/development/polling/ | no documentado para escrituras |
+
+Consecuencia: en GitLab, la protección contra escrituras obsoletas tiene que hacerla el cliente (releer antes de escribir). No existe una operación CAS en el servidor.
+
+#### 1.2 GitHub: ¿escritura condicional en etiquetas?
+
+| Pregunta | Respuesta | Cita | URL | Veredicto |
+|---|---|---|---|---|
+| ¿If-Match o ETag en POST/PUT/PATCH/DELETE? | **No admitido.** | "Conditional requests for unsafe methods, such as `POST`, `PUT`, `PATCH`, and `DELETE` are not supported" (salvo que el endpoint indique otra cosa) | https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api | documentado (no admitido) |
+| Endpoints de etiquetas | POST añade ("The labels to add to the issue's existing labels"), PUT reemplaza ("The labels you set replace any existing labels"), DELETE `/labels/{name}` quita una. Solo documentan la cabecera `accept`; no hay If-Match. | ídem | https://docs.github.com/en/rest/issues/labels (X-GitHub-Api-Version 2026-03-10) | documentado (sin precondición) |
+| ¿Qué cabeceras condicionales existen? | Solo para lecturas: `etag`/`last-modified` en la respuesta, y `if-none-match`/`if-modified-since` en la petición. | "Most endpoints return an `etag` header, and many endpoints return a `last-modified` header." | best-practices (arriba) | documentado |
+
+#### 1.3 Identificación de owners y bots
+
+**GitLab**
+
+| Pregunta | Respuesta / cita | URL | Veredicto |
+|---|---|---|---|
+| Nivel Owner | "`40` (Maintainer), or `50` (Owner)" | https://docs.gitlab.com/api/project_members/ | documentado |
+| Miembros heredados | `GET /projects/:id/members/all`: "Lists all project members viewable by the authenticated user, including inherited members, invited users, and permissions through ancestor groups." `GET /groups/:id/members/all`: "Lists all members of a specified group, including inherited members, invited users, and permissions through ancestor groups." Si un usuario aparece varias veces: "only their membership with the highest `access_level` is returned." | https://docs.gitlab.com/api/project_members/ ; https://docs.gitlab.com/api/group_members/ | documentado |
+| ¿Filtro por access_level? | **No.** Parámetros: `query`, `user_ids`, `skip_users`, `show_seat_info` y `state` (`awaiting`/`active`, solo en `/all`). Hay que filtrar `access_level == 50` en el cliente. | project_members | documentado (no existe filtro) |
+| ¿Campo bot en la respuesta de miembros? | **No.** Campos: `id`, `username`, `name`, `state`, `access_level`, `created_by`, `expires_at`, `email`, `group_saml_identity`, `is_using_seat`. | project_members / group_members | no documentado |
+| Atributo `bot` en usuarios | `GET /users/:id` incluye `"bot": false` (no hay ejemplo con `true`). Filtros de `GET /users`: `humans` ("Filters only regular users that are not bot or internal users"), `exclude_humans`, `without_project_bots` ("Filters user without project bots"). `exclude_internal` **no** excluye bots de proyecto o grupo. | https://docs.gitlab.com/api/users/ | documentado (parcial) |
+| Bots de tokens de acceso | Proyecto: username "`project_{project_id}_bot_{random_string}`", email `...@noreply.{host}`. Grupo: "`group_{group_id}_bot_{random_string}`". La página de tokens de proyecto no menciona un campo `bot`. | https://docs.gitlab.com/user/project/settings/project_access_tokens/ ; https://docs.gitlab.com/user/group/settings/group_access_tokens/ | documentado (por patrón de nombre) |
+| Service accounts | "user accounts that represent non-human entities"; "always marked as external users"; el username se genera desde el nombre y se puede editar; los prefijos `service_account_`, `service_account_group_` y `service_account_project_` se aplican al **email** no-reply. No dice que sean bot users. | https://docs.gitlab.com/user/profile/service_accounts/ | documentado (sin flag bot) |
+
+**GitHub**
+
+| Pregunta | Respuesta / cita | URL | Veredicto |
+|---|---|---|---|
+| `owner.type` (User/Organization) | La referencia solo dice "`type`: required, string", sin enum. | https://docs.github.com/en/rest/repos/repos#get-a-repository | no documentado (sin valores enumerados) |
+| `type: "Bot"` | No aparece en las referencias de users, repos ni collaborators. "Bot" solo figura como tipo de actor en la API de Actions policies. | https://docs.github.com/en/rest/users/users ; /rest/collaborators/collaborators | no documentado en REST de users |
+| Colaboradores admin | `GET /repos/{o}/{r}/collaborators?permission=admin&affiliation=direct|outside|all`. Objeto `permissions` {pull, triage, push, maintain, admin}. `role_name`: "the highest role assigned to the collaborator". `GET .../collaborators/{username}/permission`: "Checks the repository permission and role of a collaborator." | https://docs.github.com/en/rest/collaborators/collaborators | documentado |
+
+#### 1.4 Evidencia de merge
+
+**GitLab MR** (https://docs.gitlab.com/api/merge_requests/, sin versión)
+
+| Campo | Cita | Veredicto |
+|---|---|---|
+| `sha` | "SHA of the head commit in the source branch." | documentado |
+| `diff_refs.head_sha` | "SHA of the head commit in the source branch. The latest commit in the merge request." (`base_sha`: merge base; `start_sha`: "SHA of the target branch commit") | documentado |
+| `merge_commit_sha` | "If set, the SHA of the merge request commit. Returns `null` until merged." | documentado |
+| `squash_commit_sha` | "If set, the SHA of the squash commit. Empty until merged." | documentado |
+| `squash` / `squash_on_merge` | `squash`: "If `true`, squash all commits into a single commit on merge." (si el proyecto obliga o prohíbe squash, "that setting takes precedence at merge time"). `squash_on_merge`: "Indicates whether to squash the merge request when merging." | documentado |
+| `state` | "`opened`, `closed`, `merged`, or `locked`"; `merged_at`: "Timestamp of when the merge request merged." | documentado |
+| Proyecto `merge_method` | "Merge method used for the project. Possible values: `merge`, `rebase_merge`, or `ff`." (https://docs.gitlab.com/api/projects/). `squash_option` se describe solo como "Squash option for merge requests."; los ejemplos muestran `default_on`/`default_off`. | documentado (los valores de squash_option no están enumerados) |
+
+**GitHub PR** (https://docs.github.com/en/rest/pulls/pulls, API 2026-03-10)
+
+| Campo | Cita | Veredicto |
+|---|---|---|
+| `merge_commit_sha` | merge: "represents the SHA of the merge commit"; squash: "represents the SHA of the squashed commit on the base branch"; rebase: "represents the commit that the base branch was updated to." | documentado |
+| `merged`, `merged_by`, `head.sha` | Solo tipos: "`merged`: required, boolean"; `head.sha` "required, string". | documentado (sin descripción) |
+| ¿Método de merge usado? | **No hay campo.** `auto_merge.merge_method` describe una configuración de auto-merge, no el método aplicado a un merge ya hecho. | no documentado |
+| `PUT .../pulls/{n}/merge` | `sha`: "SHA that pull request head must match to allow merge." `merge_method`: `merge`/`squash`/`rebase`. 409: "Conflict if sha was provided and pull request head did not match". | documentado (CAS sobre el head al hacer merge) |
+
+#### 1.5 GitLab: crear un MR en draft por API
+
+| Pregunta | Respuesta | Cita | URL | Veredicto |
+|---|---|---|---|---|
+| ¿Existe un parámetro `draft` en Create/Update MR? | **No.** Create y Update no tienen parámetro `draft`; `draft` solo aparece en las respuestas (`"draft": false`) y como filtro de listado. | `work_in_progress`: "Deprecated. Use `draft` instead." | https://docs.gitlab.com/api/merge_requests/ | documentado (no existe) |
+| ¿Cómo se marca? | Con un prefijo en el título. La página de la API no lo dice; lo dice la guía de usuario. | "Add `[Draft]`, `Draft:` or `(Draft)` to the beginning of the merge request's title." También existe la acción rápida `/draft` (y `/ready`), y commits que empiezan por `draft:`/`fixup!` ("This method is not a toggle"). | https://docs.gitlab.com/user/project/merge_requests/drafts/ | documentado (UI); por API se deduce `title: "Draft: ..."` |
+
+#### 1.6 Hermes: aislamiento de herramientas por perfil
+
+Fuente: la documentación oficial del proyecto, incluida en la instalación local (`C:\Users\USUARIO\AppData\Local\hermes\hermes-agent\website\docs`, Docusaurus con `url: https://hermes-agent.nousresearch.com`, `baseUrl: /docs/`). Corresponde a la versión instalada v0.23.3 (commit caafe538, 2026-11-19). Se verificó una página publicada (webhooks), que coincide.
+
+| Pregunta | Respuesta / cita | Doc | Veredicto |
+|---|---|---|---|
+| ¿Configuración propia por perfil? | "A profile is a separate Hermes home directory. Each profile gets its own directory containing its own `config.yaml`, `.env`, `SOUL.md`, memories, sessions, skills, cron jobs, and state database." | /docs/user-guide/profiles | documentado |
+| Herramientas por plataforma | "organized into logical **toolsets** that can be enabled or disabled per platform." `hermes tools` = "Configure enabled tools per platform" (UI interactiva; `--summary`). Desactivar desde CLI: "`hermes tools disable browser [--platform NAME]`". Se persiste en `platform_toolsets`. | /docs/user-guide/features/tools ; /docs/reference/cli-commands#hermes-tools ; /docs/user-guide/configuration | documentado |
+| ¿Se puede desactivar terminal y lectura de archivos? | Sí. Los toolsets `terminal` (`process_manage`, `terminal`) y `file` (`patch`, `read_file`, `search_files`, `write_file`). Desactivación global con `agent.disabled_toolsets`: "a toolset listed here is always removed — even if a platform's saved config still lists it." Preset `safe`: "Read-only research + media generation. No file writes, no terminal, no code execution." | /docs/reference/toolsets-reference ; /docs/user-guide/configuration#global-toolset-disable | documentado |
+| Por ruta de webhook | `toolsets` en la ruta "**replaces** the platform-level webhook toolset for runs triggered by this route only. Manual config edit only — not settable via `hermes webhook subscribe`". | /docs/user-guide/messaging/webhooks | documentado |
+| MCP por perfil | `mcp_servers` vive en el `config.yaml` del perfil. Filtros `include`/`exclude` por servidor ("If `include` is set, only those server-native MCP tools are registered."). En `platform_toolsets.<platform>`: "a list that names servers gets only those, and `no_mcp` drops them all." En el multiplexor: "a served profile never calls a server as another profile". Tokens: "a named profile uses `~/.hermes/profiles/<name>/mcp-tokens/`". | /docs/reference/mcp-config-reference ; /docs/reference/toolsets-reference ; /docs/user-guide/multi-profile-gateways#what-is-isolated-per-profile | documentado |
+| Aviso | "The agent has the same filesystem access as your user account. Use `hermes tools` to disable tools you don't want, or switch to Docker for sandboxing." | /docs/user-guide/configuration | documentado |
+
+#### 1.7 Hermes: estado del gateway y `cron pause|resume`
+
+| Pregunta | Respuesta / cita | Doc | Veredicto |
+|---|---|---|---|
+| Estado observable por CLI | `hermes gateway ensure [--json] [--timeout 60]` imprime un JSON con `state`, `reason_code` y `endpoint` (solo cuando está listo). Estados: "`ready`, `draining`, `starting`, `absent`, `inaccessible`, `incompatible` or `conflict`". Códigos de salida: 0 "Compatible session runtime ready", 2 invocación inválida, 3 incompatible, 4 autorización o perfil, 5 "Deadline reached; startup may still be pending", 6 draining/update, 7 inaccesible o fallo. **Ojo:** `ensure` "discovers or starts" el runtime (puede arrancarlo). `hermes gateway attach --json` sin `--start` "only discovers". `hermes gateway status` muestra el estado del servicio, sin JSON documentado. | /docs/reference/cli-commands#local-runtime-discovery-and-startup ; /docs/developer-guide/gateway-internals#hermes-gateway-ensure | documentado |
+| Estado en archivo | `gateway_state.json` en el home del perfil (bajo el multiplexor, uno solo en el home default: "no per-profile gateway status file is written"). Valores citados: `gateway_state: degraded`, `gateway_state=stopped`, `startup_failed`, `running`. `updated_at` se reescribe cada 60 s como heartbeat; a partir de 120 s, `status` avisa "Gateway heartbeat stale". Las transiciones de telemetría son "`starting -> running -> draining -> stopped`, `startup_failed`". No hay un esquema formal del archivo. | /docs/user-guide/messaging (index) ; /docs/user-guide/multi-profile-gateways ; /docs/developer-guide/gateway-monitoring | documentado (parcial: sin esquema) |
+| `hermes cron pause|resume` | `hermes cron <list|create|edit|pause|resume|run|remove|status|runs|incidents|doctor|tick>`. pause: "Pause a job without deleting it." resume: "Resume a paused job..." Aceptan nombre: "The mutating verbs (`pause`, `resume`, `run`, `cancel`, `remove`, `edit`) ... accept a job **name** (case-insensitive)"; si el nombre es ambiguo, se rechaza. Existe también `--paused` al crear y `hermes pause` global. | /docs/reference/cli-commands#hermes-cron ; /docs/user-guide/features/cron | documentado |
+| Versión mínima de pause/resume | No figura en la documentación ni en una búsqueda de release notes. | — | no documentado |
+
+#### 1.8 OpenAI Codex CLI
+
+Nota: `developers.openai.com/codex/*` redirige (308) a `learn.chatgpt.com/docs/*`. Ninguna página muestra versión ni fecha. **Codex no está instalado en este equipo.**
+
+| Pregunta | Respuesta / cita | URL | Veredicto |
+|---|---|---|---|
+| Estado sin secretos | "`codex login status` exits with `0` when credentials are present"; muestra "the active authentication mode". No documenta otros códigos de salida. | https://learn.chatgpt.com/docs/developer-commands?surface=cli | documentado |
+| `--sandbox`/`-s` | `read-only | workspace-write | danger-full-access` | ídem | documentado |
+| `--ask-for-approval`/`-a` | `on-request | never` (en la página actual no aparecen `untrusted` ni `on-failure`) | ídem | documentado |
+| Reanudar sesión | `codex resume [SESSION_ID]` (tipo "uuid \| session name"), `--last`, `--all`. `codex exec resume [SESSION_ID]`: "Resume an exec session by ID or add `--last`...". `codex exec --json`: "newline-delimited JSON events". No documenta dónde se muestra el id. | ídem | documentado |
+| Hooks | Archivos `hooks.json`: `/etc/codex/hooks.json`, `$CODEX_HOME/hooks.json` y `.codex/hooks.json` (proyecto de confianza), o inline con `[hooks]` en `config.toml`. "Hooks are enabled by default" (`[features] hooks = false` los desactiva; `codex_hooks` es un alias obsoleto). Eventos: PreToolUse, PermissionRequest, PostToolUse, Pre/PostCompact, UserPromptSubmit, SubagentStart/Stop, SessionStart/End, Stop, Interrupt, Pre/PostModelRequest. El payload por stdin incluye `session_id`, `cwd`, `hook_event_name`, `model`, `tool_name`, `tool_use_id`, `tool_input` (`tool_input.command` para Bash y apply_patch). Para bloquear: `permissionDecision: "deny"`, o salir con código 2 y escribir el motivo en stderr. | https://learn.chatgpt.com/docs/hooks | documentado |
+| Skills | "`.agents/skills` in every directory from your current working directory up to the repository root"; `$HOME/.agents/skills`; `/etc/codex/skills`. "The `SKILL.md` file must include `name` and `description`." No menciona `$CODEX_HOME/skills`. | https://learn.chatgpt.com/docs/build-skills | documentado |
+| Agentes personalizados | "standalone TOML files under `~/.codex/agents/` ... or `.codex/agents/` for project-scoped agents"; obligatorios: `name`, `description`, `developer_instructions`. "`sandbox_mode`, `approval_policy`, `model_provider`, and `mcp_servers`, don't override the parent configuration". | https://learn.chatgpt.com/docs/agent-configuration/subagents.md | documentado |
+| AGENTS.md | En el ámbito global, `AGENTS.override.md` y, si no existe, `AGENTS.md` en `~/.codex` (o `CODEX_HOME`). En el proyecto, desde la raíz hasta el cwd, en cada directorio: "`AGENTS.override.md`, then `AGENTS.md`, then any fallback names in `project_doc_fallback_filenames`". `project_doc_max_bytes` vale 32 KiB por defecto. | https://learn.chatgpt.com/docs/agent-configuration/agents-md | documentado |
+
+#### 1.9 Claude Code y OpenCode
+
+**Claude Code** (code.claude.com; las páginas no tienen fecha; las funciones indican su versión mínima)
+
+| Pregunta | Respuesta / cita | URL | Veredicto |
+|---|---|---|---|
+| Modo headless | `claude -p "query"`: "Query via SDK, then exit"; `--output-format` `text`/`json`/`stream-json`; `--session-id` (UUID); `-r "<session>"`; `--permission-mode` `default`/`acceptEdits`/`plan`/`auto`/`dontAsk`/`bypassPermissions` (`manual` es alias de default desde v2.1.200); `--setting-sources user,project,local`. | https://code.claude.com/docs/en/cli-reference | documentado |
+| Comando de estado | `claude auth status`: "Show authentication status as JSON. Use `--text` for human-readable output. Exits with code 0 if logged in, 1 if not." `authMethod` ∈ `none`, `claude.ai`, `oauth_token`, `api_key`, `api_key_helper`, `third_party`. `configDirectory` desde v2.1.268. También existe `claude doctor` (diagnóstico de solo lectura). | ídem | documentado |
+| Payload de hooks | Campos comunes: `session_id`, `prompt_id`, `transcript_path`, `cwd`, `scratchpad_dir`, `permission_mode`, `effort`, `hook_event_name`; en PreToolUse también `tool_name`, `tool_input`, `tool_use_id`. `tool_input` de **Read**: `file_path` ("Absolute path"), `offset`, `limit`. **Grep**: `pattern`, `path`, `glob`, `output_mode`, `-i`, `multiline`. **Glob**: `pattern`, `path` ("Defaults to current working directory"). Exit 2 en PreToolUse "Blocks the tool call" (stderr = motivo). | https://code.claude.com/docs/en/hooks.md | documentado |
+| `permissions.deny` para Read | Patrones gitignore: `//path` = absoluto; `~/path` = home; `/path` = "Path relative to the settings source" (en `.claude/settings.json` y `settings.local.json` apunta al directorio de trabajo principal); `path` o `./path` = relativo al cwd. Ejemplos: `Read(./.env)`, `Read(./secrets/**)`. "Claude makes a best-effort attempt to apply `Read(path)` deny rules to all built-in tools that read files like Grep and Glob." Las reglas `Grep(path)`/`Glob(path)` **no** aplican; hay que usar `Read(...)`. Bash: se aplican a `cat`/`head`/`tail`/`sed`/`tee` y a las redirecciones, pero no a `grep -r pattern .` ni a scripts. Un deny de Read bloquea también Edit/Write sobre esa ruta (Write desde v2.1.228). | https://code.claude.com/docs/en/permissions | documentado |
+
+**OpenCode** (instalado v2.3.2; las páginas no tienen fecha)
+
+| Pregunta | Respuesta / cita | URL | Veredicto |
+|---|---|---|---|
+| Ubicación de plugins | "loads direct `.ts` and `.js` files and immediate plugin package directories" de `.opencode/plugins/`; los globales van en `~/.config/opencode/plugins/`. | https://opencode.ai/docs/plugins/ | documentado |
+| API V2 (actual) | `export default Plugin.define({ id, async setup(ctx) {...} })`. Hook de herramientas: `ctx.tool.hook("execute.before", (event) => {...})`, con `event.tool` y `event.input`; puede "inspect or replace tool input before execution". El callback devuelve `Promise<void> | void`. **No se documenta cómo bloquear desde el hook** (la única vía de rechazo documentada es `ctx.permission.assert`). `execute.after` recibe `status`, `result` y `error.message`. Eventos: `ctx.event.subscribe({ types, signal })`. | https://opencode.ai/docs/build/plugins/server | documentado (sin bloqueo) |
+| Compatibilidad con V1 | Las claves `"tool.execute.before"` en `server()` son V1. "V2 reads the export's `id` and `setup()` ... and ignores `server()`"; "sharing an export does not translate V1 hooks into V2 hooks". El formato objeto de V1 está "supported in OpenCode `1.18.29`". **Riesgo:** un plugin solo-V1 (como `.opencode/plugins/ai-hub.js`, si usa la forma V1) no se ejecutaría en v2.3.2. Hay que verificarlo en código. | ídem | documentado |
+| Aviso no bloqueante | Servidor: no hay API de toast ni de aviso (los ejemplos usan `console.log`). TUI plugin: `context.ui.toast.show({ title, message, variant, duration })` y `context.attention.notify(...)`. `client.app.log` y `tui.toast.show` (V1) no aparecen en las páginas actuales. | https://opencode.ai/docs/build/plugins/cli ; /build/plugins/server | documentado (solo TUI) |
+
+#### 1.15 Git: lease en borrados y `update-ref -d`
+
+| Pregunta | Respuesta / cita | URL | Veredicto |
+|---|---|---|---|
+| Semántica de `--force-with-lease=<ref>:<expect>` | "will protect <refname> (alone), if it is going to be updated, by requiring its current value to be the same as the specified value <expect>... If <expect> is the empty string, then the named ref must not already exist." Las demás formas "are still experimental". | https://git-scm.com/docs/git-push ("last updated in 2.55.0"; sin cambios hasta 2.56.1) | documentado |
+| ¿El lease aplica a `:<ref>` (borrado)? | La documentación no lo dice. El código sí: en `remote.c::set_ref_status_for_push()`, el bloque `if (ref->expect_old_sha1) { if (!oideq(&ref->old_oid, &ref->old_oid_expect)) reject_reason = REF_STATUS_REJECT_STALE;` no depende de `ref->deletion`; solo la regla de fast-forward excluye los borrados (`!ref->deletion`). | https://raw.githubusercontent.com/git/git/master/remote.c | no documentado; sí en código fuente |
+| Salida porcelain | "<flag> \t <from>:<to> \t <summary> (<reason>)"; flags: espacio = fast-forward, `+` forzado, `-` "successfully deleted ref", `*` nuevo, `!` "rejected or failed to push", `=` sin cambios. La documentación no incluye "stale info". En código (`transport.c`): `case REF_STATUS_REJECT_STALE: print_ref_status('!', "[rejected]", ..., "stale info", ...)`, es decir, la línea es `!\t<from>:<to>\t[rejected] (stale info)`. | git-push ; https://raw.githubusercontent.com/git/git/master/transport.c | formato documentado; "stale info" solo en código |
+| `git update-ref -d <ref> [<old-oid>]` | "With `-d`, it deletes the named <ref> after verifying that it still contains <old-oid>." Para `--stdin delete`: "If given, <old-oid> may not be zero." Atomicidad: "If all <ref>s can be locked with matching <old-oid>s simultaneously, all modifications are performed. Otherwise, no modifications are performed." | https://git-scm.com/docs/git-update-ref ("last updated in 2.53.0") | documentado |
+| Versión mínima | En las RelNotes 1.8.5: "\"git push\" learned a more fine grained control over a blunt \"--force\" ... with the \"--force-with-lease=<refname>:<expected object name>\" option." | https://raw.githubusercontent.com/git/git/master/Documentation/RelNotes/1.8.5.adoc | documentado (1.8.5) |
+
+#### 1.16 Hard links y renombrar sobre un archivo abierto
+
+| Pregunta | Respuesta / cita | URL | Veredicto |
+|---|---|---|---|
+| Node `fs.link` | "Creates a new link from the `existingPath` to the `newPath`. See the POSIX link(2) documentation". No hay notas sobre Windows. | https://nodejs.org/api/fs.html (v26.13.1) | documentado (sin notas de Windows) |
+| Node `fs.rename` | "In the case that `newPath` already exists, it will be overwritten. If there is a directory at `newPath`, an error will be raised instead." Node no documenta EPERM/EBUSY en Windows para rename/link; solo `fs.rm` reintenta con EBUSY/EPERM. | ídem | no documentado (Windows) |
+| Hard links en Windows | CreateHardLink: "This function is only supported on the NTFS file system, and only for files, not directories."; "all hard links to a file must be on the same volume"; máximo 1023 enlaces. ReFS: "No" (tabla de Windows 8/2012). **No se documenta qué código de error devuelve FAT/exFAT.** | https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createhardlinka (updated 2025-07-01) ; https://learn.microsoft.com/en-us/windows/win32/fileio/hard-links-and-junctions (2025-07-08) | documentado (solo NTFS); código de error no documentado |
+| Renombrar sobre un archivo abierto (Windows) | MoveFileEx `MOVEFILE_REPLACE_EXISTING`: "replaces its contents ... provided that security requirements regarding access control lists (ACLs) are met". No menciona el caso de un destino abierto. CreateFile `FILE_SHARE_DELETE`: "Otherwise, other processes cannot open the file or device if they request delete access... **Note** Delete access allows both delete and rename operations."; un conflicto produce `ERROR_SHARING_VIOLATION`. La correspondencia con EPERM/EBUSY de Node no está documentada. | https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-movefileexa ; https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilea | parcialmente documentado (se deduce de las reglas de compartición) |
+| Linux, rename sobre un archivo abierto | "If newpath already exists, it will be atomically replaced"; "Open file descriptors for oldpath are also unaffected". EBUSY se describe para directorios en uso; EXDEV, entre sistemas de archivos distintos. | https://man7.org/linux/man-pages/man2/rename.2.html | documentado |
+
+#### 1.17 Origen de hooks y plugins en Claude Code; webhook en Hermes
+
+| Pregunta | Respuesta / cita | URL | Veredicto |
+|---|---|---|---|
+| ¿De dónde salen los hooks? | Tabla "Hook locations": `~/.claude/settings.json`, `.claude/settings.json`, `.claude/settings.local.json`, managed policy, "Plugin `hooks/hooks.json` — When plugin is enabled", frontmatter de skill y frontmatter de subagente. "When a plugin is enabled, its hooks merge with your user and project hooks." `allowManagedHooksOnly` bloquea los hooks de usuario, proyecto, local y plugin; `disableAllHooks: true`. | https://code.claude.com/docs/en/hooks | documentado |
+| ¿Habilitar un plugin requiere settings? | Sí: el ámbito de instalación escribe `enabledPlugins` en user `~/.claude/settings.json`, project `.claude/settings.json` o local `.claude/settings.local.json`. En el ámbito de proyecto, cada colaborador ejecuta "`claude plugin install <name>@<marketplace> --scope project` once per clone". Un marketplace añadido desde la shell queda "declared in your user settings even when you pass `--scope project`". `extraKnownMarketplaces` (y `permissions.allow`) "apply only after each teammate trusts the folder". | https://code.claude.com/docs/en/discover-plugins.md ; https://code.claude.com/docs/en/settings.md | documentado |
+| ¿Claude Code escribe sus settings? | Sí: "It writes `~/.claude/settings.json` when you save a user setting" y "writes `.claude/settings.local.json` when you give a standing approval" (en la raíz del repositorio; en Windows "the file stays with `.claude/settings.json` instead"). `/config` guarda la mayoría de opciones en `~/.claude/settings.json` y el output style en `.claude/settings.local.json`. Desinstalar un plugin del proyecto escribe `false` en `settings.local.json` o lo quita de `.claude/settings.json`. Además añade `**/.claude/settings.local.json` a los excludes globales de git. "Claude Code watches your settings files and reloads them" (incluidos los hooks). | https://code.claude.com/docs/en/settings.md ; discover-plugins.md | documentado |
+| Hermes: ¿hay un comando para activar `platforms.webhook`? | No hay uno específico. La documentación de webhooks ofrece `hermes gateway setup` (asistente) o `WEBHOOK_ENABLED=true` en `.env`: "Enable via `hermes gateway setup` or environment variables". Los ajustes del adaptador pueden ir "directly under `platforms.webhook:`" o bajo `extra:`. El genérico `hermes config set <key> <value>` está documentado ("Dotted paths go to `config.yaml`; every `UPPER_SNAKE` name ... goes to `.env`"), pero ninguna página muestra `config set platforms.webhook.enabled`. Por lo tanto, `hermes config set platforms.webhook.enabled true` es una deducción, no un ejemplo documentado (puede producir el aviso de "did-you-mean" si la clave no está sembrada). | /docs/user-guide/messaging/webhooks (publicada y verificada) ; /docs/reference/cli-commands#hermes-config | comando específico no documentado; `config set` genérico documentado |
+
+---
+
+#### Versiones instaladas (solo `--version`)
+
+| Herramienta | Versión |
+|---|---|
+| hermes | Hermes Agent v0.23.3 (2026.9.24) · stable · local caafe5389ae5 (instalado con git en `C:\Users\USUARIO\AppData\Local\hermes\hermes-agent`) |
+| codex | **no instalado** (`command not found`) |
+| claude | 2.1.330 (Claude Code) |
+| opencode | v2.3.2 |
+| git | 2.56.1.windows.1 |
+| node | v24.18.0 |
+
+#### Hallazgos con impacto (resumen)
+
+1. Ni GitLab ni GitHub admiten escrituras condicionales en etiquetas. La protección CAS tiene que hacerla el cliente con releer-comparar-escribir; queda una ventana de carrera.
+2. GitHub no indica el método de merge en el PR. GitLab sí lo expone a nivel de proyecto (`merge_method`) y por MR (`squash`, `squash_commit_sha`).
+3. GitLab no tiene un parámetro `draft` en la API; se marca con el prefijo `Draft:` en el título.
+4. OpenCode v2.3.2 ignora los hooks V1 (`server()` / `tool.execute.before`), y la API V2 de servidor no documenta ni bloqueo ni toast.
+5. El lease de `git push` aplica a los borrados según el código fuente, no según la documentación. "stale info" aparece solo en `transport.c`.
+6. `hermes gateway ensure` puede arrancar el runtime. Para observar sin efectos secundarios, usar `hermes gateway attach --json` sin `--start`, `hermes gateway status` o leer `gateway_state.json`.
+7. Hermes no documenta la versión mínima de `cron pause|resume`, y Microsoft no documenta el código de error de hard link en FAT.
+
+**Hallazgo material (OpenCode):**
+- OpenCode v2.3.2 (API V2) ignora `server()`, así que los hooks V1 `tool.execute.before` no se ejecutan.
+- La plantilla del motor usa la forma V1 (`core/engine/templates/opencode-plugin.js:40`). Con esa versión, las guardias no son efectivas en OpenCode.
+- La API V2 no documenta cómo bloquear desde un hook.
+- Afecta a #5 en OpenCode y a 4.34. Hasta tener evidencia, `doctor` debe tratar la cobertura de OpenCode ≥2 como no verificada.
+
+### 1.12 Informe de viabilidad de los bloqueos (consolida 1.1–1.11 y 1.14–1.17)
+
+| Bloqueo | Evidencia documental | Veredicto | Habilita / detiene |
+|---|---|---|---|
+| BT-1 GitLab | `PUT /issues/:iid` sin precondición documentada; `updated_at` asigna, no compara (1.1) | **necesita experimento**, sin expectativa favorable: solo valdría un rechazo estable no documentado (protocolo BT-1); alternativa: exclusión efectiva de escritores por permisos | 2.1 → 5.1; mientras tanto, retención (4.19) |
+| BT-1 GitHub | «Conditional requests for unsafe methods … are not supported» (1.2) | **no viable** con la API documentada; 2.2 solo confirmaría la ausencia | 5.20 detenida; retención permanente salvo exclusión de escritores |
+| BT-2 Hermes v0.23.3 | toolsets desactivables por plataforma y globalmente (`terminal`, `file`), MCP filtrable por perfil (1.6) | **necesita experimento** (2.3) con expectativa razonable | 5.3–5.5, 6.1 |
+| BT-3 Hermes v0.23.3 | `gateway_state.json` con `state` y latido; `hermes gateway status`; `ensure --json` puede arrancar el runtime y no se usa para observar (1.7) | **necesita experimento** (2.4), estado documentado disponible | 5.2 |
+| Cron de Hermes | `hermes cron pause|resume <id|name>` documentado; versión mínima no documentada (1.7) | **necesita experimento** (2.5) para fijar versión | 4.25, 4.24 |
+| F0 Claude Code 2.1.330 | `claude -p`, `claude auth status` con JSON y salida 0/1, payloads de Read/Grep/Glob (1.9) | **necesita experimento** (2.6) | 5.6+ para Claude |
+| F0 OpenCode 2.3.2 | API de plugins V2: hooks V1 no se ejecutan; bloqueo desde hook no documentado (1.9) | **no viable** como harness ni para guardias hasta verificar la API V2; además afecta al plugin actual | 5.6+ para OpenCode; hallazgo material |
+| F0 Codex | documentado (1.8), **no instalado en este host** | **no viable en este host** hasta instalarlo (autorización aparte) | 5.6+, 5.18 para Codex; 4.78–4.81 (proyección) no dependen del binario |
+| Borrado condicional GitLab/GitHub | lease aplicado a borrados en el código de git (`remote.c`), `stale info` solo en `transport.c`; APIs REST sin revisión esperada (1.15) | **necesita experimento** por tracker (2.9, 2.10) | 5.19 |
+| Captura por enlace duro | CreateHardLink solo NTFS y mismo volumen; FAT/exFAT sin código documentado (1.16) | viable en NTFS/ext4/APFS; **`external_guard_reduced`** en el resto | 3.23 |
+| Hooks de Claude sin `settings.json` | plugins con `hooks/hooks.json`, pero activarlos escribe `enabledPlugins` en un archivo de settings; Claude Code escribe sus propios settings (1.17) | **no evita editar configuración ajena** → alternativa 2 de D-65 descartada para Claude; queda la propuesta | 3.25 |
+| Webhook de Hermes sin editar `config.yaml` | sin comando específico documentado; `config set` genérico (1.17) | **no documentado** → propuesta (D-65) | 4.89 |
+| Compatibilidad 0.12.0–0.17.0 | código idéntico en las seis versiones (1.14) | lectura confirmada; ejecución real pendiente | 3.22 |
+
+### Hallazgos de la aplicación (2026-11-23, rama `codex/harden-harness-orchestration`)
+
+- **OpenCode 2.3.2 (material, sin corregir):**
+  - el plugin generado usa hooks V1 (`tool.execute.before`, `core/engine/templates/opencode-plugin.js:40`), que la API V2 ignora;
+  - las guardias y la política de lectura no son efectivas en OpenCode ≥2 hasta reescribir el plugin contra la API V2, que no documenta cómo bloquear desde un hook;
+  - afecta a #5 en OpenCode y a 4.34.
+- **Windows (corregido):** `powershell.exe` 5.1 lanzado desde pwsh 7 no carga el módulo de `Get-Acl` (por el `PSModulePath` heredado). La ACL del almacenamiento privado se lee con la API .NET y el proceso hijo no hereda `PSModulePath`.
+- **Custodia (corregido en parte):**
+  - la habilitación del webhook en un dueño compartido ya no hace la copia adyacente `config.yaml.pre-ai-hub` (D-65 propone en lugar de escribir);
+  - **pendiente:** la migración de claves heredadas del `.env` del perfil de control sigue dejando `.env.pre-ai-hub` junto al archivo (sensible); queda para 3.11 y 3.7.
+- **Tracker (corregido):** seguir `Link: rel="next"` habría enviado el token a otro origen; ahora se rechaza (`incomplete`).
+- **Lectura del tablero:** `control tick` no recibe el `fetch` inyectado de la CLI de control (usa `defaultTrackerFetch`); las pruebas lo ejercitan con `runTick(…, { trackerFetch })`.
+- **Retención:** con R-110, un directorio de run sin evento legible ya no se poda (antes, por nombre). La prueba 4.6 se adaptó.
+
+### Corrección del hallazgo de OpenCode (2026-11-23, continuación)
+
+- **Era incorrecto** que el plugin generado fuera solo V1. `core/engine/templates/opencode-plugin.js` ya exporta la forma 2.x (`export default { id: 'ai-hub', setup(ctx) }` con `ctx.tool.hook('execute.before', …)`) además de la 1.x. No se trata de un fallo de carga.
+- **Error real de API (corregido):** en 2.x la entrada de la herramienta llega en `event.input` (opencode.ai/docs/build/plugins/server), y la plantilla solo leía `args`. El preflight recibía `{}` y nunca denegaba nada en OpenCode 2.x. Ahora lee `input.input`.
+- **Límite real del host (declarado):** OpenCode 2.x documenta `execute.before` para inspeccionar o reemplazar la entrada, no para bloquearla. Que lanzar un error bloquee la herramienta no está documentado, y verificarlo exigiría ejecutar OpenCode real con sesión de modelo (no autorizado). `doctor` lo muestra como `opencode_block_unverified` y no lo presenta como protección.
+- **Instalación:** el binario está en `@opencode/cli/bin/opencode.exe` (nativo); no hay código JS legible para comprobar el manejo de errores.
+
+### 3.22 Compatibilidad con binarios publicados y candidato (2026-11-23, ejecución aislada)
+
+Entorno: directorio temporal del scratchpad, `HERMES_HOME`, `LOCALAPPDATA` y `AI_HUB_LOCK_DIR` en carpetas temporales vacías, sin `.env`, sin tracker, sin red salvo la descarga autorizada. Identidad: `dist.integrity` del registro igual al del lockfile instalado (0.12.0 `sha512-9BWlAPA2…pa9mFQ==`, 0.17.0 `sha512-g/LatXcU…PtEFA==`); candidato `npm pack` de la rama, 2026 archivos, sha256 `73c7ef9c…1105dc`. Fixture creada con `init --preset-only --yes --no-speckit` de 0.17.0 y `policy.runs.keep: 3`. **A:** 5 runs v1 (enero), 2 runs v2 `0000-v2-first|second` (nombres que se ordenan primero, primer evento 2026-11-20), `runs/control/state/{grants,associations,execution-index}.json` y `control/decisions.jsonl`. **B (control):** solo los 5 runs v1. Payload de `hook pre` con `session_id` nuevo. Secuencia por binario en una copia nueva: `runs list` → `runs start` → `hook pre` → `doctor`. Script: `scratchpad/scripts/compat322.sh`; salidas en `scratchpad/compat/results/`.
+
+| Binario | `runs list` (A) | `runs start` (A) | `hook pre` (A) | `control/` (A) | Control B | `doctor` |
+|---|---|---|---|---|---|---|
+| 0.12.0 | 0, lista los 7, lee líneas v2 sin error | 0; poda `0000-v2-first`, `0000-v2-second`, `…01`, `…02`, `…03` (por nombre) | 0, `allow`; poda `…04`; crea `session-…` con eventos `v:1` | 4 archivos con hash idéntico tras los 4 pasos | poda `…01–03` y luego `…04`: la poda ocurre | 1: `speckit:managed` (fixture `--no-speckit`) y `lock` por la edición de `manifest.yaml` de la fixture |
+| 0.17.0 | igual que 0.12.0 | igual: los dos v2 podados primero | igual (`v:1`) | idéntico | igual | igual |
+| candidato | 0, igual | 0; poda los 5 v1 por primer evento y **conserva los dos v2** | 0, `allow`; poda `0000-v2-first` (primer evento más antiguo de los 3 restantes); crea `session-…` con `v:2, origin: hook`; no añade eventos a v2 | idéntico | igual que los publicados | 1: además `drift` 1 en `.opencode/plugins/ai-hub.js`, que es la corrección de A2 (deriva de actualización; la resuelve `sync`) |
+
+Causas de `doctor` comprobadas: sobre la base sin modificar, 0.17.0 tiene `lock` y `drift` verdes; el `lock` rojo de A/B viene de editar `manifest.yaml` (fuente del lock). Conclusión: la matriz de [design.md] › Persistencia se confirma sin contradicciones (los publicados podan v2 por nombre y no tocan `runs/control/`); la fila «pendiente de 3.22» pasa a medida. VMC fijada en **0.18.0** (primer release de esta rama). No medido: un binario antiguo con `runs event --run <v2>` (añadir v1 a un run v2), que el diseño ya declara no soportado; Linux (solo Windows).
+
+### Ejecución completa huérfana `test-harden-full-2.log` (no íntegra)
+
+Lanzada antes de la compactación con concurrencia por defecto, siguió como proceso huérfano y terminó: 66 archivos (11 fallidos, 55 aprobados), 1033 pruebas (97 fallidas, 929 aprobadas, 7 omitidas), 2288 s. **No es verificación integral**: el código cambió durante la ejecución (3.8–3.10 y A1/A2) y la máquina estaba sin memoria (~60 procesos MCP ajenos). No demuestra fallos de aserción ni su ausencia; se sustituye por la ejecución canónica `npm test` (`vitest run --maxWorkers=1`) tras `npm run build` y `manifest:build`, sin ediciones de código durante su curso (`test-harden-full-3.log`).
+
+### Ejecución canónica `npm test` tras build (2026-11-23, `test-harden-full-3.log`)
+
+Comando: `npm run build && npm run manifest:build && npm test` (`vitest run --maxWorkers=1`), sin ediciones de código durante la ejecución. Resultado: 69 archivos (67 aprobados, 2 fallidos), 1084 pruebas (**1075 aprobadas, 2 fallidas, 7 omitidas**), 4275 s, salida 1. **No es una ejecución única en verde.**
+
+- `pack.test.ts` (recuento 2034 frente a 2026): las 8 entradas nuevas son exactamente `dist/harness/compat`, `dist/writes/{leftovers,sensitive-copies,writer-gate}` (`.js` y `.d.ts`), por diff de la lista de `npm pack --dry-run --json` contra el tarball candidato empaquetado al inicio de la continuación; sin pruebas, fixtures ni secretos. Expectativa actualizada con esa justificación; `pack` 6/6 al relanzarla.
+- `speckit-real.test.ts` › end to end (10.1): `uvx … specify integration install cursor-agent` terminó en `spawnSync uvx ETIMEDOUT` tras 45 min (después `EBUSY` al borrar el temporal). Relanzada sola: **aprobada en 170 s** (`test-speckit-real-rerun.log`). Fallo de entorno (Spec Kit real por red/caché), no de aserción; queda pendiente verla verde dentro de una ejecución completa.
+
+### Ejecución canónica `npm test` (2026-11-23, `test-harden-full-4.log`)
+
+Tras `typecheck`, `build`, `manifest:build` y `manifest:check` en verde, sin ediciones de código durante la ejecución: 78 archivos (77 aprobados, 1 fallido), 1232 pruebas (**1220 aprobadas, 1 fallida, 11 omitidas**), 1487 s, salida 1. `speckit-real` pasó esta vez dentro de la ejecución completa.
+
+- Fallo: `control-hardening.test.ts` › «a malformed remote line is discarded». La prueba (fase 5.1, anterior a este change) esperaba que una última nota de estado inválida se descartara y se propusiera desde la anterior; R-109 (4.84) exige lo contrario: la issue se detiene con `invalid_status`. Expectativa cambiada al contrato aprobado (la parte «un run local gana» se mantiene); la suite pasa 9/9. **La ejecución única no es verde**; queda pendiente repetirla completa.
+
+### Ejecución canónica final `npm test` (2026-11-24, `test-harden-full-5.log`)
+
+78/78 archivos, **1238 aprobadas, 0 fallidas, 11 omitidas** (POSIX/pty), salida 0, tras typecheck, build, `manifest:build` y `manifest:check` en verde. Es la primera ejecución única en verde del comando canónico en esta aplicación.
+
+### Clasificación de las 45 tareas abiertas (2026-11-24, inicio de la continuación)
+
+Dependencias revisadas una a una contra `tasks.md` (columna «Antes») y contra lo que el comportamiento necesita de verdad.
+
+| Clase | Tareas | Motivo concreto |
+|---|---|---|
+| Trabajo local pendiente | 3.11, 3.19 (parte GitHub), 4.68, 4.69, 4.70, 5.15, 5.14 (tras 5.15), 5.17 (tras 5.14), 3.21 (redacción y prueba; su «Antes» incluye 3.23) | Sus dependencias están hechas o son internas; se verifican con dobles HTTP, fixtures y procesos locales. |
+| Implementación local con dobles; dependencia declarada de 5.6 a evaluar | 5.7, 5.10, 5.11, 5.12, 5.16 | 5.6 aporta candidatos verificados en un host real; la prioridad, el lock, la cancelación, el fallback, los marcadores y la issue por ejecución se prueban con candidatos y procesos doble. Si se completan, la integración con el descubrimiento real queda pendiente de 5.6. |
+| Implementación posible pero evidencia real exigida | 5.13 (sesiones del harness: 2.6), 5.18 (E2E con Codex real; su cuerpo necesita el runner con descubrimiento real) | El criterio exige un harness real o su evidencia; un doble no la sustituye. |
+| Investigación documental | 4.25 (versión mínima de `hermes cron pause|resume`) | 1.7 no la encontró; se repite con fuentes primarias. |
+| Otro entorno | 3.23 (reproducción de 1.16 en CI de Windows y Linux); omisiones POSIX/pty de la suite | Necesita CI o un host POSIX autorizado. |
+| Experimento pendiente de autorización | 1.13, 2.1–2.10; condicionadas 5.1–5.6, 5.19–5.21, 6.1 | Servicios, perfiles o harnesses reales. |
+| Posterior a publicación | 3.24 | Necesita el paquete publicado. |
+| Excluida mientras no cambie el alcance | 4.88 (SC-03) ; 7.1–7.4 (sin las 10 mediciones reales no se reduce el panel) | Decisiones vigentes. |
+
+### 4.25 — versión mínima de `hermes cron pause|resume` (2026-11-24, fuentes primarias)
+
+- Documentación oficial vigente: `hermes cron <list|create|edit|pause|resume|run|remove|status|runs|incidents|doctor|tick>`; `pause` detiene un job sin borrarlo y `resume` lo reanuda calculando su próxima ejecución (https://hermes-agent.nousresearch.com/docs/reference/cli-commands ; https://hermes-agent.nousresearch.com/docs/developer-guide/cron-internals, que añade que pause/resume borra la plaza pendiente).
+- Ninguna nota de release ni PR localizada fija cuándo se introdujeron: la PR #134299 (https://github.com/NousResearch/hermes-agent/pull/134299) solo documenta `runs`, `incidents` y `notepad`; el changelog de PyPI (https://data.safetycli.com/packages/pypi/hermes-agent/changelog) menciona cron en 2026.7.7.2 y 2026.7.20 sin anunciar pause/resume.
+- **Resultado: mínimo no determinable con fuente fiable.** La capacidad se mantiene «no verificada»; 4.25 sigue abierta (su criterio exige la versión de 1.7 o del experimento 2.5). No se ejecutó Hermes.
+
+### 4.68 — `tracker.kind: github` en binarios publicados (2026-11-24, fixture aislada de 3.22)
+
+Con `tracker: { kind: github, urlEnv: GITHUB_API_URL, tokenEnv: GITHUB_TOKEN }` en `manifest.yaml`, `doctor` de 0.12.0 y de 0.17.0 sale 1 con `[FAIL] manifest: manifiesto inválido: /tracker/kind must be equal to one of the allowed values`. Es el error claro de una versión antigua que se documenta en las notas de versión (volver por debajo de la VMC con GitHub configurado no está soportado).
+
+### Reevaluación de las 37 tareas abiertas (2026-11-24)
+
+| Causa | Tarea | Exige | Estado local | Falta |
+|---|---|---|---|---|
+| Orden documental con 5.6 (condicionada a 2.6) | 5.11, 5.12, 5.16 | fallback, marcadores, issue única | implementado, integrado en `executeGrantedRun` y probado con dobles | solo el «Antes: 5.6»; decisión del propietario (ver propuesta) |
+| Orden documental + evidencia real | 5.7 | prioridad configurable | parámetro `order` y pruebas (Claude no operativo; ningún candidato) | 5.6; no hay clave de configuración en el manifiesto |
+| Plataforma | 5.10 | lock y cancelación POSIX y Windows | Windows en verde | ejecución en Linux (job `platform-evidence`) |
+| Plataforma | 3.23 | determinista + 1.16 en CI Windows y Linux | todo lo determinista en verde en Windows | ejecución del CI |
+| Depende de 3.23 | 3.21 | documentación fijada por prueba | hecha (`docs-writes.test.ts`) | su «Antes» 3.23 |
+| Evidencia real | 5.13 | reanudación tras reconciliar | simulada (`resumeOffer`) | formato real de sesión (2.6) |
+| Evidencia real | 5.18 | E2E con Codex omitido sin variable | prueba omitida sin `AI_HUB_CODEX_E2E=1` | 5.6 y Codex real |
+| Condicionadas (experimento) | 5.6, 5.21 | descubrimiento y sondas | implementado con dobles; declaraciones reales vacías | 2.6 |
+| Condicionadas (experimento) | 5.1, 5.2, 5.3, 5.4, 5.5, 5.19, 5.20, 6.1 | capacidades por experimento | — | 2.1, 2.2, 2.3/2.8, 2.4, 2.9, 2.10 |
+| Experimentos | 1.13, 2.1–2.10 | autorización y ejecución | — | autorización del propietario por experimento |
+| Documental + experimento | 4.25 | nombre configurado y versión mínima | nombre configurado probado (`control-enroll`) | versión mínima: 1.7 sin dato; 2.5 |
+| Medición real | 7.1–7.4 | ≥10 cambios reales medidos con el panel completo | no hay mediciones registradas | ejecutar el panel sobre cambios reales (consume sesiones) |
+| Posterior a publicar | 3.24 | VMC con el paquete publicado | — | publicación |
+| Excluida | 4.88 | `config apply` | — | SC-03 deshabilitado |
+
+### Omisiones de la suite (2026-11-24)
+
+| Archivo › prueba | Causa | Entorno que la ejecutaría |
+|---|---|---|
+| `writes` › POSIX exige modo 700 | permisos POSIX | Linux (CI) |
+| `idea-input-e2e` › IDEA.md not writable (dangling symlink) | semántica POSIX: en Windows `wx` sobre un enlace colgante crea el destino | Linux |
+| `cli` › read-only target (POSIX) | directorio de solo lectura POSIX (y no root) | Linux sin root |
+| `idea-input-pty` › node-pty sin declarar (1.5) | `node-pty` no es dependencia declarada | instalar `node-pty` con `--no-save` (decisión: no declarado) |
+| `idea-input-pty` › nivel 3 ×4 (2000 líneas con y sin marcadores, 64 KiB, Ctrl+C) | `node-pty` no instalado | ídem |
+| `idea-input-pty` › nivel 2 ×2 | pty POSIX de Python | Linux |
+| `codex-e2e` › E2E con Codex real | opt-in `AI_HUB_CODEX_E2E=1` | Codex instalado y 2.6 |
+| ~~`sync` › rejects symlinks~~ | resuelta: junction en Windows | — |

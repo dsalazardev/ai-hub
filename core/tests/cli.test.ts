@@ -1,3 +1,4 @@
+import { listProposals } from '../src/writes/proposals.js';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { PACKAGE_NAME } from '../src/package-info.js';
@@ -44,7 +45,7 @@ async function seeded(): Promise<void> {
 }
 
 describe('dispatch', () => {
-  it('help lists exactly the 28 commands', async () => {
+  it('help lists exactly the 30 commands', async () => {
     const result = await cli(['help']);
     expect(result.code).toBe(0);
     const expected = [
@@ -71,6 +72,8 @@ describe('dispatch', () => {
       'hooks',
       'gate',
       'runs',
+      'locks',
+      'captures',
       'control',
       'review',
       'seal',
@@ -82,7 +85,7 @@ describe('dispatch', () => {
       expect(result.out).toContain(name);
     }
     const rows = result.out.split('\n').filter((line) => /^ {2}[a-z]+ {2,}/.test(line));
-    expect(rows).toHaveLength(28);
+    expect(rows).toHaveLength(30);
   });
 
   it('unknown commands exit 2 and no arguments exit 2', async () => {
@@ -232,7 +235,13 @@ describe('init', () => {
   it('re-running init keeps edited scaffold files and gitignore rules idempotent', async () => {
     await fs.writeFile(path.join(root, 'package.json'), JSON.stringify({ name: 'demo' }));
     await fs.writeFile(path.join(root, '.gitignore'), 'node_modules/\n');
-    expect((await cli(['init', '--preset-only', '--yes'])).code).toBe(0);
+    // D-65 (R-122): el .gitignore del usuario no se edita; las entradas quedan como propuesta (degradada)…
+    const first = await cli(['init', '--preset-only', '--yes']);
+    expect(first.code).toBe(1);
+    expect(await fs.readFile(path.join(root, '.gitignore'), 'utf8')).toBe('node_modules/\n');
+    // …que aplica la persona; desde ahí, init es idempotente y sale 0.
+    const proposal = (await listProposals(root)).find((item) => item.capability === 'root-gitignore');
+    await fs.appendFile(path.join(root, '.gitignore'), proposal!.fragment);
     const rule = path.join(root, '.ai-hub', 'rules', 'core.md');
     await fs.appendFile(rule, '\n- project edit\n');
     const second = await cli(['init', '--preset-only', '--yes']);

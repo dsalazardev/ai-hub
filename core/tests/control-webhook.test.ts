@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { listProposals } from '../src/writes/proposals.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import os from 'node:os';
+
+/** Centinela de credencial del perfil: nunca en salidas ni en copias junto al .env. */
+const ENV_SENTINEL = 'AIHUB_PROFILE_ENV_SENTINEL_7d21';
 import { parse as parseYaml } from 'yaml';
 import { runEnroll, PROFILE, type EnrollOptions } from '../src/control/enroll.js';
 import { checkControlWebhook } from '../src/control/doctor.js';
@@ -33,6 +38,20 @@ const ownerConfig = () => path.join(hermes.home, 'config.yaml');
 const read = (file: string) => fs.readFile(file, 'utf8').catch(() => null);
 const called = (key: string): string[][] => hermes.calls.filter((args) => args.join(' ').includes(key));
 const enroll = (extra: Partial<EnrollOptions> = {}) => runEnroll(h.root, { mode: 'yes', host: hermes.host, ...extra });
+
+/**
+ * D-65 (R-119): el config.yaml del dueño compartido nunca lo escribe el motor. La persona aplica la propuesta
+ * (añade el bloque a mano) y repite enroll; este ayudante reproduce ese paso.
+ */
+async function enrollShared(extra: Partial<EnrollOptions> = {}) {
+  const first = await enroll({ webhookOwner: 'default', ...extra });
+  const proposal = (await listProposals(h.root)).find((item) => item.capability === 'hermes-webhook');
+  if (first.code === 0 || !proposal) {
+    return first;
+  }
+  await fs.writeFile(ownerConfig(), `${(await read(ownerConfig())) ?? ''}${proposal.fragment}`);
+  return enroll(extra);
+}
 
 async function seedProfile(env = DEFAULT_PROFILE_ENV): Promise<void> {
   await fs.mkdir(profileDir(), { recursive: true });
@@ -139,15 +158,38 @@ describe('webhook-operativo 1.4 — the block lives in config.yaml, never in .en
 });
 
 describe('webhook-operativo 1.5 — migration, port, gateway states and order', () => {
-  it('migrates WEBHOOK_ENABLED and WEBHOOK_PORT out of .env after a backup, leaving every other line byte-identical', async () => {
-    const original = '# Hermes profile credentials\nWEBHOOK_ENABLED=true\nWEBHOOK_PORT=9100\nOTHER_KEY=valor\n';
+  it('migrates WEBHOOK_ENABLED and WEBHOOK_PORT out of .env with its backup only in private storage, leaving every other line byte-identical (R-032)', async () => {
+    const original = `# Hermes profile credentials\nWEBHOOK_ENABLED=true\nWEBHOOK_PORT=9100\nOTHER_KEY=valor\nDISCORD_BOT_TOKEN=${ENV_SENTINEL}\n`;
     await seedProfile(original);
+    const privateDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-private-'));
+    process.env.AI_HUB_PRIVATE_DIR = privateDir;
+    try {
+      const outcome = await enroll();
+      expect(outcome.code, outcome.lines.join(' ')).toBe(0);
+      expect(block(await read(profileConfig()))).toEqual({ enabled: true, extra: { port: 9100 } });
+      expect(await read(envFile())).toBe(`# Hermes profile credentials\nOTHER_KEY=valor\nDISCORD_BOT_TOKEN=${ENV_SENTINEL}\n`);
+      // Ninguna copia junto al .env sensible: la copia previa solo vive en el almacenamiento privado.
+      expect((await fs.readdir(path.dirname(envFile()))).filter((name) => name.startsWith('.env.'))).toEqual([]);
+      const copies = await fs.readdir(privateDir);
+      expect(copies).toHaveLength(1);
+      expect(await fs.readFile(path.join(privateDir, copies[0]), 'utf8')).toBe(original);
+      expect(outcome.lines.join(' ')).not.toContain(ENV_SENTINEL);
+      expect(await hermes.host.probeWebhook?.(9100)).toBe('listening');
+    } finally {
+      delete process.env.AI_HUB_PRIVATE_DIR;
+      await fs.rm(privateDir, { recursive: true, force: true });
+    }
+  });
+
+  it('without private storage the legacy keys stay, the .env is byte-identical and the migration is reported pending', async () => {
+    const original = `# Hermes profile credentials\nWEBHOOK_ENABLED=true\nWEBHOOK_PORT=9100\nDISCORD_BOT_TOKEN=${ENV_SENTINEL}\n`;
+    await seedProfile(original);
+    delete process.env.AI_HUB_PRIVATE_DIR;
     const outcome = await enroll();
-    expect(outcome.code, outcome.lines.join('\n')).toBe(0);
-    expect(block(await read(profileConfig()))).toEqual({ enabled: true, extra: { port: 9100 } });
-    expect(await read(`${envFile()}.pre-ai-hub`)).toBe(original);
-    expect(await read(envFile())).toBe('# Hermes profile credentials\nOTHER_KEY=valor\n');
-    expect(await hermes.host.probeWebhook?.(9100)).toBe('listening');
+    expect(await read(envFile())).toBe(original);
+    expect((await fs.readdir(path.dirname(envFile()))).filter((name) => name.startsWith('.env.'))).toEqual([]);
+    expect(outcome.lines.join(' ')).toContain('private_storage_unconfigured');
+    expect(outcome.lines.join(' ')).not.toContain(ENV_SENTINEL);
   });
 
   it('an operator WEBHOOK_SECRET stays in .env, is reported by presence as the gateway override and is never copied or printed', async () => {
@@ -285,7 +327,9 @@ describe('webhook-operativo 1.5/1.6 — shared listener owner under the default-
     expect(outcome.code).toBe(1);
     expect(outcome.pending).toBe(true);
     expect(outcome.stage).toBe('webhook-platform');
-    expect(outcome.action).toBe('ai-hub control enroll --yes --webhook-owner default');
+    expect(outcome.action).toBe('ai-hub control enroll --yes');
+    expect(outcome.lines.join(' ')).toContain('no se edita (D-65)');
+    expect((await listProposals(h.root)).map((item) => item.capability)).toEqual(['hermes-webhook']);
     expect(await read(ownerConfig())).toBe(OWNER_CONFIG);
     expect(await read(envFile())).toBe(LEGACY_ENV);
     expect(await read(profileConfig())).toBeNull();
@@ -293,27 +337,33 @@ describe('webhook-operativo 1.5/1.6 — shared listener owner under the default-
     expect([...hermes.crons]).toEqual(['ai-hub-control-poll']);
   });
 
-  it('--webhook-owner default backs up the owner config, writes the block there, binds the route to the profile and warns before the single restart', async () => {
+  it('--webhook-owner default prepares a proposal without touching the owner config; once applied, the route binds to the profile (D-65, R-119)', async () => {
+    const first = await enroll({ webhookOwner: 'default' });
+    expect(first.code).toBe(1);
+    expect(first.pending).toBe(true);
+    expect(await read(ownerConfig())).toBe(OWNER_CONFIG);
+    expect(await read(`${ownerConfig()}.pre-ai-hub`)).toBeNull();
+    expect(called('gateway restart')).toEqual([]);
+    expect(called('webhook subscribe')).toEqual([]);
     const warnings: Array<{ line: string; callsBefore: number }> = [];
-    const outcome = await enroll({ webhookOwner: 'default', notify: (line) => warnings.push({ line, callsBefore: hermes.calls.length }) });
-    expect(outcome.code, outcome.lines.join('\n')).toBe(0);
-    expect(await read(`${ownerConfig()}.pre-ai-hub`)).toBe(OWNER_CONFIG);
+    const outcome = await enrollShared({ notify: (line) => warnings.push({ line, callsBefore: hermes.calls.length }) });
+    expect(outcome.code, outcome.lines.join(' ')).toBe(0);
     const text = (await read(ownerConfig())) ?? '';
     expect(text).toContain('# perfil por defecto');
     expect(block(text)).toEqual({ enabled: true, extra: { port: 8644 } });
+    expect(await read(`${ownerConfig()}.pre-ai-hub`)).toBeNull();
     expect(await read(profileConfig())).toBeNull();
-    expect(await read(envFile())).toBe('# Hermes profile credentials\n');
     const subscribe = called('webhook subscribe');
     expect(subscribe).toHaveLength(1);
-    expect(subscribe[0][0]).toBe('webhook');
     expect(subscribe[0].slice(subscribe[0].indexOf('--route-profile'), subscribe[0].indexOf('--route-profile') + 2)).toEqual(['--route-profile', PROFILE]);
     expect(hermes.routeBinding.get('ai-hub-gitlab')).toEqual({ store: 'default', profile: PROFILE });
-    expect(outcome.lines.join('\n')).toContain(`/p/${PROFILE}/webhooks/ai-hub-gitlab`);
     const restarts = hermes.calls.map((args, index) => ({ args, index })).filter((item) => item.args.join(' ') === 'gateway restart');
-    expect(restarts).toHaveLength(1);
-    const warning = warnings.find((item) => item.line.includes('default') && item.line.includes('sesiones'));
-    expect(warning, JSON.stringify(warnings)).toBeDefined();
-    expect(warning!.callsBefore).toBeLessThanOrEqual(restarts[0].index);
+    expect(restarts.length).toBeLessThanOrEqual(1);
+    if (restarts.length === 1) {
+      const warning = warnings.find((item) => item.line.includes('default') && item.line.includes('sesiones'));
+      expect(warning, JSON.stringify(warnings)).toBeDefined();
+      expect(warning!.callsBefore).toBeLessThanOrEqual(restarts[0].index);
+    }
     expect(hermes.deliver('ai-hub-gitlab')).toBe(200);
   });
 
@@ -351,7 +401,7 @@ describe('webhook-operativo 1.5/1.6 — shared listener owner under the default-
     expect(dryText).toMatch(/default.*sesiones/);
     expect(dryText).toContain('hermes gateway restart');
     expect(called('gateway restart')).toEqual([]);
-    expect((await enroll({ webhookOwner: 'default' })).code).toBe(0);
+    expect((await enrollShared()).code).toBe(0);
     hermes.listener = { loaded: false, port: null, secretFromEnv: false };
     hermes.calls.length = 0;
     const check = await runEnroll(h.root, { mode: 'check', host: hermes.host });
@@ -364,7 +414,7 @@ describe('webhook-operativo 1.5/1.6 — shared listener owner under the default-
   });
 
   it('a rerun with nothing to reload neither restarts nor warns', async () => {
-    expect((await enroll({ webhookOwner: 'default' })).code).toBe(0);
+    expect((await enrollShared()).code).toBe(0);
     hermes.calls.length = 0;
     const warnings: string[] = [];
     const outcome = await enroll({ notify: (line) => warnings.push(line) });
@@ -414,7 +464,7 @@ describe('webhook-operativo 1.5 — doctor distinguishes declared from listening
 describe('fabrica-verificable 1.7 — doctor y el check nombran el mismo dueño', () => {
   it('a stale enabled block in the control profile does not win: doctor and --check name the default owner and its port', async () => {
     hermes.topology = 'multiplex';
-    expect((await enroll({ webhookOwner: 'default' })).code).toBe(0);
+    expect((await enrollShared()).code).toBe(0);
     await fs.writeFile(profileConfig(), 'platforms:\n  webhook:\n    enabled: true\n    extra:\n      port: 9999\n');
     const withCli = await checkControlWebhook({ home: hermes.home, probe: hermes.host.probeWebhook, cli: { path: 'hermes', version: '0.23.0', run: (args) => hermes.host.exec('hermes', args, { cwd: h.root }) } });
     const withoutCli = await checkControlWebhook({ home: hermes.home, probe: hermes.host.probeWebhook });

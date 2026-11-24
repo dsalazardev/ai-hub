@@ -5,11 +5,16 @@ import { runIngest } from './ingest.js';
 import { applyPreapproved, applyReply, expireDecisions, type ApplyOutcome } from './apply.js';
 import { renderDiscord, renderJson } from './render.js';
 import { cmdTick, TICK_USAGE } from './tick.js';
-import { TrackerError, type TrackerFetch } from './tracker.js';
+import { defaultTrackerFetch, trackerFromHarness, TrackerError, type TrackerFetch } from './tracker.js';
+import { openChangeRequest } from '../delivery/change-request.js';
 import { runEnroll, type EnrollMode } from './enroll.js';
-import { canExecute, HermesNotFoundError, HermesVersionError, type ResolverHost } from './hermes.js';
+import { canExecute, hermesHome, HermesNotFoundError, HermesVersionError, resolveHermes, type ResolverHost } from './hermes.js';
+import { resetHealth } from './health.js';
+import { runPoll, type PollHost } from './poll.js';
+import { PROFILE } from './enroll.js';
 import fs from 'node:fs/promises';
 import os from 'node:os';
+import path from 'node:path';
 
 /**
  * `ai-hub control <sub>`: lado del arnés de hermes-control. `tick` solo propone (0.11.0); el resto
@@ -22,6 +27,8 @@ export const CONTROL_USAGE = [
   '     ai-hub control apply (--reply "<texto>" | -- aprobar|rechazar|detalle <iid> …) --approver <id-discord> [--ref <rama>]',
   '     ai-hub control apply --preapproved',
   '     ai-hub control expire',
+  '     ai-hub control poll [--probe | --reset-health]',
+  '     ai-hub control deliver <iid> --target <rama> --summary "<texto>" --evidence "<texto>" --url <issue>',
   '     ai-hub control enroll [--dry-run | --yes | --check [--wait[=segundos]]] [--hermes <ruta>] [--webhook-owner <perfil>]',
 ];
 
@@ -32,6 +39,8 @@ export interface ControlDeps {
   stdin?: () => Promise<string>;
   /** Host para resolver y ejecutar el CLI de Hermes (enroll). */
   hermesHost?: ResolverHost;
+  /** Host de Hermes para el poll (cron y estado del gateway); `null` = sin Hermes. */
+  pollHost?: PollHost | null;
 }
 
 async function readStdin(): Promise<string> {
@@ -87,7 +96,7 @@ async function cmdDecide(args: ParsedArgs, ctx: CliContext): Promise<number> {
     return 2;
   }
   try {
-    const { fresh, settings } = await runDecide(ctx.root, {
+    const { fresh, settings, barrier, stopped } = await runDecide(ctx.root, {
       online: Boolean(args.flags.online),
       ...(labelsFrom !== null ? { labelsFrom } : {}),
       ...(issue !== undefined ? { issue } : {}),
@@ -101,6 +110,13 @@ async function cmdDecide(args: ParsedArgs, ctx: CliContext): Promise<number> {
       ctx.io.out(JSON.stringify(fresh.map(renderJson), null, 2));
     } else if (fresh.length > 0) {
       ctx.io.out(renderDiscord(fresh[0], settings.expire));
+    }
+    for (const line of stopped) {
+      ctx.io.err(`[ai-hub] ${line}`);
+    }
+    if (barrier !== null) {
+      ctx.io.err(`[ai-hub] registro de decisiones detenido: ${barrier}`);
+      return 1;
     }
     return 0;
   } catch (error) {
@@ -242,6 +258,89 @@ async function cmdEnroll(args: ParsedArgs, ctx: CliContext): Promise<number> {
   }
 }
 
+/** Host real del poll: `hermes -p hermes-control cron …` y `gateway_state.json`; sin Hermes, `null`. */
+async function processPollHost(ctx: CliContext): Promise<PollHost | null> {
+  const host = deps.hermesHost ?? processHost(ctx);
+  let cli;
+  try {
+    cli = await resolveHermes(host);
+  } catch {
+    return null;
+  }
+  const home = hermesHome(host);
+  const cron = (args: string[]) => cli.run(['-p', PROFILE, 'cron', ...args]);
+  return {
+    cronJobs: async () => {
+      const result = await cron(['list']);
+      return result.status === 0 ? (result.stdout.match(/[a-z0-9][a-z0-9-]*/gi) ?? []).map((word) => word.toLowerCase()) : null;
+    },
+    pause: async (job) => (await cron(['pause', job])).status === 0,
+    resume: async (job) => (await cron(['resume', job])).status === 0,
+    // Evidencia documentada (1.7): `gateway_state.json` del home (multiplexor) o del perfil.
+    gatewayStarting: async () => {
+      for (const file of [path.join(home, 'gateway_state.json'), path.join(home, 'profiles', PROFILE, 'gateway_state.json')]) {
+        const text = await fs.readFile(file, 'utf8').catch(() => null);
+        if (text !== null) {
+          try {
+            return (JSON.parse(text) as { gateway_state?: unknown }).gateway_state === 'starting';
+          } catch {
+            return false;
+          }
+        }
+      }
+      return false;
+    },
+  };
+}
+
+/** `poll`: todo va a stdout, que el cron entrega a Discord; el código distingue el fallo. */
+async function cmdPoll(args: ParsedArgs, ctx: CliContext): Promise<number> {
+  const now = deps.now ? deps.now() : new Date();
+  try {
+    if (args.flags['reset-health']) {
+      const aside = await resetHealth(ctx.root, now);
+      ctx.io.out(aside === null ? 'la salud del poll es legible; no hay nada que recuperar' : `salud del poll recuperada; el estado ilegible queda apartado en ${aside}`);
+      return 0;
+    }
+    const outcome = await runPoll(ctx.root, {
+      now,
+      probe: Boolean(args.flags.probe),
+      host: deps.pollHost !== undefined ? deps.pollHost : await processPollHost(ctx),
+      ...(deps.trackerFetch ? { trackerFetch: deps.trackerFetch } : {}),
+    });
+    for (const line of outcome.lines) {
+      ctx.io.out(line);
+    }
+    return outcome.code;
+  } catch (error) {
+    return reportError(error, ctx);
+  }
+}
+
+/** `deliver`: el componente de entrega abre (o reencuentra) el MR en draft de la issue; nunca aprueba ni fusiona. */
+async function cmdDeliver(args: ParsedArgs, ctx: CliContext): Promise<number> {
+  const iid = Number.parseInt(args.positionals[1] ?? '', 10);
+  const target = flagString(args, 'target');
+  const summary = flagString(args, 'summary');
+  const evidence = flagString(args, 'evidence');
+  const url = flagString(args, 'url');
+  if (!Number.isInteger(iid) || target === null || summary === null || evidence === null || url === null) {
+    ctx.io.err(CONTROL_USAGE.find((line) => line.includes('control deliver'))?.trim() ?? 'uso: ai-hub control deliver');
+    return 2;
+  }
+  try {
+    const { loadManifestContext } = await import('../manifest/manifest.js');
+    const manifest = (await loadManifestContext(ctx.root)).manifest;
+    const tracker = await trackerFromHarness(ctx.root, manifest, deps.trackerFetch ?? defaultTrackerFetch);
+    const issue = await tracker.issue(iid);
+    const result = await openChangeRequest(ctx.root, tracker, { iid, title: issue.title, target, summary, testEvidence: evidence, issueUrl: url });
+    ctx.io.out(`#${iid}: ${tracker.changeRequestName.short} ${tracker.changeRequestName.ref}${result.iid} ${result.created ? 'abierto en draft' : 'ya existía'}; ${result.reason}`);
+    return 0;
+  } catch (error) {
+    return reportError(error, ctx);
+  }
+}
+
 const SUBCOMMANDS: Record<string, (args: ParsedArgs, ctx: CliContext) => Promise<number>> = {
   tick: cmdTick,
   decide: cmdDecide,
@@ -249,6 +348,8 @@ const SUBCOMMANDS: Record<string, (args: ParsedArgs, ctx: CliContext) => Promise
   apply: cmdApply,
   expire: cmdExpire,
   enroll: cmdEnroll,
+  poll: cmdPoll,
+  deliver: cmdDeliver,
 };
 
 export async function cmdControl(args: ParsedArgs, ctx: CliContext): Promise<number> {

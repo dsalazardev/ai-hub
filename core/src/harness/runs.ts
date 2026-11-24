@@ -21,12 +21,18 @@ const SCHEMA_PATH = path.join(__dirname, '..', '..', 'schema', 'runs.schema.json
 
 export const RUN_KINDS = ['start', 'step', 'status', 'note', 'metric', 'end'] as const;
 export type RunKind = (typeof RUN_KINDS)[number];
-export const NOTE_TYPES = ['decision', 'warn', 'awaiting-ok', 'lesson'] as const;
+export const NOTE_TYPES = ['decision', 'warn', 'awaiting-ok', 'lesson', 'guard', 'health'] as const;
 export type NoteType = (typeof NOTE_TYPES)[number];
 export const DEFAULT_RUNS_KEEP = 50;
+/** Versión que este binario escribe; lee esta y las anteriores (R-043, R-045). */
+export const RUN_SCHEMA_VERSION = 2;
+export const FAILURE_CLASSES = ['network', 'timeout', 'http_4xx', 'http_5xx', 'auth', 'rate_limit', 'incomplete', 'parse', 'unknown'] as const;
+export type FailureClass = (typeof FAILURE_CLASSES)[number];
+export const RUN_ORIGINS = ['cli', 'hook', 'control', 'poll', 'runner', 'advisor'] as const;
+export type RunOrigin = (typeof RUN_ORIGINS)[number];
 
 export interface RunEvent {
-  v: 1;
+  v: number;
   ts: string;
   run: string;
   kind: RunKind;
@@ -39,6 +45,27 @@ export interface RunEvent {
   note_type?: NoteType;
   note?: string;
   metric?: { key: string; value: number };
+  failure_class?: FailureClass;
+  http_status?: number;
+  harness?: string;
+  harness_version?: string;
+  origin?: RunOrigin;
+  links?: { issue?: number; change_request?: number; commit?: string };
+}
+
+/** Evento de entrada: el escritor siempre estampa la versión que conoce. */
+export type RunEventInput = Omit<RunEvent, 'v'> & { v?: number };
+
+/** Un run escrito por una versión más nueva: no se amplía ni se poda (R-045). */
+export class RunVersionError extends Error {
+  readonly reasonCode = 'state_version_newer';
+  constructor(
+    readonly run: string,
+    readonly version: number,
+  ) {
+    super(`el run ${run} lo escribió una versión más nueva del arnés (v${version}); no se le añaden eventos`);
+    this.name = 'RunVersionError';
+  }
 }
 
 export class RunValidationError extends Error {
@@ -98,7 +125,8 @@ function eventsFile(root: string, run: string): string {
 }
 
 /** Valida un evento contra el esquema cerrado y las reglas de contenido; no escribe nada. */
-export async function validateRunEvent(root: string, event: RunEvent): Promise<RunEvent> {
+export async function validateRunEvent(root: string, input: RunEventInput | RunEvent): Promise<RunEvent> {
+  const event: RunEvent = { ...input, v: RUN_SCHEMA_VERSION } as RunEvent;
   const check = await validate();
   if (!check(event)) {
     const detail = (check.errors ?? [])
@@ -122,8 +150,12 @@ export async function validateRunEvent(root: string, event: RunEvent): Promise<R
   return event;
 }
 
-export async function appendRunEvent(root: string, event: RunEvent): Promise<void> {
+export async function appendRunEvent(root: string, event: RunEventInput | RunEvent): Promise<void> {
   const valid = await validateRunEvent(root, event);
+  const version = await runVersion(root, valid.run);
+  if (version !== null && version > RUN_SCHEMA_VERSION) {
+    throw new RunVersionError(valid.run, version);
+  }
   const file = eventsFile(root, valid.run);
   await fs.mkdir(path.dirname(file), { recursive: true });
   await fs.appendFile(file, `${JSON.stringify(valid)}\n`, 'utf8');
@@ -145,14 +177,26 @@ export async function readRunEvents(root: string, run: string): Promise<RunEvent
   return events;
 }
 
-/** Ejecuciones existentes, de la más antigua a la más reciente (el id empieza por la fecha). */
+/** Directorios de ejecución (excluye `scope/` y `control/`), por nombre. */
 export async function listRuns(root: string): Promise<string[]> {
   const entries = await fs.readdir(runsDir(root), { withFileTypes: true }).catch(() => []);
   return entries
-    // `scope/` (guardia de alcance) y `control/` (registro de decisiones) no son runs ni caducan.
+    // `scope/` (guardia de alcance) y `control/` (estado duradero) no son runs ni caducan.
     .filter((entry) => entry.isDirectory() && entry.name !== 'scope' && entry.name !== 'control')
     .map((entry) => entry.name)
     .sort();
+}
+
+/** Versión de un run: la `v` más alta de sus líneas legibles; `null` si no tiene ninguna. */
+export async function runVersion(root: string, run: string): Promise<number | null> {
+  let max: number | null = null;
+  for (const event of await readRunEvents(root, run)) {
+    const v = typeof event.v === 'number' ? event.v : null;
+    if (v !== null && (max === null || v > max)) {
+      max = v;
+    }
+  }
+  return max;
 }
 
 async function retention(root: string): Promise<number> {
@@ -165,12 +209,44 @@ async function retention(root: string): Promise<number> {
   }
 }
 
-/** Poda: deja hueco para una ejecución nueva sin superar `policy.runs.keep`. */
+export interface RetentionPlan {
+  /** Podables, de la más antigua a la más reciente (por la fecha de su primer evento). */
+  prunable: string[];
+  /** Escritos por una versión más nueva: se conservan y se informan. */
+  newer: string[];
+  /** Sin primer evento legible: se conservan y se informan. */
+  unreadable: string[];
+}
+
+export async function retentionPlan(root: string): Promise<RetentionPlan> {
+  const plan: RetentionPlan = { prunable: [], newer: [], unreadable: [] };
+  const dated: { run: string; ts: string }[] = [];
+  for (const run of await listRuns(root)) {
+    const events = await readRunEvents(root, run);
+    const version = events.reduce<number | null>((max, event) => (typeof event.v === 'number' && (max === null || event.v > max) ? event.v : max), null);
+    const first = events.find((event) => typeof event.ts === 'string' && !Number.isNaN(Date.parse(event.ts)));
+    if (version !== null && version > RUN_SCHEMA_VERSION) {
+      plan.newer.push(run);
+    } else if (!first) {
+      plan.unreadable.push(run);
+    } else {
+      dated.push({ run, ts: first.ts });
+    }
+  }
+  plan.prunable = dated.sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts) || a.run.localeCompare(b.run)).map((item) => item.run);
+  return plan;
+}
+
+/**
+ * Poda (R-110): deja hueco para una ejecución nueva sin superar `policy.runs.keep` entre los runs
+ * podables, ordenados por su primer evento. Los de versión más nueva o sin primer evento legible se
+ * conservan, se informan y no consumen la cuota.
+ */
 export async function pruneRuns(root: string, keep?: number): Promise<string[]> {
   const limit = keep ?? (await retention(root));
-  const runs = await listRuns(root);
-  const excess = runs.length - (limit - 1);
-  const removed = excess > 0 ? runs.slice(0, excess) : [];
+  const { prunable } = await retentionPlan(root);
+  const excess = prunable.length - (limit - 1);
+  const removed = excess > 0 ? prunable.slice(0, excess) : [];
   for (const run of removed) {
     await fs.rm(path.join(runsDir(root), run), { recursive: true, force: true });
   }
@@ -185,7 +261,7 @@ export function newRunId(now: Date = new Date()): string {
 export async function startRun(root: string, step?: string, now: Date = new Date()): Promise<string> {
   await pruneRuns(root);
   const run = newRunId(now);
-  await appendRunEvent(root, { v: 1, ts: now.toISOString(), run, kind: 'start', ...(step ? { step } : {}) });
+  await appendRunEvent(root, { ts: now.toISOString(), run, kind: 'start', ...(step ? { step } : {}) });
   return run;
 }
 
@@ -240,14 +316,15 @@ export async function cmdRuns(args: ParsedArgs, ctx: CliContext): Promise<number
       for (const run of runs) {
         const events = await readRunEvents(ctx.root, run);
         const last = [...events].reverse().find((event) => event.state !== undefined);
-        rows.push({ run, events: events.length, state: last?.state ?? null, ended: events.some((event) => event.kind === 'end') });
+        const version = events.reduce<number | null>((max, event) => (typeof event.v === 'number' && (max === null || event.v > max) ? event.v : max), null);
+        rows.push({ run, version, newer: version !== null && version > RUN_SCHEMA_VERSION, events: events.length, state: last?.state ?? null, ended: events.some((event) => event.kind === 'end') });
       }
       if (args.flags.json) {
         ctx.io.out(JSON.stringify(rows, null, 2));
       } else {
         ctx.io.out(`ejecuciones: ${rows.length}`);
         for (const row of rows) {
-          ctx.io.out(`  ${row.run}  ${row.state ?? '-'}  ${row.events} eventos${row.ended ? ' · cerrada' : ''}`);
+          ctx.io.out(`  ${row.run}  ${row.state ?? '-'}  ${row.events} eventos${row.ended ? ' · cerrada' : ''}${row.newer ? ` · escrita por una versión más nueva (v${row.version}); se conserva` : ''}`);
         }
       }
       return 0;
@@ -268,7 +345,7 @@ export async function cmdRuns(args: ParsedArgs, ctx: CliContext): Promise<number
         throw new RunValidationError(`--type debe ser ${NOTE_TYPES.join('|')}`);
       }
       event = {
-        v: 1,
+        v: RUN_SCHEMA_VERSION,
         ts,
         run,
         kind: 'note',
@@ -278,7 +355,7 @@ export async function cmdRuns(args: ParsedArgs, ctx: CliContext): Promise<number
       };
     } else if (sub === 'end') {
       event = {
-        v: 1,
+        v: RUN_SCHEMA_VERSION,
         ts,
         run,
         kind: 'end',
@@ -299,11 +376,14 @@ export async function cmdRuns(args: ParsedArgs, ctx: CliContext): Promise<number
       const state = flagString(args, 'state');
       if (fromStatus !== null && parsed === null) {
         // La línea no cumple el contrato: se registra el motivo, nunca el texto recibido.
-        event = { v: 1, ts, run, kind: 'status', reason_code: 'invalid_status' };
+        event = { v: RUN_SCHEMA_VERSION, ts, run, kind: 'status', reason_code: 'invalid_status' };
+      } else if (parsed !== null && parsed.runId !== undefined && parsed.runId !== null && parsed.runId !== run) {
+        // R-107: el cierre nombra otro run; no se le atribuye estado ni artefacto a éste.
+        event = { v: RUN_SCHEMA_VERSION, ts, run, kind: 'status', reason_code: 'run_mismatch' };
       } else if (parsed !== null) {
         // Del contrato se guardan estado, artefacto y código; la frase libre nunca se persiste.
         event = {
-          v: 1,
+          v: RUN_SCHEMA_VERSION,
           ts,
           run,
           kind: 'status',
@@ -327,7 +407,7 @@ export async function cmdRuns(args: ParsedArgs, ctx: CliContext): Promise<number
           metric = { key: match[1], value: Number(match[2]) };
         }
         event = {
-          v: 1,
+          v: RUN_SCHEMA_VERSION,
           ts,
           run,
           kind: kind as RunKind,
@@ -345,6 +425,10 @@ export async function cmdRuns(args: ParsedArgs, ctx: CliContext): Promise<number
     ctx.io.out(`[OK]    runs: ${event.kind} registrado en ${run}`);
     return 0;
   } catch (error) {
+    if (error instanceof RunVersionError) {
+      ctx.io.err(`${error.message} (${error.reasonCode}); no se escribió nada`);
+      return 2;
+    }
     if (error instanceof RunValidationError) {
       ctx.io.err(`${error.message}; no se escribió nada`);
       return 2;

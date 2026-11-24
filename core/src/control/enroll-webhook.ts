@@ -1,10 +1,12 @@
 import path from 'node:path';
+import { prepareProposal } from '../writes/proposals.js';
+import { transactWrite } from '../writes/transaction.js';
+import { externalTarget } from '../writes/targets.js';
 import type { HermesCli } from './hermes.js';
 import {
   DEFAULT_WEBHOOK_PORT,
   WebhookConfigError,
-  numberedBackup,
-  removeEnvKeys,
+  withoutEnvKeys,
   waitForWebhook,
   writeWebhookBlock,
   type ProbeResult,
@@ -82,6 +84,8 @@ export interface WebhookPhaseInput {
   notify?: (line: string) => void;
   listed: (output: string, name: string) => boolean;
   enrollAction: string;
+  /** Raíz del proyecto: donde se guardan las propuestas de configuración ajena (D-65). */
+  root?: string;
 }
 
 const TRUTHY = /^(1|true|yes|on)$/i;
@@ -207,36 +211,44 @@ export async function webhookPhase(input: WebhookPhaseInput): Promise<WebhookPha
     return occupied();
   }
   let changed = false;
-  if (block.kind === 'absent') {
-    const consented =
-      !topology.shared || input.webhookOwner === topology.owner || (yes && (await input.confirmOwner?.(topology.owner)) === true);
-    if (!consented) {
-      const action = `${input.enrollAction} --webhook-owner ${topology.owner}`;
-      if (yes) {
-        return {
-          restarted: false,
-          port,
-          topology,
-          failure: {
-            stage: 'webhook-platform',
-            headline: `plataforma webhook: el listener pertenece al perfil "${topology.owner}"; habilitarla en su config.yaml la activa para todos los perfiles que sirve su gateway y exige un consentimiento que lo nombre`,
-            cause: [`falta el consentimiento del dueño del listener (${topology.owner})`],
-            action,
-            pending: true,
-          },
-        };
-      }
-      lines.push(`[consentir] plataforma webhook: el listener pertenece al perfil "${topology.owner}"; escribir su config.yaml exige ${action}`);
+  if (block.kind === 'absent' && topology.shared) {
+    // D-65 (R-119, R-120): el config.yaml de un perfil que el motor no creó es configuración ajena. Ni el
+    // consentimiento nombrado ni --yes autorizan escribirlo (una confirmación humana no es una garantía
+    // técnica): se prepara una propuesta, sin copia junto al archivo, sin reinicio, y la inscripción queda
+    // pendiente hasta que la persona la aplique y repita enroll.
+    const fragment = `platforms:\n  webhook:\n    enabled: true\n    extra:\n      port: ${port}\n`;
+    let where = '';
+    if (yes && input.root) {
+      const prepared = await prepareProposal(input.root, {
+        capability: 'hermes-webhook',
+        file: owner.config,
+        display: owner.config,
+        fragment,
+        instructions: `añade el bloque platforms.webhook al config.yaml del perfil "${topology.owner}" (lo comparte su gateway)`,
+        check: `${input.enrollAction} (preflight de la plataforma webhook)`,
+      });
+      where = ` · propuesta ${prepared.file}`;
     }
+    const headline = `plataforma webhook: el listener pertenece al perfil "${topology.owner}"; su config.yaml no se edita (D-65)${where}; aplícala y repite ${input.enrollAction}`;
+    if (yes) {
+      return {
+        restarted: false,
+        port,
+        topology,
+        failure: {
+          stage: 'webhook-platform',
+          headline,
+          cause: [`pending_application: platforms.webhook en el config.yaml de "${topology.owner}"`],
+          action: input.enrollAction,
+          pending: true,
+        },
+      };
+    }
+    lines.push(`[proponer] plataforma webhook: bloque platforms.webhook (enabled, extra.port=${port}) para ${owner.config}; no se escribirá (D-65)`);
+  } else if (block.kind === 'absent') {
     lines.push(`${yes ? '[creado]  ' : '[crear]   '} plataforma webhook: bloque platforms.webhook (enabled, extra.port=${port}) en ${owner.config}`);
     if (yes) {
       try {
-        if (topology.shared) {
-          const copy = await numberedBackup(owner.config);
-          if (copy !== null) {
-            lines.push(`  copia previa del config.yaml del perfil "${topology.owner}": ${copy}`);
-          }
-        }
         await writeWebhookBlock(owner.config, port);
       } catch (error) {
         const problem = error instanceof WebhookConfigError ? error.problem : (error as Error).message.split('\n')[0];
@@ -258,12 +270,25 @@ export async function webhookPhase(input: WebhookPhaseInput): Promise<WebhookPha
     lines.push(`[presente] plataforma webhook: platforms.webhook habilitado en ${owner.config} (puerto ${port})`);
   }
   if (legacyKeys.length > 0) {
-    lines.push(
-      `${yes ? '[migrado] ' : '[migrar]  '} .env del perfil: ${legacyKeys.join(' y ')} dejan de usarse (la fuente es ${owner.config}); copia previa en ${path.basename(input.profileEnvFile)}.pre-ai-hub`,
-    );
-    if (yes) {
-      await numberedBackup(input.profileEnvFile);
-      await removeEnvKeys(input.profileEnvFile, legacyKeys);
+    if (!yes) {
+      lines.push(`[migrar]   .env del perfil: ${legacyKeys.join(' y ')} dejan de usarse (la fuente es ${owner.config}); la copia previa irá solo al almacenamiento privado`);
+    } else {
+      // R-032 y D-65: el .env es sensible; su copia previa va solo al almacenamiento privado validado y la
+      // escritura es la transacción X2. Sin almacenamiento privado no se migra: las claves heredadas no
+      // habilitan nada por sí solas y el archivo queda byte a byte.
+      const migrated = await transactWrite({
+        root: input.root ?? path.dirname(input.profileEnvFile),
+        file: input.profileEnvFile,
+        module: 'control/profile-env.ts',
+        target: externalTarget('hermes-profile-env'),
+        capture: false,
+        transform: (current) => (current === null ? '' : withoutEnvKeys(current, legacyKeys)),
+      });
+      if (migrated.status === 'stopped') {
+        lines.push(`[pendiente] .env del perfil: ${legacyKeys.join(' y ')} no se migran (${migrated.reason}): ${migrated.detail}; el archivo no se tocó`);
+      } else {
+        lines.push(`[migrado]  .env del perfil: ${legacyKeys.join(' y ')} dejan de usarse (la fuente es ${owner.config}); copia previa solo en el almacenamiento privado`);
+      }
     }
   }
   if ((await input.ownerEnv(owner.env)).WEBHOOK_SECRET) {

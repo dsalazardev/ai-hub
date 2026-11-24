@@ -1,6 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { TARGETS, type ToolId } from './targets.js';
+import { closeProposals, createExclusive, describePending, prepareProposal } from '../writes/proposals.js';
+import { inspectForeignJson } from '../writes/foreign-json.js';
 
 /**
  * Hooks ejecutables de Claude Code (G-01): entradas gestionadas mezcladas por clave en
@@ -10,8 +12,11 @@ import { TARGETS, type ToolId } from './targets.js';
  */
 export const HOOK_COMMAND = 'npx --no-install ai-hub hook';
 
+export const PRE_TOOL_MATCHER = 'Bash|Read|Edit|MultiEdit|NotebookEdit|Grep|Glob|LS';
+
 const MANAGED: Array<{ event: string; matcher?: string; hook: 'pre' | 'post' | 'stop' }> = [
-  { event: 'PreToolUse', matcher: 'Bash', hook: 'pre' },
+  // R-051 (4.32): la política de lectura recibe lecturas, ediciones y búsquedas, no solo la shell.
+  { event: 'PreToolUse', matcher: PRE_TOOL_MATCHER, hook: 'pre' },
   { event: 'PostToolUse', matcher: 'Edit|Write|MultiEdit', hook: 'post' },
   { event: 'Stop', hook: 'stop' },
 ];
@@ -71,6 +76,8 @@ export function missingClaudeHooks(settings: Json): string[] {
 export interface HookProjection {
   written: string[];
   problems: string[];
+  /** Capacidades pendientes de aplicación por la persona (D-65). */
+  pending: string[];
 }
 
 async function readJson(file: string): Promise<{ data: Json | null; raw: string | null; invalid: boolean }> {
@@ -91,7 +98,7 @@ async function readJson(file: string): Promise<{ data: Json | null; raw: string 
  * `plugin` viajan por el render normal y el lock.
  */
 export async function projectSettingsHooks(root: string, tools: ToolId[], check: boolean): Promise<HookProjection> {
-  const result: HookProjection = { written: [], problems: [] };
+  const result: HookProjection = { written: [], problems: [], pending: [] };
   for (const tool of tools) {
     const spec = TARGETS[tool];
     if (spec.hookFormat !== 'settings-json' || spec.hookPath === null) {
@@ -110,12 +117,45 @@ export async function projectSettingsHooks(root: string, tools: ToolId[], check:
       }
       continue;
     }
-    const next = `${JSON.stringify(mergeClaudeHooks(base), null, 2)}\n`;
-    if (next !== current.raw) {
-      await fs.mkdir(path.dirname(file), { recursive: true });
-      await fs.writeFile(file, next, 'utf8');
-      result.written.push(spec.hookPath);
+    if (current.raw === null) {
+      // Archivo nuevo del motor (D-65): creación exclusiva; si otro lo crea antes, propuesta.
+      if (await createExclusive(file, `${JSON.stringify(mergeClaudeHooks(base), null, 2)}\n`)) {
+        result.written.push(spec.hookPath);
+        await closeProposals(root, 'claude-hooks', spec.hookPath);
+        continue;
+      }
     }
+    const fresh = current.raw === null ? await readJson(file) : current;
+    if (fresh.invalid) {
+      result.problems.push(`${spec.hookPath} no es JSON válido; no se tocó (corrígelo y ejecuta ai-hub sync)`);
+      continue;
+    }
+    // R-033: claves duplicadas o comentarios hacen ambigua cualquier propuesta; se informa y no se toca.
+    const shape = fresh.raw === null ? null : inspectForeignJson(fresh.raw);
+    if (shape === 'duplicate-keys' || shape === 'comments') {
+      result.problems.push(`${spec.hookPath} tiene ${shape === 'comments' ? 'comentarios' : 'claves duplicadas'}; no se tocó ni se propuso nada (corrígelo y ejecuta ai-hub sync)`);
+      continue;
+    }
+    const missing = missingClaudeHooks(fresh.data ?? {});
+    if (missing.length === 0) {
+      await closeProposals(root, 'claude-hooks', spec.hookPath);
+      continue;
+    }
+    // Configuración ajena existente (D-65): no se edita; propuesta con las entradas gestionadas.
+    const prepared = await prepareProposal(root, {
+      capability: 'claude-hooks',
+      file,
+      display: spec.hookPath,
+      fragment: `${JSON.stringify({ hooks: managedHooksFragment() }, null, 2)}\n`,
+      instructions: `mezcla estas entradas en "hooks" de ${spec.hookPath} conservando las tuyas`,
+      check: 'ai-hub doctor (hooks) y ai-hub sync',
+    });
+    result.pending.push(describePending(root, prepared.proposal));
   }
   return result;
+}
+
+/** Solo las entradas gestionadas (para la propuesta): nunca el contenido del archivo del usuario. */
+export function managedHooksFragment(): Json {
+  return (mergeClaudeHooks({}).hooks as Json) ?? {};
 }

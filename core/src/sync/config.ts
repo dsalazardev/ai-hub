@@ -108,7 +108,10 @@ export async function loadSyncConfig(root: string): Promise<SyncConfig> {
   const ruleTargets: Record<string, RuleTarget> = {};
   for (const tool of tools) {
     const spec = TARGETS[tool];
-    ruleTargets[tool] = { path: spec.rules, shape: spec.ruleShape };
+    // Codex lee sus instrucciones de la región gestionada del AGENTS.md raíz: sin directorio de reglas.
+    if (spec.rules !== null) {
+      ruleTargets[tool] = { path: spec.rules, shape: spec.ruleShape };
+    }
   }
 
   // Los 17 comandos los provee Spec Kit en cada destino; AI-Hub no proyecta sus cuerpos.

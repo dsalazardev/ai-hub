@@ -1,4 +1,7 @@
 import fs from 'node:fs/promises';
+import { lockFor } from '../writes/transaction.js';
+import { requireTarget } from '../writes/targets.js';
+import { withLock } from '../harness/lock.js';
 import path from 'node:path';
 import { isMap, parseDocument, stringify, type Document } from 'yaml';
 import type { ProjectManifest } from './manifest.js';
@@ -30,18 +33,60 @@ async function renameWithRetry(from: string, to: string): Promise<void> {
   }
 }
 
-/** Escribe el texto completo del manifiesto de forma atómica. Si algo falla, el archivo anterior queda intacto. */
-export async function writeManifestText(root: string, text: string): Promise<void> {
-  const file = path.join(root, MANIFEST);
-  const temp = `${file}.ai-hub-${process.pid}.tmp`;
-  try {
-    await fs.writeFile(temp, text, 'utf8');
-    await renameWithRetry(temp, file);
-  } catch (error) {
-    await fs.rm(temp, { force: true }).catch(() => undefined);
-    const code = (error as NodeJS.ErrnoException).code;
-    throw new Error(`no se pudo escribir ${file}${code ? ` (${code})` : ''}; el archivo anterior queda intacto`, { cause: error });
+/** El manifiesto cambió desde que se leyó: no se reemplaza (última comprobación de X2). */
+export class ManifestChangedError extends Error {
+  constructor(file: string) {
+    super(`${file} cambió mientras se preparaba la escritura; no se reemplaza (vuelve a ejecutar el comando)`);
+    this.name = 'ManifestChangedError';
   }
+}
+
+/**
+ * Escribe el texto completo del manifiesto de forma atómica. Si algo falla, el archivo anterior queda intacto.
+ * Con `expected` (el texto leído al preparar el cambio), un manifiesto modificado entretanto no se reemplaza.
+ */
+export async function writeManifestText(root: string, text: string, expected?: string | null): Promise<'written' | 'unchanged'> {
+  const file = path.join(root, MANIFEST);
+  // 3.11: el mecanismo propio (temporal en la misma carpeta y rename con reintentos) se conserva porque sus pruebas de
+  // contrato (fabrica-verificable 3.1 y 3.5) inyectan fallos en él; cubre las garantías de X2 que aplican a un archivo
+  // de estado: exclusión X1 entre escritores del motor, bytes iguales sin escritura, última comprobación contra el
+  // texto leído, volcado a disco del temporal, rename y verificación posterior. Sin copia adyacente: la reversión la
+  // cubren los snapshots. Riesgo residual común con X2: un escritor externo entre la última comprobación y el rename.
+  const lock = await lockFor({ root, file }, requireTarget('manifest/write.ts', MANIFEST));
+  return withLock(lock, 'escribir manifest.yaml', async () => {
+    const current = await fs.readFile(file, 'utf8').catch(() => null);
+    if (expected !== undefined && current !== expected) {
+      throw new ManifestChangedError(file);
+    }
+    if (current === text) {
+      return 'unchanged';
+    }
+    const temp = `${file}.ai-hub-${process.pid}.tmp`;
+    try {
+      await fs.writeFile(temp, text, 'utf8');
+      const handle = await fs.open(temp, 'r+');
+      try {
+        await handle.sync();
+      } finally {
+        await handle.close();
+      }
+      if (expected !== undefined && (await fs.readFile(file, 'utf8').catch(() => null)) !== expected) {
+        throw new ManifestChangedError(file);
+      }
+      await renameWithRetry(temp, file);
+    } catch (error) {
+      await fs.rm(temp, { force: true }).catch(() => undefined);
+      if (error instanceof ManifestChangedError) {
+        throw error;
+      }
+      const code = (error as NodeJS.ErrnoException).code;
+      throw new Error(`no se pudo escribir ${file}${code ? ` (${code})` : ''}; el archivo anterior queda intacto`, { cause: error });
+    }
+    if ((await fs.readFile(file, 'utf8')) !== text) {
+      throw new Error(`${file}: la verificación tras escribir no coincide; revisa el archivo`);
+    }
+    return 'written';
+  }, { waitMs: 30_000 });
 }
 
 export async function writeManifest(root: string, manifest: ProjectManifest): Promise<void> {
@@ -55,7 +100,7 @@ export type ManifestProblem =
   | { state: 'invalid'; problem: string };
 
 /** Documento YAML del manifiesto (conserva comentarios y orden), o el motivo por el que no se puede actualizar. */
-export async function readManifestDocument(root: string): Promise<{ doc: Document } | ManifestProblem> {
+export async function readManifestDocument(root: string): Promise<{ doc: Document; text: string } | ManifestProblem> {
   const text = await fs.readFile(path.join(root, MANIFEST), 'utf8').catch(() => null);
   if (text === null) {
     return { state: 'absent' };
@@ -68,7 +113,7 @@ export async function readManifestDocument(root: string): Promise<{ doc: Documen
   if (!isMap(doc.contents)) {
     return { state: 'invalid', problem: 'no es un mapping YAML' };
   }
-  return { doc };
+  return { doc, text };
 }
 
 export type BlockUpdate = { state: 'written' } | { state: 'unchanged' } | ManifestProblem;
@@ -89,6 +134,6 @@ export async function updateManifestBlock(root: string, key: string, next: unkno
     return { state: 'unchanged' };
   }
   loaded.doc.set(key, value);
-  await writeManifestText(root, loaded.doc.toString());
+  await writeManifestText(root, loaded.doc.toString(), loaded.text);
   return { state: 'written' };
 }

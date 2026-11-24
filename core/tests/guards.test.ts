@@ -257,7 +257,8 @@ describe('preflight', () => {
     expect(files.length).toBeGreaterThan(3);
     for (const file of files) {
       const source = await fs.readFile(path.join(GUARDS_DIR, file.name), 'utf8');
-      expect(source).not.toMatch(/from ['"]node:(fs|child_process|net)['"]/);
+      // También `node:fs/promises` y similares (subrutas): la pureza no admite E/S por ninguna puerta.
+      expect(source, file.name).not.toMatch(/from ['"]node:(fs|child_process|net)(\/[a-z]+)?['"]/);
     }
   });
 });

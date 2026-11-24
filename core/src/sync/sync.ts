@@ -1,4 +1,8 @@
 import fs from 'node:fs/promises';
+import { generatedTarget, replaceOwned } from '../writes/replace.js';
+import { closeProposals, createExclusive, describePending, prepareProposal } from '../writes/proposals.js';
+import { ignoreStatus } from '../writes/credential-ignore.js';
+import { findTarget } from '../writes/targets.js';
 import path from 'node:path';
 import { mapLimit } from '../concurrency.js';
 import { isEngineCheckout } from '../source-checkout.js';
@@ -21,6 +25,8 @@ export interface SyncResult {
   written: string[];
   removed: string[];
   problems: string[];
+  /** Capacidades pendientes de aplicación por la persona (D-65): no son error de sync. */
+  pending: string[];
 }
 
 export interface SyncOptions {
@@ -70,7 +76,7 @@ export async function runSync(root: string, options: SyncOptions): Promise<SyncR
 
   const rendered = await renderAll(root, config);
   const previous = await readLock(root);
-  const result: SyncResult = { written: [], removed: [], problems: [] };
+  const result: SyncResult = { written: [], removed: [], problems: [], pending: [] };
 
   // Un dueño por archivo: lo que reclama Spec Kit no se escribe ni se borra desde aquí.
   const speckitPresent = (await readSpeckitState(root)).present;
@@ -108,10 +114,18 @@ export async function runSync(root: string, options: SyncOptions): Promise<SyncR
   }
   for (const rel of obsolete) {
     if (previous?.files[rel]?.region !== undefined) {
-      // Archivo del usuario: se quita solo la región; el archivo jamás se borra.
+      // Archivo del usuario (D-65): no se edita; retirar la región obsoleta es una propuesta.
       const text = await readCopy(path.join(root, rel));
-      if (text !== null) {
-        await fs.writeFile(path.join(root, rel), removeRegion(text), 'utf8');
+      if (text !== null && text !== removeRegion(text)) {
+        const prepared = await prepareProposal(root, {
+          capability: 'managed-region-removal',
+          file: path.join(root, rel),
+          display: rel,
+          fragment: '',
+          instructions: `retira la región gestionada de ai-hub de ${rel} (ya no corresponde a ningún destino)`,
+          check: 'ai-hub sync',
+        });
+        result.pending.push(describePending(root, prepared.proposal));
       }
       result.removed.push(rel);
       continue;
@@ -123,22 +137,46 @@ export async function runSync(root: string, options: SyncOptions): Promise<SyncR
   for (const dir of [...new Set(obsolete.map((rel) => path.posix.dirname(rel)))].sort((a, b) => b.length - a.length)) {
     await pruneEmptyDirs(root, dir);
   }
+  const mcpIgnored = new Map<string, boolean>();
   const written = await mapLimit(sortedEntries(rendered), 24, async ([rel, file]) => {
     const abs = path.join(root, rel);
     const current = await readCopy(abs);
     if (file.region !== undefined) {
       if (current !== null && extractRegion(current) === file.content) {
+        await closeProposals(root, 'managed-region', rel);
         return null;
       }
-      await fs.mkdir(path.dirname(abs), { recursive: true });
-      await fs.writeFile(abs, replaceRegion(current ?? '', file.content), 'utf8');
-      return rel;
+      // D-65: un archivo con región que no existe se crea en exclusiva; uno existente nunca se edita.
+      if (current === null && (await createExclusive(abs, replaceRegion('', file.content)))) {
+        return rel;
+      }
+      const prepared = await prepareProposal(root, {
+        capability: 'managed-region',
+        file: abs,
+        display: rel,
+        fragment: replaceRegion('', file.content),
+        instructions: `sustituye (o añade) la región gestionada de ai-hub en ${rel}`,
+        check: 'ai-hub sync --check-lock y ai-hub drift',
+      });
+      result.pending.push(describePending(root, prepared.proposal));
+      return null;
+    }
+    // Generados sensibles (MCP con credenciales): solo si git los ignora (R-117).
+    if (findTarget(rel)?.sensitivity === 'sensitive') {
+      if (!mcpIgnored.has(rel)) {
+        mcpIgnored.set(rel, ignoreStatus(root, rel) !== 'not_ignored');
+      }
+      if (!mcpIgnored.get(rel)) {
+        result.pending.push(`pendiente: mcp · ${rel} no se genera porque git no lo ignora (credential_ignore_unverified); añade ${rel} a .gitignore`);
+        return null;
+      }
     }
     if (current === file.content) {
       return null;
     }
     await fs.mkdir(path.dirname(abs), { recursive: true });
-    await fs.writeFile(abs, file.content, 'utf8');
+    // 3.11: destino generado y regenerable por la transacción X2 (lock, temporal, última comprobación, rename).
+    await replaceOwned({ root, file: abs, module: 'sync/sync.ts', content: file.content, target: generatedTarget(rel) });
     return rel;
   });
   result.written.push(...written.filter((rel): rel is string => rel !== null));
@@ -147,6 +185,7 @@ export async function runSync(root: string, options: SyncOptions): Promise<SyncR
   const hooks = await projectSettingsHooks(root, config.tools, false);
   result.written.push(...hooks.written);
   result.problems.push(...hooks.problems);
+  result.pending.push(...hooks.pending);
   return result;
 }
 

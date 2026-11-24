@@ -1,0 +1,117 @@
+[
+  {
+    "file": "src/catalog.ts",
+    "type": "exports",
+    "symbol": "catalogSkillFiles"
+  },
+  {
+    "file": "src/catalog.ts",
+    "type": "exports",
+    "symbol": "sameSelection"
+  },
+  {
+    "file": "src/catalog.ts",
+    "type": "exports",
+    "symbol": "UNIVERSAL_TARGET_RULE_IDS"
+  },
+  {
+    "file": "src/catalog.ts",
+    "type": "exports",
+    "symbol": "universalRuleFiles"
+  },
+  {
+    "file": "src/cli/onboarding.ts",
+    "type": "exports",
+    "symbol": "availablePresets"
+  },
+  {
+    "file": "src/control/onboard-step.ts",
+    "type": "exports",
+    "symbol": "connectFromFlags"
+  },
+  {
+    "file": "src/control/onboard.ts",
+    "type": "exports",
+    "symbol": "PROFILE_KEYS"
+  },
+  {
+    "file": "src/engine/engine.ts",
+    "type": "exports",
+    "symbol": "commandById"
+  },
+  {
+    "file": "src/engine/engine.ts",
+    "type": "exports",
+    "symbol": "commandsByLane"
+  },
+  {
+    "file": "src/manifest/dispatch.ts",
+    "type": "exports",
+    "symbol": "commandsByLane"
+  },
+  {
+    "file": "src/manifest/labels.ts",
+    "type": "exports",
+    "symbol": "assertHumanGate"
+  },
+  {
+    "file": "src/manifest/labels.ts",
+    "type": "exports",
+    "symbol": "isLabel"
+  },
+  {
+    "file": "src/manifest/labels.ts",
+    "type": "exports",
+    "symbol": "LABEL_EVENTS"
+  },
+  {
+    "file": "src/paths.ts",
+    "type": "exports",
+    "symbol": "lockPath"
+  },
+  {
+    "file": "src/paths.ts",
+    "type": "exports",
+    "symbol": "manifestPath"
+  },
+  {
+    "file": "src/presets/detect.ts",
+    "type": "exports",
+    "symbol": "applyPackageManager"
+  },
+  {
+    "file": "src/speckit/commands.ts",
+    "type": "exports",
+    "symbol": "speckitTargetOf"
+  },
+  {
+    "file": "src/sync/config.ts",
+    "type": "exports",
+    "symbol": "ENGINE_SKILLS_SOURCE"
+  },
+  {
+    "file": "src/sync/config.ts",
+    "type": "exports",
+    "symbol": "MANIFEST_PATH"
+  },
+  {
+    "file": "src/sync/targets.ts",
+    "type": "exports",
+    "symbol": "agentTargets"
+  },
+  {
+    "file": "src/sync/targets.ts",
+    "type": "exports",
+    "symbol": "ruleTargets"
+  },
+  {
+    "file": "src/sync/targets.ts",
+    "type": "exports",
+    "symbol": "skillTargets"
+  },
+  {
+    "file": "src/writes/targets.ts",
+    "type": "exports",
+    "symbol": "MAX_BACKUP_RETENTION"
+  }
+]

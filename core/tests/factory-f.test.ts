@@ -1,3 +1,4 @@
+import { listProposals } from '../src/writes/proposals.js';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
@@ -107,7 +108,11 @@ describe('M-26: agent memory is ignored by default', () => {
     const manifestPath = path.join(root, 'manifest.yaml');
     await fs.writeFile(manifestPath, `${await fs.readFile(manifestPath, 'utf8')}agentMemory: versioned\n`);
     await fs.writeFile(path.join(root, '.gitignore'), 'node_modules/\n');
-    expect((await cli(['install', '--yes'])).code).toBe(0);
+    // D-65 (R-122, R-124): el .gitignore del usuario no se edita; la propuesta no incluye la memoria versionada.
+    expect((await cli(['install', '--yes'])).code).toBe(1);
+    const proposal = (await listProposals(root)).find((item) => item.capability === 'root-gitignore');
+    expect(proposal?.fragment).not.toContain('agent-memory');
+    await fs.appendFile(path.join(root, '.gitignore'), proposal!.fragment);
     expect(await read('.gitignore')).not.toContain('agent-memory');
     expect((await cli(['init', '--preset-only', '--yes'])).code).toBe(0);
     expect(await fs.readFile(manifestPath, 'utf8')).toMatch(/^agentMemory: versioned$/m);

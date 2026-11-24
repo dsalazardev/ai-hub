@@ -273,6 +273,36 @@ status_line:
   panel: [REFUTED, NOT-REFUTED]
   reason_required: [BLOCKED, NEEDS_CLARIFICATION, NEEDS_WORK, NEEDS_REPRODUCTION, FAILED, NOT_APPLIED]
   reason_max: 200
+  # Segmentos opcionales (R-049, R-107): como máximo una vez cada uno, en este orden, entre artifact y reason.
+  # La frase del motivo llega al final de la línea y no puede contener « | run=» ni « | delegated=».
+  segments:
+    - name: run
+      pattern: '^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$'
+    - name: delegated
+      pattern: '^(exploration|parallel_writers|context_backup|independent_verifier)$'
+
+# Delegación (R-054, R-055): por defecto se trabaja inline; solo una razón con nombre justifica delegar.
+# Umbrales tomados de la issue #7 («Delegar por razón, no por tamaño») como referencia que debe re-medirse con el
+# modelo y el host; son condiciones observables por quien orquesta, no mediciones del arnés. El número de archivos,
+# el tamaño de la tarea o el precio del modelo no deciden por sí solos. La política no añade estados ni cambia
+# exit_effects, no concede facultades de aprobación y no sustituye las puertas humanas.
+delegation:
+  default: inline
+  reasons:
+    - id: exploration
+      threshold: 'entender requiere más de un lote inline (referencia: unas 3 llamadas o 10k tokens) o más de unas 5 búsquedas secuenciales; el explorador es de solo lectura y devuelve un mapa con path:line'
+    - id: parallel_writers
+      threshold: 'dos o más unidades de comportamiento independientes con superficies de edición disjuntas, cada una de varios minutos; una unidad que depende de otra no es independiente'
+    - id: context_backup
+      threshold: 'una sesión larga entrega su siguiente unidad acotada a un trabajador nuevo (decisión de quien orquesta; el arnés no mide el consumo de contexto)'
+    - id: independent_verifier
+      threshold: 'el cambio toca un elemento de alto riesgo (datos, seguridad, contratos compartidos, concurrencia, entrega) y ninguna prueba atrapa la regresión'
+  verifier:
+    # Agentes que verifican sin haber escrito el candidato; el autor usa el modelo de `author_tier`.
+    agents: [finding-verifier, refuter-correctness, refuter-security, refuter-tests]
+    author_tier: balanced
+    prefer_different_model: true
+    diversity_unavailable_reason: diversity_unavailable
 
 # Bucle acotado (A2): un proyecto solo puede BAJAR max_rounds (policy.maxRounds).
 loop:
@@ -283,6 +313,12 @@ loop:
 # Límites que el proyecto solo puede endurecer (E4): un valor más permisivo hace fallar el manifiesto.
 policy_limits:
   wip: 1
+
+# Versión mínima compatible (VMC, R-114): fuente única. Desde ella la telemetría es v2 por registro y el
+# estado duradero vive en .ai-hub/runs/control/state/; volver por debajo no está soportado. Notas de versión,
+# doctor y el aviso de install/upgrade la leen de aquí (medida en 3.22 con 0.12.0 y 0.17.0).
+compatibility:
+  minimum: '0.18.0'
 
 labels:
   - ai::todo
@@ -299,6 +335,8 @@ targets:
   - pi
   - cursor
   - copilot
+  # Opt-in (R-089): se declara en manifest.targets; init no lo elige por defecto.
+  - codex
 
 # Spec Kit: dependencia de runtime declarada por el paquete. Un proyecto solo puede
 # restringirla desde el bloque `speckit` de manifest.yaml, nunca ampliarla.

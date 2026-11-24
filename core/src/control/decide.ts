@@ -1,5 +1,5 @@
 import { loadManifestContext, type ProjectManifest } from '../manifest/manifest.js';
-import {
+import { barred, describeBarrier, ledgerBarrier, withLedgerLock,
   controlSettings,
   decisionId,
   openDecisionsFor,
@@ -13,7 +13,7 @@ import {
 } from './ledger.js';
 import { impactOf, type DecisionView, type EvidenceItem } from './render.js';
 import { boardIssues, runTick, sealFor, type TickIssue, type TickProposal } from './tick.js';
-import { GitlabTracker, defaultTrackerFetch, type TrackerFetch } from './tracker.js';
+import { trackerFromHarness, defaultTrackerFetch, type TrackerFetch } from './tracker.js';
 
 const SPEC_READY = 'ai::spec-ready';
 const IN_SPEC = 'ai::in-spec';
@@ -36,6 +36,10 @@ export interface DecideOptions {
 export interface DecideResult {
   fresh: DecisionView[];
   settings: ControlSettings;
+  /** Barrera del registro (R-025, R-045): texto para la persona, o null. Las issues detenidas no publican. */
+  barrier: string | null;
+  /** Issues detenidas con `invalid_status` (R-109), nombrando la nota. */
+  stopped: string[];
 }
 
 export class ControlConfigError extends Error {
@@ -112,7 +116,7 @@ export async function runDecide(root: string, options: DecideOptions = {}): Prom
   const settings = await requireSettings(manifest);
   let board = options.board;
   if (!board && options.online && options.labelsFrom === undefined) {
-    board = await boardIssues(await GitlabTracker.fromHarness(root, manifest, options.trackerFetch ?? defaultTrackerFetch));
+    board = await boardIssues(await trackerFromHarness(root, manifest, options.trackerFetch ?? defaultTrackerFetch));
   }
   const tick = await runTick(root, {
     ...(options.labelsFrom !== undefined ? { labelsFrom: options.labelsFrom } : {}),
@@ -121,11 +125,15 @@ export async function runDecide(root: string, options: DecideOptions = {}): Prom
     ...(options.ref ? { ref: options.ref } : {}),
   });
   const issues = new Map((board?.issues ?? []).map((issue) => [issue.feature, issue]));
+  // R-008: leer, decidir y publicar bajo el lock del registro (dos publicadores dejan una sola abierta).
+  return withLedgerLock(root, async () => {
   const decisions = await readDecisions(root);
+  const barrier = await ledgerBarrier(root);
   const fresh: DecisionView[] = [];
   const limit = options.limit ?? Number.POSITIVE_INFINITY;
   for (const proposal of tick.proposals) {
-    if (proposal.iid === null || fresh.length >= limit) {
+    // Una issue detenida por la barrera no publica: sus decisiones previas no se pueden leer con certeza.
+    if (proposal.iid === null || fresh.length >= limit || barred(barrier, proposal.iid)) {
       continue;
     }
     const issue = issues.get(proposal.feature);
@@ -185,5 +193,9 @@ export async function runDecide(root: string, options: DecideOptions = {}): Prom
       evidence: evidenceFor(proposal, candidate, source, sealValue),
     });
   }
-  return { fresh, settings };
+  const stopped = (tick.invalidStatus ?? []).map(
+    (item) => `#${item.iid}: invalid_status: la nota de estado más reciente (${item.ref}) no cumple el contrato; la issue se detiene hasta que se publique un cierre válido`,
+  );
+  return { fresh, settings, barrier: describeBarrier(barrier), stopped };
+  });
 }

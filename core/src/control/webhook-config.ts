@@ -1,4 +1,6 @@
 import fs from 'node:fs/promises';
+import { externalTarget } from '../writes/targets.js';
+import { replaceOwned } from '../writes/replace.js';
 import http from 'node:http';
 import net from 'node:net';
 import path from 'node:path';
@@ -11,7 +13,6 @@ import { isMap, parseDocument, type Document } from 'yaml';
  * Nunca escribe un secreto, `INSECURE_NO_AUTH` ni `extra.host`.
  */
 export const DEFAULT_WEBHOOK_PORT = 8644;
-export const BACKUP_SUFFIX = '.pre-ai-hub';
 
 export type WebhookBlock =
   /** Sin archivo, sin bloque o con un bloque que no declara `enabled`: la plataforma no está habilitada. */
@@ -99,11 +100,14 @@ async function exists(file: string): Promise<boolean> {
   );
 }
 
-async function writeAtomic(file: string, text: string): Promise<void> {
+/**
+ * 3.11: `config.yaml` del perfil propio (creado por el motor; D-65 solo lo escribe ahí) por la transacción X2: lock
+ * compartido de usuario, temporal 0600, última comprobación y rename. Sin copia: es sensible y del perfil propio.
+ * `expected` es lo que se leyó al decidir; si otro escritor lo cambió entretanto, no se reemplaza.
+ */
+async function writeAtomic(file: string, text: string, expected: string): Promise<void> {
   await fs.mkdir(path.dirname(file), { recursive: true });
-  const temp = `${file}.ai-hub-${process.pid}.tmp`;
-  await fs.writeFile(temp, text, { encoding: 'utf8', mode: 0o600 });
-  await fs.rename(temp, file);
+  await replaceOwned({ root: path.dirname(file), file, module: 'control/webhook-config.ts', content: text, target: externalTarget('hermes-profile-config'), expected: expected === '' ? null : expected });
   await fs.chmod(file, 0o600).catch(() => undefined);
 }
 
@@ -131,47 +135,22 @@ export async function writeWebhookBlock(file: string, port: number): Promise<voi
   if (!doc.hasIn(['platforms', 'webhook', 'extra', 'port'])) {
     doc.setIn(['platforms', 'webhook', 'extra', 'port'], port);
   }
-  await writeAtomic(file, doc.toString());
+  await writeAtomic(file, doc.toString(), text);
   const written = await readWebhookBlock(file);
   if (written.kind !== 'enabled') {
     throw new WebhookConfigError(file, 'el bloque platforms.webhook no quedó habilitado tras escribirlo');
   }
 }
 
-/** Copia `file` a `file.pre-ai-hub` o, si ese nombre existe, a `file.pre-ai-hub.<n>`; las copias nunca se sobrescriben. */
-export async function numberedBackup(file: string): Promise<string | null> {
-  if (!(await exists(file))) {
-    return null;
-  }
-  let target = `${file}${BACKUP_SUFFIX}`;
-  for (let index = 1; await exists(target); index += 1) {
-    target = `${file}${BACKUP_SUFFIX}.${index}`;
-  }
-  await fs.copyFile(file, target);
-  await fs.chmod(target, 0o600).catch(() => undefined);
-  return target;
-}
-
-/** Quita del `.env` solo las líneas de las claves indicadas; el resto queda byte a byte. Devuelve cuántas quitó. */
-export async function removeEnvKeys(file: string, keys: readonly string[]): Promise<number> {
-  const text = await fs.readFile(file, 'utf8').catch(() => null);
-  if (text === null) {
-    return 0;
-  }
-  const kept: string[] = [];
-  let removed = 0;
-  for (const line of text.split(/(?<=\n)/)) {
-    const key = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=/.exec(line)?.[1];
-    if (key !== undefined && keys.includes(key)) {
-      removed += 1;
-    } else {
-      kept.push(line);
-    }
-  }
-  if (removed > 0) {
-    await writeAtomic(file, kept.join(''));
-  }
-  return removed;
+/** Texto del `.env` sin las líneas de las claves indicadas; el resto queda byte a byte. */
+export function withoutEnvKeys(text: string, keys: readonly string[]): string {
+  return text
+    .split(/(?<=\n)/)
+    .filter((line) => {
+      const key = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=/.exec(line)?.[1];
+      return !(key !== undefined && keys.includes(key));
+    })
+    .join('');
 }
 
 function tcpOpen(port: number, host: string, timeoutMs: number): Promise<boolean> {

@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto';
 import { loadManifestContext } from '../manifest/manifest.js';
 import { requireSettings, runDecide } from './decide.js';
-import { hasSeenEvent, openDecisionsFor, readDecisions, recordEvent, recordStatus } from './ledger.js';
+import { claimEvent, openDecisionsFor, readDecisions, recordStatus } from './ledger.js';
 import type { DecisionView } from './render.js';
-import { GitlabTracker, defaultTrackerFetch, type TrackerFetch } from './tracker.js';
+import { trackerDescriptor, trackerFromHarness, defaultTrackerFetch, type TrackerFetch } from './tracker.js';
 
 /**
  * `ai-hub control ingest`: un evento de GitLab (payload por stdin, desde el route script de Hermes, sin LLM)
@@ -71,15 +71,19 @@ export async function runIngest(root: string, text: string, options: IngestOptio
   }
   const manifest = (await loadManifestContext(root)).manifest;
   const settings = await requireSettings(manifest);
-  const tracker = await GitlabTracker.fromHarness(root, manifest, options.trackerFetch ?? defaultTrackerFetch);
+  // El contrato de ingesta (hermes-control › Webhook ingest) cubre los eventos de GitLab; con un tracker cuyo
+  // descriptor no la declara, el evento se ignora con motivo explícito y el tablero se lee por el poll.
+  if (!trackerDescriptor(manifest.tracker?.kind).webhookIngest) {
+    return { ...ignored('ingest_unsupported_tracker'), expire: settings.expire };
+  }
+  const tracker = await trackerFromHarness(root, manifest, options.trackerFetch ?? defaultTrackerFetch);
   if (!sameProject(payload, tracker.projectPath)) {
     return { ...ignored('foreign_project'), expire: settings.expire };
   }
   const key = eventKey(payload);
-  if (await hasSeenEvent(root, key)) {
+  if (!(await claimEvent(root, key, now))) {
     return { outcome: 'duplicate', expire: settings.expire, superseded: [], fresh: [] };
   }
-  await recordEvent(root, key, now);
   const superseded: string[] = [];
   const attributes = record(payload.object_attributes);
   const iid = kind === 'issue' && typeof attributes.iid === 'number' ? attributes.iid : undefined;

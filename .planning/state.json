@@ -1,1 +1,1 @@
-{"version":1,"project":"ai-hub","preset":"generic-ts","activeChange":null,"lane":"feature","phase":"archivado-pendiente-release","tasks":{"total":43,"done":33},"branch":null,"worktree":null,"updatedAt":"2026-11-13T12:10:00.000Z"}
+{"version":1,"project":"ai-hub","preset":"generic-ts","activeChange":"harden-harness-orchestration","lane":"feature","phase":"aplicacion-en-curso","tasks":{"total":176,"done":139},"branch":"codex/harden-harness-orchestration","worktree":null,"updatedAt":"2026-11-24T18:00:00.000Z"}

@@ -46,7 +46,15 @@ export async function installGitHook(
     return { installed: false, reason: `a ${name} hook already exists; chain ai-hub manually` };
   }
   await fs.mkdir(path.dirname(hook), { recursive: true });
-  await fs.writeFile(hook, gitHookScript(name), 'utf8');
+  // D-65: creación exclusiva; un hook creado por otro proceso entre medias nunca se sobrescribe.
+  try {
+    await fs.writeFile(hook, gitHookScript(name), { encoding: 'utf8', flag: 'wx' });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+      return { installed: false, reason: `a ${name} hook already exists; chain ai-hub manually` };
+    }
+    throw error;
+  }
   await fs.chmod(hook, 0o755);
   return { installed: true, reason: 'installed' };
 }

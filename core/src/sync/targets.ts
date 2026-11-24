@@ -1,8 +1,11 @@
 import type { AgentFormat } from '../agents/header.js';
 
+/** Destinos por defecto de `init` y del asistente (los cinco históricos). */
 export const TOOL_IDS = ['claude', 'opencode', 'pi', 'cursor', 'copilot'] as const;
+/** Todos los destinos que el motor sabe proyectar; `codex` es opt-in (R-089): se declara en `targets`. */
+export const ALL_TOOL_IDS = [...TOOL_IDS, 'codex'] as const;
 
-export type ToolId = (typeof TOOL_IDS)[number];
+export type ToolId = (typeof ALL_TOOL_IDS)[number];
 
 export type SkillShape = 'dir' | 'file';
 export type RuleShape = 'md' | 'mdc' | 'instructions';
@@ -29,8 +32,10 @@ export interface SpeckitTarget {
 export interface ToolTargets {
   skills: string;
   agents: string | null;
-  rules: string;
-  hook: string;
+  /** `null`: el destino lee las instrucciones de la región gestionada del `AGENTS.md` raíz (Codex). */
+  rules: string | null;
+  /** Regla en prosa del preflight; `null` si el destino no la recibe como archivo propio. */
+  hook: string | null;
   skillShape: SkillShape;
   ruleShape: RuleShape;
   hookKind: HookKind;
@@ -150,10 +155,35 @@ export const TARGETS: Record<ToolId, ToolTargets> = {
     },
     speckit: null,
   },
+  // Codex (R-089, 1.8): skills en `.agents/skills`, agentes TOML en `.codex/agents`, instrucciones en la región
+  // gestionada del AGENTS.md raíz. Hooks solo con formato verificado para la versión (4.81): hoy ninguno.
+  // Sin integración de Spec Kit declarada (no verificada): sus comandos se ejecutan en otro destino o por la CLI.
+  codex: {
+    skills: '.agents/skills',
+    agents: '.codex/agents',
+    rules: null,
+    hook: null,
+    skillShape: 'dir',
+    ruleShape: 'md',
+    hookKind: 'markdown',
+    hookFormat: 'none',
+    hookPath: null,
+    agentFormat: {
+      path: '.codex/agents',
+      extension: '.toml',
+      style: 'unenforced',
+      names: { read: [], search: [], edit: [], shell: [], web: [], delegate: [] },
+      turnsKey: null,
+      includeName: true,
+      fixed: {},
+      passthrough: [],
+    },
+    speckit: null,
+  },
 };
 
 export function isToolId(value: string): value is ToolId {
-  return (TOOL_IDS as readonly string[]).includes(value);
+  return (ALL_TOOL_IDS as readonly string[]).includes(value);
 }
 
 /**
@@ -193,12 +223,17 @@ export const TOOL_HINTS: Record<ToolId, ToolHints> = {
     installHint: 'instala GitHub CLI y luego gh extension install github/gh-copilot',
     loginHint: 'gh auth login',
   },
+  codex: {
+    probeCommand: 'codex',
+    installHint: 'instala Codex CLI siguiendo la documentación de OpenAI',
+    loginHint: 'codex login (codex login status comprueba la sesión sin mostrar secretos)',
+  },
 };
 
 export function assertToolIds(values: string[]): ToolId[] {
   const invalid = values.filter((value) => !isToolId(value));
   if (invalid.length > 0) {
-    throw new Error(`destinos desconocidos: ${invalid.join(', ')}. Válidos: ${TOOL_IDS.join(', ')}`);
+    throw new Error(`destinos desconocidos: ${invalid.join(', ')}. Válidos: ${ALL_TOOL_IDS.join(', ')}`);
   }
   return values as ToolId[];
 }
@@ -215,9 +250,24 @@ export function agentTargets(tools: ToolId[]): Record<string, string> {
 }
 
 export function ruleTargets(tools: ToolId[]): Record<string, string> {
-  return Object.fromEntries(tools.map((tool) => [tool, TARGETS[tool].rules]));
+  return Object.fromEntries(tools.flatMap((tool) => (TARGETS[tool].rules === null ? [] : [[tool, TARGETS[tool].rules as string]])));
 }
 
 export function skillTargets(tools: ToolId[]): string[] {
   return [...new Set(tools.map((tool) => TARGETS[tool].skills))];
 }
+
+/**
+ * Formatos de hooks de Codex verificados por rango de versión (R-089, 4.81). Solo se proyectan hooks cuando su
+ * formato se verificó con el ejecutable real en un rango soportado (evidencia citada). Hoy no hay ninguno: Codex
+ * no está instalado en el taller y el experimento (2.6) no está autorizado, así que no se escribe ningún hook y
+ * `doctor` declara que Codex no tiene hooks.
+ */
+export interface CodexHookFormat {
+  range: string;
+  evidence: string;
+  path: string;
+  render: (command: string) => string;
+}
+
+export const CODEX_HOOK_FORMATS: readonly CodexHookFormat[] = [];

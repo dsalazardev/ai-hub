@@ -159,7 +159,13 @@ describe('runs retention (4.6)', () => {
   it('a new run prunes the oldest beyond the default 50', async () => {
     for (let i = 0; i < 50; i += 1) {
       const id = `20260101-0000${String(i).padStart(2, '0')}Z-aaaaaa`;
+      // R-110: la retención ordena por el primer evento; un run sin evento legible no se poda.
       await fs.mkdir(path.join(root, '.ai-hub', 'runs', id), { recursive: true });
+      await fs.writeFile(
+        path.join(root, '.ai-hub', 'runs', id, 'events.jsonl'),
+        `${JSON.stringify({ v: 1, ts: `2026-01-01T00:00:${String(i).padStart(2, '0')}.000Z`, run: id, kind: 'start' })}
+`,
+      );
     }
     await fs.mkdir(path.join(root, '.ai-hub', 'runs', 'scope'), { recursive: true });
     const run = await startRun(root);

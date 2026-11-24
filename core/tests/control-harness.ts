@@ -18,7 +18,7 @@ export const TEMPLATES = path.resolve(__dirname, '..', 'engine', 'templates', 'h
 export interface Harness {
   root: string;
   cli(argv: string[]): Promise<{ code: number; out: string; err: string }>;
-  consumer(options?: { control?: boolean; expire?: 'block' | 'notify' }): Promise<void>;
+  consumer(options?: { control?: boolean; expire?: 'block' | 'notify'; labels?: 'withhold' | 'unprotected' }): Promise<void>;
   feature(name: string, files?: Record<string, string>): Promise<void>;
   status(feature: string, state: string, run?: string): Promise<void>;
   ledgerText(): Promise<string>;
@@ -60,6 +60,8 @@ export async function harness(): Promise<Harness> {
         '  channelId: "987654321098765432"',
         '  ttlHours: 24',
         `  expire: ${options.expire ?? 'block'}`,
+        // SC-01: estas suites prueban el camino de escritura; sin opt-in, los movimientos se retienen.
+        ...(options.labels === 'withhold' ? [] : ['  labels:', '    mode: unprotected']),
         '',
       ].join('\n');
       await fs.appendFile(

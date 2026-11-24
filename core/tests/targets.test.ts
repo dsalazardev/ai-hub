@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { TARGETS, TOOL_IDS } from '../src/sync/targets.js';
+import { ALL_TOOL_IDS, TARGETS, TOOL_IDS } from '../src/sync/targets.js';
 import { loadEngine } from '../src/engine/engine.js';
 
 describe('target registry', () => {
@@ -22,6 +22,7 @@ describe('target registry', () => {
 
   it('matches the engine target list', async () => {
     const engine = await loadEngine();
-    expect([...engine.targets].sort()).toEqual([...TOOL_IDS].sort());
+    // R-089: el motor declara los cinco destinos por defecto más `codex` (opt-in).
+    expect([...engine.targets].sort()).toEqual([...ALL_TOOL_IDS].sort());
   });
 });

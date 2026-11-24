@@ -1,47 +1,27 @@
-# Estado de la sesión — fabrica-verificable archivado con deudas — 2026-11-13
+# Estado de la sesión — aplicación de `harden-harness-orchestration` — 2026-11-24
 
-**Changes activos:** ninguno. Archivado hoy: `2026-11-13-fabrica-verificable` (33/43 tareas; 10 con deuda aceptada).
-**Versión:** 0.16.0 sin cambios. El release es del propietario.
-**Estado de implementación:** hitos 1–5 aplicados; hitos 6 y 7 no ejecutados (ver deudas).
+- **Rama:** `codex/harden-harness-orchestration` (base `c11feda`). Sin commits, push, merge ni publicaciones.
+- **Progreso:** 139/176 tareas con evidencia (detalle en `.planning/impl_harden-harness-orchestration.md`). Esta continuación: 3.11, 3.19, 4.68, 4.69, 4.70, 5.14, 5.15, 5.17.
+- **Aprobación:** la de `/opsx:apply` (desarrollo local y entornos sintéticos). Ninguna operación sobre consumidores, cuentas o servicios reales.
 
-## Cerrado
+## Continuación (b), 2026-11-24 — sin tareas nuevas marcadas (139/176)
 
-- Resolvedor único del listener (`core/src/control/listener.ts`) consumido por el enrolamiento, `control enroll --check` y `doctor`.
-- Espera tras reinicio con backoff, tope de 300 s (`AI_HUB_WEBHOOK_WAIT_SECONDS`), estado `pendiente` y `--check --wait`.
-- Escritor único atómico de `manifest.yaml` (`core/src/manifest/write.ts`) con gate de escritores.
-- Sellado del lock sin escribir destinos (`sealLock`); si un destino cambia, cae a `runSync` avisando cuántos pisa.
-- Idempotencia del paso de control sin re-enrolar ni reiniciar; migración de 0.16.0 con `--declare-tracker`.
-- Captura de solo lectura del Hermes real (tarea 1.1): registrada en `.planning/findings.md`.
-- Sincronización inline de los cuatro deltas sobre `openspec/specs/`: 12 requisitos añadidos y 4 modificados
-  (hermes-control 4+2, dev-cli 4+1, interactive-onboarding 1+2, control-onboarding 2+1). Verificado: recuentos
-  49, 76, 14 y 25; cada bloque añadido aparece una vez; cada bloque modificado coincide con su delta.
-- Archivo: `openspec/changes/archive/2026-11-13-fabrica-verificable/`.
-- Detalle de pruebas, desviaciones y mediciones en `impl_fabrica-verificable.md`.
+- Hecho: contrato R-019 sin ramificar por nombre (descriptores); evidencia remota de PR en GitHub; ingest con `ingest_unsupported_tracker`; runner integrado con dobles (`executeGrantedRun`, descubrimiento, sondas, reanudación, lanzador real que no lanza sin declaración verificada); E2E de Codex opt-in (omitido); omisión de `sync` resuelta con junction; `manifest.yaml` con las cuatro garantías de X2 que faltaban; CI `platform-evidence` con JUnit y comprobación de pruebas POSIX (preparado, sin ejecutar).
+- Verificación: pruebas dirigidas en verde (tracker-contract 31, control 69, runner 41+, manifest 75, pack y ratchets); typecheck, build, `manifest:check`; OpenSpec válido. Suite completa detenida por el host por memoria baja tras 65/84 archivos (1001 aprobadas, 0 fallidas); no se relanzó. Archivos no alcanzados: adoption, agent-contract, brand, catalog-integrity, cli, consumer-state, env-contract, gate-hooks, gates, idea-input-e2e, idea-input-pty, install-angular, install-generic, measured-counts, pack, speckit-doctor, speckit-install, speckit-preflight (cli, env-contract y pack sí se ejecutaron aparte tras sus cambios).
+- Decisión pedida al propietario: 5.7, 5.11, 5.12, 5.16 y 5.18 tienen implementación, integración y pruebas locales; solo las retiene el «Antes: 5.6» (condicionada a 2.6).
 
-## Deudas aceptadas al archivar (`impl_fabrica-verificable.md`)
+## Verificación
 
-- Hitos 6 y 7 completos (10 tareas): suite opt-in contra gateway real, fixture del store, medición del arranque en
-  frío, README, verificación integral y reproducción con el CLI.
-- Tarea 1.1 no medible: el perfil `hermes-control` ya no existía en el host al ejecutarla; el disparador real del
-  fallo 1 queda sin observación y se cubre por fixture.
-- El presupuesto restante de la espera no se implementó: el check tras un reinicio usa el tope completo.
-- La prueba 4.2 no se vio fallar antes del arreglo; su rojo equivalente es la medición con el CLI.
-- Timeouts de 10 s con cinco archivos en paralelo; repetidos en aislado pasan. Sin fijar workers.
-- El gate de escritores es por línea y no detecta una ruta construida en una variable.
+- **Suite:** `npm test` en serie, ejecución única tras el último cambio: 81/81 archivos, 1285 aprobadas, 0 fallidas, 11 omitidas (POSIX, pty y node-pty no instalado).
+- **Comprobaciones:** typecheck, build y `manifest:check` en verde; ratchets en verde tras aceptar 5 rechazos nuevos justificados (257 rechazos, 23 sin uso; Knip no crece).
+- **OpenSpec:** `openspec validate --strict` válido; trazabilidad regenerada (125/125 requisitos con escenario y tarea, sin ciclos).
 
-## Correcciones del archivado
+## Pendiente (37)
 
-- `dev-cli`, escenario «Plan contract»: `init --plan --declare-tracker` pasa a `init --dry-run --declare-tracker`
-  (`--plan` no existe en el CLI).
-- Los specs principales no están en git (`openspec/` es ignorado): no hay línea base versionada. La verificación
-  fue por recuentos y bloques, no por `git diff`.
-- Los nombres de función (`resolveListener`, `sealLock`) no aparecen en los requisitos: describen comportamiento.
-  Los nombres viven en `design.md`, archivado con el change.
-
-## Abierto (decide el propietario)
-
-- Hitos 6 y 7 (ver deudas), con autorización y tiempo aparte.
-- `hermesHome()` no respeta `HERMES_HOME`; solo el check `control:webhook` de `doctor` lo hace.
-- Validación global: `openspec validate --all --strict` sale 1 por avisos de longitud preexistentes en
-  `agent-guardrails`, `control-onboarding`, `dev-cli`, `preset-system` y `spec-kit-pipeline`. Ninguno es de este change.
-- Release (versión, CHANGELOG) y prueba real con Hermes y GitLab.
+- **Local implementado, abierto por dependencia o evidencia:** 5.10 (falta POSIX; job `platform-evidence` preparado en `.github/workflows/ai-hub.yml`, sin ejecutar), 5.11, 5.12, 5.16 (verificadas aisladamente con dobles; integración tras 5.6 ← 2.6).
+- **Otro entorno:** 3.23 (todo lo determinista en verde en Windows, incluido `ai-hub captures list|release`; falta reproducir 1.16 en CI Linux y Windows). 3.21 (documentación hecha y fijada por `docs-writes.test.ts`; su «Antes» incluye 3.23).
+- **Investigación sin fuente fiable:** 4.25 (versión mínima de Hermes para `cron pause|resume`: «no verificada»; necesita el experimento 2.5).
+- **Evidencia real:** 5.13 (2.6), 5.18 (Codex real con `AI_HUB_CODEX_E2E=1`).
+- **Tras publicar:** 3.24.
+- **Experimentos sin autorización:** 1.13 y hito 2; condicionadas 5.1–5.6, 5.19–5.21, 6.1; hito 7 (medición real).
+- **Excluido:** 4.88 (SC-03 deshabilitado).

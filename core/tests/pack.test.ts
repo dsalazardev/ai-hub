@@ -77,7 +77,19 @@ describe('published package', () => {
     // init-fiabilidad H2: +5 (control/{identity,profile-env} × 2 en dist + engine/templates/hermes/SOUL.md).
     // webhook-operativo: +4 (control/{enroll-webhook,webhook-config} × 2 en dist); medido con npm pack --dry-run --json.
     // fabrica-verificable: +4 (control/listener y manifest/write × 2 en dist; las tres pruebas no viajan).
-    expect(pkg.entryCount).toBe(2004);
+    // harden-harness-orchestration: +22 (harness/{lock,state-store}, cli/locks, control/{capabilities,label-policy} y
+    // writes/{targets,transaction,private-storage,proposals,credential-ignore,foreign-json} × 2 en dist); medido con npm pack.
+    // harden-harness-orchestration (continuación): +8 (harness/compat y writes/{leftovers,sensitive-copies,writer-gate}
+    // × 2 en dist); diff de la lista de npm pack contra el candidato anterior, sin pruebas ni fixtures.
+    // harden-harness-orchestration (continuación, 2.ª medida): +36 = 17 módulos × 2 en dist (advisor/{capabilities,client,
+    // drafts,messages,profile}, control/{grants,health,poll,requests,scripts}, delivery/{association,cleanup},
+    // harness/guards/{read-policy,adapters/read-coverage,adapters/read-targets}, harness/limits, review/candidate) y
+    // engine/templates/hermes-advisor/{SKILL,SOUL}.md; diff de npm pack contra la medida anterior. Sin scripts/,
+    // ratchets/, knip.json ni pruebas.
+    // +6 (3.ª medida): delivery/{change-request,reconcile} y harness/guards/delivery × 2 en dist; diff de npm pack.
+    // +8 (4.ª medida): runner/{execution,process}, writes/replace y cli/captures × 2 en dist; lista de npm pack.
+    // +6 (5.ª medida): runner/{discovery,orchestrate,host} × 2 en dist; lista de npm pack.
+    expect(pkg.entryCount).toBe(2090);
     expect(paths.some((file) => file.includes('upstream-watch'))).toBe(false);
     expect(paths).toContain('SECURITY.md');
     expect(paths).toEqual(expect.arrayContaining(['engine/templates/env.example', 'engine/templates/gitlab-ci.yml']));

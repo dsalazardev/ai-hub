@@ -1,4 +1,6 @@
 import { spawnSync } from 'node:child_process';
+import { replaceOwned } from '../writes/replace.js';
+import { classifyDelivery } from '../harness/guards/delivery.js';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -7,6 +9,7 @@ import { resolveRoleScopes } from '../engine/scopes.js';
 import { buildGuardContext } from '../harness/guards/adapters/context.js';
 import {
   claudePreToolUse,
+  commandFromHookInput,
   opencodeToolExecuteBefore,
   type ClaudePreToolUseInput,
   type OpenCodeHookInput,
@@ -15,6 +18,9 @@ import type { GuardContext, GuardMode } from '../harness/guards/types.js';
 import { loadManifestContext, type ProjectManifest } from '../manifest/manifest.js';
 import type { CliContext, ParsedArgs } from './types.js';
 import { appendRunEvent, pruneRuns, readRunEvents } from '../harness/runs.js';
+import { caseInsensitiveFs, recognizedReads } from '../harness/guards/adapters/read-targets.js';
+import { evaluateRead, READ_OPT_OUT } from '../harness/guards/read-policy.js';
+import os from 'node:os';
 
 /** Eventos que el arnés proyecta como hooks de host (G-01). */
 export const HOOK_EVENTS = ['pre', 'post', 'stop'] as const;
@@ -156,17 +162,42 @@ async function onPre(root: string, input: HookPayload): Promise<HookOutcome> {
     if (state !== null) {
       const file = path.join(root, ...SCOPE_DIR.split('/'), `${sessionKey(input)}.json`);
       await fs.mkdir(path.dirname(file), { recursive: true });
-      await fs.writeFile(file, JSON.stringify({ role, state }), 'utf8');
+      // 3.11: instantánea regenerable por la transacción X2; si falla, el hook sigue fallando abierto.
+      await replaceOwned({ root, file, module: 'cli/hook.ts', content: JSON.stringify({ role, state }) });
     }
   }
   await ensureSessionRun(root, sessionRun(input)).catch(() => undefined);
-  const ctx = await guardContext(root, manifest);
-  if (host(input) === 'claude') {
+  // R-047–R-053: la política de lectura va antes del contexto de git, que puede fallar abierto; con el manifiesto
+  // cargado, una lectura reconocida no verificable o sensible se deniega en `enforce` aunque lo demás falle.
+  const reads = await readPolicy(root, input, manifest, mode);
+  const claude = host(input) === 'claude';
+  // R-072 (4.63): un rol implementer no abre peticiones de cambio, en cualquier modo.
+  const command = commandFromHookInput(input as ClaudePreToolUseInput);
+  const delivery = command === null ? null : classifyDelivery(command, role);
+  if (delivery !== null) {
+    const text = `${delivery.rule}: ${delivery.reason}`;
+    return claude
+      ? { output: { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: text }, systemMessage: text } }
+      : { output: { blocked: true, message: text } };
+  }
+  if (reads.deny !== null) {
+    return claude
+      ? { output: { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reads.deny }, systemMessage: reads.deny } }
+      : { output: { blocked: true, message: reads.deny } };
+  }
+  const warning = reads.warnings.length > 0 ? reads.warnings.join('\n') : null;
+  let ctx: GuardContext;
+  try {
+    ctx = await guardContext(root, manifest);
+  } catch {
+    return warning === null ? ALLOW : withWarning(ALLOW, warning, claude);
+  }
+  if (claude) {
     const decision = claudePreToolUse(input as ClaudePreToolUseInput, ctx, mode);
     if (decision === null) {
-      return ALLOW;
+      return warning === null ? ALLOW : withWarning(ALLOW, warning, claude);
     }
-    return {
+    const outcome: HookOutcome = {
       output: {
         hookSpecificOutput: {
           hookEventName: 'PreToolUse',
@@ -176,9 +207,50 @@ async function onPre(root: string, input: HookPayload): Promise<HookOutcome> {
         ...(decision.systemMessage ? { systemMessage: decision.systemMessage } : {}),
       },
     };
+    return warning === null ? outcome : withWarning(outcome, warning, claude);
   }
   const decision = opencodeToolExecuteBefore(input as OpenCodeHookInput, ctx, mode);
-  return decision === null ? ALLOW : { output: { ...decision } };
+  const outcome = decision === null ? ALLOW : { output: { ...decision } };
+  return warning === null ? outcome : withWarning(outcome, warning, claude);
+}
+
+/** Añade el aviso de `shadow` al canal visible del host (mensaje del sistema en Claude, mensaje en OpenCode). */
+function withWarning(outcome: HookOutcome, warning: string, claude: boolean): HookOutcome {
+  const key = claude ? 'systemMessage' : 'message';
+  const previous = typeof outcome.output[key] === 'string' ? `\n${outcome.output[key] as string}` : '';
+  return { ...outcome, output: { ...outcome.output, [key]: `${warning}${previous}`, ...(claude ? {} : { blocked: outcome.output.blocked === true }) } };
+}
+
+/**
+ * Evalúa las lecturas reconocidas del payload. Devuelve la denegación (enforce) o los avisos (shadow) y deja un
+ * registro redactado en `runs` v2 (`note_type: guard`) con el patrón y la herramienta, nunca la ruta ni el contenido.
+ */
+async function readPolicy(root: string, input: HookPayload, manifest: ProjectManifest, mode: GuardMode): Promise<{ deny: string | null; warnings: string[] }> {
+  if (manifest.policy.optOuts.includes(READ_OPT_OUT)) {
+    return { deny: null, warnings: [] };
+  }
+  const cwd = typeof input.cwd === 'string' && input.cwd.trim() !== '' ? input.cwd : root;
+  const env = { cwd, home: os.homedir(), platform: process.platform };
+  const warnings: string[] = [];
+  for (const read of await recognizedReads(input, env)) {
+    const result = evaluateRead(read, mode, caseInsensitiveFs(env.platform));
+    if (result.rule === null || result.warning === null) {
+      continue;
+    }
+    await appendRunEvent(root, {
+      ts: new Date().toISOString(),
+      run: sessionRun(input),
+      kind: 'note',
+      note_type: 'guard',
+      origin: 'hook',
+      note: `${result.rule} ${read.action} ${read.tool.slice(0, 40)} ${result.decision}`,
+    }).catch(() => undefined);
+    if (result.decision === 'deny') {
+      return { deny: result.warning, warnings };
+    }
+    warnings.push(result.warning);
+  }
+  return { deny: null, warnings };
 }
 
 async function onPost(root: string, input: HookPayload): Promise<HookOutcome> {
@@ -214,7 +286,7 @@ export function sessionRun(input: HookPayload, env: NodeJS.ProcessEnv = process.
 async function ensureSessionRun(root: string, run: string): Promise<void> {
   if ((await readRunEvents(root, run)).length === 0) {
     await pruneRuns(root);
-    await appendRunEvent(root, { v: 1, ts: new Date().toISOString(), run, kind: 'start', step: 'session' });
+    await appendRunEvent(root, { ts: new Date().toISOString(), run, kind: 'start', step: 'session', origin: 'hook' });
   }
 }
 
@@ -224,7 +296,7 @@ async function onStop(root: string, input: HookPayload): Promise<HookOutcome> {
   await ensureSessionRun(root, run);
   const start = (await readRunEvents(root, run)).find((event) => event.kind === 'start');
   const elapsed = start ? Math.max(0, Date.now() - Date.parse(start.ts)) : 0;
-  await appendRunEvent(root, { v: 1, ts: new Date().toISOString(), run, kind: 'end', duration_ms: Math.min(elapsed, 604_800_000) });
+  await appendRunEvent(root, { ts: new Date().toISOString(), run, kind: 'end', origin: 'hook', duration_ms: Math.min(elapsed, 604_800_000) });
   return ALLOW;
 }
 

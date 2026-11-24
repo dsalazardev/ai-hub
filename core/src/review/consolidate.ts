@@ -118,8 +118,39 @@ export function consolidateFindings(findings: Finding[]): ConsolidatedFinding[] 
 
 const USAGE = 'Uso: ai-hub review consolidate <informe…> (lee bloques ```json findings; escribe solo por stdout)';
 
+const CANDIDATE_USAGE = 'Uso: ai-hub review candidate freeze [--base <ref>] | ai-hub review candidate remove <commit> [--force]';
+
+/** `review candidate`: congela el estado actual como candidato inmutable o lo elimina de forma explícita (R-056, R-061). */
+async function cmdCandidate(args: ParsedArgs, ctx: CliContext): Promise<number> {
+  const [, action, target] = args.positionals;
+  const { CandidateError, defaultBase, freezeCandidate, removeCandidate } = await import('./candidate.js');
+  try {
+    if (action === 'freeze') {
+      const base = typeof args.flags.base === 'string' ? args.flags.base : defaultBase(ctx.root, 'main');
+      ctx.io.out(JSON.stringify(await freezeCandidate(ctx.root, base), null, 2));
+      return 0;
+    }
+    if (action === 'remove' && target) {
+      await removeCandidate(ctx.root, target, Boolean(args.flags.force));
+      ctx.io.out(`candidato ${target.slice(0, 12)} eliminado`);
+      return 0;
+    }
+  } catch (error) {
+    if (error instanceof CandidateError) {
+      ctx.io.err(`${error.reasonCode}: ${error.message}`);
+      return 1;
+    }
+    throw error;
+  }
+  ctx.io.err(CANDIDATE_USAGE);
+  return 2;
+}
+
 export async function cmdReview(args: ParsedArgs, ctx: CliContext): Promise<number> {
   const [sub, ...reports] = args.positionals;
+  if (sub === 'candidate') {
+    return cmdCandidate(args, ctx);
+  }
   if (sub !== 'consolidate' || reports.length === 0) {
     ctx.io.err(USAGE);
     return 2;

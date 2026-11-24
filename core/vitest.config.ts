@@ -12,6 +12,8 @@ export default defineConfig({
       AI_HUB_CATALOG_INDEX_FILE: CATALOG_INDEX_FILE,
       // webhook-operativo: `doctor` nunca lee el hogar real de Hermes ni sondea su puerto durante las pruebas.
       HERMES_HOME: path.join(os.tmpdir(), 'ai-hub-test-no-hermes-home'),
+      // Locks compartidos (X1) en un directorio de pruebas, nunca en el del usuario real.
+      AI_HUB_LOCK_DIR: path.join(os.tmpdir(), 'ai-hub-test-locks'),
     },
     projects: [
       {

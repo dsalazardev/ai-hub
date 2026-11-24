@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import { replaceOwned } from '../writes/replace.js';
 import path from 'node:path';
 import type { CliContext, ParsedArgs } from '../cli/types.js';
 import { readTemplate } from '../harness/local.js';
@@ -32,7 +33,7 @@ export async function cmdCi(args: ParsedArgs, ctx: CliContext): Promise<number> 
     return 1;
   }
   await fs.mkdir(path.dirname(destination), { recursive: true });
-  await fs.writeFile(destination, await readTemplate(spec.template), 'utf8');
+  await replaceOwned({ root: ctx.root, file: destination, module: 'ci/templates.ts', content: await readTemplate(spec.template) });
   ctx.io.out(`[OK]    ${spec.destination} escrito`);
   return 0;
 }

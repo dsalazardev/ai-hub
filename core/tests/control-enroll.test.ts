@@ -282,3 +282,55 @@ describe('fase 4 — perfil y credenciales de Discord (4.7, 4.8)', () => {
     expect(text).not.toContain(BOT_TOKEN_SENTINEL);
   });
 });
+
+describe('scripts gestionados y job configurado (4.25, 4.26, R-011, R-013)', () => {
+  const pollFile = (): string => path.join(profileDir, 'scripts', 'control-poll.sh');
+
+  it('un script gestionado antiguo: --check lo informa, --yes lo sustituye con copia y --check pasa después', async () => {
+    expect((await runEnroll(h.root, { mode: 'yes', hermes: hermesBin, host })).code).toBe(0);
+    const old = '#!/bin/sh\n# ai-hub-managed: control-poll.sh v=1\nnpx --no-install ai-hub control decide --online\n';
+    await fs.writeFile(pollFile(), old);
+    const before = await runEnroll(h.root, { mode: 'check', hermes: hermesBin, host });
+    expect(before.lines.join('\n')).toContain('control-poll.sh desactualizado');
+    const updated = await runEnroll(h.root, { mode: 'yes', hermes: hermesBin, host });
+    expect(updated.lines.join('\n')).toContain('desactualizado: se sustituye con copia previa');
+    expect(await fs.readFile(pollFile(), 'utf8')).toContain('exec npx --no-install ai-hub control poll');
+    expect(await fs.readFile(`${pollFile()}.pre-ai-hub`, 'utf8')).toBe(old);
+    const after = await runEnroll(h.root, { mode: 'check', hermes: hermesBin, host });
+    expect(after.lines.join('\n')).not.toContain('desactualizado');
+  });
+
+  it('un script sin marca es de la persona: queda intacto y se informa como no gestionado', async () => {
+    expect((await runEnroll(h.root, { mode: 'yes', hermes: hermesBin, host })).code).toBe(0);
+    const mine = '#!/bin/sh\n# mi poll\nnpx --no-install ai-hub control poll --probe\n';
+    await fs.writeFile(pollFile(), mine);
+    const again = await runEnroll(h.root, { mode: 'yes', hermes: hermesBin, host });
+    expect(again.lines.join('\n')).toContain('no gestionado: sin marca de AI-Hub; se deja intacto');
+    expect(await fs.readFile(pollFile(), 'utf8')).toBe(mine);
+    await expect(fs.access(`${pollFile()}.pre-ai-hub`)).rejects.toThrow();
+    const check = await runEnroll(h.root, { mode: 'check', hermes: hermesBin, host });
+    expect(check.lines.join('\n')).toContain('control-poll.sh no gestionado');
+  });
+
+  it('el job del poll toma su nombre de manifest.control.pollJob', async () => {
+    const manifest = path.join(h.root, 'manifest.yaml');
+    await fs.writeFile(manifest, (await fs.readFile(manifest, 'utf8')).replace(/^control:\n/m, 'control:\n  pollJob: mi-poll-de-control\n'));
+    expect((await runEnroll(h.root, { mode: 'yes', hermes: hermesBin, host })).code).toBe(0);
+    const create = state.calls.find((args) => args.includes('cron') && args.includes('create')) ?? [];
+    expect(create[create.indexOf('--name') + 1]).toBe('mi-poll-de-control');
+    expect([...state.crons]).toEqual(['mi-poll-de-control']);
+  });
+});
+
+describe('skill gestionada (4.15, R-007)', () => {
+  it('una instalación con la skill antigua recibe la que transporta las cuatro palabras, con copia previa', async () => {
+    expect((await runEnroll(h.root, { mode: 'yes', hermes: hermesBin, host })).code).toBe(0);
+    const skill = path.join(profileDir, 'skills', 'ai-hub-control', 'SKILL.md');
+    const old = '---\nname: ai-hub-control\n---\n<!-- ai-hub-managed: SKILL.md v=1 -->\nKeep only the first three words for `aprobar`.\n';
+    await fs.writeFile(skill, old);
+    expect((await runEnroll(h.root, { mode: 'check', hermes: hermesBin, host })).lines.join('\n')).toContain('desactualizada');
+    await runEnroll(h.root, { mode: 'yes', hermes: hermesBin, host });
+    expect(await fs.readFile(skill, 'utf8')).toContain('must reach AI-Hub as four arguments');
+    expect(await fs.readFile(`${skill}.pre-ai-hub`, 'utf8')).toBe(old);
+  });
+});

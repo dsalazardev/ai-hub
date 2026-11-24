@@ -9,7 +9,7 @@ import { loadManifestContext, type ProjectManifest } from '../manifest/manifest.
 import { readHarnessEnv } from '../env/dotenv.js';
 import { flagString } from '../cli/args.js';
 import type { FetchLike } from '../env/doctor.js';
-import { GitlabTracker, defaultTrackerFetch, type TrackerFetch } from './tracker.js';
+import { type GitlabTracker, trackerDescriptor, trackerFromHarness, defaultTrackerFetch, type TrackerFetch } from './tracker.js';
 import type { CliContext, ParsedArgs } from '../cli/types.js';
 
 /**
@@ -31,6 +31,8 @@ export interface TickIssue {
   title?: string;
   /** Último estado válido publicado por un motor en una nota de la issue o de su MR (evidencia remota). */
   remote?: { state: string; source: EvidenceRank; ref: string };
+  /** La nota de estado más reciente no cumple el contrato (R-109): la issue se detiene y se nombra la nota. */
+  invalidStatus?: string;
 }
 
 /** Rango de la evidencia: verificada en este host, verificada por CI, o solo declarada por el motor. */
@@ -74,6 +76,8 @@ export interface TickResult {
   pendingHuman: Array<{ kind: 'awaiting-ok' | 'closing'; ref: string }>;
   /** Issues del tablero sin el marcador `ai-hub:feature=` (solo al listar el tablero con `--online`). */
   unmapped?: number[];
+  /** Issues detenidas con `invalid_status`: su nota de estado más reciente no es válida (R-109). */
+  invalidStatus?: Array<{ iid: number; ref: string }>;
 }
 
 /** Marcador que liga una issue a su feature; solo en la descripción. */
@@ -229,9 +233,11 @@ async function onlineLabels(root: string, manifest: ProjectManifest, issues: Tic
   const env = (await readHarnessEnv(root)) ?? {};
   const url = env[tracker.urlEnv];
   const token = env[tracker.tokenEnv];
-  const project = env.GITLAB_PROJECT_PATH;
+  const descriptor = trackerDescriptor(tracker.kind);
+  const projectKey = descriptor.projectEnvKey;
+  const project = env[projectKey];
   if (!url || !token || !project) {
-    throw new Error(`--online necesita ${tracker.urlEnv}, ${tracker.tokenEnv} y GITLAB_PROJECT_PATH en .ai-hub/.env`);
+    throw new Error(`--online necesita ${tracker.urlEnv}, ${tracker.tokenEnv} y ${projectKey} en .ai-hub/.env`);
   }
   const result: TickIssue[] = [];
   for (const issue of issues) {
@@ -239,15 +245,14 @@ async function onlineLabels(root: string, manifest: ProjectManifest, issues: Tic
       result.push(issue);
       continue;
     }
-    const response = await doFetch(`${url.replace(/\/+$/, '')}/api/v4/projects/${project}/issues/${issue.iid}`, {
-      headers: { 'PRIVATE-TOKEN': token },
+    const response = await doFetch(descriptor.issueUrl(url, project, issue.iid), {
+      headers: descriptor.authHeaders(token),
       signal: AbortSignal.timeout(10_000),
     });
     if (response.status !== 200) {
       throw new Error(`el tracker respondió HTTP ${response.status} para la issue ${issue.iid}`);
     }
-    const body = (await response.json()) as { labels?: unknown };
-    const labels = Array.isArray(body.labels) ? body.labels.filter((label): label is string => typeof label === 'string') : [];
+    const labels = descriptor.labelsOf(await response.json());
     result.push({ ...issue, labels });
   }
   return result;
@@ -288,13 +293,16 @@ export async function boardIssues(tracker: GitlabTracker): Promise<{ issues: Tic
       continue;
     }
     let approvedHash: string | undefined;
-    // Evidencia remota: la última nota (id mayor) de la issue o de sus MR que termina en una línea válida.
-    let remote: { id: number; state: string; ref: string; mr: number | null } | null = null;
+    // R-109 (4.84): primero se elige la nota más reciente (id mayor) de la issue o de sus MR cuya última línea
+    // empieza por el prefijo del cierre, y después se valida. Si es inválida, la issue se detiene con
+    // `invalid_status` nombrando esa nota: nunca se retrocede a una nota anterior válida.
+    let remote: { id: number; state: string | null; ref: string; mr: number | null } | null = null;
     const consider = (id: number, body: string, ref: string, mr: number | null): void => {
-      const status = lastStatusLine(body, contract);
-      if (status !== null && (remote === null || id > remote.id)) {
-        remote = { id, state: status.state, ref, mr };
+      const last = body.split(/\r?\n/).filter((line) => line.trim() !== '').at(-1)?.trim() ?? '';
+      if (!last.startsWith(`${contract.prefix}:`) || (remote !== null && id <= remote.id)) {
+        return;
       }
+      remote = { id, state: lastStatusLine(body, contract)?.state ?? null, ref, mr };
     };
     for (const note of await tracker.issueNotes(issue.iid)) {
       const hash = APPROVED_HASH_MARKER.exec(note.body)?.[1];
@@ -303,20 +311,23 @@ export async function boardIssues(tracker: GitlabTracker): Promise<{ issues: Tic
       }
       consider(note.id, note.body, `nota de la issue #${issue.iid}`, null);
     }
+    const name = tracker.changeRequestName;
     const mergeRequests = await tracker.relatedMergeRequests(issue.iid);
     for (const mr of mergeRequests) {
       for (const note of await tracker.mergeRequestNotes(mr.iid)) {
-        consider(note.id, note.body, `nota del MR !${mr.iid}`, mr.iid);
+        consider(note.id, note.body, `nota del ${name.short} ${name.ref}${mr.iid}`, mr.iid);
       }
     }
     let evidence: TickIssue['remote'];
-    const found = remote as { id: number; state: string; ref: string; mr: number | null } | null;
+    const chosen = remote as { id: number; state: string | null; ref: string; mr: number | null } | null;
+    const invalidStatus = chosen !== null && chosen.state === null ? chosen.ref : undefined;
+    const found = chosen !== null && chosen.state !== null ? (chosen as { id: number; state: string; ref: string; mr: number | null }) : null;
     if (found !== null) {
       evidence = { state: found.state, source: 'remote', ref: found.ref };
       // Un VERIFIED remoto solo sube de rango con el pipeline verde de un MR de la issue.
       for (const mr of found.state === 'VERIFIED' ? mergeRequests : []) {
         if ((await tracker.latestPipelineStatus(mr.iid)) === 'success') {
-          evidence = { state: found.state, source: 'pipeline', ref: `pipeline del MR !${mr.iid}: success` };
+          evidence = { state: found.state, source: 'pipeline', ref: `pipeline del ${name.short} ${name.ref}${mr.iid}: success` };
           break;
         }
       }
@@ -328,6 +339,7 @@ export async function boardIssues(tracker: GitlabTracker): Promise<{ issues: Tic
       title: issue.title,
       ...(approvedHash ? { approvedHash } : {}),
       ...(evidence ? { remote: evidence } : {}),
+      ...(invalidStatus !== undefined ? { invalidStatus } : {}),
     });
   }
   return { issues, unmapped };
@@ -345,7 +357,7 @@ export async function runTick(root: string, options: TickOptions): Promise<TickR
     issues = options.board.issues;
     unmapped = options.board.unmapped;
   } else if (options.online) {
-    const board = await boardIssues(await GitlabTracker.fromHarness(root, manifest, options.trackerFetch ?? defaultTrackerFetch));
+    const board = await boardIssues(await trackerFromHarness(root, manifest, options.trackerFetch ?? defaultTrackerFetch));
     issues = board.issues;
     unmapped = board.unmapped;
   }
@@ -386,7 +398,18 @@ export async function runTick(root: string, options: TickOptions): Promise<TickR
     }
   }
   const result = computeTick(engine, { features: selected, issues, seals, maxRounds, reports, ...runs, latest, sources });
-  return { ...result, unmapped };
+  // R-109: una issue cuya última nota de estado es inválida no recibe propuestas hasta un cierre válido.
+  const invalid = issues.filter((item) => item.invalidStatus !== undefined && item.iid !== undefined);
+  if (invalid.length === 0) {
+    return { ...result, unmapped };
+  }
+  const stopped = new Set(invalid.map((item) => item.iid));
+  return {
+    ...result,
+    proposals: result.proposals.filter((proposal) => proposal.iid === null || !stopped.has(proposal.iid)),
+    unmapped,
+    invalidStatus: invalid.map((item) => ({ iid: item.iid as number, ref: item.invalidStatus as string })),
+  };
 }
 
 const USAGE = 'Uso: ai-hub control tick --dry-run [--json] [--issue <iid>] [--labels-from <archivo>] [--online] [--ref <rama>]';

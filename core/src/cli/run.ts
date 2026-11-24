@@ -9,6 +9,8 @@ import { cmdJudge } from './legacy.js';
 import { cmdGate } from './gate.js';
 import { cmdHook } from './hook.js';
 import { cmdRuns } from '../harness/runs.js';
+import { cmdLocks } from './locks.js';
+import { cmdCaptures } from './captures.js';
 import { cmdControl } from '../control/cli.js';
 import { cmdReview } from '../review/consolidate.js';
 import { cmdAdopt } from '../adopt/convert.js';
@@ -109,6 +111,10 @@ async function cmdSync(args: ParsedArgs, ctx: CliContext): Promise<number> {
       return 0;
     }
     ctx.io.out(`[OK]    Escritos: ${result.written.length} · Eliminados: ${result.removed.length}`);
+    // D-65 (R-118): lo pendiente se informa; no es un error de sync (sale 0), pero doctor lo marca.
+    for (const line of result.pending) {
+      ctx.io.out(line);
+    }
     return 0;
   } catch (error) {
     if (
@@ -158,6 +164,8 @@ export const COMMANDS: Record<string, CommandSpec> = {
   hooks: { summary: 'Instala hooks de git que fallan abiertos', handler: cmdHooks },
   gate: { summary: 'Verifica artefactos, WIP, sello y comandos del manifiesto', handler: cmdGate },
   runs: { summary: 'Telemetría de ejecuciones con esquema cerrado (start|event|note|end|list)', handler: cmdRuns },
+  locks: { summary: 'Muestra o libera explícitamente un lock X1 (show|release --yes)', handler: cmdLocks },
+  captures: { summary: 'Lista o libera capturas de escrituras externas detectadas (list|release --yes)', handler: cmdCaptures },
   control: { summary: 'Plano de control: tick --dry-run propone; decide, ingest, apply, expire y enroll (hermes-control)', handler: cmdControl },
   review: { summary: 'review consolidate <informes…>: consolida el panel por stdout', handler: cmdReview },
   seal: { summary: 'seal review --verdict <V>: liga el veredicto de revisión al diff real', handler: cmdSeal },

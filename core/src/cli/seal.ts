@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { readReviewDiff, reviewBase, REVIEW_SEAL_FILE, type ReviewSealRecord } from '../harness/review-seal.js';
 import { isApproving, isReviewVerdict, REVIEW_VERDICTS, reviewSeal } from '../speckit/seal.js';
 import type { CliContext, ParsedArgs } from './types.js';
+import { transactWrite } from '../writes/transaction.js';
 
 const USAGE = `Uso: ai-hub seal review --verdict <${REVIEW_VERDICTS.join('|')}> [--base <ref>]`;
 
@@ -43,10 +44,23 @@ export async function cmdSeal(args: ParsedArgs, ctx: CliContext): Promise<number
     );
     return 1;
   }
-  const record: ReviewSealRecord = { v: 1, base, verdict, diff: sealed.diff, seal: sealed.seal };
+  // v2 (4.51): sin candidato congelado ni tier hasta que el panel los fije.
+  const record: ReviewSealRecord = { v: 2, base, verdict, diff: sealed.diff, seal: sealed.seal, candidate: null, tier: null };
   const file = path.join(ctx.root, REVIEW_SEAL_FILE);
   await fs.mkdir(path.dirname(file), { recursive: true });
-  await fs.writeFile(file, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+  // 3.11: transacción X2 (lock del proyecto, temporal, última comprobación, rename); el sello se regenera
+  // en cada revisión, sin copia previa (retención 0 en el registro de destinos).
+  const written = await transactWrite({
+    root: ctx.root,
+    file,
+    module: 'cli/seal.ts',
+    capture: false,
+    transform: () => `${JSON.stringify(record, null, 2)}\n`,
+  });
+  if (written.status === 'stopped') {
+    ctx.io.err(`[FAIL]  no se pudo escribir ${REVIEW_SEAL_FILE} (${written.reason}): ${written.detail}`);
+    return 1;
+  }
   ctx.io.out(`[OK]    review ${verdict} sellada · diff=${sealed.diff} · seal=${sealed.seal}`);
   return 0;
 }

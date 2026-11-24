@@ -1,3 +1,4 @@
+import { effectiveSensitivity, findTarget, secretLikeValuedKeys } from '../writes/targets.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { readLock } from '../sync/lock.js';
@@ -85,9 +86,22 @@ async function managedFiles(root: string): Promise<string[]> {
   }
   const result: string[] = [];
   for (const rel of [...files].sort()) {
-    if (await exists(path.join(root, rel))) {
-      result.push(rel);
+    if (!(await exists(path.join(root, rel)))) {
+      continue;
     }
+    // R-041: un destino sensible (declarado, o elevado por nombres de clave de secreto) nunca entra en un snapshot.
+    const declared = findTarget(rel);
+    if (declared?.sensitivity === 'sensitive') {
+      continue;
+    }
+    const text = await fs.readFile(path.join(root, rel), 'utf8').catch(() => null);
+    if (declared && effectiveSensitivity(declared, text) === 'sensitive') {
+      continue;
+    }
+    if (!declared && text !== null && secretLikeValuedKeys(text).length > 0) {
+      continue;
+    }
+    result.push(rel);
   }
   return result;
 }

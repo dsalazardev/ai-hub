@@ -136,9 +136,12 @@ export async function cmdAdopt(args: ParsedArgs, ctx: CliContext): Promise<numbe
     const converted = convertLegacyMcp(mcpText);
     mcpSkills = converted.skills;
     const rootMcp = path.join(root, 'mcp-manifest.yaml');
-    if (!(await exists(rootMcp))) {
-      await fs.writeFile(rootMcp, converted.yaml, 'utf8');
-    }
+    // D-65: archivo nuevo, creado en exclusiva; uno existente del consumidor nunca se sobrescribe.
+    await fs.writeFile(rootMcp, converted.yaml, { encoding: 'utf8', flag: 'wx' }).catch((error: NodeJS.ErrnoException) => {
+      if (error.code !== 'EEXIST') {
+        throw error;
+      }
+    });
     await archive(root, LEGACY_MCP, 'mcp-manifest.v1.yaml');
     ctx.io.out(
       `[F1] MCP → mcp-manifest.yaml: ${converted.servers.join(', ') || 'sin servidores'}${converted.dropped.length > 0 ? ` · sin equivalente: ${converted.dropped.join(', ')}` : ''}`,

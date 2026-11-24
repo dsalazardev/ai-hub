@@ -28,7 +28,8 @@ function preflight(cwd, tool, args) {
 function before(cwd) {
   return async (input, output) => {
     const tool = input && input.tool;
-    const args = (output && output.args) || (input && input.args) || {};
+    // 1.x: `output.args`; 2.x (`ctx.tool.hook('execute.before')`): la entrada llega en `event.input`.
+    const args = (output && output.args) || (input && (input.args || input.input)) || {};
     const denied = preflight(cwd, tool, args);
     if (denied !== null) {
       throw new Error(denied);

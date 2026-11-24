@@ -244,6 +244,16 @@ export async function resolveListener(input: ListenerInput): Promise<ListenerVie
       notices.push(`aviso: el store del dueño y hermes ${command(['webhook', 'list']).join(' ')} no coinciden sobre la ruta ${route}`);
     }
   }
+  if (chosen.store.kind === 'malformed') {
+    // R-023: un store ilegible no es un store ausente. Se conserva sin tocar, se nombra la otra fuente de solo
+    // lectura y la incertidumbre; nada se modifica a partir de lo que no se pudo verificar.
+    const file = path.join(chosen.dir, 'webhook_subscriptions.json');
+    const alternate =
+      listOk === true
+        ? `hermes ${command(['webhook', 'list']).join(' ')} ${inList ? 'sí lista' : 'no lista'} la ruta ${route}`
+        : 'no hay otra fuente legible';
+    notices.push(`aviso: store_corrupt: ${file} no es un almacén de rutas legible; se conserva sin tocar; ${alternate}; la ruta queda con incertidumbre`);
+  }
   let routeState: ListenerView['route'];
   let routeSource: ListenerView['routeSource'];
   if (stored !== null) {

@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { parse, stringify } from 'yaml';
 import { frontmatterString, splitFrontmatter } from '../frontmatter.js';
 import { resolveSourcePath, type SyncConfig } from './config.js';
-import { TARGETS, type ToolId } from './targets.js';
+import { CODEX_HOOK_FORMATS, TARGETS, type CodexHookFormat, type ToolId } from './targets.js';
 import { loadEngine } from '../engine/engine.js';
 import { BINDING_MARKER_SOURCE, BINDING_RULE_ID, BINDING_SOURCE, bindingRule } from '../speckit/binding.js';
 import { closingContractSection } from '../speckit/status.js';
@@ -46,6 +46,7 @@ async function renderAllWith(root: string, config: SyncConfig): Promise<Rendered
   await renderRules(root, config, out);
   await renderPreflight(root, config, out);
   await renderHookPlugins(config, out);
+  renderCodexHooks(config, out);
   await renderLessons(root, config, out);
   renderAreaRules(config, out);
   await renderAgentsMd(config, out);
@@ -68,6 +69,15 @@ async function renderHookPlugins(config: SyncConfig, out: RenderedFiles): Promis
   }
 }
 
+/** Hooks de Codex solo con un formato verificado (4.81); sin ninguno, no se escribe nada. */
+export function renderCodexHooks(config: SyncConfig, out: RenderedFiles, formats: readonly CodexHookFormat[] = CODEX_HOOK_FORMATS): void {
+  const format = formats[0];
+  if (!config.tools.includes('codex') || format === undefined) {
+    return;
+  }
+  putRendered(out, format.path, { content: format.render('npx --no-install ai-hub hook pre'), source: HOOK_PLUGIN_SOURCE });
+}
+
 const AGENTS_MD = 'AGENTS.md';
 const AGENTS_MD_REGION = 'ai-hub';
 
@@ -77,11 +87,12 @@ const AGENTS_MD_REGION = 'ai-hub';
  * en `<ruta del área>/AGENTS.md`. Solo con `agentsMd: true`; el resto del archivo es del usuario.
  */
 async function renderAgentsMd(config: SyncConfig, out: RenderedFiles): Promise<void> {
-  if (!config.agentsMd) {
+  // Codex (R-089) lee sus instrucciones de esta región: se activa también cuando se declara ese destino.
+  if (!config.agentsMd && !config.tools.includes('codex')) {
     return;
   }
   const engine = await loadEngine();
-  const ruleDirs = [...new Set(config.tools.map((tool) => TARGETS[tool].rules))];
+  const ruleDirs = [...new Set(config.tools.flatMap((tool) => (TARGETS[tool].rules === null ? [] : [TARGETS[tool].rules as string])))];
   const body = [
     '# AI-Hub',
     '',
@@ -127,6 +138,10 @@ function renderAreaRules(config: SyncConfig, out: RenderedFiles): void {
     ].join('\n');
     for (const tool of config.tools) {
       const spec = TARGETS[tool];
+      // Sin directorio de reglas (Codex): lo recibe en la región gestionada del AGENTS.md raíz.
+      if (spec.rules === null) {
+        continue;
+      }
       const id = `ai-hub-area-${area.id}`;
       if (spec.ruleShape === 'mdc') {
         putRendered(out, `${spec.rules}/${id}.mdc`, {
@@ -159,6 +174,10 @@ async function renderLessons(root: string, config: SyncConfig, out: RenderedFile
   const body = normalize(text);
   for (const tool of config.tools) {
     const spec = TARGETS[tool];
+    // Sin directorio de reglas (Codex): lo recibe en la región gestionada del AGENTS.md raíz.
+    if (spec.rules === null) {
+      continue;
+    }
     if (spec.ruleShape === 'mdc') {
       putRendered(out, `${spec.rules}/${LESSONS_RULE_ID}.mdc`, {
         source: LESSONS_SOURCE,
@@ -182,6 +201,10 @@ async function renderSpeckitBinding(config: SyncConfig, out: RenderedFiles): Pro
   const engine = await loadEngine();
   for (const tool of config.tools) {
     const spec = TARGETS[tool];
+    // Sin directorio de reglas (Codex): lo recibe en la región gestionada del AGENTS.md raíz.
+    if (spec.rules === null) {
+      continue;
+    }
     const body = bindingRule(engine, tool, config.projectPolicy);
     const file = { source: BINDING_SOURCE, markerSource: BINDING_MARKER_SOURCE };
     if (spec.ruleShape === 'mdc') {
@@ -213,6 +236,9 @@ async function renderPreflight(root: string, config: SyncConfig, out: RenderedFi
   const body = normalize(await fs.readFile(sourcePath, 'utf8'));
   for (const tool of config.tools) {
     const spec = TARGETS[tool];
+    if (spec.hook === null) {
+      continue;
+    }
     if (spec.hookKind === 'cursor-mdc') {
       putRendered(out, spec.hook, {
         content: withMarker(
@@ -264,6 +290,23 @@ export function putRendered(out: RenderedFiles, destination: string, file: Rende
 
 export function normalize(text: string): string {
   return text.replace(/\r\n?/g, '\n');
+}
+
+/** Cadena básica de TOML: las secuencias de escape de JSON (\\", \\, \n, \t, \uXXXX) son válidas en TOML. */
+function tomlString(value: string): string {
+  return JSON.stringify(value);
+}
+
+function tomlAgent(data: Record<string, unknown>, body: string, model: string | null, source: string): string {
+  const lines = [
+    `# GENERADO por ai-hub sync desde ${source} — no editar`,
+    `name = ${tomlString(String(data.name))}`,
+    `description = ${tomlString(String(data.description))}`,
+    ...(model !== null ? [`model = ${tomlString(model)}`] : []),
+    `developer_instructions = ${tomlString(body.replace(/^\s+/, ''))}`,
+    '',
+  ];
+  return lines.join('\n');
 }
 
 export function markerFor(source: string): string {
@@ -369,8 +412,27 @@ async function renderSkills(root: string, config: SyncConfig, out: RenderedFiles
   }
 }
 
+/**
+ * Modelo del verificador independiente (R-055, 4.45): uno distinto del de autoría (`author_tier`) cuando
+ * `agentModels` lo permite; si no, el que haya (o el del host) y una nota de diversidad reducida en su cuerpo.
+ */
+export function verifierModel(models: Record<string, string>, authorTier: string, blockedReason: string): { model: string | null; note: string } {
+  const author = models[authorTier] ?? null;
+  const different = ['heavy', 'balanced', 'light'].map((tier) => models[tier]).find((model) => model !== undefined && model !== author) ?? null;
+  if (author !== null && different !== null) {
+    return { model: different, note: `Diversidad de modelo: verificas con \`${different}\`, distinto del modelo de autoría (\`${author}\`).` };
+  }
+  return {
+    model: author,
+    note:
+      'Diversidad reducida: este destino no tiene en `manifest.agentModels` un modelo distinto del de autoría; anótalo en tu revisión. ' +
+      `Si el riesgo exige diversidad, cierra \`AI-HUB-STATUS: BLOCKED | artifact=- | reason=${blockedReason}\` y escala a una persona: nada se aprueba solo.`,
+  };
+}
+
 async function renderAgents(root: string, config: SyncConfig, out: RenderedFiles): Promise<void> {
   const { source, publish, targets } = config.agents;
+  const verifier = (await loadEngine()).delegation.verifier;
   for (const name of publish) {
     const sourcePath = `${source}/${name}.md`;
     const { data, body } = splitFrontmatter(await readSource(root, sourcePath), sourcePath);
@@ -383,10 +445,25 @@ async function renderAgents(root: string, config: SyncConfig, out: RenderedFiles
       if (format === null) {
         continue;
       }
-      const model = tier === null ? null : (config.agentModels[tool]?.[tier] ?? null);
+      let model = tier === null ? null : (config.agentModels[tool]?.[tier] ?? null);
+      let content = body;
+      if (verifier.agents.includes(name)) {
+        const choice = verifierModel(config.agentModels[tool] ?? {}, verifier.author_tier, verifier.diversity_unavailable_reason);
+        model = choice.model;
+        content = `${body.replace(/\s*$/, '')}\n\n${choice.note}\n`;
+      }
       const header = renderAgentHeader(format, { name, description }, data, model);
+      if (format.extension === '.toml') {
+        // R-090: agente TOML (Codex): `name`, `description` y `developer_instructions` obligatorios; el modelo, si
+        // el proyecto lo fija. Las capacidades que el archivo no aplica quedan declaradas como degradadas (doctor).
+        putRendered(out, `${format.path}/${name}${format.extension}`, {
+          content: tomlAgent(header.data, content, model, sourcePath),
+          source: sourcePath,
+        });
+        continue;
+      }
       putRendered(out, `${format.path}/${name}${format.extension}`, {
-        content: withMarker(frontmatter(header.data) + body, sourcePath),
+        content: withMarker(frontmatter(header.data) + content, sourcePath),
         source: sourcePath,
       });
     }

@@ -1,6 +1,7 @@
 import type { ProjectManifest } from '../manifest/manifest.js';
 import { DECLARE_TRACKER_ACTION } from '../cli/integrations.js';
 import { controlSettings } from './ledger.js';
+import { labelPermit } from './label-policy.js';
 import type { HermesCli } from './hermes.js';
 import { resolveListener } from './listener.js';
 import { probeWebhook, type ProbeResult } from './webhook-config.js';
@@ -77,4 +78,37 @@ export function checkControl(manifest: ProjectManifest | null): ControlCheck {
     return { id: 'control', ok: true, detail: `aviso: approvers vacío, las aprobaciones están desactivadas · ${summary}` };
   }
   return { id: 'control', ok: true, detail: `${settings.approvers.length} aprobador(es) en Discord · ${summary}` };
+}
+
+export interface ControlLabelsCheck {
+  id: 'control:labels';
+  ok: boolean;
+  detail: string;
+}
+
+/**
+ * Capacidad de escritura de etiquetas (R-004, R-111): `doctor` dice si los movimientos se retienen o se
+ * escriben sin garantía. Nunca presenta una escritura sin garantía como protegida.
+ */
+export function checkControlLabels(manifest: ProjectManifest | null): ControlLabelsCheck | null {
+  if (!manifest || controlSettings(manifest) === null) {
+    return null;
+  }
+  const permit = labelPermit(manifest);
+  if (permit.kind === 'protected') {
+    return { id: 'control:labels', ok: true, detail: `actualización condicional de etiquetas disponible (${permit.capability.evidence})` };
+  }
+  if (permit.kind === 'unprotected') {
+    return {
+      id: 'control:labels',
+      ok: true,
+      detail:
+        'aviso: label_update_unprotected · modo unprotected (opt-in): las etiquetas se escriben sin garantía atómica remota; el lock solo coordina a este host, no la interfaz web, otros hosts ni clientes externos; no cumple #1-C6',
+    };
+  }
+  return {
+    id: 'control:labels',
+    ok: true,
+    detail: 'aviso: label_update_unprotected · el tracker no ofrece actualización condicional verificada: aprobaciones, apply --preapproved y expire con block no mueven etiquetas (retención por defecto)',
+  };
 }

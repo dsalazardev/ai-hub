@@ -148,3 +148,33 @@ describe('fabrica-verificable 3.2 — ningún otro módulo escribe manifest.yaml
     expect(offenders).toEqual([]);
   });
 });
+
+describe('manifest.yaml: garantías de X2 bajo el mecanismo propio (3.11)', () => {
+  it('bytes iguales no escriben; un manifiesto cambiado tras leerlo no se reemplaza y conserva la edición', async () => {
+    const { ManifestChangedError } = await import('../src/manifest/write.js');
+    const rename = vi.spyOn(fs, 'rename');
+    expect(await writeManifestText(root, ORIGINAL)).toBe('unchanged');
+    expect(rename).not.toHaveBeenCalled();
+    vi.restoreAllMocks();
+    const edited = `${ORIGINAL}# edición de la persona\n`;
+    await fs.writeFile(file, edited, 'utf8');
+    await expect(writeManifestText(root, 'version: 2\n', ORIGINAL)).rejects.toBeInstanceOf(ManifestChangedError);
+    expect(await fs.readFile(file, 'utf8')).toBe(edited);
+    expect(await leftovers()).toEqual([]);
+  });
+
+  it('una edición externa durante la preparación (antes del rename) se detecta en la última comprobación', async () => {
+    const { ManifestChangedError } = await import('../src/manifest/write.js');
+    const original = fs.writeFile.bind(fs);
+    vi.spyOn(fs, 'writeFile').mockImplementation(async (target, data, options) => {
+      await original(target as never, data as never, options as never);
+      if (String(target).endsWith('.tmp')) {
+        await original(file, `${ORIGINAL}# externa\n`, 'utf8');
+      }
+    });
+    await expect(writeManifestText(root, 'version: 2\n', ORIGINAL)).rejects.toBeInstanceOf(ManifestChangedError);
+    vi.restoreAllMocks();
+    expect(await fs.readFile(file, 'utf8')).toBe(`${ORIGINAL}# externa\n`);
+    expect(await leftovers()).toEqual([]);
+  });
+});

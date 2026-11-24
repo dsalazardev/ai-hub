@@ -1,4 +1,6 @@
 import { contextHost, runControlStep } from '../control/onboard-step.js';
+import { replaceOwned } from '../writes/replace.js';
+import { credentialGate } from '../writes/credential-ignore.js';
 import { connectionSaved } from '../control/onboard.js';
 import { DECLARE_TRACKER_ACTION, ENROLL_ACTION, RETAKE_ACTION, RETAKE_PROVIDE, isolate, type IntegrationReport } from './integrations.js';
 import type { ParsedArgs } from './types.js';
@@ -149,6 +151,7 @@ const TOOL_LABELS: Record<ToolId, string> = {
   pi: 'Pi',
   cursor: 'Cursor',
   copilot: 'GitHub Copilot',
+  codex: 'Codex',
 };
 
 /**
@@ -457,7 +460,8 @@ export async function writeBacklogSeed(
     state = classifySeed(existing, idea);
   }
   if (state === 'written' || state === 'migrated') {
-    await fs.writeFile(seedPath, renderSeed(idea, note, now), 'utf8');
+    // 3.11: transacción X2; si la semilla cambió desde que se clasificó, no se reemplaza.
+    await replaceOwned({ root: ctx.root, file: seedPath, module: 'cli/assistant.ts', content: renderSeed(idea, note, now), expected: existing });
   }
   const prePrompt = await refreshTemplateFile(
     ctx.root,
@@ -717,10 +721,17 @@ export async function runTrackerStep(prompts: AssistantPrompts, ctx: CliContext)
     ctx.io.out('tracker: paso saltado; no se escribió nada');
     return TRACKER_SKIPPED;
   }
+  // D-65 (R-117): la credencial solo se escribe detrás de un ignorado verificado; si no, nada.
+  const gate = await credentialGate(ctx.root, '.ai-hub/.env');
+  if (!gate.ok) {
+    ctx.io.err(`tracker: ${gate.reason}: ${gate.detail}; el token no se guardó ni se mostró`);
+    return { name: 'tracker', state: 'pendiente', stage: 'credential-ignore', action: 'ai-hub init', cause: [gate.reason] };
+  }
   await fs.mkdir(path.dirname(envFile), { recursive: true });
   await fs.writeFile(envFile, formatDotenv({ GITLAB_URL: url.trim(), GITLAB_TOKEN: token.trim() }), {
     encoding: 'utf8',
     mode: 0o600,
+    flag: 'wx',
   });
   // La persona completó el paso: el arnés declara el tracker (solo nombres de variables) y re-sella el lock.
   const outcome = await declareTracker(ctx.root, (line) => ctx.io.err(line));

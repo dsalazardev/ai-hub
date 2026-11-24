@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { readTemplate } from '../harness/local.js';
+import { transactWrite } from '../writes/transaction.js';
+import { externalTarget } from '../writes/targets.js';
 
 /**
  * Identidad gestionada del perfil `hermes-control` (HC-04, HC-05, HC-09…HC-11): un bloque versionado con el hash
@@ -12,7 +14,8 @@ export const SOUL_VERSION = 1;
 export const SOUL_BEGIN = '<!-- ai-hub:soul:begin';
 export const SOUL_END = '<!-- ai-hub:soul:end -->';
 /** SHA-256 del cuerpo de cada plantilla publicada (el actual primero). */
-export const SOUL_HISTORY: readonly string[] = ['d5169d2409f9b0a7fa8103b29304f6eb113e941c35381e00851c7e6a78771a74'];
+// 4.16: se añade la plantilla con la gramática completa; la anterior sigue en el historial para actualizarse.
+export const SOUL_HISTORY: readonly string[] = ['d5169d2409f9b0a7fa8103b29304f6eb113e941c35381e00851c7e6a78771a74', '1e9f0c5273c45604c8aabadc9d25c790983c578768dadeaacede509834cd879f'];
 
 export type SoulState = 'present' | 'created' | 'updated' | 'pending';
 export type SoulStage = 'identity-before-backup' | 'identity-backup' | 'identity-block';
@@ -128,14 +131,28 @@ async function identicalBackup(dir: string, content: string): Promise<boolean> {
   return false;
 }
 
-async function writeAtomic(file: string, content: string): Promise<void> {
-  const temp = `${file}.ai-hub-${process.pid}.tmp`;
-  try {
-    await fs.writeFile(temp, content, 'utf8');
-    await fs.rename(temp, file);
-  } catch (error) {
-    await fs.rm(temp, { force: true }).catch(() => undefined);
-    throw error;
+/**
+ * Escritura de `SOUL.md` por la transacción X2 (3.11): lock compartido de usuario (destino externo), temporal,
+ * última comprobación y rename. `expected` es lo que se leyó al decidir: si otro escritor lo cambió entretanto,
+ * no se reemplaza. Sin copia de la transacción: la adopción conserva su copia protegida propia.
+ */
+async function writeAtomic(file: string, content: string, expected: string | null): Promise<void> {
+  const result = await transactWrite({
+    root: path.dirname(file),
+    file,
+    module: 'control/identity.ts',
+    target: externalTarget('hermes-profile-soul'),
+    retention: 0,
+    capture: false,
+    transform: (current) => {
+      if (current !== expected) {
+        throw new Error(`${file} cambió mientras se preparaba el bloque gestionado; no se reemplaza (vuelve a ejecutar el paso)`);
+      }
+      return content;
+    },
+  });
+  if (result.status === 'stopped') {
+    throw new Error(`${file}: escritura detenida (${result.reason}): ${result.detail}`);
   }
 }
 
@@ -190,7 +207,7 @@ export async function ensureSoulIdentity(
   const original = await read(file);
   if (original === null) {
     await options.onStage?.('identity-backup');
-    await writeAtomic(file, `${current}\n`);
+    await writeAtomic(file, `${current}\n`, null);
     await options.onStage?.('identity-block');
     return { state: 'created', file, backup: null, reason: null, action: null };
   }
@@ -210,7 +227,7 @@ export async function ensureSoulIdentity(
       return { state: 'present', file, backup: null, reason: null, action: null };
     }
     await options.onStage?.('identity-backup');
-    await writeAtomic(file, `${original.slice(0, parsed.start)}${current}${original.slice(parsed.end)}`);
+    await writeAtomic(file, `${original.slice(0, parsed.start)}${current}${original.slice(parsed.end)}`, original);
     await options.onStage?.('identity-block');
     return { state: 'updated', file, backup: null, reason: null, action: null };
   }
@@ -229,7 +246,7 @@ export async function ensureSoulIdentity(
   await options.onStage?.('identity-before-backup');
   const backup = await protectedBackup(profileDir, original);
   await options.onStage?.('identity-backup');
-  await writeAtomic(file, `${current}\n`);
+  await writeAtomic(file, `${current}\n`, original);
   await options.onStage?.('identity-block');
   return { state: 'created', file, backup, reason: null, action: null };
 }

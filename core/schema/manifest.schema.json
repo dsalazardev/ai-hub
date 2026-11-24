@@ -184,7 +184,7 @@
     "agentMemory": { "enum": ["versioned", "ignored"] },
     "agentModels": {
       "type": "object",
-      "propertyNames": { "enum": ["claude", "opencode", "pi", "cursor", "copilot"] },
+      "propertyNames": { "enum": ["claude", "opencode", "pi", "cursor", "copilot", "codex"] },
       "additionalProperties": {
         "type": "object",
         "propertyNames": { "enum": ["light", "balanced", "heavy"] },
@@ -196,9 +196,17 @@
       "required": ["kind", "urlEnv", "tokenEnv"],
       "additionalProperties": false,
       "properties": {
-        "kind": { "enum": ["gitlab"] },
+        "kind": { "enum": ["gitlab", "github"] },
         "urlEnv": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" },
         "tokenEnv": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" }
+      }
+    },
+    "delivery": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "branchPrefix": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._/-]{0,30}$" },
+        "base": { "type": "string", "minLength": 1 }
       }
     },
     "control": {
@@ -209,7 +217,14 @@
         "channelId": { "type": "string", "pattern": "^[0-9]{17,20}$" },
         "ttlHours": { "type": "number", "exclusiveMinimum": 0, "maximum": 720 },
         "expire": { "enum": ["block", "notify"] },
-        "pollMinutes": { "type": "integer", "minimum": 5, "maximum": 1440 }
+        "pollMinutes": { "type": "integer", "minimum": 5, "maximum": 1440 },
+        "pollJob": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,62}$" },
+        "labels": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "SC-01: withhold (por defecto) retiene los movimientos de etiqueta sin garantía; unprotected los escribe sin garantía atómica remota (opt-in por proyecto).",
+          "properties": { "mode": { "enum": ["withhold", "unprotected"] } }
+        }
       }
     },
     "speckit": {

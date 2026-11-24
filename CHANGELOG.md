@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased — harden-harness-orchestration (sin publicar)
+
+### Compatibility
+
+- Versión mínima compatible (VMC): 0.18.0, declarada en `core/engine/engine.yaml` › `compatibility.minimum`. Desde
+  ella la telemetría `runs` es v2 por registro y el estado duradero vive en `.ai-hub/runs/control/state/`.
+- Volver a un binario anterior (0.12.0–0.17.x) no está soportado: medido con los paquetes publicados, poda primero
+  los runs v2 por nombre (no se recuperan) y deja intacto `runs/control/`. `install` y `upgrade` lo avisan antes de
+  escribir; `doctor` muestra la VMC y el estado más nuevo encontrado.
+- `manifest.tracker.kind` admite `github` (adaptador de GitHub con los mismos contract tests que GitLab; la petición
+  de cambio se nombra desde el adaptador: `MR !n` en GitLab, `PR #n` en GitHub). Un binario anterior (medido con
+  0.12.0 y 0.17.0) rechaza ese manifiesto: `doctor` sale 1 con
+  `[FAIL] manifest: manifiesto inválido: /tracker/kind must be equal to one of the allowed values`. GitHub necesita
+  `GITHUB_REPOSITORY` (`propietario/repo`) en `.ai-hub/.env` además de las claves de URL y token declaradas. Sin
+  experimento sobre GitHub real no se declara ninguna capacidad condicional (actualización condicional de etiquetas,
+  borrado condicional de ramas); la introspección de permisos del token queda «no verificada».
+- Con GitHub, la evidencia remota de tick usa los PR que referencian la issue (eventos `cross-referenced`) y los check
+  runs de su cabeza; `control ingest` ignora el webhook con `ingest_unsupported_tracker` (la ingesta es de GitLab).
+
 ## 0.17.0 — verificacion real de la instalacion (2026-11-13)
 
 ### Added

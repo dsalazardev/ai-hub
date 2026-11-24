@@ -29,6 +29,8 @@ export const CLI_COMMAND_NAMES: readonly string[] = [
   'gate',
   'hook',
   'runs',
+  'locks',
+  'captures',
   'control',
   'review',
   'adopt',

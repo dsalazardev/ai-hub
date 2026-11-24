@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { listProposals } from '../src/writes/proposals.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { runEnroll, PROFILE } from '../src/control/enroll.js';
@@ -122,7 +123,14 @@ describe('fabrica-verificable 1.3 — el check decide por la evidencia del dueñ
 
   async function multiplexed(): Promise<void> {
     hermes.topology = 'multiplex';
-    const initial = await runEnroll(h.root, { mode: 'yes', host: hermes.host, webhookOwner: 'default' });
+    // D-65 (R-119): el dueño compartido recibe una propuesta; la persona la aplica y se repite enroll.
+    const proposed = await runEnroll(h.root, { mode: 'yes', host: hermes.host, webhookOwner: 'default' });
+    expect(proposed.code).toBe(1);
+    const proposal = (await listProposals(h.root)).find((item) => item.capability === 'hermes-webhook');
+    expect(proposal).toBeDefined();
+    const owner = path.join(hermes.home, 'config.yaml');
+    await fs.writeFile(owner, `${await fs.readFile(owner, 'utf8').catch(() => '')}${proposal!.fragment}`);
+    const initial = await runEnroll(h.root, { mode: 'yes', host: hermes.host });
     expect(initial.code, initial.lines.join('\n')).toBe(0);
     await fs.appendFile(
       envFile(),

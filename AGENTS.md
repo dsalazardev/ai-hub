@@ -185,9 +185,17 @@ Cada comando termina en un estado normalizado desde la salida de Spec Kit (en ma
 
 La tabla se genera desde `exit_effects` de `core/engine/engine.yaml`; un test exige que coincidan. Los estados retirados (los que usaban los cuerpos propios de 0.2.x) los rechaza el gate `engine:retired-states`.
 
+### Tres aprobaciones separadas
+
+| Aprobación | Qué autoriza | Cómo | Qué no implica |
+|---|---|---|---|
+| Spec | pasar la feature a `ai::in-dev` con el sello de §5 | `aprobar <iid> <sello>` | ninguna ejecución: no crea concesión |
+| Ejecución | que el runner ejecute una petición concreta (contenido, proyecto, worktree, efectos, base, sello, límites y caducidad, ligados por su hash) | `aprobar <iid> <hash de la petición>`; `rechazar` la deja no consumible | ningún cambio de etiqueta; se consume una sola vez |
+| Entrega | integrar la petición de cambio en draft que abre el componente de entrega | la revisión y el merge los hace una persona en el tracker (el autor elegible o, si no, el owner) | el arnés nunca aprueba ni fusiona; un rol implementer no abre la petición |
+
 ### Aplicación por `hermes-control` (lado del arnés: `ai-hub control`)
 
-La persona aprueba **solo por Discord**, con una gramática estricta: `aprobar <iid> <hash>` (≥ 8 hex del hash de la decisión; en la aprobación de una spec, el sello de arriba), `rechazar <iid> <motivo>` o `detalle <iid>`; cualquier otro texto se ignora. Solo cuentan los ids de `manifest.control.approvers` (lista vacía = aprobaciones desactivadas). `ai-hub control apply` relee la etiqueta (si cambió, la decisión se anula: manda GitLab), revalida el sello y el WIP, y escribe una sola actualización de etiqueta que retira las demás `ai::`; la aprobación de una spec deja además la nota `ai-hub:approved-hash=<sello>`, de la que el tick toma el hash. Una decisión sin respuesta caduca a las `ttlHours` (24): con `expire: block` la issue pasa a `ai::blocked` con `approval_expired` —la única escritura sin respuesta humana— y con `notify` solo se avisa.
+La persona aprueba **solo por Discord**, con una gramática estricta: `aprobar <iid> <hash>` (8 a 64 hex del hash de la decisión; en la aprobación de una spec, el sello de arriba), `aprobar <iid> confirmar <ref>` (la referencia de 10 caracteres ligada a proyecto, decisión y caducidad), `aprobar <iid>` (solo muestra a un aprobador el hash, la referencia y los comandos; no escribe), `rechazar <iid> <motivo>` o `detalle <iid>`; un hash de longitud o caracteres inválidos se diagnostica (`hash_length`, `hash_charset`) y cualquier otro texto se ignora. Con varias decisiones abiertas en la issue, una respuesta que no elige una sola no escribe nada y las nombra. Solo cuentan los ids de `manifest.control.approvers` (lista vacía = aprobaciones desactivadas). `ai-hub control apply` relee la etiqueta (si cambió, la decisión se anula: manda GitLab), revalida el sello y el WIP, y escribe una sola actualización de etiqueta que retira las demás `ai::`; la aprobación de una spec deja además la nota `ai-hub:approved-hash=<sello>`, de la que el tick toma el hash. Una decisión sin respuesta caduca a las `ttlHours` (24): con `expire: block` la issue pasa a `ai::blocked` con `approval_expired` —la única escritura sin respuesta humana— y con `notify` solo se avisa.
 
 ---
 
@@ -263,6 +271,18 @@ El ledger nunca escribe prompts, respuestas, contenido de archivos, tokens ni va
 - **branch**: bloquea cambiar a una rama ocupada por otro worktree.
 - **ship**: bloquea volver a la trunk con cambios sin commit o commits sin push.
 
+- **read**: política de lectura sobre lecturas, ediciones, búsquedas y lectores de shell reconocidos (`cat`, `head`, `tail`, `less`, `more`, `bat`, `nl`, `type`, `Get-Content`, `grep`, `rg`, `findstr`, `Select-String`) contra rutas sensibles (claves SSH, credenciales de nube y CLI, `.env` salvo ejemplos, claves privadas, `config.yaml` y `.env` de perfiles de Hermes). Rutas normalizadas antes de comparar (relativas, `~`, separadores, mayúsculas solo donde el sistema de archivos no las distingue, destino real de los enlaces). Se desactiva con `policy.optOuts: [read]` sin afectar a las demás.
+
+| Caso | `shadow` | `enforce` |
+|---|---|---|
+| Lectura que coincide con un patrón sensible | permitida con aviso redactado (patrón y acción) | denegada con el código `read:<patrón>` |
+| Lectura reconocida con destino no verificable (variable, sustitución, comodín, ruta ausente) | permitida con aviso `read:unverifiable` | denegada, sin pedir confirmación |
+| Archivo normal del proyecto | permitida sin aviso | permitida sin aviso |
+| Manifiesto ilegible | permitida (el modo es desconocido) | permitida (el modo es desconocido) |
+| Comando de shell no reconocido | no se evalúa | no se evalúa |
+
+Límites: la shell arbitraria **no** está protegida (solo los lectores reconocidos); el aviso de `shadow` llega como mensaje del host y como registro redactado en `runs` v2 (`note_type: guard`), nunca con la ruta ni el contenido; sin el evaluador (`npx --no-install ai-hub` no resuelve) el hook falla abierto y `doctor` declara la política no efectiva en ese host; Cursor, Copilot y Pi no admiten hooks.
+
 El runner de Hermes es autoritativo; los hooks locales son adaptadores finos. `guardMode` es `shadow` por defecto y `enforce` opt-in. Un adaptador que no puede construir el contexto falla abierto.
 
 En el consumidor, `sync` proyecta los adaptadores como hooks **ejecutables** (`ai-hub hook pre|post|stop`): entradas gestionadas mezcladas por clave en `.claude/settings.json` (fuera del lock; nunca se sobrescribe ni se borra) y el plugin `.opencode/plugins/ai-hub.js`. Cursor, Copilot y Pi no admiten hooks y conservan la regla en prosa; `doctor` comprueba los hooks reales, no el markdown. `ask` llega al mecanismo de confirmación del host. El hook `post` compara el árbol antes y después de un paso de rol (`AI_HUB_ROLE` o el tipo de subagente del host), incluidos archivos sin rastrear y hashes, contra su `can_modify`: informa la violación y jamás revierte. La instantánea vive en `.ai-hub/runs/scope/` (ignorado); los hooks `pre`/`stop` registran además la ejecución de la sesión en `.ai-hub/runs/` (inicio, fin y duración).
@@ -283,6 +303,8 @@ El paquete escribe solo dos credenciales, siempre lo que teclea la persona en un
 - `DISCORD_BOT_TOKEN` (con `DISCORD_ALLOWED_USERS`, `DISCORD_ALLOWED_CHANNELS` y `DISCORD_HOME_CHANNEL`), en el `.env` del perfil Hermes `hermes-control`, fuera del repositorio, desde el paso de control (interactivo, o `--connect-hermes` con `--discord-token-stdin`).
 
 El paso de control escribe además el bloque gestionado de `SOUL.md` y habilita la plataforma webhook con el bloque `platforms.webhook` (`enabled`, `extra.port`) del `config.yaml` del perfil dueño del listener, nunca con claves `WEBHOOK_*` en el `.env`; cuando ese dueño es otro perfil (el `default` bajo el multiplexor), solo con `--webhook-owner <perfil>` o la pregunta interactiva que lo nombra, y con copia previa de su `config.yaml`. No escribe ningún secreto: el de la ruta lo genera Hermes, y un `WEBHOOK_SECRET` del operador queda intacto. Ninguna credencial se imprime ni se registra; la salida de Hermes que se muestra ante un fallo va redactada. El modo `0600` no cambia las ACL en Windows, y una carpeta sincronizada (OneDrive) puede subir `.ai-hub/.env` aunque git lo ignore.
+
+Toda escritura del paquete tiene destino declarado en `core/src/writes/targets.ts` (propiedad, sensibilidad, regenerable, escritor y retención): los generados y el estado se reemplazan con la transacción X2 bajo lock y sin copia adyacente; las credenciales se fusionan bajo lock y nunca se copian; la configuración ajena existente no se reemplaza nunca (D-65): archivo nuevo en exclusiva o propuesta pendiente. Una escritura externa en el sitio tras la última comprobación queda en una captura (`external_write_detected`; `ai-hub captures list|release`); un reemplazo externo por rename no se detecta y no se informa como protegido. Volver por debajo de la versión mínima compatible (0.18.0) no está soportado, y `ai-hub purge` borra el estado duradero de `.ai-hub/runs/control/state/` sin que un snapshot lo recupere. Detalle y verificaciones pendientes (modo 700 POSIX y 1.16 en Linux): `core/SECURITY.md` › Writes, custody and recovery.
 
 ---
 

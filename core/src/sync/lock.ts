@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { replaceOwned } from '../writes/replace.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -64,5 +65,6 @@ export async function readLock(root: string): Promise<SyncLock | null> {
 }
 
 export async function writeLock(root: string, lock: SyncLock): Promise<void> {
-  await fs.writeFile(path.join(root, LOCK_PATH), `${JSON.stringify(lock, null, 2)}\n`, 'utf8');
+  // 3.11: regenerable desde las fuentes (sync); transacción X2 sin copia previa.
+  await replaceOwned({ root, file: path.join(root, LOCK_PATH), module: 'sync/lock.ts', content: `${JSON.stringify(lock, null, 2)}\n` });
 }
