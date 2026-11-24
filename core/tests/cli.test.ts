@@ -32,7 +32,8 @@ async function cli(argv: string[]): Promise<{ code: number; out: string; err: st
 }
 
 beforeEach(async () => {
-  root = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-cli-'));
+  // `realpath` resuelve los nombres cortos 8.3 de Windows (RUNNER~1), como hace el producto al informar rutas.
+  root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'ai-cli-')));
 });
 
 afterEach(async () => {

@@ -53,6 +53,8 @@ beforeEach(async () => {
   await fs.writeFile(path.join(root, 'keep.txt'), 'base\n');
   await fs.writeFile(path.join(root, 'gone.txt'), 'se borra\n');
   await fs.writeFile(path.join(root, 'run.sh'), '#!/bin/sh\necho hola\n');
+  // En POSIX (core.fileMode=true) el bit del índice debe coincidir con el del archivo: si no, el árbol dice 644.
+  await fs.chmod(path.join(root, 'run.sh'), 0o755);
   git('add', '-A');
   git('update-index', '--chmod=+x', 'run.sh');
   git('commit', '-q', '-m', 'base');
