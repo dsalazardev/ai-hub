@@ -10,6 +10,17 @@ import type { ProcessRunner, RunResult } from '../speckit/runner.js';
  */
 export const MIN_HERMES_VERSION = '0.23.0';
 
+/**
+ * Versión mínima verificada de `cron pause|resume` por nombre (4.25, experimento 2.5): medida en Hermes 0.23.4 sobre
+ * un `HERMES_HOME` desechable (nombre sin distinguir mayúsculas; nombre inexistente sale 1). La documentación (1.7) no
+ * fija una versión: por debajo de la medida, el poll no pausa y solo indica los comandos manuales.
+ */
+export const MIN_HERMES_CRON_PAUSE = '0.23.4';
+
+export function supportsCronPause(version: string): boolean {
+  return compareVersions(version, MIN_HERMES_CRON_PAUSE) >= 0;
+}
+
 export interface ResolverHost {
   platform: NodeJS.Platform;
   env: Record<string, string | undefined>;

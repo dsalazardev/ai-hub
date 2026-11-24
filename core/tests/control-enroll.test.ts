@@ -334,3 +334,14 @@ describe('skill gestionada (4.15, R-007)', () => {
     expect(await fs.readFile(`${skill}.pre-ai-hub`, 'utf8')).toBe(old);
   });
 });
+
+describe('versión mínima verificada de cron pause|resume (4.25, 2.5)', () => {
+  it('desde 0.23.4 se usa; por debajo, no (el poll se queda en el aviso manual)', async () => {
+    const { MIN_HERMES_CRON_PAUSE, supportsCronPause } = await import('../src/control/hermes.js');
+    expect(MIN_HERMES_CRON_PAUSE).toBe('0.23.4');
+    expect(supportsCronPause('0.23.4')).toBe(true);
+    expect(supportsCronPause('0.24.0')).toBe(true);
+    expect(supportsCronPause('0.23.3')).toBe(false);
+    expect(supportsCronPause('0.23.0')).toBe(false);
+  });
+});

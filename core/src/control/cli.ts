@@ -8,7 +8,7 @@ import { cmdTick, TICK_USAGE } from './tick.js';
 import { defaultTrackerFetch, trackerFromHarness, TrackerError, type TrackerFetch } from './tracker.js';
 import { openChangeRequest } from '../delivery/change-request.js';
 import { runEnroll, type EnrollMode } from './enroll.js';
-import { canExecute, hermesHome, HermesNotFoundError, HermesVersionError, resolveHermes, type ResolverHost } from './hermes.js';
+import { canExecute, hermesHome, HermesNotFoundError, HermesVersionError, resolveHermes, supportsCronPause, type ResolverHost } from './hermes.js';
 import { resetHealth } from './health.js';
 import { runPoll, type PollHost } from './poll.js';
 import { PROFILE } from './enroll.js';
@@ -274,8 +274,9 @@ async function processPollHost(ctx: CliContext): Promise<PollHost | null> {
       const result = await cron(['list']);
       return result.status === 0 ? (result.stdout.match(/[a-z0-9][a-z0-9-]*/gi) ?? []).map((word) => word.toLowerCase()) : null;
     },
-    pause: async (job) => (await cron(['pause', job])).status === 0,
-    resume: async (job) => (await cron(['resume', job])).status === 0,
+    // 4.25: pausar y reanudar solo desde la versión verificada; por debajo, el poll se queda en el aviso manual.
+    pause: async (job) => supportsCronPause(cli.version) && (await cron(['pause', job])).status === 0,
+    resume: async (job) => supportsCronPause(cli.version) && (await cron(['resume', job])).status === 0,
     // Evidencia documentada (1.7): `gateway_state.json` del home (multiplexor) o del perfil.
     gatewayStarting: async () => {
       for (const file of [path.join(home, 'gateway_state.json'), path.join(home, 'profiles', PROFILE, 'gateway_state.json')]) {
