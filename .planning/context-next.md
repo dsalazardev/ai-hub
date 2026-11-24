@@ -5,7 +5,7 @@
 - Targets: claude, opencode, pi, cursor, copilot
 - Cambio activo: harden-harness-orchestration
 - Fase: aplicacion-en-curso
-- Tareas: 139/176
+- Tareas: 160/176
 
 ## Comandos Spec Kit
 
@@ -44,4 +44,4 @@ ai::todo · ai::in-spec · ai::spec-ready · ai::in-dev · ai::in-review · ai::
 - Escribe el estado en `.planning/`, nunca en el chat.
 - No implementes sin spec aprobada por un humano.
 - Trabaja en rama o worktree; no en una trunk cerrada.
-<!-- context-hash: 284ae13890bf04fc2d5fcdc99f468c402a5e7124d77020d75944e24c29d1ef04 -->
+<!-- context-hash: 8cb762104dfe60a8b81620692bbe324c3abd38c69427ebf31048758a963a790e -->
