@@ -2,6 +2,23 @@
 
 ## Unreleased — harden-harness-orchestration (sin publicar)
 
+### Added
+
+- `ai-hub orchestrate`: `discover` informa presencia, versión y operabilidad de cada harness sin leer credenciales;
+  `run --grant <id> --task-file <archivo>` ejecuta una concesión aprobada con el primer harness elegible de
+  `manifest.runner.order` (lock del worktree, contexto canónico, fallback solo antes del arranque, cierre vinculado al
+  run). Harnesses verificados por experimento (2.6): Claude Code 2.1.330 y Codex 0.172.0, sin permisos de escritura
+  declarados; OpenCode 2.3.2 no verificable. El run id viaja en el entorno y en la tarea.
+- `ai-hub captures list|release`: capturas de escrituras externas detectadas.
+- Borrado remoto condicionado de la rama tras el merge, solo en GitHub por HTTPS con git ≥ 2.56.1 (experimento 2.10);
+  GitLab conserva la rama.
+
+### Changed
+
+- El poll pausa y reanuda su job de cron solo con Hermes ≥ 0.23.4 (versión verificada en 2.5).
+- La actualización condicionada de etiquetas no existe en GitHub (2.2: `If-Match` rechazado en escrituras): los
+  movimientos siguen retenidos por defecto.
+
 ### Compatibility
 
 - Versión mínima compatible (VMC): 0.18.0, declarada en `core/engine/engine.yaml` › `compatibility.minimum`. Desde
