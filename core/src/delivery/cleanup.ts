@@ -31,15 +31,61 @@ export interface CleanupHooks {
   remote?: { name: string };
 }
 
-/**
- * Declaraciones de borrado remoto condicionado por tracker y versión de git, con evidencia citada (2.9/2.10).
- * Hoy ninguna: sin experimento autorizado no hay capacidad, y la rama remota se conserva.
- */
-const REMOTE_DELETE_DECLARATIONS: ReadonlyArray<{ tracker: 'gitlab' | 'github'; git: string; evidence: string }> = [];
+export interface RemoteDeleteDeclaration {
+  tracker: 'gitlab' | 'github';
+  /** Transporte medido del remoto (`https` o `ssh`). */
+  transport: 'https' | 'ssh';
+  /** Versión mínima del cliente git medida. */
+  git: string;
+  evidence: string;
+}
 
-/** ¿Hay borrado remoto condicionado declarado para este tracker? Hoy, para ninguno. */
-export function remoteDeleteCapability(tracker: 'gitlab' | 'github', declarations = REMOTE_DELETE_DECLARATIONS): boolean {
-  return declarations.some((item) => item.tracker === tracker);
+/**
+ * Declaraciones de borrado remoto condicionado por tracker, transporte y versión de git, con evidencia citada (R-108,
+ * D-60). Solo GitHub por HTTPS con git ≥ 2.56.1 (experimento 2.10: 10/10 rechazos con commit ajeno y control borrado).
+ * GitLab sin medir (2.9): su rama remota se conserva.
+ */
+export const REMOTE_DELETE_DECLARATIONS: readonly RemoteDeleteDeclaration[] = [
+  { tracker: 'github', transport: 'https', git: '2.56.1', evidence: '.planning/findings.md › Hito 2 › 2.10; decisions.md › D-60' },
+];
+
+export interface RemoteDeleteContext {
+  transport: 'https' | 'ssh' | null;
+  gitVersion: string | null;
+}
+
+function versionAtLeast(found: string, minimum: string): boolean {
+  const a = found.split('.').map(Number);
+  const b = minimum.split('.').map(Number);
+  for (let index = 0; index < 3; index += 1) {
+    if ((a[index] ?? 0) !== (b[index] ?? 0)) {
+      return (a[index] ?? 0) > (b[index] ?? 0);
+    }
+  }
+  return true;
+}
+
+/** Transporte del remoto y versión del cliente git del worktree (sin red). */
+export function remoteDeleteContext(root: string, remote = 'origin'): RemoteDeleteContext {
+  const url = git(root, ['remote', 'get-url', remote]);
+  const version = git(root, ['--version']);
+  const transport = !url.ok ? null : /^https:\/\//i.test(url.out) ? 'https' : /^(ssh:\/\/|[^/:]+@[^/:]+:)/i.test(url.out) ? 'ssh' : null;
+  return { transport, gitVersion: version.ok ? (/(\d+\.\d+\.\d+)/.exec(version.out)?.[1] ?? null) : null };
+}
+
+/**
+ * Borrado remoto con lease (D-60): el push lleva la cabeza esperada; si la rama se movió, git lo rechaza (`stale info`) y
+ * la rama se conserva. Nunca un borrado simple. Devuelve si se borró.
+ */
+export function deleteRemoteBranchWithLease(root: string, remote: string, branch: string, expected: string): boolean {
+  return git(root, ['push', '--porcelain', `--force-with-lease=refs/heads/${branch}:${expected}`, remote, `:refs/heads/${branch}`]).ok;
+}
+
+/** ¿Hay borrado remoto condicionado medido para este tracker, transporte y versión de git? */
+export function remoteDeleteCapability(tracker: 'gitlab' | 'github', context: RemoteDeleteContext, declarations: readonly RemoteDeleteDeclaration[] = REMOTE_DELETE_DECLARATIONS): boolean {
+  return declarations.some(
+    (item) => item.tracker === tracker && item.transport === context.transport && context.gitVersion !== null && versionAtLeast(context.gitVersion, item.git),
+  );
 }
 
 function isAncestor(root: string, commit: string, of: string): boolean {
@@ -86,8 +132,7 @@ export async function cleanupAssociation(root: string, branch: string, iid: numb
       report.remote = 'absent';
     } else {
       await hooks.beforeRemoteDelete?.();
-      const pushed = git(root, ['push', '--porcelain', `--force-with-lease=refs/heads/${branch}:${sourceHead}`, hooks.remote.name, `:refs/heads/${branch}`]);
-      if (!pushed.ok) {
+      if (!deleteRemoteBranchWithLease(root, hooks.remote.name, branch, sourceHead)) {
         // `stale info` o revisión rechazada: la rama remota se movió; no se ejecutan los pasos locales.
         report.remote = 'kept';
         report.notes.push(`rama remota ${branch} conservada: branch_moved (el remoto ya no apunta a la cabeza integrada); los pasos locales esperan a una nueva comparación`);

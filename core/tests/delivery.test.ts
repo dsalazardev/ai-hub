@@ -491,11 +491,70 @@ describe.skipIf(skip)('borrado remoto con lease (4.83, R-108)', () => {
   });
 });
 
-describe('capacidad de borrado remoto declarada (4.83)', () => {
-  it('sin declaraciones no hay capacidad; con una para el tracker, sí', async () => {
+describe('capacidad de borrado remoto declarada (4.83, 5.19)', () => {
+  it('solo GitHub por HTTPS con git ≥ 2.56.1 (2.10); GitLab, SSH o un git anterior conservan la rama', async () => {
     const { remoteDeleteCapability } = await import('../src/delivery/cleanup.js');
-    expect(remoteDeleteCapability('gitlab')).toBe(false);
-    expect(remoteDeleteCapability('github')).toBe(false);
-    expect(remoteDeleteCapability('gitlab', [{ tracker: 'gitlab', git: '>=2.40', evidence: 'prueba' }])).toBe(true);
+    const https = { transport: 'https' as const, gitVersion: '2.56.1' };
+    expect(remoteDeleteCapability('github', https)).toBe(true);
+    expect(remoteDeleteCapability('github', { ...https, gitVersion: '2.57.0' })).toBe(true);
+    expect(remoteDeleteCapability('github', { ...https, gitVersion: '2.55.9' })).toBe(false);
+    expect(remoteDeleteCapability('github', { ...https, transport: 'ssh' })).toBe(false);
+    expect(remoteDeleteCapability('github', { transport: null, gitVersion: null })).toBe(false);
+    expect(remoteDeleteCapability('gitlab', https)).toBe(false);
+    expect(remoteDeleteCapability('gitlab', https, [{ tracker: 'gitlab', transport: 'https', git: '2.40.0', evidence: 'prueba' }])).toBe(true);
   });
+
+  it('el contexto se lee del remoto y del cliente git del worktree', async () => {
+    const { remoteDeleteContext } = await import('../src/delivery/cleanup.js');
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-delete-ctx-'));
+    try {
+      git(dir, 'init', '-q');
+      git(dir, 'remote', 'add', 'origin', 'https://example.invalid/o/r.git');
+      expect(remoteDeleteContext(dir)).toMatchObject({ transport: 'https', gitVersion: expect.stringMatching(/^\d+\.\d+\.\d+$/) });
+      git(dir, 'remote', 'set-url', 'origin', 'git@example.invalid:o/r.git');
+      expect(remoteDeleteContext(dir).transport).toBe('ssh');
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    }
+  });
+});
+
+/**
+ * E2E opt-in de 5.19 contra el repositorio desechable del experimento 2.10: `AI_HUB_DELETE_E2E_REPO=propietario/repo`
+ * (credenciales del cliente git del equipo; nunca en el test). Omitido por defecto.
+ */
+const DELETE_E2E_REPO = process.env.AI_HUB_DELETE_E2E_REPO ?? '';
+describe.skipIf(DELETE_E2E_REPO === '')('borrado remoto con lease contra GitHub real (5.19, opt-in)', () => {
+  it('rama movida por otro: se conserva; cabeza esperada: se borra; la capacidad se reconoce en ese remoto', async () => {
+    const { deleteRemoteBranchWithLease, remoteDeleteCapability, remoteDeleteContext } = await import('../src/delivery/cleanup.js');
+    const base = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-delete-e2e-'));
+    const url = `https://github.com/${DELETE_E2E_REPO}.git`;
+    const branch = `ai-hub-e2e-${Date.now()}`;
+    try {
+      for (const name of ['a', 'b']) {
+        const clone = spawnSync('git', ['clone', '-q', url, name], { cwd: base, encoding: 'utf8', windowsHide: true });
+        expect(clone.status, clone.stderr).toBe(0);
+        git(path.join(base, name), 'config', 'user.email', 'e2e@example.invalid');
+        git(path.join(base, name), 'config', 'user.name', 'e2e');
+      }
+      const a = path.join(base, 'a');
+      const b = path.join(base, 'b');
+      expect(remoteDeleteCapability('github', remoteDeleteContext(a))).toBe(true);
+      git(a, 'checkout', '-q', '-b', branch);
+      git(a, 'commit', '-q', '--allow-empty', '-m', 'base');
+      git(a, 'push', '-q', 'origin', branch);
+      const read = git(a, 'rev-parse', 'HEAD');
+      git(b, 'fetch', '-q', 'origin', branch);
+      git(b, 'checkout', '-q', '-b', branch, 'FETCH_HEAD');
+      git(b, 'commit', '-q', '--allow-empty', '-m', 'B');
+      git(b, 'push', '-q', 'origin', branch);
+      expect(deleteRemoteBranchWithLease(a, 'origin', branch, read)).toBe(false);
+      const remote = spawnSync('git', ['ls-remote', 'origin', `refs/heads/${branch}`], { cwd: a, encoding: 'utf8', windowsHide: true }).stdout;
+      expect(remote.split(/\s+/)[0]).toBe(git(b, 'rev-parse', 'HEAD'));
+      expect(deleteRemoteBranchWithLease(a, 'origin', branch, git(b, 'rev-parse', 'HEAD'))).toBe(true);
+      expect(spawnSync('git', ['ls-remote', 'origin', `refs/heads/${branch}`], { cwd: a, encoding: 'utf8', windowsHide: true }).stdout.trim()).toBe('');
+    } finally {
+      await fs.rm(base, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    }
+  }, 120_000);
 });

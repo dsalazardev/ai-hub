@@ -1,7 +1,7 @@
 import type { MergeEvidence } from '../control/tracker.js';
 import { TrackerError } from '../control/tracker.js';
 import { readAssociations, save, type Association } from './association.js';
-import { cleanupAssociation, remoteDeleteCapability, reportClosedWithoutMerge } from './cleanup.js';
+import { cleanupAssociation, remoteDeleteCapability, remoteDeleteContext, reportClosedWithoutMerge } from './cleanup.js';
 
 /**
  * Evidencia de merge y reconciliación de la entrega (R-073, R-076). La evidencia se guarda en la asociación con la
@@ -67,7 +67,7 @@ export async function reconcileDeliveries(root: string, source: MergeSource & { 
       continue;
     }
     // R-108: el paso remoto solo con capacidad declarada para el tracker; si no, la rama remota se conserva.
-    const report = await cleanupAssociation(root, association.branch, association.iid, merged.association.merge!.sourceHead, remoteDeleteCapability(association.kind) ? { remote: { name: 'origin' } } : {});
+    const report = await cleanupAssociation(root, association.branch, association.iid, merged.association.merge!.sourceHead, remoteDeleteCapability(association.kind, remoteDeleteContext(root)) ? { remote: { name: 'origin' } } : {});
     lines.push(`#${association.iid}: limpieza tras el merge: worktree ${report.worktree}, rama ${report.branch}, remoto ${report.remote}${report.notes.length > 0 ? ` (${report.notes.join('; ')})` : ''}`);
   }
   return lines;
