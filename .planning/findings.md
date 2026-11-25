@@ -1197,3 +1197,134 @@ Con `tracker: { kind: github, urlEnv: GITHUB_API_URL, tokenEnv: GITHUB_TOKEN }` 
 | `idea-input-pty` › nivel 2 ×2 | pty POSIX de Python | Linux |
 | `codex-e2e` › E2E con Codex real | opt-in `AI_HUB_CODEX_E2E=1` | Codex instalado y 2.6 |
 | ~~`sync` › rejects symlinks~~ | resuelta: junction en Windows | — |
+
+## Hito 2 — experimentos ejecutados (2026-11-24, autorizados por escrito en `history.md`)
+
+### 2.2 BT-1 GitHub
+- Entorno: github.com (versión del servicio no expuesta; API `2022-11-28`), cliente `gh`, repositorio privado desechable `dsalazardev/ai-hub-bt-disposable-20261124`, issue #1. Token del propietario en el llavero de `gh`, nunca impreso.
+- Operación: A lee la issue (ETag de v1); B escribe `ai::blocked`; A escribe `ai::in-review` con `If-Match: <ETag v1>` por `PUT /repos/…/issues/:n/labels` y por `PATCH /repos/…/issues/:n`. 10 repeticiones; al final, escritura fresca con `If-Match` del ETag vigente.
+
+| rep | lectura | ETag v1 | B | A PUT | A PATCH | etiqueta final | obsoleta aceptada |
+|---|---|---|---|---|---|---|---|
+| 1 | 200 | W/"c68d0c64e6e… | 200 | 400 | 400 | ai::blocked | no |
+| 2 | 200 | W/"9f0799fe30b… | 200 | 400 | 400 | ai::blocked | no |
+| 3 | 200 | W/"939fcc10734… | 200 | 400 | 400 | ai::blocked | no |
+| 4 | 200 | W/"6ea636e035e… | 200 | 400 | 400 | ai::blocked | no |
+| 5 | 200 | W/"d28f7e43e7d… | 200 | 400 | 400 | ai::blocked | no |
+| 6 | 200 | W/"333bc6bc336… | 200 | 400 | 400 | ai::blocked | no |
+| 7 | 200 | W/"0399da77a22… | 200 | 400 | 400 | ai::blocked | no |
+| 8 | 200 | W/"ffc0c094370… | 200 | 400 | 400 | ai::blocked | no |
+| 9 | 200 | W/"757a5dc43b6… | 200 | 400 | 400 | ai::blocked | no |
+| 10 | 200 | W/"4c297c8ea5b… | 200 | 400 | 400 | ai::blocked | no |
+
+- Escritura fresca con `If-Match`: 400; cuerpo: `{"message":"Bad Request","errors":["Conditional request headers are not allowed in unsafe requests unless supported by the endpoint"],"status":"400"}`.
+- Veredicto: **fracaso** de BT-1 (no se acepta la escritura fresca condicionada: no existe la capacidad; los 400 no son un rechazo por precondición). La capacidad `conditional_label_update` de GitHub sigue `available: false`; 5.20 queda detenida y rige la retención (D-48).
+
+### 2.10 Borrado condicional en GitHub
+- Versiones: servidor github.com (no expuesta), transporte HTTPS, cliente `git version 2.56.1.windows.1`. Mismo repositorio desechable; clones A y B en un directorio temporal.
+- Comando: `git push --porcelain --force-with-lease=refs/heads/<rama>:<cabeza leída por A> origin :refs/heads/<rama>`.
+
+```text
+rep=1 lease=8ed8ec22a4 B=772cec242d result=[!	(delete):refs/heads/bt-del-1	[rejected] (stale info) ] final=772cec242d conserved_B=yes
+rep=2 lease=65c3f6f5c9 B=c1fed83e83 result=[!	(delete):refs/heads/bt-del-2	[rejected] (stale info) ] final=c1fed83e83 conserved_B=yes
+rep=3 lease=d77347e393 B=22f027d1fb result=[!	(delete):refs/heads/bt-del-3	[rejected] (stale info) ] final=22f027d1fb conserved_B=yes
+rep=4 lease=dff5c1f579 B=9b3bcb2feb result=[!	(delete):refs/heads/bt-del-4	[rejected] (stale info) ] final=9b3bcb2feb conserved_B=yes
+rep=5 lease=8777f51647 B=169b3eea50 result=[!	(delete):refs/heads/bt-del-5	[rejected] (stale info) ] final=169b3eea50 conserved_B=yes
+rep=6 lease=e1b219fb5b B=b5268ca156 result=[!	(delete):refs/heads/bt-del-6	[rejected] (stale info) ] final=b5268ca156 conserved_B=yes
+rep=7 lease=b35c3743d2 B=e569c5fdf7 result=[!	(delete):refs/heads/bt-del-7	[rejected] (stale info) ] final=e569c5fdf7 conserved_B=yes
+rep=8 lease=c0d8035577 B=413ac71d6d result=[!	(delete):refs/heads/bt-del-8	[rejected] (stale info) ] final=413ac71d6d conserved_B=yes
+rep=9 lease=96ef49b5a4 B=37316ca8de result=[!	(delete):refs/heads/bt-del-9	[rejected] (stale info) ] final=37316ca8de conserved_B=yes
+rep=10 lease=ea1da8e535 B=7c2d86cae5 result=[!	(delete):refs/heads/bt-del-10	[rejected] (stale info) ] final=7c2d86cae5 conserved_B=yes
+control result=[] final=[]
+```
+
+- Veredicto: **éxito** según el protocolo (10/10 rechazos conservando el commit de B; control borrado). La secuencia ejercita el lease del cliente; la atomicidad del servidor frente a un push simultáneo se apoya en la documentación del protocolo (`old-id`) y no se presenta como medida. Habilita 5.19 solo para GitHub, HTTPS y git ≥ 2.56.1.
+
+### 2.5 Cron de Hermes (pause/resume por nombre)
+- Entorno: Hermes 0.23.4 (git, Windows), `HERMES_HOME` desechable en el scratchpad (runtime aislado instalado en él); ningún perfil del propietario ni su gateway.
+
+```text
+$ hermes --version
+Hermes Agent v0.23.4 (2026.9.24) · stable · local 8fc037444731
+exit=0
+$ hermes cron create every 60m --name ai-hub-bt-poll --no-agent --script bt-poll.sh --deliver local
+Created job: 524eb0686149
+exit=0
+$ hermes cron list
+  524eb0686149 [active]
+exit=0
+$ hermes cron pause ai-hub-bt-poll
+Paused job: ai-hub-bt-poll (ai-hub-bt-poll)
+exit=0
+$ hermes cron list
+  524eb0686149 [paused]
+exit=0
+$ hermes cron pause AI-HUB-BT-POLL
+Paused job: ai-hub-bt-poll (AI-HUB-BT-POLL)
+exit=0
+$ hermes cron resume ai-hub-bt-poll
+Resumed job: ai-hub-bt-poll (ai-hub-bt-poll)
+exit=0
+$ hermes cron list
+  524eb0686149 [active]
+exit=0
+$ hermes cron pause no-existe-ai-hub
+Failed to pause job: Job with ID or name 'no-existe-ai-hub' not found. Use cronjob(action='list') to inspect jobs.
+exit=1
+$ hermes cron remove ai-hub-bt-poll
+Removed job: ai-hub-bt-poll (ai-hub-bt-poll)
+exit=0
+$ hermes cron list
+exit=0
+```
+
+- Veredicto: `pause` y `resume` por nombre funcionan (nombre sin distinguir mayúsculas); un nombre inexistente sale 1 y lo nombra. Versión mínima verificada: **0.23.4** (la documentación no fija una; versiones anteriores sin medir) → `MIN_HERMES_CRON_PAUSE` (4.25).
+
+### 2.4 BT-3 estado del gateway
+- Entorno: el mismo `HERMES_HOME` desechable; `hermes gateway run` como proceso hijo propio (sin `start/stop/restart`, que actúan sobre el servicio instalado); dos ciclos de arranque y parada (taskkill del árbol propio); cada ~8 s, `gateway_state.json` y `hermes gateway ensure --json --timeout 1`.
+- Observado: antes y durante el arranque, sin `gateway_state.json` y `ensure` = `starting`/`deadline` (salida 5); listo, `gateway_state: running` y `ensure` = `ready` (salida 0); tras matar el proceso, el archivo sigue en `running` y `ensure` vuelve a `starting`/`deadline`; `hermes gateway status` = «Gateway is not running». Sin procesos residuales.
+- Veredicto: **fracaso** de BT-3 para 0.23.4 — ningún estado documentado y estable distingue «arrancando» de «detenido». 5.2 queda detenida; rige la tabla conservadora (D-55).
+
+### Impedimentos de los experimentos restantes
+- **2.1 y 2.9 (GitLab):** no hay instancia ni credencial de prueba de GitLab en este equipo (ni `glab`); los únicos tokens de GitLab son los de consumidores existentes, que no se pueden usar. Necesario: un proyecto desechable en la instancia y versión del consumidor y un token de prueba de alcance mínimo en un `.env` del taller (no en el chat).
+- **Limpieza de GitHub:** el token de `gh` no tiene el scope `delete_repo`; el repositorio desechable queda creado (privado). Para borrarlo: `gh auth refresh -h github.com -s delete_repo` (interactivo) y `gh repo delete dsalazardev/ai-hub-bt-disposable-20261124 --yes`.
+
+### 2.6 Harnesses (directorio temporal vacío fuera de proyectos; salidas redactadas)
+
+Sentinelas: `CLAUDE.md` pide responder `CLAVE-7C1` y `AGENTS.md` `AGENTE-9F2`; la pregunta pide ambas (o `NINGUNA`).
+
+| Harness y versión | Estado | Sin interfaz | Sesión | Reanudación | Contexto consumido | Efectos de arranque | Coste |
+|---|---|---|---|---|---|---|---|
+| Claude Code 2.1.330 (`~/.local/bin/claude.exe`) | `claude auth status`: JSON `loggedIn: true`, `authMethod: claude.ai`, salida 0 (incluye correo y organización: no se leen) | `claude -p <tarea> --output-format json` → `result: "CLAVE-7C1 NINGUNA"`, salida 0, 1 turno, 3,8 s | `session_id` UUID | `--resume <id>` → misma sesión y respuesta | `CLAUDE.md` sí; `AGENTS.md` no | ningún archivo en el directorio; sesión en `~/.claude/projects` | 0,144 USD + 0,040 USD (reanudación); 17 328 tokens de caché creados |
+| Codex 0.172.0 (`npm install @openai/codex` en el scratchpad, binario nativo `codex.exe`; no global) | `codex login status`: salida 0; «Logged in using ChatGPT» por **stderr** | `codex exec --json --skip-git-repo-check --sandbox read-only <tarea>` → `agent_message: "NINGUNA AGENTE-9F2"`; necesita stdin cerrado | `thread.started.thread_id` | `codex exec resume <id> --json` → mismo hilo y respuesta | `AGENTS.md` sí; `CLAUDE.md` no | ninguna herramienta; ningún archivo | 18 789 tokens de entrada (13 696 en caché), 48 de salida |
+| OpenCode 2.3.2 | `opencode auth list`: integraciones «stored» (no valida la sesión) | `opencode run --format json --archived <tarea>` → `CLAVE-7C1 AGENTE-9F2` tras **ejecutar herramientas sin aprobación** (`read`, `glob` del directorio completo); eventos `retry` | `sessionID` (`ses_…`) | `--session <id>` → misma respuesta | los obtuvo leyendo archivos con herramientas | lecturas no pedidas del directorio; ningún archivo escrito | 0 (modelo de la cuenta) |
+
+- **Resultado (D-31):** Claude Code 2.1.330 y Codex 0.172.0 verificados y declarados en `core/src/runner/discovery.ts` (rango cerrado en la versión medida); OpenCode 2.3.2 no verificable (sin estado que valide la sesión) y no seleccionable. Escribir con permisos no se midió: las ejecuciones declaradas no conceden escritura.
+- **Hallazgos para el runner:** (1) Codex escribe su estado en stderr: la operabilidad se decide por la salida 0 documentada. (2) Los comandos del sandbox de Codex no ven `AI_HUB_RUN_ID`: un primer E2E real terminó con `run_mismatch` (la vinculación funcionó); el run id viaja ahora también en el texto de la tarea (`taskWithRun`). (3) En Windows, sin shell, solo se lanzan `.exe`/`.com`: los shims `.cmd` de npm no cuentan como presentes.
+- **E2E (5.18):** con `AI_HUB_CODEX_E2E=1` y el binario local en `PATH`: descubrimiento (Codex presente, compatible y operativo) y ejecución concedida completa (concesión real del registro → Codex → cierre `DONE` aceptado con el run id asignado; telemetría `harness: codex`, `harness_version: 0.172.0`, `origin: runner`). Sin la variable, omitido.
+- **Smoke real:** `ai-hub orchestrate discover` en este equipo → Claude Code 2.1.330 operativo y seleccionado; Codex «binario ausente» (instalación local fuera de `PATH`); OpenCode no verificable.
+
+## Hito 7 — fase 2 de #8: mediciones del panel completo (2026-11-24)
+
+- **Selección:** 12 commits reales del historial de `main` (antes de `c11feda`), agrupados por tipo: documentación (3), release (2), pruebas (2), corrección (4), funcionalidad pequeña (1). Se excluyeron los commits de cientos de archivos (catálogo, motor inicial), que ninguna lente puede revisar con rigor; ninguno se fabricó ni se dividió.
+- **Ejecución:** por cambio, las tres lentes (`refuter-correctness`, `refuter-security`, `refuter-tests`) en paralelo y aisladas, con el cuerpo de su archivo de agente como prompt de sistema, solo `Read`/`Grep`/`Glob` (capacidades `read`, `search`), `max_turns` 40, sobre el árbol del commit exportado con `git archive` (sin worktree ni rama) y el diff en `CHANGE.diff`; luego `finding-verifier` por cada blocker o should-fix único. Claude Code 2.1.330, salida JSON (tiempo, tokens y coste reales).
+- **Cuatro entradas:** contrato = mensaje del commit; spec aprobada = **no recuperable** para cambios históricos (limitación: el contrato es el mensaje); estado = el commit; entrada = `npm --prefix core test` (las lentes no ejecutan comandos).
+- **Incidencia:** 7 cambios agotaron el límite de uso a mitad de la primera tanda (lentes con error en segundos y coste 0); se repitieron completos tras el reinicio del límite. Solo cuentan las ejecuciones válidas (12/12).
+
+| Cambio | Grupo | Archivos (líneas; raíces) | correctness | security | tests | Verificación de blockers/should-fix |
+|---|---|---|---|---|---|---|
+| `91b63b0` | docs | 2 (+565/−1); .planning, documentation | 0 h · 117 s · 871k tok · 0.79 USD | 1 h · 72 s · 285k tok · 0.55 USD | 0 h · 54 s · 350k tok · 0.53 USD | — (0.00 USD) |
+| `1de3e89` | docs | 34 (+2163/−0); .planning, AGENTS.md, architecture, openspec | 4 h · 98 s · 518k tok · 0.66 USD | 5 h · 143 s · 764k tok · 0.93 USD | 0 h · 69 s · 515k tok · 0.55 USD | correctness/should-fix: CONFIRMED; correctness/should-fix: CONFIRMED; correctness/should-fix: CONFIRMED; security-privacy/should-fix: CONFIRMED; security-privacy/should-fix: CONFIRMED (2.01 USD) |
+| `3496f3f` | docs | 31 (+3/−0); .gitignore, documentation, {architecture => documentation | 1 h · 133 s · 889k tok · 0.65 USD | 2 h · 115 s · 721k tok · 0.60 USD | 2 h · 91 s · 556k tok · 0.56 USD | — (0.00 USD) |
+| `9bb8e96` | release | 4 (+32/−14); CHANGELOG.md, core | 4 h · 150 s · 848k tok · 0.71 USD | 0 h · 91 s · 504k tok · 0.52 USD | 2 h · 84 s · 295k tok · 0.47 USD | — (0.00 USD) |
+| `d4e54b0` | release | 4 (+31/−17); CHANGELOG.md, core | 2 h · 105 s · 439k tok · 0.48 USD | 2 h · 115 s · 551k tok · 0.51 USD | 2 h · 142 s · 573k tok · 0.59 USD | correctness/blocker: CONFIRMED; security-privacy/blocker: CONFIRMED (0.72 USD) |
+| `bae6ac7` | tests | 1 (+1/−1); core | 0 h · 74 s · 302k tok · 0.36 USD | 0 h · 46 s · 166k tok · 0.28 USD | 0 h · 86 s · 307k tok · 0.39 USD | — (0.00 USD) |
+| `72fe30d` | tests | 2 (+2/−2); core | 0 h · 57 s · 216k tok · 0.32 USD | 0 h · 52 s · 169k tok · 0.31 USD | 1 h · 64 s · 308k tok · 0.35 USD | — (0.00 USD) |
+| `d737c2d` | fix | 2 (+34/−1); core | 0 h · 56 s · 384k tok · 0.40 USD | 0 h · 41 s · 215k tok · 0.31 USD | 1 h · 62 s · 241k tok · 0.42 USD | tests-as-evidence/should-fix: CONFIRMED (0.57 USD) |
+| `fa86ae6` | fix | 5 (+24/−5); core | 2 h · 84 s · 529k tok · 0.57 USD | 1 h · 111 s · 576k tok · 0.69 USD | 2 h · 86 s · 450k tok · 0.52 USD | correctness/should-fix: CONFIRMED; tests-as-evidence/should-fix: CONFIRMED (0.94 USD) |
+| `6a6965e` | fix | 8 (+316/−21); CHANGELOG.md, README.md, core | 3 h · 296 s · 1489k tok · 1.28 USD | 2 h · 257 s · 1505k tok · 1.12 USD | 3 h · 274 s · 1636k tok · 1.19 USD | correctness/should-fix: CONFIRMED; security-privacy/blocker: CONFIRMED; tests-as-evidence/should-fix: CONFIRMED; tests-as-evidence/should-fix: CONFIRMED (2.66 USD) |
+| `d78de6d` | fix | 7 (+85/−18); CHANGELOG.md, core | 3 h · 128 s · 368k tok · 0.53 USD | 0 h · 117 s · 393k tok · 0.45 USD | 2 h · 130 s · 377k tok · 0.55 USD | — (0.00 USD) |
+| `4e031c4` | feature | 9 (+282/−82); CHANGELOG.md, README.md, core | 1 h · 106 s · 324k tok · 0.53 USD | 0 h · 64 s · 197k tok · 0.41 USD | 5 h · 141 s · 640k tok · 0.68 USD | tests-as-evidence/should-fix: CONFIRMED; tests-as-evidence/should-fix: sin veredicto (0.66 USD) |
+
+- **Coste total del panel válido:** 28,31 USD; mediana por cambio ≈ 1,8 USD; lentes de 41 a 296 s.
+- **Criterio D-56 por grupo:** `low` (una lente) solo aplica a documentación sin rutas de riesgo. En **documentación** (3 cambios) `1de3e89` tuvo 5 `CONFIRMED` repartidos entre correctness (3) y security (2): cualquier lente única habría perdido hallazgos confirmados → **no se habilita `low`**. **Corrección** (4): `CONFIRMED` de las tres lentes. Release y pruebas (2 cada uno) y funcionalidad (1) no llegan a 3: muestra insuficiente. **Conclusión: ningún grupo habilita `low`; el panel completo se mantiene en todos los cambios.**
