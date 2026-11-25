@@ -44,6 +44,25 @@ export class LockHeldError extends Error {
   }
 }
 
+/**
+ * El lock no se pudo crear ni leer (`EPERM`) durante toda la espera. En Windows, un lock que su
+ * dueño está borrando queda «pendiente de borrado» y abrirlo, también para crearlo en exclusiva,
+ * da `EPERM` hasta que el borrado termina; si persiste más allá de la espera, el lock no se
+ * recupera ni se borra.
+ */
+export class LockAccessError extends Error {
+  readonly code: string;
+  constructor(
+    readonly file: string,
+    cause: NodeJS.ErrnoException,
+    waitedMs: number,
+  ) {
+    super(`lock inaccesible: ${file} (${cause.code}) tras ${waitedMs} ms de espera; no se toca: comprueba los permisos o qué proceso lo retiene`, { cause });
+    this.name = 'LockAccessError';
+    this.code = cause.code ?? 'EPERM';
+  }
+}
+
 export interface LockOptions {
   /** Espera máxima por un dueño vivo; 0 = fallar en el acto. */
   waitMs?: number;
@@ -180,7 +199,28 @@ export async function acquireLock(file: string, purpose: string, options: LockOp
   const started = Date.now();
   for (;;) {
     const owner = ownerRecord(purpose, options);
-    if (await createExclusive(file, `${JSON.stringify(owner)}\n`)) {
+    // EPERM al crear o al leer el lock: en Windows, el lock que su dueño está borrando queda
+    // pendiente de borrado y tanto la creación exclusiva como la lectura dan EPERM hasta que el
+    // borrado termina. Se espera dentro del mismo presupuesto y se repite la creación exclusiva;
+    // el lock nunca se lee a medias, se recupera ni se borra por este camino.
+    const pendingDelete = async (error: unknown): Promise<void> => {
+      if ((error as NodeJS.ErrnoException).code !== 'EPERM') {
+        throw error;
+      }
+      const waited = Date.now() - started;
+      if (waited >= waitMs) {
+        throw new LockAccessError(file, error as NodeJS.ErrnoException, waited);
+      }
+      await sleep(pollMs);
+    };
+    let created: boolean;
+    try {
+      created = await createExclusive(file, `${JSON.stringify(owner)}\n`);
+    } catch (error) {
+      await pendingDelete(error);
+      continue;
+    }
+    if (created) {
       return {
         file,
         owner,
@@ -192,7 +232,13 @@ export async function acquireLock(file: string, purpose: string, options: LockOp
         },
       };
     }
-    const state = await inspectLock(file, options);
+    let state: LockState;
+    try {
+      state = await inspectLock(file, options);
+    } catch (error) {
+      await pendingDelete(error);
+      continue;
+    }
     if (state.kind === 'free') {
       continue;
     }

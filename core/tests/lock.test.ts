@@ -1,11 +1,12 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   acquireLock,
   canonicalTargetKey,
   inspectLock,
+  LockAccessError,
   LockHeldError,
   projectLockPath,
   releaseLockExplicit,
@@ -56,10 +57,171 @@ describe('lock X1 (R-038)', () => {
   it('el segundo adquiere en cuanto el primero libera (espera acotada)', async () => {
     const file = projectLockPath(dir, 'target');
     const first = await acquireLock(file, 'uno', { host: HOST, pid: 1, isAlive: alive([1, 2]) });
-    setTimeout(() => void first.release(), 20);
-    const second = await acquireLock(file, 'dos', { host: HOST, pid: 2, isAlive: alive([1, 2]), waitMs: 2000, pollMs: 5 });
+    // La liberación se observa: su error, si lo hay, hace fallar la prueba.
+    const released = new Promise<void>((resolve, reject) => setTimeout(() => first.release().then(resolve, reject), 20));
+    let slept = 0;
+    const second = await acquireLock(file, 'dos', {
+      host: HOST,
+      pid: 2,
+      isAlive: alive([1, 2]),
+      waitMs: 2000,
+      pollMs: 5,
+      sleep: async (ms) => {
+        slept += 1;
+        await new Promise((resolve) => setTimeout(resolve, ms));
+      },
+    });
+    await released;
+    expect(slept).toBeGreaterThan(0);
     expect(second.owner.pid).toBe(2);
     await second.release();
+  });
+
+  describe('EPERM al crear o leer un lock que su dueño está borrando (Windows)', () => {
+    const realReadFile = fs.readFile.bind(fs);
+    const epermOn = (target: string, times: number) => {
+      let left = times;
+      return vi.spyOn(fs, 'readFile').mockImplementation((async (...args: Parameters<typeof fs.readFile>) => {
+        if (String(args[0]) === target && left > 0) {
+          left -= 1;
+          throw Object.assign(new Error(`EPERM: operation not permitted, open '${target}'`), { code: 'EPERM', syscall: 'open', path: target });
+        }
+        return realReadFile(...args);
+      }) as typeof fs.readFile);
+    };
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('un EPERM transitorio seguido de la liberación real: espera y adquiere por creación exclusiva', async () => {
+      const file = projectLockPath(dir, 'target');
+      const first = await acquireLock(file, 'uno', { host: HOST, pid: 1, isAlive: alive([1, 2]) });
+      const spy = epermOn(file, 2);
+      let sleeps = 0;
+      const second = await acquireLock(file, 'dos', {
+        host: HOST,
+        pid: 2,
+        isAlive: alive([1, 2]),
+        waitMs: 2000,
+        pollMs: 1,
+        sleep: async () => {
+          sleeps += 1;
+          if (sleeps === 2) {
+            await first.release();
+          }
+        },
+      });
+      expect(sleeps).toBe(2);
+      expect(second.owner.pid).toBe(2);
+      expect(await realReadFile(file, 'utf8')).toContain('"pid":2');
+      expect(spy.mock.calls.filter((call) => String(call[0]) === file).length).toBeGreaterThanOrEqual(3);
+      await second.release();
+    });
+
+    it('un EPERM persistente agota la espera con un error que nombra el lock y lo deja intacto', async () => {
+      const file = projectLockPath(dir, 'target');
+      await acquireLock(file, 'uno', { host: HOST, pid: 1, isAlive: alive([1, 2]) });
+      const before = await realReadFile(file, 'utf8');
+      epermOn(file, Number.POSITIVE_INFINITY);
+      let sleeps = 0;
+      const error = await acquireLock(file, 'dos', {
+        host: HOST,
+        pid: 2,
+        isAlive: alive([1, 2]),
+        waitMs: 30,
+        pollMs: 5,
+        sleep: async (ms) => {
+          sleeps += 1;
+          await new Promise((resolve) => setTimeout(resolve, ms));
+        },
+      }).catch((caught: unknown) => caught);
+      vi.restoreAllMocks();
+      expect(error).toBeInstanceOf(LockAccessError);
+      expect((error as LockAccessError).code).toBe('EPERM');
+      expect((error as Error).message).toContain(file);
+      expect((error as Error).message).toContain('EPERM');
+      expect(sleeps).toBeGreaterThan(0);
+      expect(await realReadFile(file, 'utf8')).toBe(before);
+      const state = await inspectLock(file, { host: HOST, isAlive: alive([1]) });
+      expect(state.kind === 'live' && state.owner.pid).toBe(1);
+    });
+
+    const realWriteFile = fs.writeFile.bind(fs);
+    const epermOnCreate = (target: string, times: number) => {
+      let left = times;
+      return vi.spyOn(fs, 'writeFile').mockImplementation((async (...args: Parameters<typeof fs.writeFile>) => {
+        const flag = (args[2] as { flag?: string } | undefined)?.flag;
+        if (String(args[0]) === target && flag === 'wx' && left > 0) {
+          left -= 1;
+          throw Object.assign(new Error(`EPERM: operation not permitted, open '${target}'`), { code: 'EPERM', syscall: 'open', path: target });
+        }
+        return realWriteFile(...args);
+      }) as typeof fs.writeFile);
+    };
+
+    it('un EPERM transitorio en la creación exclusiva mientras el dueño borra: espera y adquiere', async () => {
+      const file = projectLockPath(dir, 'target');
+      const first = await acquireLock(file, 'uno', { host: HOST, pid: 1, isAlive: alive([1, 2]) });
+      epermOnCreate(file, 1);
+      let sleeps = 0;
+      const second = await acquireLock(file, 'dos', {
+        host: HOST,
+        pid: 2,
+        isAlive: alive([1, 2]),
+        waitMs: 2000,
+        pollMs: 1,
+        sleep: async () => {
+          sleeps += 1;
+          if (sleeps === 1) {
+            await first.release();
+          }
+        },
+      });
+      expect(sleeps).toBe(1);
+      expect(second.owner.pid).toBe(2);
+      expect(await realReadFile(file, 'utf8')).toContain('"pid":2');
+      await second.release();
+    });
+
+    it('un EPERM persistente en la creación exclusiva agota la espera sin crear ni borrar nada', async () => {
+      const file = projectLockPath(dir, 'target');
+      const first = await acquireLock(file, 'uno', { host: HOST, pid: 1, isAlive: alive([1, 2]) });
+      const before = await realReadFile(file, 'utf8');
+      epermOnCreate(file, Number.POSITIVE_INFINITY);
+      const error = await acquireLock(file, 'dos', { host: HOST, pid: 2, isAlive: alive([1, 2]), waitMs: 30, pollMs: 5 }).catch((caught: unknown) => caught);
+      vi.restoreAllMocks();
+      expect(error).toBeInstanceOf(LockAccessError);
+      expect((error as Error).message).toContain(file);
+      expect(await realReadFile(file, 'utf8')).toBe(before);
+      await first.release();
+      expect((await inspectLock(file)).kind).toBe('free');
+    });
+
+    it('otro código de error se propaga en el acto, sin esperar', async () => {
+      const file = projectLockPath(dir, 'target');
+      await acquireLock(file, 'uno', { host: HOST, pid: 1, isAlive: alive([1, 2]) });
+      vi.spyOn(fs, 'readFile').mockImplementation((async (...args: Parameters<typeof fs.readFile>) => {
+        if (String(args[0]) === file) {
+          throw Object.assign(new Error('EIO'), { code: 'EIO' });
+        }
+        return realReadFile(...args);
+      }) as typeof fs.readFile);
+      let sleeps = 0;
+      const error = await acquireLock(file, 'dos', {
+        host: HOST,
+        pid: 2,
+        isAlive: alive([1, 2]),
+        waitMs: 2000,
+        pollMs: 1,
+        sleep: async () => {
+          sleeps += 1;
+        },
+      }).catch((caught: unknown) => caught);
+      expect((error as NodeJS.ErrnoException).code).toBe('EIO');
+      expect(error).not.toBeInstanceOf(LockAccessError);
+      expect(sleeps).toBe(0);
+    });
   });
 
   it('recupera un lock cuyo pid murió en este host', async () => {
