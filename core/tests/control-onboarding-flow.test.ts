@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 import { listProposals } from '../src/writes/proposals.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -38,10 +38,49 @@ import { harness, type Harness } from './control-harness.js';
 let h: Harness;
 let hermes: FakeHermes;
 let discord: FakeDiscord;
+let template: Harness;
+
+/** Archivos del consumidor que mencionan la parte única de su ruta (deben ser ninguno para poder copiarlo). */
+async function pathsNaming(root: string): Promise<string[]> {
+  const found: string[] = [];
+  // La parte única es el temporal que contiene la raíz; se compara sin mayúsculas porque los identificadores derivados
+  // de la ruta se guardan en minúsculas y `mkdtemp` genera mayúsculas.
+  const needle = path.basename(path.dirname(root)).toLowerCase();
+  async function walk(dir: string): Promise<void> {
+    for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await walk(full);
+      } else if ((await fs.readFile(full, 'utf8')).toLowerCase().includes(needle)) {
+        found.push(path.relative(root, full));
+      }
+    }
+  }
+  await walk(root);
+  return found;
+}
+
+// El consumidor de partida es idéntico en todos los casos (mismo `init --preset-only --yes` y mismo bloque de tracker):
+// se prepara una vez y cada caso recibe una copia en su propio directorio temporal. Repetir el `init` en cada
+// `beforeEach` costaba 1,6–2,4 s en reposo y superaba el hookTimeout de 10 s del proyecto unit bajo la carga de la
+// suite completa. La identidad del proyecto sale del nombre del directorio: plantilla y casos usan el mismo
+// (`CONSUMER_DIR`) dentro de su propio temporal, y la copia solo vale si el árbol no nombra esa parte única de su ruta:
+// se comprueba, no se supone.
+const CONSUMER_DIR = 'ai-control-consumer';
+
+beforeAll(async () => {
+  template = await harness({ dirName: CONSUMER_DIR });
+  await template.consumer({ control: false });
+  expect(await pathsNaming(template.root), 'el consumidor de partida nombra su propio directorio: no se puede copiar').toEqual([]);
+}, 120_000);
+
+afterAll(async () => {
+  await template.dispose();
+});
 
 beforeEach(async () => {
-  h = await harness();
-  await h.consumer({ control: false });
+  h = await harness({ dirName: CONSUMER_DIR });
+  await fs.cp(template.root, h.root, { recursive: true });
   hermes = await fakeHermes(h.root);
   discord = fakeDiscord();
 });
@@ -472,7 +511,10 @@ function assistantPrompts(replies: unknown[]): AssistantPrompts {
 }
 
 /** Asistente completo: destinos, perfil, scripts, activo, idea vacía, confirmar, tracker y control. */
-const ASSISTANT = [['claude'], 'full', ['py', 'sh', 'ps'], 'sh', '', true];
+// `preset-only`: estos casos comprueban las líneas de integración y la ausencia de secretos, no el catálogo; con
+// `full` cada uno instalaba el catálogo completo (25–32 s en reposo, más de 60 s bajo carga). El camino `full` del
+// asistente sigue cubierto en assistant.test.ts.
+const ASSISTANT = [['claude'], 'preset-only', ['py', 'sh', 'ps'], 'sh', '', true];
 
 async function assistantInit(tracker: unknown[], control: unknown[]) {
   const sink = { out: [] as string[], err: [] as string[] };

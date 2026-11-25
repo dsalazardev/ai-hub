@@ -37,8 +37,15 @@ export function issue(iid: number, feature: string | null, label: string, extra:
   };
 }
 
-export async function harness(): Promise<Harness> {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-control-'));
+/**
+ * `dirName`: la raíz se crea como `<temporal único>/<dirName>`. La identidad del proyecto sale del nombre del
+ * directorio, así que dos raíces con el mismo `dirName` tienen la misma identidad (y un consumidor copiado de una a otra
+ * es equivalente). Sin él, la raíz es el propio temporal, como siempre.
+ */
+export async function harness(options: { dirName?: string } = {}): Promise<Harness> {
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-control-'));
+  const root = options.dirName ? path.join(base, options.dirName) : base;
+  await fs.mkdir(root, { recursive: true });
   const cli = async (argv: string[]) => {
     const out: string[] = [];
     const err: string[] = [];
@@ -89,7 +96,7 @@ export async function harness(): Promise<Harness> {
     },
     async dispose() {
       setControlDeps({});
-      await fs.rm(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+      await fs.rm(base, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     },
   };
 }
