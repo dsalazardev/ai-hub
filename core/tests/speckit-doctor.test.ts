@@ -225,15 +225,31 @@ describe('integrity (7.4)', () => {
     }
   });
 
-  it('fails on a missing managed script, warns on an edited template, ignores installed_at', async () => {
-    await editJson('.specify/integrations/claude.manifest.json', (data) => {
+  // Tres pasos acumulados de la misma instalación, un `doctor` por caso: cada uno reconstruye el estado de los pasos
+  // anteriores (solo operaciones de archivo) antes de su propia comprobación. Antes iban en un único caso con tres
+  // `doctor` completos (≈2 s cada uno en reposo, ≈25 s bajo la carga de la suite completa) y superaba los 60 s.
+  const ignoreInstalledAt = () =>
+    editJson('.specify/integrations/claude.manifest.json', (data) => {
       data.installed_at = '2030-01-01T00:00:00+00:00';
     });
+  const editTemplate = () => fs.appendFile(path.join(root, '.specify', 'templates', 'plan-template.md'), '\n<!-- custom -->\n');
+
+  it('ignores installed_at', async () => {
+    await ignoreInstalledAt();
     expect(line((await doctor()).out, 'speckit:integrity')).toMatch(/\[OK\].*íntegros/);
-    await fs.appendFile(path.join(root, '.specify', 'templates', 'plan-template.md'), '\n<!-- custom -->\n');
+  });
+
+  it('warns on an edited template, after installed_at changed', async () => {
+    await ignoreInstalledAt();
+    await editTemplate();
     const warned = await doctor();
     expect(line(warned.out, 'speckit:integrity')).toMatch(/\[OK\].*aviso.*plan-template\.md/);
     expect(warned.code).toBe(0);
+  });
+
+  it('fails on a missing managed script, with installed_at changed and a template edited', async () => {
+    await ignoreInstalledAt();
+    await editTemplate();
     await fs.rm(path.join(root, '.specify', 'scripts', 'bash', 'create-new-feature.sh'));
     const failed = await doctor();
     expect(failed.code).toBe(1);
