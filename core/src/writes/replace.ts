@@ -1,4 +1,5 @@
 import { findTarget, TARGETS, type TargetDeclaration } from './targets.js';
+import type { LockHandle } from '../harness/lock.js';
 import { transactWrite, type TransactionHooks } from './transaction.js';
 
 /**
@@ -15,6 +16,8 @@ export async function replaceOwned(input: {
   target?: TargetDeclaration;
   expected?: string | null;
   hooks?: TransactionHooks;
+  /** Lock ya tomado que cubre este destino; ver `WriteRequest.heldLock`. */
+  heldLock?: LockHandle;
 }): Promise<'written' | 'unchanged'> {
   const result = await transactWrite({
     root: input.root,
@@ -24,6 +27,7 @@ export async function replaceOwned(input: {
     retention: 0,
     ...(input.target ? { target: input.target } : {}),
     ...(input.hooks ? { hooks: input.hooks } : {}),
+    ...(input.heldLock ? { heldLock: input.heldLock } : {}),
     transform: (current) => {
       if (input.expected !== undefined && current !== input.expected) {
         throw new Error(`${input.file} cambió mientras se preparaba la escritura; no se reemplaza`);

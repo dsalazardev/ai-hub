@@ -3,7 +3,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { effectiveSensitivity, externalTarget, findTarget, requireTarget, secretLikeKeys, UndeclaredTargetError } from '../src/writes/targets.js';
-import { listCaptures, releaseCapture, SimulatedCrash, transactWrite, type WriteRequest } from '../src/writes/transaction.js';
+import { listCaptures, lockFor, releaseCapture, SimulatedCrash, transactWrite, type WriteRequest } from '../src/writes/transaction.js';
+import { acquireLock, inspectLock, LockHeldError } from '../src/harness/lock.js';
 import { detectSyncedFolder, resolvePrivateStorage, type PrivateStorageHost } from '../src/writes/private-storage.js';
 
 const SENTINEL = 'sentinel-7f3a9c1e-not-a-real-token';
@@ -122,6 +123,35 @@ describe('transacción X2 (3.3, R-034–R-036)', () => {
     );
     expect(result).toMatchObject({ status: 'written', attempts: 2 });
     expect(await fs.readFile(file, 'utf8')).toBe('a\nperson\nengine\n');
+  });
+
+  it('con un lock ya tomado que cubre el destino no toma uno por archivo ni lo suelta, y conserva la última comprobación', async () => {
+    const file = path.join(root, '.gitignore');
+    await fs.writeFile(file, 'a\n');
+    const alive = (pid: number) => pid === 4242 || pid === 5151;
+    const base = request('.gitignore', (current) => `${current}engine\n`, { lock: { ...lock, isAlive: alive, waitMs: 0 } });
+    // El lock por archivo lo tiene otro dueño vivo: sin el lock del llamador, la escritura no se haría.
+    const perFile = await acquireLock(await lockFor(base, requireTarget('test', '.gitignore')), 'otro escritor', { host: 'h', pid: 5151, isAlive: alive });
+    await expect(transactWrite(base)).rejects.toBeInstanceOf(LockHeldError);
+    expect(await fs.readFile(file, 'utf8')).toBe('a\n');
+    const held = await acquireLock(path.join(root, 'sync-targets.lock'), 'sync', { host: 'h', pid: 4242, isAlive: alive });
+    const result = await transactWrite({
+      ...base,
+      heldLock: held,
+      hooks: {
+        afterRead: async (attempt) => {
+          if (attempt === 1) {
+            await fs.writeFile(file, 'a\nperson\n');
+          }
+        },
+      },
+    });
+    // La edición externa se detecta en la última comprobación y se recalcula, igual que con el lock por archivo.
+    expect(result).toMatchObject({ status: 'written', attempts: 2 });
+    expect(await fs.readFile(file, 'utf8')).toBe('a\nperson\nengine\n');
+    expect((await inspectLock(held.file, { host: 'h', isAlive: alive })).kind).toBe('live');
+    await held.release();
+    await perFile.release();
   });
 
   it('contención en cada comprobación agota los intentos sin reemplazar ni dejar temporales', async () => {

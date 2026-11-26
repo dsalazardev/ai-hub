@@ -1,5 +1,7 @@
 import fs from 'node:fs/promises';
 import { generatedTarget, replaceOwned } from '../writes/replace.js';
+import { generatedTargetsLock } from '../writes/transaction.js';
+import { acquireLock, type LockOptions } from '../harness/lock.js';
 import { closeProposals, createExclusive, describePending, prepareProposal } from '../writes/proposals.js';
 import { ignoreStatus } from '../writes/credential-ignore.js';
 import { findTarget } from '../writes/targets.js';
@@ -32,6 +34,8 @@ export interface SyncResult {
 export interface SyncOptions {
   check: boolean;
   force?: boolean;
+  /** Espera del lock de los destinos generados (por defecto 30 s, la de X2). */
+  lock?: LockOptions;
 }
 
 export class SyncSourceError extends Error {
@@ -138,49 +142,56 @@ export async function runSync(root: string, options: SyncOptions): Promise<SyncR
     await pruneEmptyDirs(root, dir);
   }
   const mcpIgnored = new Map<string, boolean>();
-  const written = await mapLimit(sortedEntries(rendered), 24, async ([rel, file]) => {
-    const abs = path.join(root, rel);
-    const current = await readCopy(abs);
-    if (file.region !== undefined) {
-      if (current !== null && extractRegion(current) === file.content) {
-        await closeProposals(root, 'managed-region', rel);
+  // Un lock para todos los destinos generados de este sync (no uno por archivo): cada destino sigue pasando por la
+  // transacción X2 completa (temporal sincronizado, última comprobación, rename y verificación).
+  const targetsLock = await acquireLock(await generatedTargetsLock(root), 'sync de destinos generados', { waitMs: 30000, ...options.lock });
+  try {
+    const written = await mapLimit(sortedEntries(rendered), 24, async ([rel, file]) => {
+      const abs = path.join(root, rel);
+      const current = await readCopy(abs);
+      if (file.region !== undefined) {
+        if (current !== null && extractRegion(current) === file.content) {
+          await closeProposals(root, 'managed-region', rel);
+          return null;
+        }
+        // D-65: un archivo con región que no existe se crea en exclusiva; uno existente nunca se edita.
+        if (current === null && (await createExclusive(abs, replaceRegion('', file.content)))) {
+          return rel;
+        }
+        const prepared = await prepareProposal(root, {
+          capability: 'managed-region',
+          file: abs,
+          display: rel,
+          fragment: replaceRegion('', file.content),
+          instructions: `sustituye (o añade) la región gestionada de ai-hub en ${rel}`,
+          check: 'ai-hub sync --check-lock y ai-hub drift',
+        });
+        result.pending.push(describePending(root, prepared.proposal));
         return null;
       }
-      // D-65: un archivo con región que no existe se crea en exclusiva; uno existente nunca se edita.
-      if (current === null && (await createExclusive(abs, replaceRegion('', file.content)))) {
-        return rel;
+      // Generados sensibles (MCP con credenciales): solo si git los ignora (R-117).
+      if (findTarget(rel)?.sensitivity === 'sensitive') {
+        if (!mcpIgnored.has(rel)) {
+          mcpIgnored.set(rel, ignoreStatus(root, rel) !== 'not_ignored');
+        }
+        if (!mcpIgnored.get(rel)) {
+          result.pending.push(`pendiente: mcp · ${rel} no se genera porque git no lo ignora (credential_ignore_unverified); añade ${rel} a .gitignore`);
+          return null;
+        }
       }
-      const prepared = await prepareProposal(root, {
-        capability: 'managed-region',
-        file: abs,
-        display: rel,
-        fragment: replaceRegion('', file.content),
-        instructions: `sustituye (o añade) la región gestionada de ai-hub en ${rel}`,
-        check: 'ai-hub sync --check-lock y ai-hub drift',
-      });
-      result.pending.push(describePending(root, prepared.proposal));
-      return null;
-    }
-    // Generados sensibles (MCP con credenciales): solo si git los ignora (R-117).
-    if (findTarget(rel)?.sensitivity === 'sensitive') {
-      if (!mcpIgnored.has(rel)) {
-        mcpIgnored.set(rel, ignoreStatus(root, rel) !== 'not_ignored');
-      }
-      if (!mcpIgnored.get(rel)) {
-        result.pending.push(`pendiente: mcp · ${rel} no se genera porque git no lo ignora (credential_ignore_unverified); añade ${rel} a .gitignore`);
+      if (current === file.content) {
         return null;
       }
-    }
-    if (current === file.content) {
-      return null;
-    }
-    await fs.mkdir(path.dirname(abs), { recursive: true });
-    // 3.11: destino generado y regenerable por la transacción X2 (lock, temporal, última comprobación, rename).
-    await replaceOwned({ root, file: abs, module: 'sync/sync.ts', content: file.content, target: generatedTarget(rel) });
-    return rel;
-  });
-  result.written.push(...written.filter((rel): rel is string => rel !== null));
-  await writeLock(root, nextLock);
+      await fs.mkdir(path.dirname(abs), { recursive: true });
+      // 3.11: destino generado y regenerable por la transacción X2 (bajo el lock del sync: temporal, última comprobación, rename).
+      await replaceOwned({ root, file: abs, module: 'sync/sync.ts', content: file.content, target: generatedTarget(rel), heldLock: targetsLock });
+      return rel;
+    });
+    result.written.push(...written.filter((rel): rel is string => rel !== null));
+    await writeLock(root, nextLock);
+  } finally {
+    await targetsLock.release();
+  }
   // Hooks en ajustes del usuario: fuera del lock (jamás se borran como destino obsoleto).
   const hooks = await projectSettingsHooks(root, config.tools, false);
   result.written.push(...hooks.written);

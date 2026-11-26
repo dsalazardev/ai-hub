@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { acquireLock, canonicalTargetKey, projectLockPath, sharedLockPath, type LockOptions } from '../harness/lock.js';
+import { acquireLock, canonicalTargetKey, projectLockPath, sharedLockPath, type LockHandle, type LockOptions } from '../harness/lock.js';
 import { detectSyncedFolder, privateCopyName, resolvePrivateStorage, type PrivateStorageHost } from './private-storage.js';
 import { effectiveSensitivity, requireTarget, type TargetDeclaration } from './targets.js';
 
@@ -56,6 +56,12 @@ export interface WriteRequest {
   transform: (current: string | null) => string | Promise<string>;
   maxAttempts?: number;
   lock?: LockOptions;
+  /**
+   * Lock que quien llama ya tiene y que cubre este destino (p. ej. `generatedTargetsLock` durante un `sync`): la
+   * transacción no toma uno por archivo ni lo suelta. Todo lo demás de X2 (temporal sincronizado, última
+   * comprobación, rename y verificación) se mantiene.
+   */
+  heldLock?: LockHandle;
   hooks?: TransactionHooks;
   /** Retención de copias; por defecto, la del destino. */
   retention?: number;
@@ -138,6 +144,16 @@ export async function lockFor(request: Pick<WriteRequest, 'root' | 'file' | 'env
   return sharedLockPath(await canonicalTargetKey(request.file), request.env ?? process.env);
 }
 
+/**
+ * Lock de los destinos generados de un proyecto: un `sync` lo toma una vez para todos sus destinos en lugar de uno
+ * por archivo. Solo `sync/sync.ts` escribe esos destinos (gate de escritores), así que excluye a otro `sync` del
+ * mismo proyecto. Sin `.ai-hub/` todavía, usa el lock compartido de usuario del proyecto (nunca crea `.ai-hub/`).
+ */
+export async function generatedTargetsLock(root: string, env: NodeJS.ProcessEnv = process.env): Promise<string> {
+  const installed = await fs.access(path.join(root, '.ai-hub')).then(() => true, () => false);
+  return installed ? projectLockPath(root, 'sync-targets') : sharedLockPath(`${await canonicalTargetKey(root)}#sync-targets`, env);
+}
+
 async function backupIndexes(dir: string, base: string): Promise<{ name: string; index: number }[]> {
   const entries = await fs.readdir(dir).catch(() => [] as string[]);
   const out: { name: string; index: number }[] = [];
@@ -206,7 +222,7 @@ export async function transactWrite(request: WriteRequest): Promise<WriteResult>
   const retention = Math.max(0, request.retention ?? target.retention);
   const rename = request.hooks?.rename ?? ((from: string, to: string) => fs.rename(from, to));
   const leftoverTemps = await findLeftoverTemps(request.file);
-  const handle = await acquireLock(await lockFor(request, target), `escribir ${path.basename(request.file)}`, { waitMs: 30000, ...request.lock });
+  const handle = request.heldLock ?? (await acquireLock(await lockFor(request, target), `escribir ${path.basename(request.file)}`, { waitMs: 30000, ...request.lock }));
   let crashed = false;
   try {
     let attempts = 0;
@@ -315,7 +331,8 @@ export async function transactWrite(request: WriteRequest): Promise<WriteResult>
     }
     return stopped('write_contention', `${request.file} cambió en cada uno de ${maxAttempts} intentos; no se reemplazó`, attempts, leftoverTemps);
   } finally {
-    if (!crashed) {
+    // Un lock ajeno a la transacción lo suelta quien lo tomó.
+    if (!crashed && request.heldLock === undefined) {
       await handle.release();
     }
   }

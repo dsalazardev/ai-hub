@@ -14,6 +14,8 @@ import {
 import { normalize, putRendered, type RenderedFiles } from '../src/sync/render.js';
 import { sha256 } from '../src/sync/lock.js';
 import { seedFixture } from './fixtures.js';
+import { acquireLock, LockHeldError } from '../src/harness/lock.js';
+import { generatedTargetsLock } from '../src/writes/transaction.js';
 
 const PREFLIGHT_SOURCE = fileURLToPath(new URL('../engine/preflight.md', import.meta.url));
 
@@ -116,6 +118,17 @@ describe('runSync: writing', () => {
     );
     const forced = await runSync(root, { check: false, force: true });
     expect(forced.written.length).toBeGreaterThan(0);
+  });
+
+  it('takes one lock for all generated targets: another live sync holding it stops the write, which leaves no target', async () => {
+    const other = await acquireLock(await generatedTargetsLock(root), 'otro sync');
+    await expect(runSync(root, { check: false, lock: { waitMs: 0 } })).rejects.toBeInstanceOf(LockHeldError);
+    await expect(fs.access(path.join(root, '.claude/rules/core.md'))).rejects.toThrow();
+    await expect(fs.access(path.join(root, 'sync.lock.json'))).rejects.toThrow();
+    await other.release();
+    const result = await runSync(root, { check: false, lock: { waitMs: 0 } });
+    expect(result.written).toContain('.claude/rules/core.md');
+    expect(await read('sync.lock.json')).toContain('"version": 2');
   });
 
   it('is idempotent on a second run', async () => {
